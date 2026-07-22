@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0005 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
@@ -69,9 +69,15 @@ Her karar aşağıdaki altı filtreyle test edilir:
 
 ## 6. Açık Sorular
 
-| ID | Soru |
-|----|------|
-| O-1 | Yeni bir ilke ekleme süreci nasıl işler? |
+| ID | Soru | Durum |
+|----|------|-------|
+| O-1 | Yeni bir ilke ekleme süreci nasıl işler? | ⏳ AVIP 0007 §3 (Tip 1/Tip 2 karar süreci) devralındı. İlke ekleme Tip 1 karar olarak işler: yazılı öneri → itiraz penceresi → PO onayı. |
+
+### Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|----|-------|--------|
+| **D-81** | **Sentiment V1 kapsamı dışı.** Mention+öneri+alıntı MVP için yeterli. PO 21.07.2026. | AVIP 0005 O-2 |
 
 ---
 
@@ -87,3 +93,4 @@ Her karar aşağıdaki altı filtreyle test edilir:
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: GeoLens temel ilkeleri. P1-P7 ürün ilkeleri, F1-F6 tasarım filtreleri, S1-S4 sınırlar. |
+| 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-81 (sentiment V1 dışı). Devralınan Kararlar eklendi. |

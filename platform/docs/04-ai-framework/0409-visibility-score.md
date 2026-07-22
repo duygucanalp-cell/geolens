@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0409 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
@@ -75,6 +75,17 @@ Her skor aşağıdaki etiketleri taşır:
 
 ---
 
+## 6. Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|:--:|-------|:------:|
+| D-30 | Örnekleme büyüklüğü: n=3 [K]. Her motor için 3 paralel istek gönderilir. Pilot verisiyle kalibre edilir. | AVIP 0309 O-1 (TL 21.07.2026) |
+| D-31 | Anlamlılık eşiği: GA hesaplama yöntemi (0309 §4). Her skor güven aralığıyla birlikte raporlanır. | AVIP 0309 O-3 (TL 21.07.2026) |
+| D-32 | Ölçüm devralma (measurement inheritance): bir panelin prompt/motor yapılandırması alt panellere devralınabilir. | AVIP 0307 O-2 (TL 21.07.2026) |
+| D-89 | Skor bileşen adları [K]: Varlık Payı (%35), Konum Ağırlığı (%25), Kaynak Payı (%20), Rakip Bağlamı (%20). Bu doküman §2 ile birebir uyumlu. | AVIP 0007 D-89 (kalibrasyon, 21.07.2026) |
+
+---
+
 ## Kaynaklar
 
 - 0404 Prompt Weighting — prompt ağırlıkları
@@ -89,3 +100,4 @@ Her skor aşağıdaki etiketleri taşır:
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: 4 bileşenli skor modeli, formül, motor kırılımı, skor etiketleri. |
+| 1.1 | 23.07.2026 | Devralınan AVIP Kararları eklendi: D-30 (örnekleme n=3), D-31 (anlamlılık), D-32 (devralma), D-89 (skor bileşen adları). |

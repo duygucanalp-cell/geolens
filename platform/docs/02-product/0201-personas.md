@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0201 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
@@ -201,10 +201,19 @@ GeoLens beş farklı segmentte kullanıcıya hitap eder. Hepsi **tek platform**,
 
 ## 10. Açık Sorular
 
-| ID | Soru | Not |
-|----|------|-----|
-| O-1 | Bildirim kanalı önceliği (e-posta, Slack, push) | Ajans görüşmelerinde test edilecek. |
-| O-2 | Free kademe prompt kotası ne olmalı? | Pilot deneyiyle belirlenecek. |
+| ID | Soru | Durum |
+|----|------|-------|
+| O-1 | Bildirim kanalı önceliği | ⏳ Ajans görüşmelerinde test edilecek. AVIP D-12 (uyarı eşikleri pilotta kalibre) devralındı. |
+| O-2 | Free kademe prompt kotası | ⏳ Pilot deneyiyle belirlenecek. |
+
+### Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|----|-------|--------|
+| **D-04** | **Segment önceliği:** P3 (ajans) + P2 (KOBİ). PO 21.07.2026. | AVIP 0201 O-1 |
+| **D-07** | **Self-serve kayıt:** Sürtünmesiz (ödeme bilgisi istenmez). PO 21.07.2026. | AVIP 0201 O-2 |
+| **D-25** | **Görüşme erişimi:** TR ajans ekosistemi, AN yürütür. PO 21.07.2026. | AVIP 0201 O-3 |
+| **D-09** | **Rol modeli:** Yönetici + üye yeterli. İzleyici MVP dışı. PO 21.07.2026. | AVIP 0203 O-3 |
 
 ---
 
@@ -219,3 +228,4 @@ GeoLens beş farklı segmentte kullanıcıya hitap eder. Hepsi **tek platform**,
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: GeoLens Platform personaları. Beş proto-persona (P1-P5), ihtiyaç matrisi, paket yapısı, segment önceliği kararı (P3+P2 odağı), doğrulama planı, ajans görüşme aday listesi. |
+| 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-04 (segment), D-07 (self-serve), D-25 (görüşme), D-09 (rol modeli). Devralınan Kararlar eklendi. |

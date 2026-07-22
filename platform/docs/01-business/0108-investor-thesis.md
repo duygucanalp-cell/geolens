@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0108 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
@@ -108,10 +108,21 @@ GeoLens iki varlıktan oluşur:
 
 ## 10. Açık Sorular
 
-| ID | Soru |
-|----|------|
-| O-1 | Tohum tur büyüklüğü ve değerleme hedefi? |
-| O-2 | İlk yatırımcı profili (melek/seed fon/stratejik)? |
+| ID | Soru | Durum |
+|----|------|-------|
+| O-1 | Tohum tur büyüklüğü ve değerleme hedefi | ⏳ AVIP kararları referans alındı: D-79 (pilot profili), D-80 (MVP motorlar). Pilot sonrası netleşir. |
+| O-2 | İlk yatırımcı profili | ⏳ Melek/seed fon. AVIP D-44 (GTM) ve D-45 (SOC 2) ile uyumlu ilerleme planı referans alındı. |
+
+### Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|----|-------|--------|
+| **D-04** | **Segment önceliği:** P3 (ajans) + P2 (KOBİ) V1 odağı. PO 21.07.2026. | AVIP 0002 O-1 |
+| **D-44** | **GTM sıralaması:** TR+İngilizce paralel. PO 21.07.2026. | AVIP 0104 O-1 |
+| **D-45** | **SOC 2 hazırlığı:** İlk kurumsal müşteriyle başlar. PO 21.07.2026. | AVIP 0104 O-2 |
+| **D-79** | **Pilot profili:** 6-8 kiracı (3 P3 + 2-3 P2 + 1-2 P4). PO 21.07.2026. | AVIP 0205 O-3 |
+| **D-80** | **MVP motor kapsamı:** ChatGPT+Gemini+Perplexity. PO 21.07.2026. | AVIP 0003 O-2 |
+| **D-82** | **1.0.0 = GA:** Pilot çıkış kapısı sonrası. Pilot dönemi 0.x. PO 21.07.2026. | AVIP 0406 O-1 |
 
 ---
 
@@ -128,3 +139,4 @@ GeoLens iki varlıktan oluşur:
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: GeoLens yatırımcı tezi. Pazar fırsatı, moat, büyüme stratejisi, finansal öngörü. |
+| 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-04 (segment), D-44 (GTM), D-45 (SOC 2), D-79 (pilot), D-80 (MVP motorlar), D-82 (1.0.0=GA). Devralınan Kararlar eklendi. |

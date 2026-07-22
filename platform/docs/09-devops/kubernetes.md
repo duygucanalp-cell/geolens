@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 09-devops/kubernetes |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
@@ -94,6 +94,16 @@ MVP'de K8s yerine Docker Compose kullanılır:
 
 ---
 
+## 6. Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|:--:|-------|:------:|
+| D-85 | VM sağlayıcı stratejisi: küresel bulut TR bölge (self-host VM + yönetilen PG/KMS). MVP'de K8s yok, Docker Compose + VM ile başlanır. | AVIP 0402 O-1 (TL 21.07.2026) |
+| D-86 | Staging yedek/geri dönüş: DB dump (pg_dump) + imaj geri terfisi. Deployment öncesi otomatik pg_dump alınır. | AVIP 0403 O-4 (TL 21.07.2026) |
+| D-19 | RTO/RPO hedefleri: RPO 1 saat, RTO 8 saat (MVP tasarım hedefi, pilot verisiyle kalibre edilir). | AVIP 0402 O-3 (TL 21.07.2026) |
+
+---
+
 ## Kaynaklar
 
 - 09-devops/docker — Docker Compose yapısı
@@ -107,3 +117,4 @@ MVP'de K8s yerine Docker Compose kullanılır:
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: K8s rezervasyonu, geçiş kriterleri, manifest yapısı, Docker Compose alternatifi. |
+| 1.1 | 23.07.2026 | Devralınan AVIP Kararları eklendi: D-85 (VM stratejisi), D-86 (staging yedek), D-19 (RTO/RPO). |

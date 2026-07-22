@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0106 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
@@ -94,10 +94,19 @@ GeoLens'in pazara giriş stratejisini tanımlar: TR kama stratejisi, ajans kanal
 
 ## 8. Açık Sorular
 
-| ID | Soru |
-|----|------|
-| O-1 | Ajans ortaklık programında komisyon oranı? |
-| O-2 | TR açılışında ilk hedef şehir/ bölge? |
+| ID | Soru | Durum |
+|----|------|-------|
+| O-1 | Ajans ortaklık programında komisyon oranı | ⏳ Pilot deneyiyle belirlenecek. |
+| O-2 | TR açılışında ilk hedef şehir/bölge | ⏳ İstanbul merkezli. AVIP D-44/D-87 (TR-first) ile uyumlu. |
+
+### Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|----|-------|--------|
+| **D-44** | **GTM:** TR+İngilizce paralel. PO 21.07.2026. | AVIP 0104 O-1 |
+| **D-87** | **Coğrafi odak:** TR-first, baştan iki dilde. PO 21.07.2026. | AVIP 0002 O-2 |
+| **D-07** | **Self-serve kayıt:** Sürtünmesiz, ödeme bilgisi istenmez. PO 21.07.2026. | AVIP 0201 O-2 |
+| **D-79** | **Pilot profili:** 6-8 kiracı, 3 P3 + 2-3 P2 + 1-2 P4. PO 21.07.2026. | AVIP 0205 O-3 |
 
 ---
 
@@ -114,3 +123,4 @@ GeoLens'in pazara giriş stratejisini tanımlar: TR kama stratejisi, ajans kanal
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: GeoLens GTM stratejisi. 4 aşamalı pazar girişi, ajans kanalı, PLG, içerik stratejisi. |
+| 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-44 (GTM), D-87 (coğrafi odak), D-07 (self-serve), D-79 (pilot profili). Devralınan Kararlar eklendi. |

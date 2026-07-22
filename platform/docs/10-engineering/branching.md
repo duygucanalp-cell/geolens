@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 10-engineering/branching |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
@@ -71,6 +71,14 @@ Bu doküman GeoLens Platform branch adlandırma kurallarını ve branch yönetim
 | **minor** | Yeni özellik (geri uyumlu) |
 | **patch** | Hata düzeltmesi (geri uyumlu) |
 
+### Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|----|-------|--------|
+| **D-82** | **1.0.0 = GA:** Pilot çıkış kapısı sonrası. Pilot dönemi 0.x. PO 21.07.2026. | AVIP 0406 O-1 |
+| **D-77** | **Tren günü:** Cuma tren / Pazartesi terfi. TL 21.07.2026. | AVIP 0406 O-2 |
+| **D-57** | **Dondurma pencereleri:** Kapı değerlendirme haftaları + yılbaşı (2 hafta). PO+TL 21.07.2026. | AVIP 0406 O-4 |
+
 ---
 
 ## Kaynaklar
@@ -85,3 +93,4 @@ Bu doküman GeoLens Platform branch adlandırma kurallarını ve branch yönetim
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: branch adlandırma, yaşam döngüsü, branch korumaları, SemVer. |
+| 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-82 (1.0.0=GA), D-77 (tren günü), D-57 (dondurma). Devralınan Kararlar eklendi. |

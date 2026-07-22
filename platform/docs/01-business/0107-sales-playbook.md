@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0107 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
@@ -87,9 +87,18 @@ Ajans segmentine yönelik satış sürecini, konumlandırmayı ve taktikleri tan
 
 ## 7. Açık Sorular
 
-| ID | Soru |
-|----|------|
-| O-1 | Pilot ajanslara özel fiyatlandırma yapılmalı mı? |
+| ID | Soru | Durum |
+|----|------|-------|
+| O-1 | Pilot ajanslara özel fiyatlandırma | ⏳ Pilot deneyiyle belirlenecek. AVIP D-07 (self-serve kayıt) ve D-79 (pilot profili) devralındı. Pilot döneminde arka ofis ataması yeterli. |
+
+### Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|----|-------|--------|
+| **D-04** | **Segment önceliği:** P3 (ajans) + P2 (KOBİ). PO 21.07.2026. | AVIP 0201 O-1 |
+| **D-07** | **Self-serve kayıt:** Sürtünmesiz, ödeme bilgisi istenmez. PO 21.07.2026. | AVIP 0201 O-2 |
+| **D-79** | **Pilot profili:** 6-8 kiracı (3 P3 + 2-3 P2 + 1-2 P4). PO 21.07.2026. | AVIP 0205 O-3 |
+| **D-50** | **Analist raporu:** Şimdilik satın alınmayacak. Pilot sonrası değerlendirilecek. PO 21.07.2026. | AVIP 0105 O-1 |
 
 ---
 
@@ -104,3 +113,4 @@ Ajans segmentine yönelik satış sürecini, konumlandırmayı ve taktikleri tan
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: GeoLens satış kitabı. P3/P2 satış süreci, konumlandırma mesajları, itiraz yönetimi. |
+| 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-04 (segment), D-07 (self-serve), D-79 (pilot), D-50 (analist raporu). Devralınan Kararlar eklendi. |

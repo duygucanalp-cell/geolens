@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0000 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.1 |
+| Versiyon | 1.4 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
@@ -254,12 +254,12 @@ platform/docs/
 
 ## 8. Açık Sorular
 
-| ID | Soru | Not |
-|----|------|-----|
-| O-1 | Kafka mı, Redis Streams mi? AVIP'te Redis Streams kararı vardı; GeoLens'te yeniden değerlendirilecek | Faz 2 kararı |
-| O-2 | ClickHouse mu, TimescaleDB mi analytics için? | Faz 2 kararı |
-| O-3 | Plugin sistemi WASM mi, gRPC mi? | Faz 3 kararı |
-| O-4 | Specification reposu ne zaman public açılacak? (Doküman seti tamamlandı — 41 doküman) | Faz 5 kararı — pilot sonrası |
+| ID | Soru | Durum |
+|----|------|-------|
+| ~~O-1~~ | ~~Kafka mı, Redis Streams mi?~~ | ✅ **KAPANDI** (AVIP D-74, ADR-005): **Redis Streams + tüketici grupları.** Liste elendi. §12'ye işlendi. |
+| O-2 | ClickHouse mu, TimescaleDB mi analytics için? | ⏳ Açık — Faz 2 kararı. AVIP'te karşılığı yok. |
+| O-3 | Plugin sistemi WASM mı, gRPC mi? | ⏳ Açık — Faz 3 kararı. |
+| O-4 | Specification reposu ne zaman public açılacak? (43 doküman tamamlandı) | ⏳ Faz 5 kararı — pilot sonrası. AVIP D-82: 1.0.0 = GA ile hizalanır. |
 
 ---
 
@@ -296,7 +296,7 @@ Bu dokümanın kendisi altı filtreyle test edilmiştir:
 
 | ID | Bağımlılık | Tip | Etkilenen Faz | Durum |
 |----|------------|-----|---------------|-------|
-| D-1 | GAVF standardının specification repo'sunda tamamlanması | İç | Faz 1 | **tamamlandı** (41 doküman, specification/docs/) |
+| D-1 | GAVF standardının specification repo'sunda tamamlanması | İç | Faz 1 | **tamamlandı** (43 doküman, specification/docs/) |
 | D-6 | Specification versiyon senkronizasyonunun sürdürülmesi | İç | Faz 3+ | specification/docs/00-overview/0005-version-sync-plan ile yönetiliyor |
 | D-2 | AI motorları API erişim izinleri (ChatGPT, Gemini, Perplexity) | Dış | Faz 3 | beklemede |
 | D-3 | Pilot kiracı adayı anlaşması | Dış | Faz 5 | beklemede |
@@ -305,7 +305,21 @@ Bu dokümanın kendisi altı filtreyle test edilmiştir:
 
 ---
 
-## 12. Kaynak ve Bütçe Çerçevesi
+## 12. Devralınan AVIP Kararları
+
+AVIP arşivinden GeoLens'e devralınan kapalı kararlar:
+
+| ID | AVIP Kararı | GeoLens Etkisi |
+|----|-------------|----------------|
+| D-43 | **Event-driven faz geçişi:** Pilot kiracı bulununca Faz 4 başlar. Tarih bazlı değil, olay bazlı. (PO 21.07.2026) | GeoLens §4.3 ile uyumlu. Devralındı. |
+| D-74 | **Redis Streams + tüketici grupları.** Liste elendi. (TL 21.07.2026, ADR-005) | GeoLens O-1 kapandı. |
+| D-82 | **1.0.0 = ticari genel açılış (GA).** Pilot çıkış kapısı sonrası. Pilot dönemi 0.x. (PO 21.07.2026) | GeoLens sürümleme politikasına temel. |
+| D-04 | **Segment önceliği:** P3 (ajans) + P2 (KOBİ) V1 odağı. (PO 21.07.2026) | GeoLens 0201 §6 ile zaten uyumlu. |
+| D-87 | **Coğrafi odak:** TR+EN paralel GTM. TR-first, baştan iki dilde. (PO 21.07.2026) | GeoLens 0106 ile zaten uyumlu. |
+
+---
+
+## 13. Kaynak ve Bütçe Çerçevesi
 
 | Kalem | Faz 0-1 | Faz 2-3 | Faz 4 | Faz 5 | Toplam |
 |-------|---------|---------|-------|-------|--------|
@@ -335,4 +349,5 @@ Not: Bu çerçeve üst düzey bir tahmindir. Detaylı bütçe Faz 1'de hazırlan
 | 1.1 | 22.07.2026 | Eksik bölümler eklendi: Felsefe filtresi uygulaması, paydaşlar, bağımlılıklar, kaynak çerçevelesi, North Star metriği. İlişkili alanı düzeltildi (0401–0409). R-01 typo düzeltildi. |
 | 1.2 | 22.07.2026 | Tutarlılık düzeltmesi: §5 doküman ağacındaki 04-ai-framework listesi 15 GeoLens dosya adıyla güncellendi; İlişkili alanı 0401–0415 olarak düzeltildi. |
 | 1.3 | 22.07.2026 | GAVF Specification referansları güncellendi: D-1 durumu 'tamamlandı' olarak değiştirildi, D-6 (versiyon senkronizasyonu) eklendi, İlişkili alanına spec doküman referansları eklendi, North Star metriği GAVF kaynağı düzeltildi, O-4 açıklaması güncellendi, Kaynaklar bölümüne spec referansları eklendi. |
+| 1.4 | 22.07.2026 | AVIP kapalı kararları toplu taşındı: O-1 (Redis Streams) kapatıldı, §12 Devralınan Kararlar eklendi (D-43, D-74, D-82, D-04, D-87). D-1 sayısı 43 olarak güncellendi. |
 | 1.0 | 22.07.2026 | İlk yayın: GeoLens Platform master planı. Altı filtreli tasarım felsefesi, 5 fazlı yapı, 85+ dokümanlı ağaç, risk kaydı. |

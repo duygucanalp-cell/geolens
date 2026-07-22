@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0503 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
@@ -67,6 +67,16 @@ scheduler → q:measure → worker:measure → ScoreCalculated → outbox
 
 ---
 
+## 6. Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|:--:|-------|:------:|
+| D-74 | Redis Streams + ADR-005. Olay kuyruğu için Redis Streams seçildi (Kafka değil). Bu doküman §3 ile uyumlu. | AVIP 0303 O-1 (TL 21.07.2026) |
+| D-75 | DLQ (dead letter queue) oynatma mekanizması: XAUTOCLAIM + max deneme sonrası zehirli mesaj taşıma. Bu doküman §4 ile uyumlu. | AVIP 0307 O-4 (TL 21.07.2026) |
+| D-73 | Redis kilit kaybı senaryosu: anında pasif — kilit kaybında üretim durur, yeni lider seçilene kadar beklenir. Bu mimaride scheduler için geçerlidir. | AVIP 0301 O-3 (TL 21.07.2026) |
+
+---
+
 ## Kaynaklar
 
 - 0501 System Architecture — ölçüm hattı
@@ -80,3 +90,4 @@ scheduler → q:measure → worker:measure → ScoreCalculated → outbox
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: outbox pattern, kuyruk yapısı, tüketim garantileri, olay akışı. |
+| 1.1 | 23.07.2026 | Devralınan AVIP Kararları eklendi: D-74 (Redis Streams/ADR-005), D-75 (DLQ oynatma), D-73 (kilit kaybı). |

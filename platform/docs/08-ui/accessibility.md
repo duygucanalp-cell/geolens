@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 08-ui/accessibility |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
@@ -78,6 +78,14 @@ Bu doküman GeoLens Platform erişilebilirlik standartlarını tanımlar. WCAG 2
 
 ---
 
+## 7. Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|:--:|-------|:------:|
+| D-84 | Önem-SLA süreleri [K]: Kritik derhal, yüksek 3 iş günü, orta sprint içi, düşük planlı. Pilot verisiyle kalibre edilecek. | AVIP 0405 O-1 (TL 21.07.2026) |
+
+---
+
 ## Kaynaklar
 
 - 08-ui/design-system — renk paleti, kontrast
@@ -90,3 +98,4 @@ Bu doküman GeoLens Platform erişilebilirlik standartlarını tanımlar. WCAG 2
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: WCAG 2.1 AA hedefi, 8 erişilebilirlik kuralı, skor görselleri, test yöntemleri. |
+| 1.1 | 23.07.2026 | Devralınan AVIP Kararları eklendi: D-84 (Önem-SLA süreleri). |

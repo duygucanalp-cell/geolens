@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | project-plan |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.2 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
@@ -57,7 +57,7 @@ Bu doküman GeoLens Platform geliştirme takvimini, ekip sorumluluklarını ve �
 | **H1** | platform/httpmw: panik kurtarma, request ID; measure api.go tamamlama; Perplexity bağdaştırıcı iskeleti (Execute) | identity: kullanıcı kaydı, JWT oturum, giriş/çıkış uçları; httpmw: kimlik doğrulama, kiracı bağlamı | cmd/api: httpmw zincirini bağlama; config: marka tanımı, panel iskeleti; cmd/scheduler iskeleti | İlk 3 ajans görüşmesi (Sheltron, Cremicro, Seobaz); güncelleme notları | 🟢 Çalışan API + kimlik doğrulama + Perplexity istek |
 | **H2** | Perplexity bağdaştırıcı tam (alıntı çıkarma, hata sınıfları); measure/calc: calculation_run + temel skor (varlık payı + konum + kaynak) | identity: RBAC tam, RLS politikaları; platform/queue: Redis Streams + outbox dağıtıcı; S3 storage sarmalayıcı | config: panel tanımı + prompt seti yönetimi; scheduler: izleme planı tarama, idempotent iş üretimi; cmd/worker iskeleti | Ajans görüşmeleri devam (Webtures, Zeo); skor bileşen adları; dokümantasyon | 🟢 Ölçüm işi kuyruğa atılabiliyor |
 | **H3** | Scoring engine tam: 4 bileşen (varlık, konum, kaynak, rakip) + GA + fidelite; ham yanıt → skor pipeline | governance: denetim yazıcısı, kota iskeleti, usage_records; platform hardening (hata yönetimi, timeouts) | Worker: kuyruktan iş okuma + measure çağrısı + sonuç kalıcılaştırma; web/ SPA: React iskeleti + skor kartı prototipi | Ajans görüşmeleri analizi; sürüm notu şablonları; README güncelleme | 🟢 Skor hesaplanıyor, governance temel hazır |
-| **H4** | Uçtan uca pipeline entegrasyonu; hata ayıklama; demo senaryosu hazırlığı | Testler (birim + testcontainers); CI/CD ilk versiyon; doküman-kod senkronu | web/ SPA: skor kartı + trend grafiği; demo ortamı; API dokümantasyonu | Demo desteği; v1.1 kuyruğu kayıtları; Dilim 1 dokümantasyon kapanışı | 🔷 **Canlıda uçtan uca demo — tek ölçüm, etiketli skor** |
+| **H4** | Uçtan uca pipeline entegrasyonu; hata ayıklama; demo senaryosu hazırlığı | Testler (birim + testcontainers); **CI/CD ilk versiyon (GitHub Actions, D-14)**; doküman-kod senkronu | web/ SPA: skor kartı + trend grafiği; demo ortamı; API dokümantasyonu | Demo desteği; v1.1 kuyruğu kayıtları; Dilim 1 dokümantasyon kapanışı | 🔷 **Canlıda uçtan uca demo — tek ölçüm, etiketli skor** |
 
 ### İlk Çıktı Takvimi
 
@@ -185,13 +185,24 @@ H13: kripto-silme ──→ H14: alarm ──→ H15: kalibrasyon ──→ H16:
 
 ---
 
-## 11. Açık Sorular
+## 11. Karar Kaydı
 
-| ID | Soru | Not |
-|:--:|------|-----|
-| O-1 | E-posta gönderim servisi seçimi (SendGrid, AWS SES, Resend) | Dilim 3 öncesi (H8–H9 arası) karar verilmeli. TL kararı. |
-| O-2 | Sır kasası/KMS seçimi (HashiCorp Vault, AWS KMS, cloud-native) | Dilim 4 öncesi (H12–H13 arası) karar verilmeli. TL+DevOps. |
-| O-3 | PDF render motoru (chromedp, wkhtmltopdf, Go şablon) | Dilim 3 öncesi karar verilmeli. Backend #1. |
+| ID | Soru | Karar | Gerekçe | Kapandı |
+|:--:|------|:-----:|---------|:-------:|
+| **✅ O-1** | E-posta gönderim servisi | **SendGrid** | AVIP D-16 (0402 v1.2). Türkiye'de kanıtlı, Go SDK hazır, şablon motoru yeterli. MVP ölçeği için ücretsiz kademe yeterli. | TL (22.07.2026) |
+| **✅ O-2** | Sır kasası/KMS | **SOPS + Age** | Self-hosted VM'ler için en hafif çözüm. Git'te şifreli dosya, CI/CD'de çözülür. Sıfır operasyonel yük, 4 kişilik ekip için ideal. | TL (22.07.2026) |
+| **✅ O-3** | PDF render motoru | **Maroto v2** | Pure Go, sıfır bağımlılık. Türkçe font desteği mükemmel. White-label raporlar için `chromedp` (ağır) gerekmez. | TL (22.07.2026) |
+| **✅ D-13** | İş takip aracı | **GitHub Projects/Issues** | AVIP D-13 (0401 O-1 — TL 21.07.2026). Depo ile aynı platformda. Ek araç gerektirmez. | TL (devralındı) |
+| **✅ D-14** | CI platformu | **GitHub Actions** | AVIP D-14 (0403 O-1 — TL 21.07.2026). Go + React monorepo için yeterli. Self-hosted runner pilot öncesi değerlendirilir. | TL (devralındı) |
+| **✅ D-53** | Walking skeleton planı | **4 dilimli plan (bu doküman)** | AVIP D-53 (0301 O-1 — PO+TL 21.07.2026). Bu dokümanda tanımlanan 4 dilimli yapı PO+TL onayından geçmiştir. | PO+TL (devralındı) |
+
+### Kararların Etkileri
+
+| Karar | Dilim | Hafta | Kim Etkilenir |
+|:------|:-----:|:-----:|:-------------|
+| SendGrid | D3 | H9 | Backend #1 — SendGrid Go SDK entegrasyonu, şablon oluşturma |
+| SOPS + Age | D4 | H13 | Backend #2 — sır yönetimi altyapısı, CI/CD'ye decrypt adımı |
+| Maroto v2 | D3 | H9 | Backend #1 — PDF render motoru kurulumu, şablon geliştirme |
 
 ---
 
@@ -207,3 +218,5 @@ H13: kripto-silme ──→ H14: alarm ──→ H15: kalibrasyon ──→ H16:
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: GeoLens Platform proje planı. 4 dilim (16 hafta), haftalık kişi bazlı sorumluluk tabloları, ekip yapısı, bağımlılık zinciri, çıkış kapısı kriterleri. AVIP arşivinden uyarlanmıştır. |
+| 1.1 | 22.07.2026 | Bloklayıcı 3 açık soru kapatıldı: O-1 SendGrid, O-2 SOPS+Age, O-3 Maroto v2. Karar kaydı bölümü eklendi, her kararın etkileri ve sorumlusu belirtildi. |
+| 1.2 | 22.07.2026 | AVIP kapalı kararları eklendi: D-13 (GitHub Projects), D-14 (GitHub Actions), D-53 (walking skeleton onayı). H4 satırında GitHub Actions referansı eklendi. |

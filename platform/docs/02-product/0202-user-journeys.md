@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0202 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
@@ -174,11 +174,21 @@ P2'nin en güçlü keşif kanalı P3'tür — ajansı olan KOBİ, ajansı aracı
 
 ## 10. Açık Sorular
 
-| ID | Soru | Not |
-|----|------|-----|
-| O-1 | Benchmark kıyas verisinin gizlilik ve yöntem sınırları | Anonim toplulaştırma kuralları. Kiracı verisi asla çapraz sızmaz. |
-| O-2 | Uyarı eşik varsayılanları | Pilot verisiyle kalibre edilecek. MVP'de manuel eşik ayarı yeterli. |
-| O-3 | Free kademede prompt kotası ne olmalı? | Pilot deneyiyle belirlenecek. |
+| ID | Soru | Durum |
+|----|------|-------|
+| O-1 | Benchmark kıyas verisinin gizlilik sınırları | ⏳ AVIP D-60: ≥5 kiracı eşiği devralındı. Anonim toplulaştırma kuralları pilotta kalibre edilecek. |
+| ~~O-2~~ | ~~Uyarı eşik varsayılanları~~ | ✅ **KAPANDI** (AVIP D-12): Pilot verisiyle kalibre edilecek. MVP'de manuel eşik ayarı yeterli. |
+| O-3 | Free kademede prompt kotası | ⏳ Pilot deneyiyle belirlenecek. |
+
+### Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|----|-------|--------|
+| **D-07** | **Self-serve kayıt:** Sürtünmesiz kayıt. PO 21.07.2026. | AVIP 0202 O-2 |
+| **D-11** | **İlk değer eşikleri:** Adım 4 <30sn, adım 6 <24sa. PO 21.07.2026. | AVIP 0202 O-1 |
+| **D-12** | **Uyarı eşikleri:** Pilot verisiyle kalibre. PO 21.07.2026. | AVIP 0202 O-4 |
+| **D-60** | **Benchmark gizlilik:** ≥5 kiracı eşiği. TL+PY 21.07.2026. | AVIP 0204 O-1 |
+| **D-11** | **İlk değer süre hedefleri** (tekrar): GeoLens ile uyumlu. | AVIP 0202 O-1 |
 
 ---
 
@@ -194,3 +204,4 @@ P2'nin en güçlü keşif kanalı P3'tür — ajansı olan KOBİ, ajansı aracı
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: GeoLens Platform kullanıcı yolculukları. P3 (ajans) ve P2 (KOBİ) odaklı. Yedi adımlı ortak omurga, altı aşamalı yolculuk çerçevesi, kanal mimarisi, sürtünme haritası. |
+| 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-07 (self-serve), D-11 (ilk değer eşikleri), D-12 (uyarı eşikleri — O-2 kapandı), D-60 (benchmark gizlilik). Devralınan Kararlar eklendi. |

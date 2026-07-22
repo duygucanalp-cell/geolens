@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0004 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
@@ -105,9 +105,17 @@
 
 ## 7. Açık Sorular
 
-| ID | Soru |
-|----|------|
-| O-1 | Aday metrikler (TTFV, aktivasyon) ne zaman resmileşecek? |
+| ID | Soru | Durum |
+|----|------|-------|
+| O-1 | Aday metrikler (TTFV, aktivasyon) ne zaman resmileşecek? | ⏳ AVIP §4 aday metrikler listesi devralındı. Pilot verisiyle resmileşecek. |
+
+### Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|----|-------|--------|
+| **D-79** | **Pilot kiracı profili:** 6-8 kiracı (3 P3 + 2-3 P2 + 1-2 P4). PO 21.07.2026. | AVIP 0004 O-1 |
+| **D-88** | **Örnekleme n=3, sıklık haftalık/günlük** (Free/Pro haftalık, Business/Enterprise günlük). TL 21.07.2026. | AVIP 0004 O-2 |
+| **D-68** | **Uptime SLO:** İlk kurumsal müşteriyle sözleşmesel SLO. MVP'de %99.5 [K] tasarım hedefi. PO 21.07.2026. | AVIP 0004 O-3 |
 
 ---
 
@@ -123,3 +131,4 @@
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: GeoLens başarı metrikleri. North Star (WAT%), M1-M14 kataloğu, K1-K3 korumaları. |
+| 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-79 (pilot profili), D-88 (örnekleme n=3), D-68 (uptime SLO). Devralınan Kararlar eklendi. |

@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0303 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
@@ -191,11 +191,19 @@ Bu doküman, 0302 Domain Model'de tanımlanan varlıkların hangi toplam kökler
 
 ## 7. Açık Sorular
 
-| ID | Soru | Not |
-|----|------|-----|
-| O-1 | Benchmark toplulaştırma modeli: ayrı toplam mı, sorgu görünümü mü? | HT2'de karara bağlanır |
-| O-2 | Öneri-etki takibi (HT1) ayrı toplam mı yoksa Öneri'nin iç varlığı mı? | Mevcut karar: iç varlık (0302 ile uyumlu) |
-| O-3 | ULID'nin indeks performans etkisi (B-tree vs doğal sıralama) | Pilot öncesi test |
+| ID | Soru | Durum |
+|----|------|-------|
+| O-1 | Benchmark toplulaştırma modeli | ⏳ HT2'de karara bağlanır. |
+| O-2 | Öneri-etki takibi ayrı toplam mı? | ⏳ Mevcut karar: iç varlık (0302 ile uyumlu). |
+| O-3 | ULID indeks performansı | ⏳ Pilot öncesi test. AVIP D-35 (ULID) onaylandı. |
+
+### Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|----|-------|--------|
+| **D-74** | **Redis Streams + tüketici grupları.** Liste elendi. TL 21.07.2026, ADR-005. | AVIP 0303 O-1 |
+| **D-54** | **S3 saklama:** 30gün STANDARD → 90gün GLACIER → sil. PO+TL 21.07.2026. | AVIP 0303 O-2 |
+| **D-58** | **KVKK silme:** Kripto-silme + anonimleştirme. PY+TL 21.07.2026. | AVIP 0303 O-3 |
 
 ---
 
@@ -212,3 +220,4 @@ Bu doküman, 0302 Domain Model'de tanımlanan varlıkların hangi toplam kökler
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: 11 toplam kökü haritası, her toplam için detaylı tanım (iç varlıklar, değişmezler, erişim kuralları, durum makineleri), toplamlar arası referans kuralları, transaction kapsamı. 0302'den türetilmiştir. |
+| 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-74 (Redis Streams), D-54 (saklama), D-58 (KVKK silme). Devralınan Kararlar eklendi. |

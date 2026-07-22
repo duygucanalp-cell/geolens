@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 09-devops/ci-cd |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
@@ -86,6 +86,16 @@ graph LR
 
 ---
 
+### Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|----|-------|--------|
+| **D-14** | **CI platformu:** GitHub Actions. TL 21.07.2026. | AVIP 0403 O-1 |
+| **D-76** | **İzolasyon hızlı alt kümesi:** Kritik akışlar — her yüzey için 1-2 negatif senaryo. Tam paket main'de. TL 21.07.2026. | AVIP 0403 O-2 |
+| **D-86** | **Staging yedek/geri dönüş:** DB dump (pg_dump) + imaj geri terfisi. TL 21.07.2026. | AVIP 0403 O-4 |
+| **D-18** | **İmaj imzalama:** V1'de yok, hızlı takipte değerlendirilecek. TL 21.07.2026. | AVIP 0403 O-3 |
+| **D-13** | **İş takip aracı:** GitHub Projects/Issues. TL 21.07.2026. | AVIP 0401 O-1 |
+
 ## Kaynaklar
 
 - 09-devops/docker — Docker konteyner yapısı
@@ -99,3 +109,4 @@ graph LR
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: 7 aşamalı CI pipeline, staging CD, lint kuralları, env yönetimi. |
+| 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-14 (GitHub Actions), D-76 (izolasyon test), D-86 (staging yedek), D-18 (imaj imzalama), D-13 (GitHub Projects). Devralınan Kararlar eklendi. |

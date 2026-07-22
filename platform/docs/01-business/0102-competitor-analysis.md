@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0102 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
@@ -225,11 +225,19 @@ Hiçbir rakibin açık standardı yok. GeoLens Specification (GAVF):
 
 ## 10. Açık Sorular
 
-| ID | Soru | Not |
-|----|------|-----|
-| O-1 | Ön-yüz yakalama yönteminin hukuki ve platform-politikası seyri | PY takibi. Rakip riski bizim konumumuzu güçlendirir, pazar normalleşirse baskı yaratır. |
-| O-2 | Evertune metodolojisi derin incelemesi | Demo/dokümantasyon üzerinden AN incelemesi. Pilot öncesi tamamlanmalı. |
-| O-3 | Mobil bildirim kanalı önceliği (e-posta, Slack, push) | Ajans görüşmelerinde test edilecek. |
+| ID | Soru | Durum |
+|----|------|-------|
+| O-1 | Ön-yüz yakalama yönteminin hukuki seyri | ⏳ PY takibi. AVIP 0102 O-1 ile devralındı. |
+| ~~O-2~~ | ~~Evertune metodolojisi derin incelemesi~~ | ✅ **KAPANDI** (AVIP D-49): AN demo talep edecek, metodolojiyi inceleyecek. Pilot öncesi tamamlanmalı. |
+| O-3 | Mobil bildirim kanalı önceliği | ⏳ Ajans görüşmelerinde test edilecek. |
+
+### Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|----|-------|--------|
+| **D-49** | **Evertune metodolojisi incelemesi:** AN demo talep edecek. Pilot öncesi. AN+TL 21.07.2026. | AVIP 0103 O-2 |
+| **D-26** | **Grafik kütüphaneleri:** Recharts + TanStack Table. TL 21.07.2026. | AVIP 0304 O-3 |
+| **D-38** | **Flutter reeval tetikleyicisi:** Mobil talep ≥%20 veya P1 kurumsal kapısı açıldığında. TL 21.07.2026. | AVIP 0304 O-4 |
 
 ---
 
@@ -249,3 +257,4 @@ Hiçbir rakibin açık standardı yok. GeoLens Specification (GAVF):
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: GeoLens perspektifinden rekabet analizi. Altı rakip profili, yetenek matrisi, yedi boşluklu farklılaşma tezi, mobil kanal durumu, specification avantajı. |
+| 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-49 (Evertune inceleme — O-2 kapandı), D-26 (grafik kütüphaneleri), D-38 (Flutter reeval). Devralınan Kararlar eklendi. |

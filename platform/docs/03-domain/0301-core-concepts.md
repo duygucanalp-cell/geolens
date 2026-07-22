@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0301 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
@@ -180,10 +180,18 @@ Her kavram, ürün yaşam döngüsünde belirli bir olgunluk düzeyine ulaşır:
 
 ## 8. Açık Sorular
 
-| ID | Soru | Not |
-|----|------|-----|
-| O-1 | Görünürlük skoru bileşen ağırlıkları (varlık/konum/kaynak/rakip) pilot öncesi kesinleşmeli mi? | 0309'da kalibrasyon yapılacak. |
-| O-2 | Öneri kanıt derecelerinin (deneysel/korelasyonel/denenebilir) kesin tanımı | 0309 ile birlikte netleşir. |
+| ID | Soru | Durum |
+|----|------|-------|
+| O-1 | Görünürlük skoru bileşen ağırlıkları | ⏳ 0309'da kalibrasyon yapılacak. AVIP D-89: AN hazırlar, TL+PO onaylar. |
+| O-2 | Öneri kanıt derecelerinin kesin tanımı | ⏳ 0309 ile birlikte netleşir. AVIP D-52 (kural kütüphanesi) devralındı. |
+
+### Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|----|-------|--------|
+| **D-53** | **Walking skeleton:** 4 dilimli plan. PO+TL 21.07.2026. | AVIP 0301 O-1 |
+| **D-72** | **Worker profilleri:** V1'de tek replika seti. TL 21.07.2026. | AVIP 0301 O-2 |
+| **D-73** | **Redis kilit kaybı:** Anında pasif. TL 21.07.2026. | AVIP 0301 O-3 |
 
 ---
 
@@ -200,3 +208,4 @@ Her kavram, ürün yaşam döngüsünde belirli bir olgunluk düzeyine ulaşır:
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: GeoLens çekirdek kavramları, 4 katmanlı hiyerarşi, 10 temel kavram tanımı, kavram ilişkileri, olgunluk modeli, FR/NFR bağları. 0204/0207/0102'den türetilmiştir. |
+| 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-53 (walking skeleton), D-72 (worker), D-73 (kilit). Devralınan Kararlar eklendi. |

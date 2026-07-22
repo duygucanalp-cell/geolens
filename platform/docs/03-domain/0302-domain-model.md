@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0302 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
@@ -183,11 +183,18 @@ Model, 0006 sözlüğündeki yerleşik terimleri aynen kullanır. Aşağıdaki t
 
 ## 10. Açık Sorular
 
-| ID | Soru | Not |
-|----|------|-----|
-| O-1 | Benchmark varlığının anonimleştirme modeli | NFR-13; HT2 öncesi netleşir |
-| O-2 | Öneri-etki takibi varlık modeli (HT1) | FR-E4 ile birlikte |
-| O-3 | ULID'nin birincil anahtar olarak indeks performans etkisi | 0303 ile değerlendirilecek |
+| ID | Soru | Durum |
+|----|------|-------|
+| O-1 | Benchmark varlığının anonimleştirme modeli | ⏳ HT2 öncesi netleşir. AVIP D-60 (≥5 kiracı eşiği) devralındı. |
+| O-2 | Öneri-etki takibi varlık modeli (HT1) | ⏳ FR-E4 ile birlikte. |
+| O-3 | ULID'nin indeks performans etkisi | ⏳ Pilot öncesi test. AVIP D-35 (ULID kararı) onaylandı. |
+
+### Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|----|-------|--------|
+| **D-35** | **ULID kimlik stratejisi:** 26 karakter, zaman-sıralanabilir. TL 21.07.2026. | AVIP 0302 O-2 |
+| **D-34** | **Panel versiyon trend sınırı:** Dikey kesik çizgi + hover. TL 21.07.2026. | AVIP 0302 O-4 |
 
 ---
 
@@ -204,3 +211,4 @@ Model, 0006 sözlüğündeki yerleşik terimleri aynen kullanır. Aşağıdaki t
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: 6 bağlamlı harita, 30+ çekirdek varlık, panel versiyonlama modeli (2 versiyon ekseni), 11 değişmez, 7 durum makinesi, sözlük hizası. 0301'den türetilmiştir. |
+| 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-35 (ULID), D-34 (trend sınırı). Devralınan Kararlar eklendi. |

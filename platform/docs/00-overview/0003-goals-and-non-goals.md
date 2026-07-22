@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0003 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
@@ -61,9 +61,16 @@
 
 ## 5. Açık Sorular
 
-| ID | Soru |
-|----|------|
-| O-1 | G9 için başarı metriği ne olmalı? (GAVF adoptasyonu) |
+| ID | Soru | Durum |
+|----|------|-------|
+| ~~O-1~~ | ~~G9 için başarı metriği ne olmalı?~~ | ✅ **KAPANDI**: G9 platform ufkundadır. AVIP D-80 (MVP motorlar) ve D-79 (pilot profili) referans alınarak, metriği 0206 roadmap ile birlikte tanımlanacaktır. |
+
+### Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|----|-------|--------|
+| **D-79** | **Pilot profili:** 6-8 kiracı (3 P3 + 2-3 P2 + 1-2 P4). PO 21.07.2026. | AVIP 0003 O-1 |
+| **D-80** | **MVP motor kapsamı:** ChatGPT (direct) + Gemini (official_proxy) + Perplexity (Sonar API). Claude+Grok HT1'de. PO 21.07.2026. | AVIP 0003 O-2 |
 
 ---
 
@@ -79,3 +86,4 @@
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: GeoLens hedefleri. G1-G9, NG1-NG10, V1/Platform ufuk ayrımı. |
+| 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-79 (pilot profili), D-80 (MVP motor kapsamı). O-1 kapandı. Devralınan Kararlar eklendi. |

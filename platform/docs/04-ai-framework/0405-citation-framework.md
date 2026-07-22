@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0405 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
@@ -46,7 +46,7 @@ Bu doküman, AI motor yanıtlarından alıntıların nasıl çıkarılacağını
 | Kural | Açıklama |
 |:----:|----------|
 | URL geçerlilik | Tüm URL'ler http/https şemasıyla başlamalıdır |
-| Domain çözümleme | Yönlendirme zinciri son hedefe kadar çözümlenir (0308 O-2) |
+| Domain çözümleme | Yönlendirme zinciri son hedefe kadar çözümlenir (D-39) |
 | Yinelenen filtre | Aynı yanıtta aynı URL birden fazla kaydedilmez |
 | Boş kaynak işareti | Alıntı listesi boşsa `no_citations` bayrağı işaretlenir |
 
@@ -65,6 +65,14 @@ Alıntıdaki domain, markanın tanımlı alan adlarıyla eşleştirilir:
 
 ---
 
+## 6. Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|:--:|-------|:------:|
+| D-39 | Gemini URI çözümleme: yönlendirme zinciri son hedefe kadar çözümlenir. Gemini bağdaştırıcısı URI çözümleme ve yönlendirme takibi yapar. | AVIP 0308 O-2 (TL 21.07.2026) |
+
+---
+
 ## Kaynaklar
 
 - 0308 AI Connectors — alıntı çıkarımı, tier_label
@@ -77,3 +85,4 @@ Alıntıdaki domain, markanın tanımlı alan adlarıyla eşleştirilir:
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: alıntı türleri, şema, doğrulama kuralları, marka eşleme. |
+| 1.1 | 23.07.2026 | Eski AVIP referansı düzeltildi (0308 O-2 → D-39). Devralınan AVIP Kararları eklendi: D-39 (URI çözümleme). |

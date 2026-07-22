@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 08-ui/design-system |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
@@ -101,6 +101,16 @@ Bu doküman GeoLens Platform tasarım sistemini tanımlar. Renk paleti, tipograf
 
 ---
 
+## 7. Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|:--:|-------|:------:|
+| D-26 | Grafik/ızgara kütüphaneleri: Recharts + TanStack Table. GA bant görselleştirme ve kırılım tabloları için. | AVIP 0304 O-3 (TL 21.07.2026) |
+| D-38 | Mobil talep eşiği: kullanıcıların ≥%20'si mobil talep ettiğinde veya P1 kurumsal kapısı açıldığında Flutter yeniden değerlendirilir. | AVIP 0304 O-4 (TL 21.07.2026) |
+| D-81 | Sentiment (bağlam değerlendirmesi) V1 kapsamı dışı. Terim platform ufku notuyla sözlükte kalır. | AVIP 0005 O-2 (PO 21.07.2026) |
+
+---
+
 ## Kaynaklar
 
 - 08-ui/dashboard — pano tasarımı
@@ -114,3 +124,4 @@ Bu doküman GeoLens Platform tasarım sistemini tanımlar. Renk paleti, tipograf
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: 5 tasarım ilkesi, renk paleti, tipografi, bileşen kütüphanesi, React hiyerarşisi. |
+| 1.1 | 23.07.2026 | Devralınan AVIP Kararları eklendi: D-26 (Recharts+TanStack Table), D-38 (Flutter reeval), D-81 (Sentiment V1 dışı). |

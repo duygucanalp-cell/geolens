@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 08-ui/onboarding |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
@@ -72,6 +72,16 @@ Kayıt → E-posta Doğrulama → [İlk Giriş] → Kurulum Sihirbazı → İlk 
 
 ---
 
+## 6. Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|:--:|-------|:------:|
+| D-07 | Free kayıt politikası: sürtünmesiz kayıt — e-posta + şifre yeterli, ödeme bilgisi istenmez. | AVIP 0201 O-2 (PO 21.07.2026) |
+| D-11 | İlk değer eşikleri [K]: adım 4 (site denetimi) < 30 saniye, adım 6 (ilk skor) < 24 saat. Pilot verisiyle kalibre edilir. | AVIP 0202 O-1 (TL 21.07.2026) |
+| D-79 | Pilot profili: 6-8 kiracı (3 P3 ajans + 2-3 P2 KOBİ + 1-2 P4 self-serve). | AVIP 0205 O-3 (PO 21.07.2026) |
+
+---
+
 ## Kaynaklar
 
 - 08-ui/design-system — bileşen kullanımı
@@ -85,3 +95,4 @@ Kayıt → E-posta Doğrulama → [İlk Giriş] → Kurulum Sihirbazı → İlk 
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: onboarding adımları, kurulum sihirbazı, Free→Pro geçişi, başarı metrikleri. |
+| 1.1 | 23.07.2026 | Devralınan AVIP Kararları eklendi: D-07 (self-serve kayıt), D-11 (ilk değer eşikleri), D-79 (pilot profili). |

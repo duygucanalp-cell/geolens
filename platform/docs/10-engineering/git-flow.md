@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 10-engineering/git-flow |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
@@ -87,6 +87,25 @@ feature ────●──●───────●──●─────
 | **tag** | vX.Y.Z tag'i main'de |
 | **deploy** | CI/CD → production |
 
+### Release Takvimi
+
+| Olay | Gün | Açıklama |
+|:----:|:---:|----------|
+| **Tren günü** | Cuma | Staging'e doğrulama sürümü. Haftasonu hata ayıklama. (AVIP D-77) |
+| **Terfi** | Pazartesi | Production'a yükseltme. Staging'de doğrulanmış sürüm. (AVIP D-77) |
+| **Dondurma** | Kapı haftaları + yılbaşı (2 hafta) | Bu haftalarda yalnızca PATCH sürümleri. (AVIP D-57) |
+
+---
+
+### Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|----|-------|--------|
+| **D-77** | **Tren günü:** Cuma tren / Pazartesi terfi. TL 21.07.2026. | AVIP 0406 O-2 |
+| **D-57** | **Dondurma pencereleri:** Kapı değerlendirme haftaları + yılbaşı (2 hafta). PO+TL 21.07.2026. | AVIP 0406 O-4 |
+| **D-82** | **1.0.0 = GA:** Pilot çıkış kapısı sonrası. Pilot dönemi 0.x. PO 21.07.2026. | AVIP 0406 O-1 |
+| **D-17** | **Hotfix sınırları:** Migration ve güvenlik PR'ları hotfix yolundan geçemez. TL 21.07.2026. | AVIP 0401 O-4 |
+
 ---
 
 ## Kaynaklar
@@ -101,3 +120,4 @@ feature ────●──●───────●──●─────
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: branch modeli, commit kuralları, PR süreci, release süreci. |
+| 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-77 (tren günü), D-57 (dondurma), D-82 (1.0.0=GA), D-17 (hotfix). Release takvimi eklendi. Devralınan Kararlar eklendi. |

@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0104 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
@@ -72,10 +72,18 @@ GeoLens **dört kademeli SaaS** modeliyle çalışır:
 
 ## 6. Açık Sorular
 
-| ID | Soru |
-|----|------|
-| O-1 | Free kademe prompt kotası ne olmalı? |
-| O-2 | Business pakette koltuk başına mı, müşteri başına mı fiyatlandırma? |
+| ID | Soru | Durum |
+|----|------|-------|
+| O-1 | Free kademe prompt kotası | ⏳ Pilot deneyiyle belirlenecek. AVIP D-07 ile self-serve kayıt politikası devralındı. |
+| O-2 | Business paket fiyatlandırma modeli | ⏳ Pilot deneyiyle belirlenecek. |
+
+### Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|----|-------|--------|
+| **D-07** | **Self-serve kayıt:** Sürtünmesiz (ödeme bilgisi istenmez). V1 MVP'de açık. PO 21.07.2026. | AVIP 0201 O-2 |
+| **D-50** | **Analist raporu:** Şimdilik satın alınmayacak. Pilot sonrası değerlendirilecek. PO 21.07.2026. | AVIP 0105 O-1 |
+| **D-16** | **E-posta sağlayıcısı:** SendGrid. TL 21.07.2026. | AVIP 0304 O-2 |
 
 ---
 
@@ -90,3 +98,4 @@ GeoLens **dört kademeli SaaS** modeliyle çalışır:
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: GeoLens iş modeli. 4 kademeli SaaS, birim ekonomisi, 12. ay gelir projeksiyonu. |
+| 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-07 (self-serve kayıt), D-50 (analist raporu), D-16 (SendGrid). Devralınan Kararlar eklendi. |

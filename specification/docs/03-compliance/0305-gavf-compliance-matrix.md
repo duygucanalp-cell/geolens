@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0305 |
 | Proje | GeoLens Specification + Platform |
-| Versiyon | 1.0.0 |
+| Versiyon | 1.0.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
@@ -189,10 +189,19 @@ Aşağıdaki tablo, platformdaki **her Çekirdek FR'yi** hangi GAVF gereksinimin
 
 ## 10. Açık Sorular
 
-| ID | Soru | Not |
-|----|------|-----|
-| O-1 | S4 bileşenleri HT1'de Tam seviyeye ulaştığında bağımsız denetim ne zaman başlamalı? | Muhtemelen HT2 başında, pilot geri bildirimine bağlı. |
-| O-2 | İleri seviye için "bağımsız doğrulama" gerekip gerekmediği (Specification'da öz değerlendirme olarak tanımlanmış) | Pilot deneyimi sonrası netleşecek. |
+| ID | Soru | Durum |
+|----|------|-------|
+| O-1 | S4 bileşenleri HT1'de Tam'a ulaştığında bağımsız denetim ne zaman başlamalı? | ⏳ HT2 başı. AVIP D-45 (SOC 2 ilk kurumsal müşteriyle) ile uyumlu. |
+| O-2 | İleri seviye için bağımsız doğrulama gerekli mi? | ⏳ Pilot sonrası netleşecek. AVIP D-47 (sızma testi Dilim 4) referans. |
+
+### Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|----|-------|--------|
+| **D-45** | **SOC 2:** İlk kurumsal müşteriyle başlar. MVP'de güvenlik-ilk yeterli. PO 21.07.2026. | AVIP 0104 O-2 |
+| **D-47** | **Sızma testi:** Dilim 4'te yapılır (pilot kapısından bağımsız). PO 21.07.2026. | AVIP 0310 O-4 |
+| **D-90** | **Sızma testi kapsamı:** Dış yüzeyler + izolasyon. Tedarik Dilim 3, uygulama Dilim 4. PO+TL 21.07.2026. | AVIP 0405 O-3 |
+| **D-82** | **1.0.0 = GA:** Pilot çıkış kapısı sonrası. PO 21.07.2026. | AVIP 0406 O-1 |
 
 ---
 
@@ -210,3 +219,4 @@ Aşağıdaki tablo, platformdaki **her Çekirdek FR'yi** hangi GAVF gereksinimin
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0.0 | 22.07.2026 | İlk yayın: Platform-Specification uyumluluk matrisi. GAVF ilkeleri → FR/NFR eşlemesi, katman-doküman haritası, 4 seviyeli karşılama durumu, geçiş yolu. |
+| 1.0.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-45 (SOC 2), D-47 (sızma testi), D-90 (sızma kapsamı), D-82 (GA tanımı). Devralınan Kararlar eklendi. |

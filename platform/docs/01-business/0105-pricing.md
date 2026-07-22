@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0105 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
@@ -72,10 +72,17 @@ GeoLens paketlerinin fiyatlandırma stratejisini ve kademe yapısını tanımlar
 
 ## 6. Açık Sorular
 
-| ID | Soru |
-|----|------|
-| O-1 | TR pazarı için indirimli fiyatlandırma uygulanmalı mı? |
-| O-2 | Yıllık ödemede %20 indirim standardı uygun mu? |
+| ID | Soru | Durum |
+|----|------|-------|
+| O-1 | TR pazarı için indirimli fiyatlandırma | ⏳ Pilot verisiyle belirlenecek. AVIP D-04/D-87 (TR-first strateji) referans alındı. |
+| O-2 | Yıllık ödemede %20 indirim | ⏳ Pilot verisiyle kalibre edilecek. |
+
+### Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|----|-------|--------|
+| **D-16** | **E-posta sağlayıcısı:** SendGrid. TL 21.07.2026. | AVIP 0304 O-2 |
+| **D-82** | **1.0.0 = GA.** Pilot sonrası ticari açılış. Pilot dönemi 0.x. PO 21.07.2026. | AVIP 0406 O-1 |
 
 ---
 
@@ -90,3 +97,4 @@ GeoLens paketlerinin fiyatlandırma stratejisini ve kademe yapısını tanımlar
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: GeoLens fiyatlandırma. 4 kademeli paket, rekabetçi konumlandırma. Pilotla kalibre edilecek başlangıç hipotezleri. |
+| 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-16 (SendGrid), D-82 (1.0.0 = GA). Devralınan Kararlar eklendi. |

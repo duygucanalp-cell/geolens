@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 09-devops/docker |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
@@ -124,6 +124,14 @@ volumes:
 
 ---
 
+### Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|----|-------|--------|
+| **D-85** | **VM sağlayıcı stratejisi:** Küresel bulut TR bölge (self-host VM + yönetilen PG/KMS). TL 21.07.2026. | AVIP 0402 O-1 |
+| **D-19** | **RTO/RPO hedefleri:** RPO 1 saat, RTO 8 saat. PO+TL 21.07.2026. | AVIP 0402 O-3 |
+| **D-16** | **E-posta sağlayıcısı:** SendGrid (Docker Compose dışı — API tabanlı). TL 21.07.2026. | AVIP 0402 O-2 |
+
 ## Kaynaklar
 
 - 0510 Deployment — dağıtım mimarisi
@@ -136,3 +144,4 @@ volumes:
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: Dockerfile yapısı (backend/frontend), Docker Compose dev ortamı, çok aşamalı derleme. |
+| 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-85 (VM stratejisi), D-19 (RTO/RPO), D-16 (SendGrid). Devralınan Kararlar eklendi. |

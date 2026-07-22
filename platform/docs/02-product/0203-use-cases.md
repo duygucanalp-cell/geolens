@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0203 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.2 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
@@ -348,10 +348,19 @@ UC-XX: [Başlık]
 
 ## 9. Açık Sorular
 
-| ID | Soru | Not |
-|----|------|-----|
-| O-1 | Benchmark kıyas verisinin gizlilik sınırları | Anonim toplulaştırma kuralları. Kiracı verisi asla çapraz sızmaz. |
-| O-2 | UC-10 white-label rapor şablonu özelleştirme derecesi | MVP'de logo + renk yeterli mi, yoksa tam markalı domain mi gerekli? |
+| ID | Soru | Durum |
+|----|------|-------|
+| O-1 | Benchmark kıyas verisinin gizlilik sınırları | ⏳ AVIP D-60: ≥5 kiracı eşiği devralındı. |
+| O-2 | UC-10 white-label rapor şablonu özelleştirme derecesi | ⏳ MVP'de logo+renk yeterli. Tam domain özelleştirmesi HT1'de. |
+
+### Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|----|-------|--------|
+| **D-08** | **Benchmark (UC-12) MVP dışı, HT2'ye bırakıldı.** PO 21.07.2026. | AVIP 0203 O-1 |
+| **D-24** | **Self-serve ödeme (UC-26):** HT2 — genel açılışla. Pilotta arka ofis. PO 21.07.2026. | AVIP 0203 O-2 |
+| **D-09** | **Rol modeli:** Yönetici+üye yeterli. İzleyici MVP dışı. PO 21.07.2026. | AVIP 0203 O-3 |
+| **D-10** | **API kapsamı (UC-21):** Okuma-yalnız başlar. Yazma HT1'de. PO 21.07.2026. | AVIP 0203 O-4 |
 
 ---
 
@@ -368,3 +377,4 @@ UC-XX: [Başlık]
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: GeoLens Platform kullanım senaryoları. P3 (ajans) ve P2 (KOBİ) odaklı. 21 UC tanımı (UC-01–UC-21), 7 UC'lik ortak omurga, 9 P3 senaryosu, 5 P2 senaryosu. MVP/MVP+/V2 sınıflandırması. |
 | 1.1 | 22.07.2026 | Tutarlılık düzeltmesi: changelog'daki UC sayısı 20'den 21'e güncellendi (tabloyla uyum). |
+| 1.2 | 22.07.2026 | AVIP kapalı kararları taşındı: D-08 (benchmark HT2), D-24 (self-serve ödeme HT2), D-09 (rol modeli), D-10 (API okuma-yalnız). Devralınan Kararlar eklendi. |

@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0304 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
@@ -177,11 +177,18 @@ Tüm olaylar aşağıdaki ortak alanları taşır:
 
 ## 8. Açık Sorular
 
-| ID | Soru | Not |
-|----|------|-----|
-| O-1 | Per-brand partitioning MVP'de gerekli mi? | MVP'de hayır; sıra garantisi yok. HT1'de değerlendirilir. |
-| O-2 | Olay şeması versiyonlama stratejisi (backward-compatible değişiklikler) | 0307 ile birlikte; öneri: yeni alan ekleme → versiyon yükseltme |
-| O-3 | Benchmark olayları (HT2) şimdiden tanımlanmalı mı? | Hayır; HT2 penceresinde eklenir |
+| ID | Soru | Durum |
+|----|------|-------|
+| O-1 | Per-brand partitioning MVP'de gerekli mi? | ⏳ MVP'de hayır; HT1'de değerlendirilir. |
+| O-2 | Olay şeması versiyonlama stratejisi | ⏳ 0307 ile birlikte netleşir. |
+| O-3 | Benchmark olayları (HT2) şimdiden tanımlanmalı mı? | ⏳ Hayır; HT2'de eklenir. |
+
+### Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|----|-------|--------|
+| **D-74** | **Redis Streams + tüketici grupları** — olay taşıma altyapısı. TL 21.07.2026. | AVIP 0303 O-1 |
+| **D-75** | **DLQ yeniden oynatma:** Sistem otomatik + manuel override. Audit_log kaydı zorunlu. TL 21.07.2026. | AVIP 0307 O-4 |
 
 ---
 
@@ -198,3 +205,4 @@ Tüm olaylar aşağıdaki ortak alanları taşır:
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: 21 alan olayı, olay şablonu, outbox pattern, olay fırtınası çıktıları (ölçüm hattı, haftalık özet, kota), tüketim garantileri. 0302/0303'ten türetilmiştir. |
+| 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-74 (Redis Streams), D-75 (DLQ). Devralınan Kararlar eklendi. |

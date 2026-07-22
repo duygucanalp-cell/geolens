@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0006 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
@@ -89,9 +89,9 @@ Doküman setinde ve üründe kullanılan terimlerin tek doğruluk kaynağı. Ama
 
 ## 6. Açık Sorular
 
-| ID | Soru |
-|----|------|
-| O-1 | Yeni terim ekleme süreci. |
+| ID | Soru | Durum |
+|----|------|-------|
+| O-1 | Yeni terim ekleme süreci | ⏳ AVIP 0005 §2 kullanım kuralları devralındı: yeni terim 0007 karar süreciyle eklenir, tüm dokümanlarda tarama gerekir. |
 
 ---
 
@@ -104,3 +104,4 @@ Doküman setinde ve üründe kullanılan terimlerin tek doğruluk kaynağı. Ama
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: GeoLens sözlüğü. Alan, ürün, teknik ve süreç terimleri. |
+| 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: terim ekleme süreci AVIP 0005'ten devralındı. |

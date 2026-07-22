@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0605 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
@@ -64,6 +64,17 @@ Bu doküman GeoLens Platform veri saklama politikalarını tanımlar: saklama s�
 
 ---
 
+## 6. Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|:--:|-------|:------:|
+| D-54 | Saklama süreleri: ham veri 30gün STANDARD → 90gün GLACIER → sil. Bu doküman §2 ile birebir uyumlu. | AVIP 0303 O-2 (TL+PO 21.07.2026) |
+| D-62 | Saklama politikası: D-54 ile uyumlu; rapor PDF'leri 1 yıl saklanır. Bu doküman §2'de embed. | AVIP 0204 O-4 (TL+PO 21.07.2026) |
+| D-58 | KVKK silme prosedürü: kripto-silme (zarf anahtarı imhası). Bu doküman §4'te embed. | AVIP 0303 O-3 (TL 21.07.2026) |
+| D-55 | Telafi/özet mekanizması: ham yanıt silindikten sonra özet metin korunur. Bu doküman kapsamında geçerlidir. | AVIP 0307 O-1 (TL 21.07.2026) |
+
+---
+
 ## Kaynaklar
 
 - 0601 Data Model — veri kategorileri
@@ -77,3 +88,4 @@ Bu doküman GeoLens Platform veri saklama politikalarını tanımlar: saklama s�
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: saklama süreleri, S3 sınıf geçişi, KVKK prosedürü, otomatik temizleme. |
+| 1.1 | 23.07.2026 | Devralınan AVIP Kararları eklendi: D-54 (saklama süreleri), D-62 (saklama politikası), D-58 (KVKK silme), D-55 (telafi/özet). |

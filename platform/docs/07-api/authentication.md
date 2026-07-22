@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 07-api/authentication |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
@@ -88,6 +88,17 @@ Dış okuma API'si (FR-F6) için kiracı başına API anahtarları:
 
 ---
 
+## 7. Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|:--:|-------|:------:|
+| D-27 | MFA (çok faktörlü kimlik doğrulama): HT1'de yönetici rolü için zorunlu. MVP'de MFA yok (authentication.md §2 ile uyumlu). | AVIP 0310 O-1 (TL 21.07.2026) |
+| D-28 | Oturum süreleri: mutlak 7 gün, kayan 2 saat. Bu doküman §3 ile birebir uyumlu. | AVIP 0310 O-2 (TL 21.07.2026) |
+| D-29 | Üyelik erişim kapsamı: çalışma alanı düzeyinde rol tabanlı erişim. RBAC modeli authentication.md'de embed. | AVIP 0302 O-1 (TL 21.07.2026) |
+| D-83 | Derin bağlantı token ömrü [K]: 7 gün + tek kullanım. Oturum token'ları için de geçerli süre sınırı. | AVIP 0306 O-2 (TL 21.07.2026) |
+
+---
+
 ## Kaynaklar
 
 - 07-api/rest-api — auth uçları
@@ -100,3 +111,4 @@ Dış okuma API'si (FR-F6) için kiracı başına API anahtarları:
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: auth yöntemleri, oturum yönetimi, CSRF, API anahtarları, parola politikası. |
+| 1.1 | 23.07.2026 | Devralınan AVIP Kararları eklendi: D-27 (MFA), D-28 (oturum süreleri), D-29 (üyelik erişim), D-83 (token ömrü). |

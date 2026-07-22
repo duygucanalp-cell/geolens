@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0306 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
@@ -251,11 +251,20 @@ AlertEvaluationService
 
 ## 7. Açık Sorular
 
-| ID | Soru | Not |
-|----|------|-----|
-| O-1 | BenchmarkAggregationService anonimleştirme yöntemi | HT2'de karara bağlanır; NFR-13 |
-| O-2 | StatisticalSignificanceTest eşik değerleri (p değeri, minimum örneklem) | 0309 ile kalibre edilecek |
-| O-3 | Öneri-etki takibi için ayrı bir hizmet mi, RecommendationService'e mi ek? | Ön hipotez: RecommendationService'e ek (HT1) |
+| ID | Soru | Durum |
+|----|------|-------|
+| O-1 | BenchmarkAggregationService anonimleştirme yöntemi | ⏳ HT2'de karara bağlanır; NFR-13. |
+| O-2 | StatisticalSignificanceTest eşik değerleri | ⏳ 0309 ile kalibre edilecek. AVIP D-31 (anlamlılık eşikleri) devralındı. |
+| O-3 | Öneri-etki takibi hizmet modeli | ⏳ Ön hipotez: RecommendationService'e ek (HT1). |
+
+### Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|----|-------|--------|
+| **D-36** | **Çalışma alanı path modeli:** /v1/workspaces/(ws)/... TL 21.07.2026. | AVIP 0306 O-1 |
+| **D-83** | **Derin bağlantı token ömrü:** 7 gün + tek kullanım. TL 21.07.2026. | AVIP 0306 O-2 |
+| **D-37** | **OpenAPI üreteç:** oapi-codegen. TL 21.07.2026. | AVIP 0306 O-4 |
+| **D-31** | **Anlamlılık eşikleri:** Mutlak fark ≥5 puan, %95 GA. TL 21.07.2026. | AVIP 0309 O-1 |
 
 ---
 

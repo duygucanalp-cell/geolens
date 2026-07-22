@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 08-ui/navigation |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
@@ -81,7 +81,16 @@ E-posta özetlerinden gelen imzalı bağlantılar:
 | `/l/{token}` → Öneri | `/w/{ws}/recommendations/{id}` | 7 gün |
 | `/l/{token}` → Rapor | `/w/{ws}/reports/{id}` | 7 gün |
 
-> Derin bağlantı token'ları tek kullanımlık ve kısa ömürlüdür (0306 O-2).
+> Derin bağlantı token'ları tek kullanımlık ve kısa ömürlüdür (D-83).
+
+---
+
+## 6. Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|:--:|-------|:------:|
+| D-83 | Derin bağlantı token ömrü [K]: 7 gün + tek kullanım. Haftalık özet döngüsüyle uyumlu. Pilotta kalibre edilecek. | AVIP 0306 O-2 (TL 21.07.2026) |
+| D-36 | Path modeli: /v1/workspaces/{ws}/... — çalışma alanı bazlı URL yapısı onaylandı. | AVIP 0306 O-1 (TL 21.07.2026) |
 
 ---
 
@@ -98,3 +107,4 @@ E-posta özetlerinden gelen imzalı bağlantılar:
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: navigasyon yapısı, sayfa hiyerarşisi, çalışma alanı geçişi, derin bağlantılar. |
+| 1.1 | 23.07.2026 | D-83 referansı düzeltildi (0306 O-2 → D-83). Devralınan AVIP Kararları eklendi: D-83 (token ömrü), D-36 (path modeli). |

@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 07-api/rest-api |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
@@ -136,6 +136,15 @@ Durumlar: `queued`, `running`, `completed`, `partial`, `failed`
 
 ---
 
+### Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|----|-------|--------|
+| **D-36** | **Path modeli:** `/v1/workspaces/(ws)/...`. TL 21.07.2026. | AVIP 0306 O-1 |
+| **D-37** | **OpenAPI üreteç:** oapi-codegen. TL 21.07.2026. | AVIP 0306 O-4 |
+| **D-83** | **Derin bağlantı token ömrü:** 7 gün + tek kullanım. TL 21.07.2026. | AVIP 0306 O-2 |
+| **D-35** | **ULID kimlik stratejisi:** 26 karakter, zaman-sıralanabilir. TL 21.07.2026. | AVIP 0302 O-2 |
+
 ## Kaynaklar
 
 - 0504 API Architecture — API tasarım standartları
@@ -149,3 +158,4 @@ Durumlar: `queued`, `running`, `completed`, `partial`, `failed`
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: REST API sözleşmesi, 30+ uç, eşzamansız desen, hata formatı. |
+| 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-36 (path), D-37 (oapi-codegen), D-83 (token ömrü), D-35 (ULID). Devralınan Kararlar eklendi. |

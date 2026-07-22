@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0002 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
@@ -82,9 +82,16 @@ Kullanıcı davranışı, sorulara yanıt aramanın birincil yüzeyini değişti
 
 ## 7. Açık Sorular
 
-| ID | Soru | Not |
-|----|------|-----|
-| O-1 | Hipotez doğrulama zamanlaması | Pilotla birlikte test edilecek. |
+| ID | Soru | Durum |
+|----|------|-------|
+| O-1 | Hipotez doğrulama zamanlaması | ⏳ Pilotla birlikte test edilecek. AVIP §8 planı devralındı (H1-H5 doğrulama yöntemleri). |
+
+### Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|----|-------|--------|
+| **D-04** | **Segment önceliği:** P3 (ajans) + P2 (KOBİ). PO 21.07.2026. | AVIP 0002 O-1 |
+| **D-87** | **Coğrafi odak:** TR+EN paralel GTM. TR-first, baştan iki dilde. PO 21.07.2026. | AVIP 0002 O-2 |
 
 ---
 
@@ -99,3 +106,4 @@ Kullanıcı davranışı, sorulara yanıt aramanın birincil yüzeyini değişti
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: GeoLens problem bildirimi. P1-P3 boşlukları, aktör haritası, H1-H5 hipotezleri. |
+| 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-04 (segment önceliği), D-87 (coğrafi odak). Devralınan Kararlar bölümü eklendi. |

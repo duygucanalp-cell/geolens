@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0206 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.2 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
@@ -181,10 +181,19 @@ Tüm detaylar (olay-matrisi, CI/CD entegrasyonu, geçiş senaryoları) için:
 
 ## 13. Açık Sorular
 
-| ID | Soru | Not |
-|----|------|-----|
-| O-1 | Yerel mobil uygulama değerlendirme kriterleri | Responsive web etkileşim verisiyle; ADR kararı. |
-| O-2 | EN pazar açılımı tetikleyici eşikleri | PMF sinyali bileşik: TR'de M2 ve M1 hedefleri + gelen talep. |
+| ID | Soru | Durum |
+|----|------|-------|
+| O-1 | Yerel mobil uygulama değerlendirme kriterleri | ✅ **KAPANDI** (AVIP D-38): Mobil talep ≥%20 veya P1 kurumsal kapısı açıldığında yeniden değerlendirilir. |
+| O-2 | EN pazar açılımı tetikleyici eşikleri | ✅ **KAPANDI** (AVIP D-70): PMF sinyali bileşik — TR'de M2≥%80 + M1≥%60 + talep eşiği. |
+
+### Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|----|-------|--------|
+| **D-69** | **Kurumsal kapı tarihçe eşiği:** 12 ay (hipotez). Pilotta kalibre. PO 21.07.2026. | AVIP 0206 O-1 |
+| **D-70** | **EN açılım tetikleyicisi:** PMF sinyali bileşik. PO 21.07.2026. | AVIP 0206 O-3 |
+| **D-38** | **Flutter reeval tetikleyicisi:** Mobil talep ≥%20 veya P1 kurumsal kapısı. TL 21.07.2026. | AVIP 0304 O-4 |
+| **D-63** | **v1.1 düzeltme turu:** Faz 4 öncesi tek geçiş. PO 21.07.2026. | AVIP 0206 O-4 |
 
 ---
 
@@ -202,3 +211,4 @@ Tüm detaylar (olay-matrisi, CI/CD entegrasyonu, geçiş senaryoları) için:
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: GeoLens Platform post-MVP yol haritası. 5 yol haritası ilkesi, 4 pencereli tetikleyici modeli, HT1/HT2/kurumsal/ufuk kalemleri, risk senaryoları. Faz 2 kapanışı. |
 | 1.1 | 22.07.2026 | §12 GAVF Specification versiyon senkronizasyonu eklendi: her platform penceresi için GAVF versiyon eşlemesi, 5 senkronizasyon kuralı (SK-1–SK-5), release notu formatı. İlişkili alanına specification sync plan referansı eklendi. |
+| 1.2 | 22.07.2026 | AVIP kapalı kararları taşındı: D-38 (mobil reeval — O-1 kapandı), D-70 (EN tetikleyici — O-2 kapandı), D-69 (tarihçe eşiği), D-63 (v1.1 turu). Devralınan Kararlar eklendi. |

@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 08-ui/dashboard |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
@@ -79,6 +79,16 @@ Bu doküman GeoLens Platform ana pano (dashboard) tasarımını tanımlar. Pano,
 
 ---
 
+## 6. Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|:--:|-------|:------:|
+| D-59 | Performans eşikleri [K]: pano <5 sn (p50), API <1 sn, ölçüm <60 sn. Pilotta kalibre edilecek. | AVIP 0204 O-1 (TL 21.07.2026) |
+| D-26 | Grafik kütüphaneleri: Recharts + TanStack Table. GA bant görselleştirme ve kırılım tabloları için. | AVIP 0304 O-3 (TL 21.07.2026) |
+| D-61 | Okuma-yalnız API: skor, trend, alıntı, rapor meta uçları. /public/v1 öneki, API anahtarı ile. | AVIP 0204 O-3 (TL 21.07.2026) |
+
+---
+
 ## Kaynaklar
 
 - 08-ui/design-system — renk, tipografi, bileşenler
@@ -93,3 +103,4 @@ Bu doküman GeoLens Platform ana pano (dashboard) tasarımını tanımlar. Pano,
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: pano düzeni, özet kartları, aksiyonlar, performans hedefleri. |
+| 1.1 | 23.07.2026 | Devralınan AVIP Kararları eklendi: D-59 (perf eşikleri), D-26 (Recharts), D-61 (okuma API). |

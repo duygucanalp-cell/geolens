@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0005 |
 | Proje | GeoLens Platform + Specification |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
@@ -217,11 +217,21 @@ Platform v1.1.0 (yeni motor, düzeltmeler)
 
 ## 10. Açık Sorular
 
-| ID | Soru | Not |
-|:--:|------|-----|
-| O-1 | Specification'daki "path" değişiklikleri (doküman içi düzeltmeler) platform patch sürümü gerektirir mi? | Öneri: Hayır, yalnızca major/minor spec değişiklikleri platform sürümünü etkiler. |
-| O-2 | Platform hotfix bir GAVF ilkesini (ör. G3 fidelite etiketi) ihlal eder mi? | İhlal ederse spec major/minor değişikliği değil, platform acil düzeltmesi gerekir. |
-| O-3 | Specification'ın RFC sürecinde platform hangi ortamda test etmeli? | Öneri: staging ortamı, üretim değil. |
+| ID | Soru | Durum |
+|:--:|------|-------|
+| O-1 | Spec patch değişiklikleri platform patch sürümü gerektirir mi? | ⏳ Öneri: Hayır, yalnızca major/minor spec değişiklikleri. AVIP D-82 (1.0.0=GA) ile uyumlu. |
+| O-2 | Platform hotfix GAVF ilkesini ihlal eder mi? | ⏳ İhlal ederse platform acil düzeltmesi gerekir. AVIP D-17 (hotfix migration/güvenlik PR'ları geçemez) devralındı. |
+| O-3 | RFC sürecinde platform hangi ortamda test etmeli? | ⏳ Öneri: staging. AVIP D-86 (pg_dump + imaj geri terfisi) ile uyumlu. |
+
+### Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|----|-------|--------|
+| **D-82** | **1.0.0 = GA:** Pilot çıkış kapısı sonrası. Pilot dönemi 0.x. PO 21.07.2026. | AVIP 0406 O-1 |
+| **D-17** | **Hotfix sınırları:** Migration ve güvenlik etiketli PR'lar hotfix yolundan geçemez. TL 21.07.2026. | AVIP 0401 O-4 |
+| **D-77** | **Tren günü:** Cuma tren / Pazartesi terfi. TL 21.07.2026. | AVIP 0406 O-2 |
+| **D-57** | **Dondurma pencereleri:** Kapı değerlendirme + yılbaşı (2 hafta). PO+TL 21.07.2026. | AVIP 0406 O-4 |
+| **D-86** | **Staging yedek/geri dönüş:** DB dump + imaj geri terfisi. TL 21.07.2026. | AVIP 0403 O-4 |
 
 ---
 
@@ -239,3 +249,4 @@ Platform v1.1.0 (yeni motor, düzeltmeler)
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: 4 senkronizasyon kuralı, olay-matrisi, tag koordinasyonu, CI/CD entegrasyonu, 3 geçiş senaryosu. |
+| 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-82 (GA tanımı), D-17 (hotfix), D-77 (tren günü), D-57 (dondurma), D-86 (staging yedek). Devralınan Kararlar eklendi. |

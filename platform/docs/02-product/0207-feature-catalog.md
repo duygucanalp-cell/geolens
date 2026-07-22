@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0207 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
@@ -225,11 +225,21 @@ Bu katalog aşağıdaki amaçlarla kullanılır:
 
 ## 9. Açık Sorular
 
-| ID | Soru | Not |
-|----|------|-----|
-| O-1 | Free kademede motor sayısı 1 mi olmalı, tüm motorlara sınırlı kotalı erişim mi? | Pilot deneyiyle belirlenecek. |
-| O-2 | API erişimi Business paketinde mi yoksa ayrı bir API eki olarak mı sunulmalı? | FR-F6 HT1'de karara bağlanır. |
-| O-3 | Enterprise paketinde kişiye özel SLA ve özel motor ekleme opsiyonu olmalı mı? | Kurumsal kapı ile birlikte değerlendirilecek. |
+| ID | Soru | Durum |
+|----|------|-------|
+| O-1 | Free kademede motor sayısı | ⏳ Pilot deneyiyle belirlenecek. AVIP D-07 (self-serve kayıt) devralındı. |
+| O-2 | API erişim modeli | ⏳ FR-F6 HT1'de karara bağlanır. AVIP D-61 (okuma API /public/v1) referans alındı. |
+| O-3 | Enterprise SLA/motor opsiyonu | ⏳ Kurumsal kapı ile birlikte değerlendirilecek. |
+
+### Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|----|-------|--------|
+| **D-07** | **Self-serve kayıt:** Sürtünmesiz, ödeme bilgisi istenmez. PO 21.07.2026. | AVIP 0201 O-2 |
+| **D-80** | **MVP motor kapsamı:** ChatGPT+Gemini+Perplexity. Claude+Grok HT1'de. PO 21.07.2026. | AVIP 0003 O-2 |
+| **D-61** | **Okuma API:** Skor+trend+alıntı+rapor meta. /public/v1. TL 21.07.2026. | AVIP 0204 O-3 |
+| **D-26** | **Grafik kütüphaneleri:** Recharts + TanStack Table. TL 21.07.2026. | AVIP 0304 O-3 |
+| **D-16** | **E-posta sağlayıcısı:** SendGrid. TL 21.07.2026. | AVIP 0304 O-2 |
 
 ---
 
@@ -247,3 +257,4 @@ Bu katalog aşağıdaki amaçlarla kullanılır:
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: GeoLens Platform özellik kataloğu. 40 FR + 16 NFR + 6 motor olmak üzere 56 özellik, MVP durumu, pencere ve paket bilgileriyle kataloglanmıştır. 0204/0205/0206 dokümanlarından türetilmiştir. |
+| 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-07 (self-serve), D-80 (MVP motorlar), D-61 (API), D-26 (grafik), D-16 (SendGrid). Devralınan Kararlar eklendi. |

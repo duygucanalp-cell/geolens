@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0101 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
@@ -237,11 +237,18 @@ Koşullar:
 
 ## 11. Açık Sorular
 
-| ID | Soru | Not |
-|----|------|-----|
-| O-1 | TR pazarının nicel büyüklüğü (dijital pazarlama/SEO harcamaları) | Pilot öncesi masabaşı araştırma |
-| O-2 | Kademe 2 vekil ile tüketici yüzeyi korelasyonunun ölçümü | Pilot aşamasında API vs kontrollü UI karşılaştırması |
-| O-3 | 12-18 aylık TR pencere varsayımının saha testi | Ajans görüşmelerinde test edilecek |
+| ID | Soru | Durum |
+|----|------|-------|
+| O-1 | TR pazarının nicel büyüklüğü | ⏳ Pilot öncesi masabaşı araştırma. AVIP D-78 AN eylem planı kapsamında. |
+| O-2 | Kademe 2 vekil/tüketici yüzeyi korelasyonu | ⏳ Pilotta ölçülecek. AVIP 0102 O-1 takibinde. |
+| O-3 | 12-18 aylık TR pencere varsayımı | ⏳ Ajans görüşmelerinde test edilecek. AVIP D-44 (GTM) ve D-87 (coğrafi odak) ile uyumlu. |
+
+### Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|----|-------|--------|
+| **D-44** | **TR+İngilizce paralel GTM.** PO 21.07.2026. | AVIP 0104 O-1 |
+| **D-78** | **AN araştırma eylem planı:** 6 soru pilot öncesi çözülecek (0101 O-1/O-2 dahil). PO 21.07.2026. | AVIP 0007 D-78 |
 
 ---
 
@@ -261,3 +268,4 @@ Koşullar:
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: GeoLens perspektifinden pazar analizi. Davranış değişimi, motor ekosistemi, pazar büyüklüğü, uygulama açığı, rekabet boşlukları, TR fırsatı. |
+| 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-44 (GTM paralel), D-78 (AN eylem planı). Devralınan Kararlar eklendi. |

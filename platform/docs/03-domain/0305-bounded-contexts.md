@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0305 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
@@ -205,10 +205,19 @@ Bu doküman, GeoLens Platform'un sınırlı bağlamlarını (bounded contexts) v
 
 ## 10. Açık Sorular
 
-| ID | Soru | Not |
-|----|------|-----|
-| O-1 | BC4 (Insight) ve BC5 (Delivery) arasında doğrudan bağımlılık gerekli mi, yoksa her zaman BC3 üzerinden mi? | Mevcut tasarım: BC4 → BC5 asenkron; BC3 aradan çıkarılabilir |
-| O-2 | Benchmark (HT2) ayrı bir bağlam mı olmalı, BC4 altında mı? | HT2'de karara bağlanır; ön hipotez: BC4 alt paketi |
+| ID | Soru | Durum |
+|----|------|-------|
+| O-1 | BC4 (Insight) ve BC5 (Delivery) arası doğrudan bağımlılık | ⏳ Mevcut tasarım: BC4→BC5 asenkron; BC3 aradan çıkarılabilir. |
+| O-2 | Benchmark (HT2) ayrı bağlam mı, BC4 altı mı? | ⏳ Ön hipotez: BC4 alt paketi. AVIP D-64 (measure/calc) ile uyumlu. |
+
+### Devralınan AVIP Kararları
+
+| ID | Karar | Kaynak |
+|----|-------|--------|
+| **D-64** | **Hesap motoru:** measure/calc alt paketi. TL 21.07.2026. | AVIP 0305 O-1 |
+| **D-65** | **Engines modülü:** Tek modül (internal/engines). TL 21.07.2026. | AVIP 0305 O-2 |
+| **D-66** | **SPA monorepo:** web/ aynı depoda. TL 21.07.2026. | AVIP 0305 O-3 |
+| **D-67** | **Lint kuralları:** D1-D7 depguard kuralı. TL 21.07.2026. | AVIP 0305 O-4 |
 
 ---
 
