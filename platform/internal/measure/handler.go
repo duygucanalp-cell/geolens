@@ -2,6 +2,7 @@ package measure
 
 import (
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -23,13 +24,14 @@ func NewHandler(pool *db.Pool, engines *engine.Registry) *Handler {
 }
 
 // TriggerMeasurement handles POST /v1/workspaces/{ws}/measurements
-// Bir markanın mevcut motorlarla ölçümünü tetikler.
+// Bir markanın ölçümünü tetikler. Outbox'a job yazar, senkron çağrı yapmaz.
 func (h *Handler) TriggerMeasurement(w http.ResponseWriter, r *http.Request) {
 	workspaceID := httpmw.GetWorkspaceID(r.Context())
 	tenantID := httpmw.GetTenantID(r.Context())
 
 	var req struct {
-		BrandID string `json:"brand_id"`
+		BrandID  string `json:"brand_id"`
+		PanelID  string `json:"panel_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "geçersiz istek"})
@@ -53,29 +55,61 @@ func (h *Handler) TriggerMeasurement(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO(H2): Prompt seti + örneklemeli (n=3) motor çağrısı
-	// Şimdilik sadece Perplexity ile tek çağrı
-	perplexityAdapter := h.engines.Get("perplexity")
-	if perplexityAdapter == nil {
-		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "motor bulunamadı"})
+	// Panel belirtilmişse panel'deki prompt set'ini kullan, yoksa varsayılan prompt
+	promptText := brandName + " markası hakkında ne biliyorsun? Kaynak göstererek anlat."
+	var panelID string
+	if req.PanelID != "" {
+		panelID = req.PanelID
+		var psPrompt string
+		err := h.pool.QueryRow(r.Context(), `
+			SELECT COALESCE(ps.prompt_text, '') FROM config.panels p
+			LEFT JOIN config.prompt_sets ps ON ps.id = p.prompt_set_id
+			WHERE p.id = $1 AND p.workspace_id = $2 AND p.tenant_id = $3
+		`, req.PanelID, workspaceID, tenantID).Scan(&psPrompt)
+		if err == nil && psPrompt != "" {
+			promptText = psPrompt
+		}
+	}
+
+	// Tüm kayıtlı motorları topla
+	engineNames := h.engines.List()
+	if len(engineNames) == 0 {
+		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "kayıtlı motor bulunamadı"})
 		return
 	}
 
-	prompt := brandName + " markası hakkında ne biliyorsun? Kaynak göstererek anlat."
-	result, err := perplexityAdapter.Execute(prompt)
-	if err != nil {
-		slog.Error("ölçüm hatası", "error", err, "brand", brandName)
-		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "ölçüm başarısız"})
-		return
+	// n=3 örneklemeli job'ları outbox'a yaz (asenkron)
+	for _, engineName := range engineNames {
+		for i := 0; i < 3; i++ {
+			idempotencyKey := fmt.Sprintf("measure:%s:%s:%d", req.BrandID, engineName, i)
+			job := JobPayload{
+				BrandID:     req.BrandID,
+				BrandName:   brandName,
+				WebsiteURL:  websiteURL,
+				PanelID:     panelID,
+				WorkspaceID: workspaceID,
+				TenantID:    tenantID,
+				EngineName:  engineName,
+				PromptText:  promptText,
+				SampleIndex: i,
+			}
+			if err := EnqueueMeasurement(r.Context(), h.pool, job, idempotencyKey); err != nil {
+				slog.Error("outbox job ekleme hatası", "error", err, "engine", engineName, "sample", i)
+			}
+		}
 	}
 
-	// Ham yanıdı kaydet
-	slog.Info("ölçüm tamamlandı", "brand", brandName, "engine", result.EngineName)
+	slog.Info("ölçüm job'ları kuyruğa eklendi",
+		"brand", brandName,
+		"panel", panelID,
+		"engines", engineNames,
+		"samples", len(engineNames)*3,
+	)
 
-	httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{
-		"status":       "completed",
-		"engine":       result.EngineName,
-		"response_ref": result.S3Ref,
+	httputil.WriteJSON(w, http.StatusAccepted, map[string]interface{}{
+		"status":  "queued",
+		"brand":   brandName,
+		"engines": engineNames,
 	})
 }
 

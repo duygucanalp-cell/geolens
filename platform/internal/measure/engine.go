@@ -64,6 +64,7 @@ type MeasurementResult struct {
 	RawResponses []engine.RawResponse `json:"raw_responses"`
 	Citations    []engine.Citation    `json:"citations"`
 	EngineMeta   engine.EngineMeta    `json:"engine_meta"`
+	BrandName    string               `json:"brand_name"`
 }
 
 // Service defines the interface for the measurement/scoring engine.

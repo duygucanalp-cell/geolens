@@ -2,13 +2,12 @@ package perplexity
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"time"
-
-	"github.com/google/uuid"
 
 	"github.com/geolens/platform/engine"
 )
@@ -22,7 +21,7 @@ const (
 
 // sonarRequest is the request body for Perplexity Sonar API.
 type sonarRequest struct {
-	Model    string `json:"model"`
+	Model    string    `json:"model"`
 	Messages []message `json:"messages"`
 }
 
@@ -33,9 +32,9 @@ type message struct {
 
 // sonarResponse is the response body from Perplexity Sonar API.
 type sonarResponse struct {
-	ID      string   `json:"id"`
-	Model   string   `json:"model"`
-	Choices []choice `json:"choices"`
+	ID        string   `json:"id"`
+	Model     string   `json:"model"`
+	Choices   []choice `json:"choices"`
 	Citations []string `json:"citations"`
 }
 
@@ -44,19 +43,41 @@ type choice struct {
 	Message message `json:"message"`
 }
 
+// RawSaver defines the interface for saving raw API responses to persistent storage.
+type RawSaver interface {
+	SaveRawResponse(ctx context.Context, tenantID, workspaceID, engineName string, data []byte) (string, error)
+}
+
 // Adapter implements engine.Adapter for Perplexity Sonar API.
 type Adapter struct {
-	apiKey  string
-	httpClient *http.Client
+	apiKey      string
+	httpClient  *http.Client
+	storage     RawSaver
+	tenantID    string
+	workspaceID string
 }
 
 // NewAdapter creates a new Perplexity adapter.
-func NewAdapter(apiKey string) *Adapter {
+func NewAdapter(apiKey string, storage RawSaver) *Adapter {
 	return &Adapter{
 		apiKey: apiKey,
 		httpClient: &http.Client{
 			Timeout: timeout,
 		},
+		storage: storage,
+	}
+}
+
+// WithContext creates a copy of the adapter with the given tenant and workspace context.
+// Orijinal adapter mutasyona uğramaz — böylece eşzamanlı isteklerde race condition önlenir.
+// engine.Adapter dönüş tipi, measure handler'ın import bağımlılığı olmadan çağırabilmesini sağlar.
+func (a *Adapter) WithContext(tenantID, workspaceID string) engine.Adapter {
+	return &Adapter{
+		apiKey:      a.apiKey,
+		httpClient:  a.httpClient,
+		storage:     a.storage,
+		tenantID:    tenantID,
+		workspaceID: workspaceID,
 	}
 }
 
@@ -137,14 +158,28 @@ func (a *Adapter) parseResponse(raw []byte, durationMs int64) (*engine.RawRespon
 		})
 	}
 
-	return &engine.RawResponse{
+	resp := &engine.RawResponse{
 		EngineName:    "perplexity",
 		RequestID:     sr.ID,
 		Content:       content,
 		Citations:     citations,
 		HasSearch:     len(sr.Citations) > 0,
 		Tier:          tier,
-		FidelityLabel: fmt.Sprintf("Kademe 1 · perplexity · sonar-pro"),
-		S3Ref:         "", // TODO(H2): S3'e kaydet
-	}, nil
+		FidelityLabel: "Kademe 1 · perplexity · sonar-pro",
+		S3Ref:         "",
+	}
+
+	// Ham yanıtı S3'e kaydet (storage varsa)
+	if a.storage != nil && a.tenantID != "" {
+		ctx := context.Background()
+		key, err := a.storage.SaveRawResponse(ctx, a.tenantID, a.workspaceID, "perplexity", raw)
+		if err != nil {
+			// Non-fatal: S3 hatası skor hesaplamasını engellemez
+			resp.S3Ref = ""
+		} else {
+			resp.S3Ref = key
+		}
+	}
+
+	return resp, nil
 }

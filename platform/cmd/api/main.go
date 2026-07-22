@@ -20,6 +20,7 @@ import (
 	"github.com/geolens/platform/internal/measure"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
+	"github.com/geolens/platform/platform/storage"
 	"github.com/geolens/platform/platform/telemetry"
 )
 
@@ -52,15 +53,22 @@ func main() {
 	// JWT servisi
 	jwtService := auth.NewJWTService(cfg.JWTSecret)
 
+	// S3 Storage (MinIO)
+	s3Client, err := storage.NewClient(cfg.S3Endpoint, cfg.S3AccessKey, cfg.S3SecretKey, cfg.S3Bucket, cfg.S3Region, false)
+	if err != nil {
+		slog.Warn("S3 istemci oluşturulamadı, storage olmadan çalışılacak", "error", err)
+	}
+
 	// Engine registry (Dilim 1: yalnız Perplexity)
 	engines := engine.NewRegistry()
-	perplexityAdapter := perplexity.NewAdapter(cfg.PerplexityAPIKey)
+	perplexityAdapter := perplexity.NewAdapter(cfg.PerplexityAPIKey, s3Client)
 	engines.Register(perplexityAdapter)
 	slog.Info("motor kayıt defteri hazır", "engine_count", engines.Count(), "engines", engines.List())
 
 	// Handler'lar
 	authHandler := auth.NewHandler(pool, jwtService)
 	configHandler := config.NewHandler(pool)
+	panelHandler := config.NewPanelHandler(pool)
 	measureHandler := measure.NewHandler(pool, engines)
 
 	// Router
@@ -90,20 +98,28 @@ func main() {
 		r.Group(func(r chi.Router) {
 			r.Use(httpmw.Authenticate(jwtService.TokenValidator()))
 			r.Use(httpmw.TenantContext(pool))
-			r.Use(httpmw.RBAC)
 
 			// Auth-protected utilities
 			r.Post("/auth/logout", authHandler.Logout)
 
-			// Workspace-scoped routes
+			// Workspace-scoped routes (auth + workspace membership gerekli)
 			r.Route("/workspaces/{ws}", func(r chi.Router) {
 				r.Use(httpmw.RequireWorkspace)
+				r.Use(httpmw.RequireWorkspaceAccess(pool))
 
-				// Config
+				// Admin-only routes
+				r.Group(func(r chi.Router) {
+					r.Use(httpmw.RequireRole(httpmw.RoleAdmin))
+					r.Post("/brands", configHandler.CreateBrand)
+				})
+
+				// Member+ routes
 				r.Get("/brands", configHandler.ListBrands)
-				r.Post("/brands", configHandler.CreateBrand)
-
-				// Measurement
+				r.Get("/panels", panelHandler.ListPanels)
+				r.Post("/panels", panelHandler.CreatePanel)
+				r.Get("/panels/{panelID}", panelHandler.GetPanel)
+				r.Get("/prompt-sets", panelHandler.ListPromptSets)
+				r.Post("/prompt-sets", panelHandler.CreatePromptSet)
 				r.Post("/measurements", measureHandler.TriggerMeasurement)
 				r.Get("/scores", measureHandler.ListScores)
 			})
