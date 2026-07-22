@@ -5,7 +5,7 @@
 | Doküman ID | 0108 |
 | Proje | GeoLens Platform |
 | Versiyon | 1.1 |
-| Durum | Draft |
+| Durum | Approved |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
 | İlişkili | 0101, 0102, 0103, 0104, 0106 |

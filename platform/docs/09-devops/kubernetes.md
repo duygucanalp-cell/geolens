@@ -5,7 +5,7 @@
 | Doküman ID | 09-devops/kubernetes |
 | Proje | GeoLens Platform |
 | Versiyon | 1.1 |
-| Durum | Draft |
+| Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
 | İlişkili | 09-devops/*, 0509, 0510, 0206 |

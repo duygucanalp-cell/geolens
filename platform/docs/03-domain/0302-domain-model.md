@@ -5,7 +5,7 @@
 | Doküman ID | 0302 |
 | Proje | GeoLens Platform |
 | Versiyon | 1.1 |
-| Durum | Draft |
+| Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
 | İlişkili | 0301, 0204, 0207, 0303, 0304, 0305, 0306, 0309, 0310 |

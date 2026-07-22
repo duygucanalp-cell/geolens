@@ -5,7 +5,7 @@
 | Doküman ID | 0107 |
 | Proje | GeoLens Platform |
 | Versiyon | 1.1 |
-| Durum | Draft |
+| Durum | Approved |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
 | İlişkili | 0106, 0104, 0201, 0205 |

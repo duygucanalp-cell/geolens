@@ -5,7 +5,7 @@
 | Doküman ID | 0000 |
 | Proje | GeoLens Platform |
 | Versiyon | 1.4 |
-| Durum | Draft |
+| Durum | Approved |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
 | İlişkili | 0001–0007, 0101–0108, 0201–0207, 0301–0306, 0401–0415, 0501–0510, specification/docs/00-overview/0000-master-plan, specification/docs/00-overview/0005-version-sync-plan |

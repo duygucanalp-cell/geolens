@@ -5,7 +5,7 @@
 | Doküman ID | 09-devops/backup |
 | Proje | GeoLens Platform |
 | Versiyon | 1.0 |
-| Durum | Draft |
+| Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
 | İlişkili | 09-devops/*, 0605, 0507, 0204 |

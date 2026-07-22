@@ -5,7 +5,7 @@
 | Doküman ID | 0401 |
 | Proje | GeoLens Platform |
 | Versiyon | 1.0 |
-| Durum | Draft |
+| Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
 | İlişkili | 0006, 0301, 0302, 0402-0415, 0204 (GAVF S1-S4) |

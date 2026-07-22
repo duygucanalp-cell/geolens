@@ -5,7 +5,7 @@
 | Doküman ID | 0601 |
 | Proje | GeoLens Platform |
 | Versiyon | 1.0 |
-| Durum | Draft |
+| Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
 | İlişkili | 0302, 0303, 0602, 0605, 0606, 0204 |

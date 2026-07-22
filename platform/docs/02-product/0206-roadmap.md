@@ -5,7 +5,7 @@
 | Doküman ID | 0206 |
 | Proje | GeoLens Platform |
 | Versiyon | 1.2 |
-| Durum | Draft |
+| Durum | Approved |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
 | İlişkili | 0205, 0201, 0204, 0003, 0004, specification/docs/00-overview/0005-version-sync-plan |

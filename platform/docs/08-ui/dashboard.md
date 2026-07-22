@@ -5,7 +5,7 @@
 | Doküman ID | 08-ui/dashboard |
 | Proje | GeoLens Platform |
 | Versiyon | 1.1 |
-| Durum | Draft |
+| Durum | Approved |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
 | İlişkili | 08-ui/*, 0202, 0204, 0409, 0414 |

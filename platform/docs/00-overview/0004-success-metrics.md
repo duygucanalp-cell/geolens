@@ -5,7 +5,7 @@
 | Doküman ID | 0004 |
 | Proje | GeoLens Platform |
 | Versiyon | 1.1 |
-| Durum | Draft |
+| Durum | Approved |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
 | İlişkili | 0003, 0205, 0307, 0309 |

@@ -5,7 +5,7 @@
 | Doküman ID | project-plan |
 | Proje | GeoLens Platform |
 | Versiyon | 1.2 |
-| Durum | Draft |
+| Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
 | İlişkili | 0000 (Master Plan), 0205 (MVP), 0206 (Roadmap), archive/avip-v1/0401 |

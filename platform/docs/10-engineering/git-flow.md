@@ -5,7 +5,7 @@
 | Doküman ID | 10-engineering/git-flow |
 | Proje | GeoLens Platform |
 | Versiyon | 1.1 |
-| Durum | Draft |
+| Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
 | İlişkili | 10-engineering/branching, 10-engineering/code-review, 0403 |
