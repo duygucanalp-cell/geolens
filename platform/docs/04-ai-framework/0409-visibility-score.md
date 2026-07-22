@@ -1,0 +1,91 @@
+# 0409 · Görünürlük Skoru (Visibility Score)
+
+| Alan | Değer |
+|---|---|
+| Doküman ID | 0409 |
+| Proje | GeoLens Platform |
+| Versiyon | 1.0 |
+| Durum | Draft |
+| Sahip | U2 AI Studio · Engineering |
+| Tarih | 22 Temmuz 2026 |
+| İlişkili | 0404, 0407, 0410, 0411, 0309, 0204 |
+
+---
+
+## 1. Amaç
+
+Bu doküman, GeoLens Görünürlük Skoru'nun (0-100) hesaplama metodolojisini tanımlar. Skor, dört bileşenin ağırlıklı toplamından oluşur.
+
+---
+
+## 2. Skor Bileşenleri
+
+| # | Bileşen | Açıklama | Varsayılan Ağırlık | Kaynak |
+|:-:|---------|----------|:------------------:|--------|
+| 1 | **Varlık Payı** | Markanın yanıtlarda geçme oranı | %35 | 0407 |
+| 2 | **Konum Ağırlığı** | Yanıt içinde öne çıkma sırası | %25 | 0407 |
+| 3 | **Kaynak Payı** | Marka domainlerinin alıntılardaki oranı | %20 | 0405 |
+| 4 | **Rakip Bağlamı** | Rakiplere göre normalize görünürlük | %20 | 0411 |
+
+---
+
+## 3. Skor Formülü
+
+```
+Görünürlük Skoru = Σ(bileşen_değeri × bileşen_ağırlığı)
+```
+
+Her bileşen 0-100 aralığına normalize edilir:
+
+| Bileşen | Normalizasyon |
+|---------|:------------:|
+| Varlık Payı | (geçme_sayısı / toplam_yanıt) × 100 |
+| Konum Ağırlığı | max(0, 100 - (pozisyon - 1) × (100 / maks_pozisyon)) |
+| Kaynak Payı | (marka_alıntı_sayısı / toplam_alıntı) × 100 |
+| Rakip Bağlamı | (marka_skoru - rakip_ortalama) / rakip_standart_sapma × 50 + 50 |
+
+---
+
+## 4. Motor Kırılımı
+
+Skor her motor için ayrı hesaplanır ve birleşik skor aşağıdaki gibi üretilir:
+
+| Motor | Varsayılan Ağırlık | Gerekçe |
+|:-----:|:------------------:|---------|
+| ChatGPT | %35 | TR'de en yaygın AI motoru |
+| Gemini | %30 | Google ekosistemi |
+| Perplexity | %20 | Teknik kitle |
+| Claude | %10 | (HT1) |
+| Grok | %5 | (HT1) |
+
+---
+
+## 5. Skor Etiketleri
+
+Her skor aşağıdaki etiketleri taşır:
+
+| Etiket | Anlamı |
+|--------|--------|
+| Fidelite | Kademe (1/2/3) + motor adı + n |
+| GA alt | Güven aralığı alt sınır |
+| GA üst | Güven aralığı üst sınır |
+| Tazelik | En son ölçüm zamanı |
+| Panel versiyonu | Hangi panel ile ölçüldüğü |
+| Motor kırılımı | Motor bazında alt skorlar |
+
+---
+
+## Kaynaklar
+
+- 0404 Prompt Weighting — prompt ağırlıkları
+- 0407 Entity Recognition — varlık payı
+- 0410 Authority Score — otorite skoru
+- 0411 Share of Voice — görünürlük payı
+- 0309 Scoring Engine — hesaplama motoru
+- 0204 PRD — FR-C4..FR-C7
+
+## Changelog
+
+| Versiyon | Tarih | Değişiklik |
+|----------|-------|------------|
+| 1.0 | 22.07.2026 | İlk yayın: 4 bileşenli skor modeli, formül, motor kırılımı, skor etiketleri. |

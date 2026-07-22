@@ -1,118 +1,104 @@
-# AI Visibility Intelligence Platform (AVIP)
+# GeoLens
 
-> Kurumların yapay zekâ destekli arama ve yanıt motorlarında nasıl temsil edildiklerini ölçmelerini, anlamalarını ve iyileştirmelerini sağlayan platform.
+> AI görünürlüğü denildiğinde akla gelen ilk standart ve ilk platform.
 
-## Nedir?
+**GeoLens**, kurumların yapay zekâ destekli arama ve yanıt motorlarında (ChatGPT, Gemini, Perplexity, Claude, Copilot, Grok ve gelecekteki sistemler) nasıl temsil edildiklerini ölçmelerini, anlamalarını ve iyileştirmelerini sağlayan bir AI Görünürlük Platformudur.
 
-Geleneksel SEO platformları Google sıralamalarına odaklanırken AVIP, büyük dil modelleri (LLM) ve AI yanıt motorlarındaki görünürlüğe odaklanır: **ChatGPT, Gemini, Claude, Perplexity, Copilot, Grok** ve gelecekte ortaya çıkacak sistemler.
+Geleneksel SEO platformları Google sıralamalarına odaklanırken GeoLens, büyük dil modelleri (LLM) ve AI yanıt motorlarındaki görünürlüğe odaklanır. Amaç, AI çağında markaların görünmezleşmesini engellemek ve AI görünürlüğünü ölçülebilir, yönetilebilir ve optimize edilebilir bir disiplin haline getirmektir.
 
-Kurumlar artık yalnızca arama sıralamaları için rekabet etmiyor; AI sistemlerinin önerdiği, alıntıladığı ve özetlediği güvenilir kaynaklar olmak için rekabet ediyor. AVIP bu yeni dijital görünürlük biçimini izlemek, analiz etmek ve sürekli iyileştirmek için gereken zekâyı sağlar.
+---
 
 ## Vizyon
 
-AI görünürlüğü ölçümünde küresel standart platform olmak. Nihai hedef: AI araması için "Google Analytics" konumuna ulaşmak.
+GeoLens'in uzun vadeli hedefi sadece "en iyi AI Visibility aracı" olmak değil:
 
-## Temel Özellikler
+> **AI görünürlüğü denildiğinde akla gelen ilk standart ve ilk platform olmak.**
 
-- **Çoklu Motor Desteği**: ChatGPT, Gemini, Perplexity ve daha fazlası
-- **Açıklanabilir Skorlar**: Her skor calculation_run_id ile izlenebilir
-- **Alıntı Analizi**: AI yanıtlarını etkileyen kaynakları görünür kılar
-- **Rakip Kıyası**: Aynı prompt setinde markalar arası görünürlük farkı
-- **Uyarılar ve Öneriler**: Görünürlüğü artıracak veriye dayalı öneriler
-- **Kurumsal Hazırlık**: Tek şema + RLS ile çok kiracılı izolasyon
+Bunun için teknik mimari kadar; metodoloji, açık standartlar, whitepaper'lar, SDK'lar ve geliştirici ekosistemi de inşa edilecektir. GeoLens bir özellik değil, bir kategori adı haline gelecektir.
 
-## Teknoloji Yığını
+---
+
+## İki Repo Stratejisi
+
+Proje iki ayrı GitHub reposu olarak yapılandırılmıştır:
+
+| Repo | Amaç | Kapsam |
+|------|------|--------|
+| **geolens-platform** | Ticari ürün | Backend, Frontend, Worker, Dashboard, API, SaaS altyapısı |
+| **geolens-specification** | Açık standart (public) | GAVF, Visibility Score, Citation Standard, Prompt Taxonomy, Whitepaper'lar |
+
+Bu ayrışmanın iki büyük avantajı vardır:
+
+1. **geolens-platform** ticari ürünümüz olur, tüm know-how ve rekabet avantajı buradadır.
+2. **geolens-specification** sektör standardı olmayı hedefler — başka şirketler "GAVF 2.0 uyumluyuz" dediğinde artık ürün değil, ekosistem kurmuş oluruz.
+
+---
+
+## Tasarım Felsefesi
+
+Her karar aşağıdaki filtrelerden geçirilir:
+
+- Bu karar **5 yıl sonra hâlâ doğru** olur mu?
+- **10 milyon prompt/gün** çalıştırabilir mi?
+- **1.000 kurumsal müşteriyi** destekleyebilir mi?
+- **Patentlenebilir** bir yaklaşım içeriyor mu?
+- Rakiplerin kopyalaması **zor** mu?
+- Ürünün ekonomik hendeğini (**moat**) güçlendiriyor mu?
+
+---
+
+## GeoLens Platform — Doküman Yapısı
+
+```
+platform/
+└── docs/
+    ├── 00-overview/        # Vizyon, problem, hedefler, metrikler, prensipler
+    ├── 01-business/        # Pazar, rakip, SWOT, iş modeli, pricing, GTM, satış
+    ├── 02-product/         # Persona, journey, use case, PRD, MVP, roadmap
+    ├── 03-domain/          # Core concepts, domain model, aggregates, events
+    ├── 04-ai-framework/    # Prompt generator, parser, entity recognition (ticari know-how)
+    ├── 05-architecture/    # System, service, API, multi-tenancy, security
+    ├── 06-data/            # Data model, PostgreSQL, ClickHouse, Elasticsearch
+    ├── 07-api/             # REST, GraphQL, webhooks, auth, rate limits
+    ├── 08-ui/              # Design system, dashboard, navigation, onboarding
+    ├── 09-devops/          # CI/CD, Docker, K8s, monitoring, backup
+    ├── 10-engineering/     # Standartlar, test, git flow, code review, DoD
+    └── adr/                # Architecture Decision Records
+```
+
+## GeoLens Specification — Doküman Yapısı
+
+```
+specification/
+└── docs/
+    ├── 00-overview/        # Standard vizyonu, problem, glossary
+    ├── 01-standard/        # GAVF, Citation Standard, Visibility Score
+    ├── 02-methodology/     # Prompt Taxonomy, Authority Score
+    └── 03-whitepaper/      # Akademik yayınlar, teknik raporlar
+```
+
+---
+
+## Temel Teknoloji Yığını
 
 | Katman | Seçim |
 |--------|-------|
 | Backend | Go (modüler monolit + işçi havuzu) |
-| Veritabanı | PostgreSQL 16+ (RLS ile çok kiracılı) |
+| Veritabanı | PostgreSQL 16+ (RLS ile çok kiracılı), ClickHouse (analytics) |
 | Kuyruk/Önbellek | Redis 7+ (Streams + tüketici grupları) |
 | Depolama | S3-uyumlu arayüz |
+| Arama | Elasticsearch |
 | Frontend | React + TypeScript SPA |
-| Gözlemlenebilirlik | OpenTelemetry + Prometheus |
-
-Detaylı teknik kararlar: [docs/0304-technology-selection.md](docs/0304-technology-selection.md)
-
-## Proje Yapısı
-
-```
-ai_visibility/
-├── docs/                    # Tüm dokümanlar (kaynak gerçek)
-│   ├── 000x-*.md            # Meta: vizyon, sorun, yönetişim, metrikler
-│   ├── 010x-*.md            # Pazar araştırması
-│   ├── 020x-*.md            # Ürün: personas, PRD, MVP kapsamı
-│   ├── 030x-*.md            # Mimari: alan modeli, DB, teknoloji, API
-│   ├── 040x-*.md            # Mühendislik: süreç, ortamlar, CI/CD, test
-│   └── adr/                 # Mimari Karar Kayıtları (ADR)
-└── AGENTS.md                # Ajan yönlendirmeleri
-```
-
-## Dokümantasyon
-
-Tüm dokümanlar Türkçe yazılmıştır ve `NNNN-title.md` formatını izler. Her dokümanın başında künye tablosu, sonunda changelog bulunur.
-
-| Grup | Kapsam |
-|------|--------|
-| 000x | Vizyon, sorun bildirimi, hedefler, başarı metrikleri, sözlük, marka, yönetişim |
-| 010x | GEO manzarası, AI arama manzarası, rakip analizi, SWOT, pazar fırsatı |
-| 020x | Kullanıcı personaları, yolculuk, senaryolar, PRD, MVP kapsamı, yol haritası |
-| 030x | Alan modeli, veritabanı tasarımı, teknoloji seçimi, servisler, API, işler |
-| 040x | Geliştirme süreci, ortamlar, CI/CD, test stratejisi, güvenlik, sürüm |
-
-## Mimari Kararlar (ADR)
-
-Kabul edilmiş kararlar:
-
-- **ADR-001**: Go backend, PostgreSQL, Redis, S3
-- **ADR-002**: React + TypeScript SPA (Flutter mobil pencereye rezerve)
-- **ADR-003**: Modüler monolit + işçi havuzu
-- **ADR-004**: Tek şema + RLS ile çok kiracılı izolasyon
-- **ADR-005**: Redis Streams + tüketici grupları
-
-ADR dosyaları: `docs/adr/`
-
-## Mevcut Durum
-
-Proje **Faz 0 (Tasarım)** aşamasındadır. Tüm mimari kararlar alınmış, doküman seti hazırlanmıştır. Uygulama geliştirme Faz 4'te başlayacaktır.
-
-### Tamamlanan Faz 0 Teslimatları
-
-| ID | Doküman | Durum |
-|----|---------|-------|
-| 0000 | Master Plan | Onaylandı |
-| 0001 | Vizyon | Onaylandı |
-| 0002 | Sorun Bildirimi | Onaylandı |
-| 0003 | Hedefler & Hedef Olmayanlar | Onaylandı |
-| 0004 | Başarı Metrikleri | Onaylandı |
-| 0005 | Sözlük | Onaylandı |
-| 0006 | Marka & Alan Adı | Onaylandı |
-| 0007 | Yönetişim | Onaylandı |
-
-## Katkıda Bulunma
-
-Katkı süreci [0007-governance.md](docs/0007-governance.md) ile tanımlanmıştır. Temel kurallar:
-
-1. Tüm değişiklikler PR ile gelir; en az bir onay gerekir
-2. PR küçük ve tek amaçlı olmalıdır
-3. Doküman değişiklikleri changelog güncellemesi içerir
-4. Mimari kararlar ADR olarak `docs/adr/` altına yazılır
-5. Kararlar iki tiptir: Tip 1 (geri döndürülmesi pahalı) ve Tip 2 (geri döndürülebilir)
-
-## Roller
-
-| Rol | Sorumluluk |
-|-----|------------|
-| Ürün Sahibi (PO) | Kapsam, öncelik ve onay mercii |
-| Teknik Lider (TL) | Mimari bütünlük, teknik kalite |
-| Analist (AN) | Doküman üretimi, izlenebilirlik |
-| Geliştirici (DEV) | Uygulama, test |
-| Paydaş (PY) | Dış bağımlılıklar, ortaklıklar |
-
-## Lisans
-
-Bu proje henüz kamuoyuna açılmamıştır. Tüm hakları saklıdır.
+| Gözlemlenebilirlik | OpenTelemetry + Prometheus/Grafana |
 
 ---
 
-*Bu dosya, [0001-vision.md](docs/0001-vision.md) ve ilişkili dokümanlardan türetilmiştir.*
+## Proje Durumu
+
+Şu an **Faz 0 (Tasarım)** aşamasındayız:
+- ✅ GeoLens çift repo yapısı kuruldu
+- 🔄 Dokümanlar sıfırdan, yeni vizyonla yazılıyor
+
+---
+
+*Bu proje, AI görünürlüğü kategorisini inşa etme vizyonuyla U2 AI Studio tarafından geliştirilmektedir.*

@@ -1,0 +1,56 @@
+# === Go ===
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+*.test.exe
+/vendor/
+/dist/
+/bin/
+/tmp/
+
+# === Node / Frontend ===
+node_modules/
+web/node_modules/
+web/dist/
+web/build/
+.next/
+*.tsbuildinfo
+
+# === IDE ===
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# === OS ===
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.log
+
+# === Environment ===
+.env
+.env.local
+.env.production
+.env.development
+*.env
+
+# === Docker ===
+docker-compose.override.yml
+
+# === Go workspace ===
+go.work
+go.work.sum
+
+# === Test & Coverage ===
+coverage.out
+coverage.html
+*.coverprofile
