@@ -12,7 +12,6 @@ import (
 
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httputil"
-	"github.com/geolens/platform/platform/httpmw"
 )
 
 // ---- Request/Response Types ----
@@ -142,7 +141,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.Email == "" || req.Password == "" {
-		writeError(w, http.StatusBadRequest, "e-posta ve şifre zorunludur")
+		httputil.WriteError(w, http.StatusBadRequest, "e-posta ve şifre zorunludur")
 		return
 	}
 
@@ -160,7 +159,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		slog.Error("kullanıcı sorgu hatası", "error", err)
-		writeError(w, http.StatusInternalServerError, "giriş başarısız")
+		httputil.WriteError(w, http.StatusInternalServerError, "giriş başarısız")
 		return
 	}
 
@@ -172,7 +171,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	token, expiresAt, err := h.jwt.GenerateToken(userID, tenantID, role)
 	if err != nil {
 		slog.Error("jwt oluşturma hatası", "error", err)
-		writeError(w, http.StatusInternalServerError, "giriş başarısız")
+		httputil.WriteError(w, http.StatusInternalServerError, "giriş başarısız")
 		return
 	}
 
