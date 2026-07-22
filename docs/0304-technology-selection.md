@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0304 |
 | Proje | AI Visibility Intelligence Platform (kod adı: AVIP) |
-| Versiyon | 1.0 |
+| Versiyon | 1.4 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 13 Temmuz 2026 |
@@ -108,10 +108,14 @@ Karar çerçevesi: V1 panosu React + TypeScript tek sayfa uygulamasıdır (SSR g
 
 | ID | Soru | Not |
 |---|---|---|
-| O-1 | Nesne depolama ve barındırma sağlayıcısı; TR veri yerleşimi tercihi | 0402; KVKK duruşu; PY + TL. |
-| O-2 | E-posta gönderim sağlayıcısı | 0402; teslim edilebilirlik ve TR alan ısındırma; TL. |
-| O-3 | Grafik/ızgara kütüphanelerinin kesinleştirilmesi | Uygulama başlangıcında; GA bant görselleştirme gereksinimiyle; TL. |
-| O-4 | Flutter yeniden değerlendirme tetikleyicisinin tanımı | 0206 O-2 ile hizalı; yerel mobil penceresi kriterleri; TL. |
+| ~~O-1~~ | ~~Nesne depolama ve barındırma sağlayıcısı; TR veri yerleşimi tercihi~~ | ~~0402; KVKK duruşu; PY + TL.~~ |
+| 🔄 O-1 | Nesne depolama ve barındırma yaklaşımı | **YÖN KARARI** (21.07.2026, 0402 v1.1): VM tabanlı self-host. TR sağlayıcıdan VM kiralanacak, tüm stack VM'ler üzerinde kurulacak. Detaylı sağlayıcı ve konfigürasyon 0402 O-1 olarak açık kaldı. |
+| ~~O-2~~ | ~~E-posta gönderim sağlayıcısı~~ | ~~0402; teslim edilebilirlik ve TR alan ısındırma; TL.~~ |
+| ✅ O-2 | E-posta gönderim sağlayıcısı | **KAPANDI** (21.07.2026): SendGrid. 0402 v1.2, 0007 D-16. |
+| ~~O-3~~ | ~~Grafik/ızgara kütüphanelerinin kesinleştirilmesi~~ | ~~Uygulama başlangıcında; GA bant görselleştirme gereksinimiyle; TL.~~ |
+| ✅ O-3 | Grafik/ızgara kütüphaneleri | **KAPANDI** (21.07.2026): Recharts + TanStack Table. GA bant görselleştirme ve kırılım tabloları için. |
+| ~~O-4~~ | ~~Flutter yeniden değerlendirme tetikleyicisinin tanımı~~ | ~~0206 O-2 ile hizalı; yerel mobil penceresi kriterleri; TL.~~ |
+| **✅ O-4 (KAPANDI)** | **Mobil talep sayısı eşiği: kullanıcıların ≥%20'si mobil erişim talep ettiğinde veya P1 kurumsal kapısı açıldığında Flutter yeniden değerlendirmeye alınır.** | **TL kararı (21.07.2026). 0206 uyumlu. 0007 D-38.** |
 
 ---
 
@@ -128,3 +132,7 @@ Karar çerçevesi: V1 panosu React + TypeScript tek sayfa uygulamasıdır (SSR g
 | Versiyon | Tarih | Değişiklik |
 |---|---|---|
 | 1.0 | 13.07.2026 | İlk yayın: 7 kriterli karar yöntemi; ADR-001 (Go+PG+Redis+S3), ADR-003 (modüler monolit), ADR-004 (tek şema+RLS), ADR-005 (Redis Streams), ADR-002 (React+TS pano; Flutter mobil pencereye rezerve, standart istisnası gerekçeli); 8 destekleyici seçim; yanlışlanma sinyalli dönüş yolları. |
+| 1.1 | 21.07.2026 | O-1 yön kararı: VM tabanlı self-host (TR sağlayıcıdan VM + tüm stack self-host). Detaylı sağlayıcı seçimi 0402 O-1 olarak açık kaldı. 0402 v1.1, 0007 D-15. |
+| 1.2 | 21.07.2026 | O-2 kapandı: SendGrid (e-posta sağlayıcısı). 0402 v1.2, 0007 D-16. |
+| 1.3 | 21.07.2026 | O-3 kapandı: Recharts + TanStack Table. 0007 D-26. |
+| 1.4 | 21.07.2026 | O-4 kapandı: Flutter reeval tetikleyicisi (mobil talep ≥%20 veya P1 kurumsal kapısı). 0007 D-38. |

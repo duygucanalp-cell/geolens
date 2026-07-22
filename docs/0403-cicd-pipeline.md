@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0403 |
 | Proje | AI Visibility Intelligence Platform (kod adı: AVIP) |
-| Versiyon | 1.0 |
+| Versiyon | 1.4 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 13 Temmuz 2026 |
@@ -68,10 +68,12 @@ Hat kendi telemetrisini üretir: hat ve kapı süreleri, kapı başarısızlık 
 
 | ID | Soru | Not |
 |---|---|---|
-| O-1 | CI platform sınıfının seçimi | Depo barındırmayla birlikte; TL. |
-| O-2 | İzolasyon hızlı alt kümesinin kapsamı | PR süresi ile güvence dengesi; 0404 ile; TL. |
-| O-3 | İmaj imzalama ve doğrulamanın V1'e alınması | Tedarik zinciri güvencesi; TL. |
-| O-4 | Staging yedek/geri dönüş noktası mekaniği | Sağlayıcı yeteneğine bağlı; 0402 O-1 ile; TL. |
+| ~~O-1~~ | ~~CI platform sınıfının seçimi~~ | ~~Depo barındırmayla birlikte; TL.~~ |
+| ✅ O-1 | CI platform sınıfının seçimi | **KAPANDI** (21.07.2026): GitHub Actions. Depo barındırma ile aynı platform. Self-hosted runner değerlendirilecek. |
+| ~~O-2~~ | ~~İzolasyon hızlı alt kümesinin kapsamı~~ | ✅ **KAPANDI**: Kritik akışlar — her yüzey için en kritik 1-2 negatif senaryo (tenant_id uyuşmazlığı, workspace sınırı, rol tabanlı erişim reddi). Tam paket main'de. 0007 D-76. |
+| ~~O-3~~ | ~~İmaj imzalama ve doğrulamanın V1'e alınması~~ | ~~Tedarik zinciri güvencesi; TL.~~ |
+| ✅ O-3 | İmaj imzalama ve doğrulamanın V1'e alınması | **KAPANDI** (21.07.2026): V1'de olmayacak. Tedarik zinciri güvencesi hızlı takipte değerlendirilecek. |
+| ~~O-4~~ | ~~Staging yedek/geri dönüş noktası mekaniği~~ | ✅ **KAPANDI**: DB dump (pg_dump) + imaj geri terfisi. Deployment öncesi otomatik pg_dump alınır, sorun olursa eski imaj restart + yedek yükleme. VM snapshot gerektirmez, sağlayıcı bağımsız. 0007 D-86. |
 
 ---
 
@@ -88,3 +90,7 @@ Hat kendi telemetrisini üretir: hat ve kapı süreleri, kapı başarısızlık 
 | Versiyon | Tarih | Değişiklik |
 |---|---|---|
 | 1.0 | 13.07.2026 | İlk yayın: üç hatlı boru modeli, yedi kapılı PR zinciri (etiket bazlı ekler), main imaj üretimi ve değiştirilemez referans kuralı, staging otomatik / production elle terfili dağıtım (bir kez derle), kırmızı main ve karantina disiplini, hat telemetrisi ve DoD otomasyon eşlemesi. |
+| 1.1 | 21.07.2026 | O-1 kapandı: GitHub Actions seçildi. |
+| 1.2 | 21.07.2026 | O-3 kapandı: imaj imzalama V1'de yok, hızlı takipte. 0007 D-18. |
+| 1.3 | 21.07.2026 | O-2 kapandı: izolasyon hızlı alt kümesi kapsamı (kritik akışlar). 0007 D-76. |
+| 1.4 | 21.07.2026 | O-4 kapandı: staging yedek/geri dönüş (DB dump + imaj geri). 0007 D-86. |

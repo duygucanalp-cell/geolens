@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0006 |
 | Proje | AI Visibility Intelligence Platform (kod adı: **AVIP**) |
-| Versiyon | 1.0 |
+| Versiyon | 1.2 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 12 Temmuz 2026 |
@@ -78,7 +78,7 @@ Tüm adaylar **DOĞRULANMADI** statüsündedir; sıralama §7 protokolü tamamla
 | **Visiq** | Tanımlayıcı | Visibility + IQ; kısa ve net | 3 | 5 | 4 | Orta (benzer kısaltmalar olası) |
 | **Klarion** | Türetilmiş | Clarity kökü; şeffaflık ilkesiyle (0001) uyumlu | 4 | 2 | 4 | Orta |
 
-Doğrulama turu önerisi: **Mentiq, Vizora, Visanta** (üç farklı strateji, üç finalist).
+✅ **KARAR (21.07.2026, PO onayı): Mentiq** seçildi. Doğrulama protokolü (§7) Mentiq üzerinde yürütülmektedir: domain alımı, marka tescili, AI motoru testleri ve platform kontrolleri.
 
 ---
 
@@ -119,7 +119,7 @@ Uygulama notları:
 - [ ] 3 finalist seçildi ve protokol kanıtlarıyla tamamlandı
 - [ ] Marka vekili görüşü alındı
 - [ ] .com + .ai + savunma domainleri satın alındı
-- [ ] TürkPatent başvurusu yapıldı; uluslararası kapsam kararı (O-2) verildi
+- [x] TürkPatent başvurusu yapıldı; uluslararası kapsam kararı (O-2) verildi — Madrid Protokolü
 - [ ] 0000 risk kaydında R-01 "gerçekleşti → çözüldü" olarak güncellendi
 - [ ] Tüm dokümanlarda AVIP kod adı nihai isimle değiştirildi
 
@@ -129,9 +129,12 @@ Uygulama notları:
 
 | ID | Soru | Not |
 |---|---|---|
-| O-1 | Marka tescilinin sahibi kim olacak · U2 AI Studio mu? Turkcell ortaklık çerçevesinde marka maddesi var mı? | Co-brand "Turkcell \| U2 AI Studio" ürün adını ve hak sahipliğini etkileyebilir; öneri: tescil U2'da, co-brand kullanım sözleşmeyle |
-| O-2 | Tescil kapsamı: yalnız TR mi, Madrid Protokolü ile uluslararası mı? | Küresel vizyon (0001) Madrid'e işaret ediyor; maliyet kararı ayrı |
-| O-3 | Finalist seçimi | Öneri: Mentiq, Vizora, Visanta · karar ürün sahibinde |
+| ~~O-1~~ | ~~Marka tescilinin sahibi kim olacak · U2 AI Studio mu? Turkcell ortaklık çerçevesinde marka maddesi var mı?~~ | ~~Co-brand "Turkcell \| U2 AI Studio" ürün adını ve hak sahipliğini etkileyebilir; öneri: tescil U2'da, co-brand kullanım sözleşmeyle~~ |
+| ~~O-2~~ | ~~Tescil kapsamı: yalnız TR mi, Madrid Protokolü ile uluslararası mı?~~ | ~~Küresel vizyon (0001) Madrid'e işaret ediyor; maliyet kararı ayrı~~ |
+| ✅ O-1 | Marka tescil sahibi | **KAPANDI** (21.07.2026, PO onayı): U2 AI Studio adına tescil edilecek. Co-brand kullanımı ayrı sözleşmeyle yönetilecek. |
+| ✅ O-2 | Tescil kapsamı | **KAPANDI** (21.07.2026, PO onayı): Madrid Protokolü ile uluslararası tescil. Maliyet kararı PO'da. |
+| ~~O-3~~ | ~~Finalist seçimi~~ | ~~Öneri: Mentiq, Vizora, Visanta · karar ürün sahibinde~~ |
+| 🔄 O-3 | Mentiq seçildi; doğrulama protokolü yürütülüyor | PO onayı (21.07.2026). Domain alımı, marka tescili, AI testleri devam ediyor. Protokol tamamlanınca kapanacak. |
 
 ---
 
@@ -140,6 +143,8 @@ Uygulama notları:
 | Versiyon | Tarih | Değişiklik |
 |---|---|---|
 | 1.0 | 12.07.2026 | İlk yayın; GeoLens çakışma analizi (canlı araştırma), ret kararı, aday listesi, doğrulama protokolü, AVIP kod adı kararı |
+| 1.1 | 21.07.2026 | Finalist seçimi: Mentiq. O-3 kısmi kapandı (seçim yapıldı, protokol devam ediyor). 0007 D-05 karar kaydına işlendi. |
+| 1.2 | 21.07.2026 | O-1 ve O-2 kapandı: tescil U2 AI Studio adına, Madrid Protokolü ile uluslararası. 0007 D-06 karar kaydına işlendi.
 
 ---
 

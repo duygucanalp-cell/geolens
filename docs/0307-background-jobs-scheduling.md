@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0307 |
 | Proje | AI Visibility Intelligence Platform (kod adı: AVIP) |
-| Versiyon | 1.0 |
+| Versiyon | 1.4 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 13 Temmuz 2026 |
@@ -79,10 +79,13 @@ Zarif kapanış: SIGTERM alan işçi yeni mesaj almayı durdurur, süren işleri
 
 | ID | Soru | Not |
 |---|---|---|
-| O-1 | Telafi penceresi derinliği; digest ve haftalık özet gönderim saatleri [K] | Pilot verisiyle; PO + TL. |
-| O-2 | İş türü bazlı devralma boşta kalma süreleri ve deneme tavanları [K] | Pilotta kalibre; TL. |
-| O-3 | Anında iletim sınıfının varsayılanı (digest muafiyeti) | M11 dengesi; FR-F2 ayarıyla; PO. |
-| O-4 | DLQ yeniden oynatma yetkisi ve denetim kaydı biçimi | 0310 + 0311; TL. |
+| ~~O-1~~ | ~~Telafi penceresi derinliği; digest ve haftalık özet gönderim saatleri [K]~~ | ~~Pilot verisiyle; PO + TL.~~ |
+| **✅ O-1 (KAPANDI)** | **Telafi: en fazla 2 kaçırılmış pencere. Digest gönderimi: 18:00 TR (kiracı yerel saati). Haftalık özet: Pazartesi 09:00 TR. Pilotta kalibre edilecek.** | **PO+TL kararı (21.07.2026). 0007 D-55.** |
+| ~~O-2~~ | ~~İş türü bazlı devralma boşta kalma süreleri ve deneme tavanları [K]~~ | ~~Pilotta kalibre; TL.~~ |
+| **✅ O-2 (KAPANDI)** | **Measure 5 dk, notify 2 dk, report 15 dk boşta kalma; deneme tavanı 3 (tüm iş türleri).** | **TL önerisiyle kapatıldı (21.07.2026). Pilotta kalibre edilecek (0007 D-32).** |
+| ~~O-3~~ | ~~Anında iletim sınıfının varsayılanı (digest muafiyeti)~~ | ~~M11 dengesi; FR-F2 ayarıyla; PO.~~ |
+| **✅ O-3 (KAPANDI)** | **Varsayılan digest: tüm uyarı sınıfları digest'te toplanır. Anında iletim yok. Kullanıcı kanal ayarlarından istediği sınıfı anında iletim seçebilir.** | **PO kararı (21.07.2026). 0007 D-46.** |
+| ~~O-4~~ | ~~DLQ yeniden oynatma yetkisi ve denetim kaydı biçimi~~ | ✅ **KAPANDI**: Sistem otomatik yeniden dener (sınırlı sayıda). Başarısız olursa TL/operatör manuel tetikler. Her eylem audit_log'a düşer: kimlik, iş kimliği, zaman, gerekçe. 0007 D-75. |
 
 ---
 
@@ -99,3 +102,7 @@ Zarif kapanış: SIGTERM alan işçi yeni mesaj almayı durdurur, süren işleri
 | Versiyon | Tarih | Değişiklik |
 |---|---|---|
 | 1.0 | 13.07.2026 | İlk yayın: 8 iş sınıfı ve kuyruk eşlemesi, kilitli tek örnek zamanlayıcı (telafi ve jitter politikalı), outbox dağıtıcısı, tüketici grupları ve XAUTOCLAIM devralma, iki katmanlı yeniden deneme + kota kapısı, digest/haftalık özet işleri, zarif kapanış ve eşzamanlılık sınırları, M8/M10 sinyal seti. |
+| 1.1 | 21.07.2026 | O-2 kapandı: devralma süreleri (measure 5dk, notify 2dk, report 15dk), deneme tavanı 3. 0007 D-32. |
+| 1.2 | 21.07.2026 | O-3 kapandı: varsayılan digest (tüm sınıflar). Kullanıcı kanal ayarıyla anında iletim seçebilir. 0007 D-46. |
+| 1.3 | 21.07.2026 | O-1 kapandı: telafi 2 pencere, digest 18:00, özet Pazartesi 09:00. 0007 D-55. |
+| 1.4 | 21.07.2026 | O-4 kapandı: DLQ yeniden oynatma (sistem otomatik + manuel override, audit_log kaydı). 0007 D-75. |

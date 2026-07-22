@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0005 |
 | Proje | AI Visibility Intelligence Platform (kod adı: AVIP) |
-| Versiyon | 1.1 |
+| Versiyon | 1.3 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 18 Temmuz 2026 |
@@ -85,7 +85,7 @@ Bu doküman, doküman setinde ve üründe kullanılan terimlerin tek doğruluk k
 
 | Terim | İngilizce | Tanım |
 |---|---|---|
-| **ADR** | Architecture Decision Record | Numaralı, gerekçeli mimari karar kaydı; docs/03-architecture/adr/ altında tutulur. |
+| **ADR** | Architecture Decision Record | Numaralı, gerekçeli mimari karar kaydı; docs/adr/ altında tutulur. |
 | **DoD** | Definition of Done | Bir işin bitmiş sayılma ölçütleri; doküman DoD'si 0000 §6'da. |
 | **PRD** | Product Requirements Document | Gereksinim dokümanı (0204); madde 12 ve 15'i karşılar. |
 | **MVP** | Minimum Viable Product | Değer hipotezini doğrulayan en küçük ürün kesiti (0205). |
@@ -110,8 +110,8 @@ Bu doküman, doküman setinde ve üründe kullanılan terimlerin tek doğruluk k
 
 | ID | Soru | Not |
 |---|---|---|
-| O-1 | Görünürlük Skoru bileşen adları (mention, öneri, alıntı, bağlam ağırlıkları) | 0309 skor tasarımıyla birlikte finalize edilecek; sözlük o versiyonda genişler. |
-| O-2 | Bağlam değerlendirmesinin (sentiment) V1 kapsamına girip girmeyeceği | 0205 kapsam kararı; girmezse terim "platform ufku" notuyla kalır. |
+| O-1 | Görünürlük Skoru bileşen adları (mention, öneri, alıntı, bağlam ağırlıkları) | **AN+TL eylem planı (21.07.2026):** Pilot öncesi AN hazırlar, TL onaylar, PO onaylar. 0309 skor tasarımı girdisi. Bulgular 0007 haftalık senkronunda raporlanır. 0007 D-89. |
+| ~~O-2~~ | ~~Bağlam değerlendirmesinin (sentiment) V1 kapsamına girip girmeyeceği~~ | ✅ **KAPANDI**: V1 kapsamı dışı. Terim "platform ufku" notuyla sözlükte kalır. Mention+öneri+alıntı üçlüsü MVP için yeterli. 0007 D-81. |
 
 ---
 
@@ -121,3 +121,5 @@ Bu doküman, doküman setinde ve üründe kullanılan terimlerin tek doğruluk k
 |---|---|---|
 | 1.0 | 12.07.2026 | İlk yayın: 4 kategoride 49 terim, kullanım kuralları, sözlük değişiklik süreci. |
 | 1.1 | 18.07.2026 | Yedi terim eklendi: çalışma alanı, panel versiyonu, bulgu, digest, ilk değer, aktivasyon, derin bağlantı (0302 §8 ve 0202/0306 devri). |
+| 1.2 | 21.07.2026 | O-2 kapandı: sentiment V1 kapsamı dışı. 0007 D-81. |
+| 1.3 | 21.07.2026 | O-1 eylem planı eklendi: AN+TL pilot öncesi skor bileşen adlarını netleştirecek. 0007 D-89. |

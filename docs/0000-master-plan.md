@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0000 |
 | Proje | AI Visibility Intelligence Platform (kod adı: AVIP) |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 13 Temmuz 2026 |
@@ -144,7 +144,8 @@ Riskler öncelik sırasına göre listelenir; her riskin sahibi ve durumu izleni
 | ID | Soru | Not |
 |---|---|---|
 | O-1 | 25 maddelik listenin eksik veya fazla olup olmadığı | Mevcut set Faz 0-4'ü kapsar; genişletme 0007 Tip 2 kararıyla. |
-| O-2 | Faz geçiş kapılarının kesin zaman çizelgesi | 0007 §5'te tanımlı; somut tarihler pilot kararına bağlı. |
+| ~~O-2~~ | ~~Faz geçiş kapılarının kesin zaman çizelgesi~~ | ~~0007 §5'te tanımlı; somut tarihler pilot kararına bağlı.~~ |
+| **✅ O-2 (KAPANDI)** | **Event-driven model: pilot kiracı bulununca Faz 4 başlar. Tarih bazlı değil, olay bazlı geçiş.** | **PO kararı (21.07.2026). 0007 D-43.** |
 
 ---
 
@@ -160,3 +161,4 @@ Riskler öncelik sırasına göre listelenir; her riskin sahibi ve durumu izleni
 | Versiyon | Tarih | Değişiklik |
 |---|---|---|
 | 1.0 | 13.07.2026 | İlk yayın: 25 madde izlenebilirlik matrisi, 8 ölçütlü doküman DoD'su, Sprint 0 backlog, 7 kalem risk kaydı (R-01–R-07), türetilmiş doküman envanteri. |
+| 1.1 | 21.07.2026 | O-2 kapandı: event-driven faz geçişi (pilot kiracı bulununca). 0007 D-43. |

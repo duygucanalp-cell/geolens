@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0402 |
 | Proje | AI Visibility Intelligence Platform (kod adı: AVIP) |
-| Versiyon | 1.0 |
+| Versiyon | 1.3 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 13 Temmuz 2026 |
@@ -74,9 +74,12 @@ Politika kararı: e-posta gönderimi yönetilen işlemsel sağlayıcı üzerinde
 
 | ID | Soru | Not |
 |---|---|---|
-| O-1 | Sağlayıcı kısa listesinin sonuçlandırılması | §2 şartlarıyla; Tip 1 kayıt; TL + PY. |
-| O-2 | E-posta sağlayıcı kısa listesi ve seçimi | §8 şartlarıyla; TL. |
-| O-3 | RTO/RPO başlangıç değerlerinin teyidi [K] | 0311 O-3 ile birlikte; PO + TL. |
+| ~~O-1~~ | ~~Sağlayıcı kısa listesinin sonuçlandırılması~~ | ~~§2 şartlarıyla; Tip 1 kayıt; TL + PY.~~ |
+| ~~O-1~~ | ~~Sağlayıcı ve altyapı yaklaşımı~~ | ✅ **KAPANDI**: Küresel bulut TR bölge (AWS/GCP/Azure). Self-host VM + yönetilen PG/KMS. Veri yerleşimi TR bölge veya eşdeğer taahhütle sağlanır. Nihai sağlayıcı seçimi TL yürütümünde Tip 1 karar olarak 0007'ye işlenir. 0007 D-85. |
+| ~~O-2~~ | ~~E-posta sağlayıcı kısa listesi ve seçimi~~ | ~~§8 şartlarıyla; TL.~~ |
+| ✅ O-2 | E-posta sağlayıcı seçimi | **KAPANDI** (21.07.2026): SendGrid. API tabanlı, bounce/şikayet webhookları. TR alan ısındırma planı pilot öncesi başlayacak. |
+| ~~O-3~~ | ~~RTO/RPO başlangıç değerlerinin teyidi [K]~~ | ~~0311 O-3 ile birlikte; PO + TL.~~ |
+| ✅ O-3 | RTO/RPO başlangıç değerleri [K] | **KAPANDI** (21.07.2026): RPO 1 saat, RTO 8 saat. VM self-host ile uyumlu. Pilot verisiyle kalibre edilecek. |
 | O-4 | Staging sentetik veri setinin tasarımı | Demo senaryolarını kapsar; kişisel veri içermez; AN + TL. |
 
 ---
@@ -94,3 +97,6 @@ Politika kararı: e-posta gönderimi yönetilen işlemsel sağlayıcı üzerinde
 | Versiyon | Tarih | Değişiklik |
 |---|---|---|
 | 1.0 | 13.07.2026 | İlk yayın: TR veri yerleşimi politika kararı (Tip 1) ve sağlayıcı şart seti, üç ortamlı topoloji ve eşitlik ilkesi, dört imajlı konteyner/compose düzeni, kasa/KMS tabanlı sır yönetimi, ağ/TLS ve erişim kuralları, süreç kopyalı kapasite modeli, yönetilen e-posta politika kararı, PITR + çapraz kopya + RTO/RPO başlangıç önerileri. |
+| 1.1 | 21.07.2026 | O-1 yön kararı: VM tabanlı self-host (TR sağlayıcı). GitHub Actions + GitHub Projects seçildi. |
+| 1.2 | 21.07.2026 | O-2 kapandı: SendGrid. O-3 kapandı: RPO 1sa / RTO 8sa. 0007 D-16, D-19. |
+| 1.3 | 21.07.2026 | O-1 kapandı: küresel bulut TR bölge (self-host VM + yönetilen PG/KMS). 0007 D-85. |

@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0104 |
 | Proje | AI Visibility Intelligence Platform (kod adı: AVIP) |
-| Versiyon | 1.1 |
+| Versiyon | 1.3 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 18 Temmuz 2026 |
@@ -96,9 +96,11 @@ Bu doküman, Faz 1 araştırma bulgularını (0101 disiplin, 0102 motorlar, 0103
 
 | ID | Soru | Not |
 |---|---|---|
-| O-1 | GTM sıralaması: TR-first mi, TR+İngilizce paralel mi? | 0002 O-1 segment kararı ve 0205 ticari açılış çerçevesi; PO. F2 penceresi ile küresel momentum (F1) arasındaki denge. |
-| O-2 | SOC 2 hazırlık zamanlaması: MVP ile paralel mi, ilk kurumsal müşteriyle mi? | TL+PO; 0310 tasarımını etkiler. |
-| O-3 | Ajans segmentinin öncelik derecesi: birincil persona mı, ikincil mi? | 0201 persona görüşmeleriyle doğrulanır; S6 yatırım derinliğini belirler. |
+| ~~O-1~~ | ~~GTM sıralaması: TR-first mi, TR+İngilizce paralel mi?~~ | ~~0002 O-1 segment kararı ve 0205 ticari açılış çerçevesi; PO. F2 penceresi ile küresel momentum (F1) arasındaki denge.~~ |
+| **✅ O-1 (KAPANDI)** | **TR+İngilizce paralel. Ürün baştan iki dilde yayınlanacak.** | **PO kararı (21.07.2026). 0007 D-44.** |
+| ~~O-2~~ | ~~SOC 2 hazırlık zamanlaması: MVP ile paralel mi, ilk kurumsal müşteriyle mi?~~ | ~~TL+PO; 0310 tasarımını etkiler.~~ |
+| **✅ O-2 (KAPANDI)** | **İlk kurumsal müşteriyle başlar. MVP döneminde güvenlik-ilk mimari yeterli. SOC 2 çalışması P1 satışıyla tetiklenir.** | **PO kararı (21.07.2026). 0007 D-45.** |
+| O-3 | Ajans segmentinin öncelik derecesi: birincil persona mı, ikincil mi? | **Bloklayıcı AN eylem planı (21.07.2026):** 0201 görüşmelerinde öncelikli madde. Sonuç S6 yatırım derinliğini, 0201 personasını ve 0205 MVP kapsamını (ajans özellikleri) belirler. Pilot öncesi netleşmeli. AN yürütür. 0007 D-78. |
 
 ---
 
@@ -115,3 +117,5 @@ Bu doküman, Faz 1 araştırma bulgularını (0101 disiplin, 0102 motorlar, 0103
 |---|---|---|
 | 1.0 | 12.07.2026 | İlk yayın: kanıt bağlantılı SWOT (6 güç, 5 zayıflık, 5 fırsat, 5 tehdit), erken uyarı sinyalli tehdit tablosu, dokuz satırlık TOWS eşleştirmesi, dört stratejik sonuç. |
 | 1.1 | 18.07.2026 | Çapraz referans düzeltmeleri: konumlandırma atıfları 0204 ürün ilkelerine, GTM atfı 0002 O-1 + 0205 çerçevesine bağlandı; içerik stratejisi set dışı pazarlama çalışması olarak işaretlendi (v1.1 birleşik turu, 0206 O-4). |
+| 1.2 | 21.07.2026 | O-1 kapandı: TR+İngilizce paralel GTM. O-2 kapandı: SOC 2 ilk kurumsal müşteriyle. 0007 D-44, D-45. |
+| 1.3 | 21.07.2026 | O-3 eylem planı eklendi: bloklayıcı AN sorusu — 0201 görüşmelerinde öncelikli. 0007 D-78. |

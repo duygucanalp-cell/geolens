@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0206 |
 | Proje | AI Visibility Intelligence Platform (kod adı: AVIP) |
-| Versiyon | 1.0 |
+| Versiyon | 1.2 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 13 Temmuz 2026 |
@@ -107,10 +107,11 @@ Mekanizma: pencere içi sıralama değişiklikleri Tip 2, pencere tanımı deği
 
 | ID | Soru | Not |
 |---|---|---|
-| O-1 | Kurumsal kapı tarihçe eşiği (kesintisiz kaç ay) [K] | PO + TL; W3 kapanış tanımı; 12 ay başlangıç hipotezi. |
+| ~~O-1~~ | ~~Kurumsal kapı tarihçe eşiği (kesintisiz kaç ay) [K]~~ | ✅ **KAPANDI**: 12 ay (başlangıç hipotezi onaylandı). [K] kalibrasyon — pilot verisiyle revize edilebilir. 0007 D-69. |
 | O-2 | Yerel mobil değerlendirme kriterleri | ADR-002 kapsamında; responsive etkileşim verisiyle; TL. |
-| O-3 | EN açılım tetikleyicisinin tanımı | PO; TR pencere seyri (0105) ve talep sinyalleriyle. |
-| O-4 | v1.1 düzeltme turunun zamanlaması | Öneri: Faz 3 açılışından önce tek geçiş; PO onayı. |
+| ~~O-3~~ | ~~EN açılım tetikleyicisinin tanımı~~ | ✅ **KAPANDI**: PMF sinyali bileşik — TR'de M2≥%80 + M1≥%60 + gelen talep/başvuru eşiği. PO kararıyla tetiklenir. 0007 D-70. |
+| ~~O-4~~ | ~~v1.1 düzeltme turunun zamanlaması~~ | ~~Öneri: Faz 3 açılışından önce tek geçiş; PO onayı.~~ |
+| **✅ O-4 (KAPANDI)** | **Bu oturum bittiğinde — Faz 4 başlamadan önce tek geçiş. Konsolide düzeltmeler (0104/0105 çapraz, 0204 sayım, FR-D4, 0004 adayları) topluca uygulanır.** | **PO kararı (21.07.2026). 0007 D-63.** |
 
 ---
 
@@ -127,3 +128,5 @@ Mekanizma: pencere içi sıralama değişiklikleri Tip 2, pencere tanımı deği
 | Versiyon | Tarih | Değişiklik |
 |---|---|---|
 | 1.0 | 13.07.2026 | İlk yayın: 5 yol haritası ilkesi, 4 pencereli tetikleyici modeli, HT1/HT2 kalem tabloları, kurumsal kapı bileşik tetikleyicisi, 6 kalemlik platform ufku, pencere-metrik bağları, 5 senaryolu yeniden önceliklendirme mekanizması; Faz 2 kapanış kaydı. |
+| 1.1 | 21.07.2026 | O-4 kapandı: v1.1 düzeltme turu Faz 4 öncesi tek geçiş. 0007 D-63. |
+| 1.2 | 21.07.2026 | O-1 kapandı: kurumsal kapı tarihçe eşiği 12 ay [K] (hipotez onay). O-3 kapandı: EN açılım tetikleyicisi PMF sinyali bileşik. 0007 D-69, D-70. |

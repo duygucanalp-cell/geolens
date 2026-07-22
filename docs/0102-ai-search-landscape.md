@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0102 |
 | Proje | AI Visibility Intelligence Platform (kod adı: AVIP) |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 12 Temmuz 2026 (araştırma tarihi) |
@@ -45,7 +45,7 @@ Kademe 2 vekillerin tüketici yüzeyiyle korelasyonu varsayılmaz, ölçülür: 
 
 ## 5. Erişim, Uyum ve Maliyet
 
-Uyum çizgisi (NG9, R-04): yalnızca resmî API'ler ve izinli erişim; Kademe 3 yüzeyler için tüketici arayüzü kazıma yapılmaz. Google yüzeyi için üç seçenek vardır ve karar D-03 olarak kaydedilir: (a) kapsam dışı bırakmak, (b) Gemini grounding'i açıkça etiketlenmiş vekil olarak kullanmak, (c) lisanslı üçüncü taraf veri sağlayıcısını hukuki incelemeyle değerlendirmek. Öneri: MVP'de (b), paralelde (c) incelemesi. OpenAI'nin uyum şartı ürün tasarımına girer: web araması sonuçları son kullanıcıya gösterilirken satır içi alıntılar görünür ve tıklanabilir olmalıdır; pano tasarımı (0204) bu şartla uyumlu kurgulanır.
+Uyum çizgisi (NG9, R-04): yalnızca resmî API'ler ve izinli erişim; Kademe 3 yüzeyler için tüketici arayüzü kazıma yapılmaz. Google yüzeyi için D-03 kararı verilmiştir: **Seçenek (b) — Gemini grounding açıkça etiketlenmiş vekil (official_proxy) olarak MVP'de kullanılır.** Kullanıcıya gösterilecek fidelite etiketi: "Resmî Google vekili — AI Overviews/AI Mode'un doğrudan ölçümü değildir". Seçenek (c) — lisanslı üçüncü taraf veri sağlayıcısı — için PY hukuki incelemesi MVP ile paralel başlatılmıştır; sonuç olumluysa yeni bağdaştırıcı olarak eklenmesi Tip 2 karardır. OpenAI'nin uyum şartı ürün tasarımına girer: web araması sonuçları son kullanıcıya gösterilirken satır içi alıntılar görünür ve tıklanabilir olmalıdır; pano tasarımı (0204) bu şartla uyumlu kurgulanır.
 
 Maliyet profili (K1, R-03): motor API'leri token ücretine ek istek başına arama ücreti alır; Perplexity'de bu bin istek başına arama bağlamı boyutuna göre kademelidir, OpenAI'de web_search aracı ayrı kalemdir. Sektörde yayımlanmış bir maliyet modeli, 150 promptluk haftalık panelin kaynaklı API harcamasını düşük tek haneli dolar/hafta mertebesinde göstermektedir (Temmuz 2026 fiyatlarıyla; panel ve örnekleme büyüdükçe doğrusal ölçeklenir). Sonuç: maliyet, panel boyutu × motor sayısı × örnekleme n ile öngörülebilir biçimde modellenir; K1 koruması bu üç kolu izler.
 
@@ -68,7 +68,7 @@ Yorum: TR pazarında iş önceliği ile ölçüm olgunluğu ters yönlüdür. M�
 | Perplexity | Düşük | Orta | Çok yüksek (Sonar) | 1 | **MVP çekirdek** (referans yüzey) |
 | Claude | Düşük | Orta | Yüksek | 2 | İkinci halka (hızlı ekleme) |
 | Grok | Düşük | Orta | Orta | 2 | İkinci halka; O-2 sonrası |
-| AI Overviews / AI Mode | Yüksek | Yüksek | Yok | 3 | Gemini-vekil, "yönsel" etiketiyle (D-03b) |
+| Google AI yüzeyi | Yüksek | Yüksek | Yok (vekil: Gemini) | 2 (vekil) | Gemini grounding vekili, official_proxy etiketiyle (D-03b); fidelite etiketi: "Resmî Google vekili — AI Overviews/AI Mode'un doğrudan ölçümü değildir" |
 | Copilot | Düşük | Orta | Yok | 3 | V1 kapsam dışı |
 
 ## 8. AVIP için Çıkarımlar
@@ -84,7 +84,8 @@ Yorum: TR pazarında iş önceliği ile ölçüm olgunluğu ters yönlüdür. M�
 
 | ID | Soru / Karar | Not |
 |---|---|---|
-| D-03 | Google yüzeyi stratejisi: (a) kapsam dışı, (b) Gemini etiketli vekil, (c) lisanslı üçüncü taraf veri | Öneri (b) MVP + (c) hukuki inceleme; karar PO+TL, 0205 ile birlikte. 0007 karar kaydına eklenecek. |
+| ~~D-03~~ | ~~Google yüzeyi stratejisi: (a) kapsam dışı, (b) Gemini etiketli vekil, (c) lisanslı üçüncü taraf veri~~ | ~~Öneri (b) MVP + (c) hukuki inceleme; karar PO+TL, 0205 ile birlikte. 0007 karar kaydına eklenecek.~~ |
+| ✅ D-03 | Google yüzeyi stratejisi: (b) kabul — Gemini grounding vekili, official_proxy etiketiyle; (c) PY incelemesi paralel başladı | **KARAR VERİLDİ** (21.07.2026, PO onayı); 0205 O-1 kapandı, 0308 §2'ye kaydedildi, 0007 karar kaydına işlendi. |
 | O-1 | Kademe 2 vekil ile tüketici yüzeyi korelasyonunun ölçümü | 0309 pilotunda API vs kontrollü manuel UI örneklemi. |
 | O-2 | xAI/Grok kurumsal veri işleme ve gizlilik şartlarının incelenmesi | PY (hukuk) desteğiyle; ikinci halka kararından önce. |
 
@@ -107,3 +108,4 @@ Yorum: TR pazarında iş önceliği ile ölçüm olgunluğu ters yönlüdür. M�
 | Versiyon | Tarih | Değişiklik |
 |---|---|---|
 | 1.0 | 12.07.2026 | İlk yayın: motor tipolojisi, üç kademeli erişim matrisi, fidelite kuralı, D-03 karar çerçevesi, TR pazar sinyalleri (0101 O-1 kapandı), MVP motor kapsam önerisi. |
+| 1.1 | 21.07.2026 | D-03 karara bağlandı: (b) Gemini grounding vekili, official_proxy etiketiyle MVP'de; (c) lisanslı üçüncü taraf verisi PY incelemesinde. Fidelite etiketi dili netleşti. 0205 O-1 kapanışı.

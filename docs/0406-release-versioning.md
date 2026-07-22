@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0406 |
 | Proje | AI Visibility Intelligence Platform (kod adı: AVIP) |
-| Versiyon | 1.0 |
+| Versiyon | 1.4 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 13 Temmuz 2026 |
@@ -61,10 +61,11 @@ Her sürümün kaydı depodaki CHANGELOG'a düşer: tarih, etiket ve imaj özeti
 
 | ID | Soru | Not |
 |---|---|---|
-| O-1 | 1.0.0 anının tanımının teyidi (kapı geçişi = genel açılış) | 0205 §8 ile; PO. |
-| O-2 | Tren gününün ve terfi penceresinin sabitlenmesi | 0401 ritmiyle; TL. |
-| O-3 | Sürüm notu şablonlarının hazırlanması | İç + kullanıcı katmanları; AN + PO. |
-| O-4 | Dondurma pencereleri takvimi | Pilot planı ve kapı haftalarıyla; PO + TL. |
+| ~~O-1~~ | ~~1.0.0 anının tanımının teyidi (kapı geçişi = genel açılış)~~ | ✅ **KAPANDI**: 1.0.0 = ticari genel açılış (GA). Pilot çıkış kapısı (0205 §8) geçilince. Pilot dönemi 0.x uzayında. PO teyidi alındı. 0007 D-82. |
+| ~~O-2~~ | ~~Tren gününün ve terfi penceresinin sabitlenmesi~~ | ✅ **KAPANDI**: Cuma (tren — staging doğrulama) → Pazartesi (terfi — production). Haftasonu doğrulama ve hata ayıklama penceresi. Pilot dönemi geçerlidir. 0007 D-77. |
+| O-3 | Sürüm notu şablonlarının hazırlanması | **AN+PO eylem planı (21.07.2026):** Pilot öncesi AN hazırlar (iç + kullanıcı şablonları), PO onaylar. Depoda docs/release-templates/ altında yaşar. v1.1 düzeltme turuyla birlikte tamamlanır. 0007 D-91. |
+| ~~O-4~~ | ~~Dondurma pencereleri takvimi~~ | ~~Pilot planı ve kapı haftalarıyla; PO + TL.~~ |
+| **✅ O-4 (KAPANDI)** | **Kapı değerlendirme haftaları (pilot çıkış kapısı öncesi + kapı haftası) ve yılbaşı tatili (2 hafta). Bu haftalarda yalnız PATCH çıkar.** | **PO+TL kararı (21.07.2026). 0007 D-57.** |
 
 ---
 
@@ -81,3 +82,7 @@ Her sürümün kaydı depodaki CHANGELOG'a düşer: tarih, etiket ve imaj özeti
 | Versiyon | Tarih | Değişiklik |
 |---|---|---|
 | 1.0 | 13.07.2026 | İlk yayın: üç sürüm uzayı ayrımı, SemVer + 0.x pilot dönemi (1.0.0 kapıya bağlı), haftalık tren ve genişlet-daralt tren kuralı, iki katmanlı sürüm notu (algo değişiminde trend etkisi zorunluluğu), bayrak-imaj-ileri-düzeltme öncelikli geri alma politikası, tek sürüm işletim modeli. Faz 4 ve v1.0 doküman seti kapanışı. |
+| 1.1 | 21.07.2026 | O-4 kapandı: dondurma pencereleri (kapı haftaları + yılbaşı). 0007 D-57. |
+| 1.2 | 21.07.2026 | O-2 kapandı: tren günü Cuma → Pazartesi terfi. 0007 D-77. |
+| 1.3 | 21.07.2026 | O-1 kapandı: 1.0.0 anı = ticari genel açılış (GA) — pilot çıkış kapısı sonrası. 0007 D-82. |
+| 1.4 | 21.07.2026 | O-3 eylem planı eklendi: AN pilot öncesi sürüm notu şablonlarını hazırlayacak. 0007 D-91. |

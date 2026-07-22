@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0305 |
 | Proje | AI Visibility Intelligence Platform (kod adı: AVIP) |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 13 Temmuz 2026 |
@@ -96,10 +96,14 @@ CODEOWNERS bağlam bazlı tutulur; her bağlamın bir birincil sahibi vardır (W
 
 | ID | Soru | Not |
 |---|---|---|
-| O-1 | Hesap motorunun yeri: measure/calc alt paketi mi, ayrı bağlam mı | Öneri alt paket; 0309 tasarımı sırasında teyit; TL. |
-| O-2 | engines için ayrı Go modülü gerekip gerekmediği | Öneri tek modül; bağımlılık şişmesi sinyalinde yeniden değerlendirme; TL. |
-| O-3 | web/ SPA'nın monorepo'da kalması | Öneri monorepo (tek PR akışı, sözleşme senkronu); 0403 boru hattı ayrımıyla; TL. |
-| O-4 | Lint kural setinin kesinleştirilmesi (depguard yapılandırması) | 0403 ile; D1-D7 birebir kurala çevrilir; TL. |
+| ~~O-1~~ | ~~Hesap motorunun yeri: measure/calc alt paketi mi, ayrı bağlam mı~~ | ~~Öneri alt paket; 0309 tasarımı sırasında teyit; TL.~~ |
+| **✅ O-1 (KAPANDI)** | **measure/calc alt paketinde kalır. Ayrı bağlam değil.** | **TL kararı (21.07.2026). 0007 D-64.** |
+| ~~O-2~~ | ~~engines için ayrı Go modülü gerekip gerekmediği~~ | ~~Öneri tek modül; bağımlılık şişmesi sinyalinde yeniden değerlendirme; TL.~~ |
+| **✅ O-2 (KAPANDI)** | **Tek modül — internal/engines. Bağımlılık şişerse ayrı modüle geçiş sinyali 0304 §9 yanlışlanma yolu olarak kalır.** | **TL kararı (21.07.2026). 0007 D-65.** |
+| ~~O-3~~ | ~~web/ SPA'nın monorepo'da kalması~~ | ~~Öneri monorepo (tek PR akışı, sözleşme senkronu); 0403 boru hattı ayrımıyla; TL.~~ |
+| **✅ O-3 (KAPANDI)** | **Monorepo — web/ aynı depoda. Ayrı derleme hattı, aynı PR akışı.** | **TL kararı (21.07.2026). 0007 D-66.** |
+| ~~O-4~~ | ~~Lint kural setinin kesinleştirilmesi (depguard yapılandırması)~~ | ~~0403 ile; D1-D7 birebir kurala çevrilir; TL.~~ |
+| **✅ O-4 (KAPANDI)** | **D1-D7 tüm kurallar depguard lint kuralı olarak 0403 CI kapısına bağlanır. İstisnasız uygulanır.** | **TL kararı (21.07.2026). 0007 D-67.** |
 
 ---
 
@@ -116,3 +120,4 @@ CODEOWNERS bağlam bazlı tutulur; her bağlamın bir birincil sahibi vardır (W
 | Versiyon | Tarih | Değişiklik |
 |---|---|---|
 | 1.0 | 13.07.2026 | İlk yayın: depo iskeleti, altı bağlam paketi eşlemesi (derleyici destekli iç sınırlar), 7 bağımlılık kuralı, üç giriş noktası ve kablolama, standart modül düzeni, çapraz kesen paket seti, sahiplik disiplini ve walking skeleton paket dilimi. |
+| 1.1 | 21.07.2026 | O-1 kapandı: measure/calc onay. O-2 kapandı: tek modül onay. O-3 kapandı: monorepo onay. O-4 kapandı: D1-D7 lint kuralları. 0007 D-64..D-67. |

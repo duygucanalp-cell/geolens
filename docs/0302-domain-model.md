@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0302 |
 | Proje | AI Visibility Intelligence Platform (kod adı: AVIP) |
-| Versiyon | 1.0 |
+| Versiyon | 1.2 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 13 Temmuz 2026 |
@@ -151,10 +151,13 @@ Model, 0005 sözlüğündeki yerleşik terimleri aynen kullanır (kiracı, fidel
 
 | ID | Soru | Not |
 |---|---|---|
-| O-1 | Üyelik erişim kapsamı: kiracı geneli mi, çalışma alanı bazlı mı | 0310 rol modeli; ajans koltuk politikasını etkiler; TL + PO. |
-| O-2 | Panel versiyon geçişinde trend gösterim kuralının ayrıntısı | 0309 (istatistik) + arayüz; işaret zorunlu, birleştirme yasak (§5). |
+| ~~O-1~~ | ~~Üyelik erişim kapsamı: kiracı geneli mi, çalışma alanı bazlı mı~~ | ~~0310 rol modeli; ajans koltuk politikasını etkiler; TL + PO.~~ |
+| ✅ O-1 | Üyelik erişim kapsamı | **KAPANDI** (21.07.2026): kiracı düzeyinde, isteğe bağlı çalışma alanı erişim listesi. Liste boşsa tüm alanlara erişim. 0310 v1.1 ile tasarım kapatıldı. |
+| ~~O-2~~ | ~~Panel versiyon geçişinde trend gösterim kuralının ayrıntısı~~ | ~~0309 (istatistik) + arayüz; işaret zorunlu, birleştirme yasak (§5).~~ |
+| **✅ O-2 (KAPANDI)** | **Dikey kesik çizgi + hover araç ipucu: 'Panel [eski versiyon] → [yeni versiyon]: [fark özeti]'. §5 kurallarına uygun.** | **TL kararı (21.07.2026). 0007 D-34.** |
 | O-3 | Benchmark varlığının anonimleştirme modeli | NFR-N13; HT2 öncesi; 0204 O-2 ile birlikte. |
-| O-4 | Kimlik stratejisinin kesinleştirilmesi (ULID önerisi) | 0303 ile; sıralanabilirlik ve indeks etkisi kıyası; TL. |
+| ~~O-4~~ | ~~Kimlik stratejisinin kesinleştirilmesi (ULID önerisi)~~ | ~~0303 ile; sıralanabilirlik ve indeks etkisi kıyası; TL.~~ |
+| **✅ O-4 (KAPANDI)** | **ULID: 26 karakter, zaman-sıralanabilir, metin tipi — tüm birincil anahtarlarda.** | **TL kararı (21.07.2026). 0303 K2 ile uyumlu. 0007 D-35.** |
 
 ---
 
@@ -171,3 +174,5 @@ Model, 0005 sözlüğündeki yerleşik terimleri aynen kullanır (kiracı, fidel
 | Versiyon | Tarih | Değişiklik |
 |---|---|---|
 | 1.0 | 13.07.2026 | İlk yayın: 6 bağlamlı harita, 28 çekirdek varlık, panel versiyonlama modeli (iki versiyon ekseni), 11 değişmez, 5 durum makinesi, sözlük hizası ve 0303/0305/0306/0309/0310 türetme kuralları. |
+| 1.1 | 21.07.2026 | O-1 kapandı: üyelik erişim kapsamı (kiracı düzeyinde, opsiyonel workspace listesi). 0310 v1.1 ile uyumlu. |
+| 1.2 | 21.07.2026 | O-2 kapandı: trend sınırı (dikey kesik çizgi + araç ipucu). O-4 kapandı: ULID onaylandı. 0007 D-34, D-35. |

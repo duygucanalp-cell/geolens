@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0404 |
 | Proje | AI Visibility Intelligence Platform (kod adı: AVIP) |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 13 Temmuz 2026 |
@@ -64,10 +64,14 @@ Kapsam yüzdesi amaç değil göstergedir: kritik paketlerde (measure/calc, gove
 
 | ID | Soru | Not |
 |---|---|---|
-| O-1 | Kapsam eşiklerinin sayısal değerleri [K] | Kritik ve genel taban ayrımıyla; TL. |
-| O-2 | Fixture tazeleme kadansı ve sahipliği | engine_meta sinyaliyle tetikli; TL + AN. |
-| O-3 | Yük duman testinin kapsamı ve pilot kapısına bağlanması | 0205 §8 ile; PO + TL. |
-| O-4 | Mutasyon testinin hızlı takip değerlendirmesi | Kritik paketlerde pilot sonrası; TL. |
+| ~~O-1~~ | ~~Kapsam eşiklerinin sayısal değerleri [K]~~ | ~~Kritik ve genel taban ayrımıyla; TL.~~ |
+| ✅ O-1 | Kapsam eşikleri [K] | **KAPANDI** (21.07.2026): kritik paketler ≥%70, genel ≥%50. Pilot verisiyle kalibre edilecek. |
+| ~~O-2~~ | ~~Fixture tazeleme kadansı ve sahipliği~~ | ~~engine_meta sinyaliyle tetikli; TL + AN.~~ |
+| ✅ O-2 | Fixture tazeleme kadansı ve sahipliği | **KAPANDI** (21.07.2026): engine_meta sürüm kayması sinyaliyle tetikli + çeyreklik tam tarama. TL + AN. |
+| ~~O-3~~ | ~~Yük duman testinin kapsamı ve pilot kapısına bağlanması~~ | ~~0205 §8 ile; PO + TL.~~ |
+| ✅ O-3 | Yük duman testinin kapsamı ve pilot kapısına bağlanması | **KAPANDI** (21.07.2026): MVP'de yok. Pilot verisi sonrasında yük profili çıkarılıp test edilecek. Pilot kapısı kriteri olarak eklenmeyecek. |
+| ~~O-4~~ | ~~Mutasyon testinin hızlı takip değerlendirmesi~~ | ~~Kritik paketlerde pilot sonrası; TL.~~ |
+| ✅ O-4 | Mutasyon testinin hızlı takip değerlendirmesi | **KAPANDI** (21.07.2026): hızlı takip 1'de değerlendirilecek. Pilot sonrası kritik paketlerde uygulama kararı. |
 
 ---
 
@@ -84,3 +88,4 @@ Kapsam yüzdesi amaç değil göstergedir: kritik paketlerde (measure/calc, gove
 | Versiyon | Tarih | Değişiklik |
 |---|---|---|
 | 1.0 | 13.07.2026 | İlk yayın: dört katmanlı piramit ve dört ilke (test = spesifikasyon), altı birim paketi odak listesi, değişmez etiketli izolasyon matrisi + hızlı alt küme tanımı (0403 O-2 kapanışı), sözleşme senaryoları, motor fixture kayıt-oynatma yaklaşımı, smoke setleri, kapsam göstergeleri ve kaçak kuralı. |
+| 1.1 | 21.07.2026 | O-1 kapandı: kapsam eşikleri (kritik ≥%70, genel ≥%50). O-2 kapandı: fixture kadansı (engine_meta+çeyreklik). O-3 kapandı: yük testi MVP'de yok, pilot sonrası. 0007 D-20, D-21, D-22. |

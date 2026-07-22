@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0308 |
 | Proje | AI Visibility Intelligence Platform (kod adı: AVIP) |
-| Versiyon | 1.1 |
+| Versiyon | 1.5 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 18 Temmuz 2026 |
@@ -90,9 +90,11 @@ Sağlayıcı API anahtarları platform sırrıdır: ortam/kasa üzerinden yükle
 | ID | Soru | Not |
 |---|---|---|
 | O-1 | Grok kurumsal API şartlarının ikinci halka önkoşulu olarak takibi | 0102 O-2 devamı; HT1 aktivasyon koşulu; TL + PY. |
-| O-2 | Gemini yönlendirme URI'lerinin alan adı çözüm derinliği | Kaynak analizi (M9) doğruluğu; uygulamada kalibre; TL. |
-| O-3 | Bot listesi ve denetim kataloğu bakım süreci | 0007 kadansına madde; ekosistem değişimine duyarlı; AN + TL. |
-| O-4 | Lisanslı Google verisi (c) hukuki inceleme sonucu | Olumluysa yeni bağdaştırıcı kararı (Tip 2); PY. |
+| ~~O-2~~ | ~~Gemini yönlendirme URI'lerinin alan adı çözüm derinliği~~ | ~~Kaynak analizi (M9) doğruluğu; uygulamada kalibre; TL.~~ |
+| **✅ O-2 (KAPANDI)** | **Tam çözüm: tüm yönlendirme zinciri son hedef alan adına kadar takip edilir. En doğru kaynak analizi (M9).** | **TL kararı (21.07.2026). 0007 D-39.** |
+| ~~O-3~~ | ~~Bot listesi ve denetim kataloğu bakım süreci~~ | ~~0007 kadansına madde; ekosistem değişimine duyarlı; AN + TL.~~ |
+| **✅ O-3 (KAPANDI)** | **0007 haftalık senkron gündemine eklendi. AN her hafta bot listesi taraması yapar, TL onaylar. Değişiklik varsa 0308 changelog'una işlenir.** | **AN+TL kararı (21.07.2026). 0007 D-51.** |
+| O-4 | Lisanslı Google verisi (c) hukuki inceleme sonucu | Olumluysa yeni bağdaştırıcı kararı (Tip 2). PY incelemesi MVP ile paralel başladı (21.07.2026); **sonuç bekleniyor — açık soru olarak takipte**. |
 
 ---
 
@@ -110,3 +112,7 @@ Sağlayıcı API anahtarları platform sırrıdır: ortam/kasa üzerinden yükle
 |---|---|---|
 | 1.0 | 13.07.2026 | İlk yayın: D-03 kararının kaydı (b + c incelemesi), beş öğeli bağdaştırıcı sözleşmesi (sınıflı hatalar ve değişmezler), üç çekirdek bağdaştırıcı kartı, kayıt defteri ve dört adımlı motor ekleme süreci, hız/maliyet/eşzamanlılık politikaları, dört mekanizmalı dayanıklılık (R-04 tepkisi), site denetim bileşeni ve anahtar yönetimi. |
 | 1.1 | 18.07.2026 | Site denetim bileşenine SSRF koruma maddeleri eklendi (0405 A10 denetim yakalaması; 0405 O-4 kapanışı). |
+| 1.2 | 21.07.2026 | D-03 kararı §2'de kayıtlıydı, O-4 PY inceleme durumu güncellendi (paralel başladı). 0205 O-1 kapanışı ile Faz 3 kritik yolundaki son blokaj kalktı. |
+| 1.3 | 21.07.2026 | O-2 kapandı: Gemini URI tam çözüm (son hedefe kadar). 0007 D-39. |
+| 1.4 | 21.07.2026 | O-3 kapandı: bot listesi bakımı 0007 haftalık senkron gündeminde. 0007 D-51. |
+| 1.5 | 21.07.2026 | O-4 durum güncellemesi: PY incelemesi devam ediyor. O-1 (Grok) PY takibinde, HT1 öncesi değerlendirilecek. |

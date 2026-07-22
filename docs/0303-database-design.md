@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0303 |
 | Proje | AI Visibility Intelligence Platform (kod adı: AVIP) |
-| Versiyon | 1.0 |
+| Versiyon | 1.4 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 13 Temmuz 2026 |
@@ -231,10 +231,12 @@ Yaşam döngüsü: ham arşivde depolama sınıfı geçişi (sık erişimden sey
 
 | ID | Soru | Not |
 |---|---|---|
-| O-1 | Kuyruk türü: Redis Stream mi liste mi | ADR-005; teslim garantileri ve tüketici grubu ihtiyacına göre; 0304; TL. |
-| O-2 | Saklama süreleri ve S3 sınıf geçiş eşikleri [K] | 0204 O-4 ile birlikte; maliyet-uyum dengesi; TL + PO. |
-| O-3 | KVKK silme ↔ yalnız-ekleme arşiv uzlaşımı | Kripto-silme (kiracı anahtarını imha) ve anonimleştirme adayları; 0310; PY + TL. |
-| O-4 | Skor ölçeği ve hassasiyetin kesinleştirilmesi | 0309 hesap tasarımıyla; K7 varsayılanı 0-100, numeric(5,2). |
+| ~~O-1~~ | ~~Kuyruk türü: Redis Stream mi liste mi~~ | ✅ **KAPANDI**: Redis Streams + tüketici grupları (ADR-005 onay). Liste alternatifi elendi — teslim garantileri ve tüketici grubu ihtiyacı Streams'i zorunlu kılar. 0007 D-74. |
+| ~~O-2~~ | ~~Saklama süreleri ve S3 sınıf geçiş eşikleri [K]~~ | ~~0204 O-4 ile birlikte; maliyet-uyum dengesi; TL + PO.~~ |
+| **✅ O-2 (KAPANDI)** | **Ham veri: 30 gün STANDARD → 90 gün GLACIER → sil. Pilotta kalibre edilecek.** | **PO+TL kararı (21.07.2026). 0007 D-54.** |
+| ~~O-3~~ | ~~KVKK silme ↔ yalnız-ekleme arşiv uzlaşımı~~ | ~~Kripto-silme (kiracı anahtarını imha) ve anonimleştirme adayları; 0310; PY + TL.~~ |
+| **✅ O-3 (KAPANDI)** | **0310 §6 kararıyla kripto-silme (zarf anahtarı imhası) + anonimleştirme çözümü onaylandı. PY onayı alınmıştır.** | **PY+TL kararı (21.07.2026). 0310 v1.0 §6'ya kayıtlı. 0007 D-58.** |
+| O-4 | Skor ölçeği ve hassasiyetin kesinleştirilmesi | Kapandı (0309 v1.0 kararına göre: 0-100, numeric(5,2)). |
 
 ---
 
@@ -251,3 +253,7 @@ Yaşam döngüsü: ham arşivde depolama sınıfı geçişi (sık erişimden sey
 | Versiyon | Tarih | Değişiklik |
 |---|---|---|
 | 1.0 | 13.07.2026 | İlk yayın: 10 tasarım kuralı, 25 tabloluk envanter, 7 çekirdek tablo kolon sözleşmesi (outbox deseni dahil), erişim deseni bazlı indeks stratejisi, genişlet-daralt migration kuralları, Redis ve S3 modelleri, I1-I11 mekanizma eşlemesi. |
+| 1.1 | 21.07.2026 | O-4 kapanışı: skor ölçeği 0-100, numeric(5,2) olarak kesinleşti (0309 v1.0 kararı). |
+| 1.2 | 21.07.2026 | O-2 kapandı: S3 saklama (30gün STANDARD → 90gün GLACIER → sil). 0007 D-54. |
+| 1.3 | 21.07.2026 | O-3 kapandı: KVKK silme uzlaşımı (kripto-silme + anonimleştirme, 0310 §6). 0007 D-58. |
+| 1.4 | 21.07.2026 | O-1 kapandı: Redis Streams + tüketici grupları (ADR-005 onay). Liste alternatifi elendi. 0007 D-74. |

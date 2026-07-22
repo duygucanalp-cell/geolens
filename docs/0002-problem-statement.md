@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0002 |
 | Proje | AI Visibility Intelligence Platform (kod adı: AVIP) |
-| Versiyon | 1.0 |
+| Versiyon | 1.2 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 12 Temmuz 2026 |
@@ -93,8 +93,9 @@ Kapsam dışı: çözüm tasarımı (0204), pazar boyutlandırma ve fırsat anal
 
 | ID | Soru | Not |
 |---|---|---|
-| O-1 | Hedef segment önceliği: kurumsal (enterprise) mı, KOBİ mi, ajanslar mı? | Turkcell bağlamı kurumsala işaret ediyor; karar 0201'de personalarla netleşecek. |
-| O-2 | Coğrafi odak: ilk fazda TR öncelikli mi, küresel mi? | 0105 fırsat analizinde karara bağlanacak. |
+| ~~O-1~~ | ~~Hedef segment önceliği: kurumsal (enterprise) mı, KOBİ mi, ajanslar mı?~~ | ~~Turkcell bağlamı kurumsala işaret ediyor; karar 0201'de personalarla netleşecek.~~ |
+| ✅ O-1 | Hedef segment önceliği | **KAPANDI** (21.07.2026): PO onayıyla P3 (ajans) + P2 (KOBİ) odağı kabul edildi. 0201 §7, 0007 D-04 karar kaydına işlendi. |
+| ~~O-2~~ | ~~Coğrafi odak: ilk fazda TR öncelikli mi, küresel mi?~~ | ✅ **KAPANDI**: TR+EN paralel GTM (D-44). TR-first ama ürün baştan iki dilde. Küresel pencere 0206 O-3 (PMF sinyali) ile izlenir. 0007 D-87. |
 
 ---
 
@@ -103,3 +104,5 @@ Kapsam dışı: çözüm tasarımı (0204), pazar boyutlandırma ve fırsat anal
 | Versiyon | Tarih | Değişiklik |
 |---|---|---|
 | 1.0 | 12.07.2026 | İlk yayın: problem bildirimi (P1–P3), aktör ve acı noktası haritası, mevcut çözüm analizi, H1–H5 hipotezleri ve doğrulama planı. |
+| 1.1 | 21.07.2026 | 0002 O-1 kapandı: segment önceliği PO onayıyla P3 (ajans) + P2 (KOBİ) olarak kararlaştırıldı. 0201 §7, 0007 D-04. |
+| 1.2 | 21.07.2026 | O-2 kapandı: coğrafi odak TR+EN paralel (D-44). 0007 D-87. |

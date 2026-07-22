@@ -4,10 +4,10 @@
 |---|---|
 | Doküman ID | 0004 |
 | Proje | AI Visibility Intelligence Platform (kod adı: AVIP) |
-| Versiyon | 1.1 |
+| Versiyon | 1.4 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Product |
-| Tarih | 18 Temmuz 2026 |
+| Tarih | 21 Temmuz 2026 |
 | Karşıladığı madde | 6 · Başarı metrikleri |
 | İlişkili | 0002, 0003, 0307, 0308, 0309, 0310, 0311 |
 
@@ -104,9 +104,9 @@ Metriklerin veri kaynakları: M1–M4 ürün telemetrisi (olay bazlı analitik);
 
 | ID | Soru | Not |
 |---|---|---|
-| O-1 | Pilot kiracı sayısı ve segmenti (M1, M2 paydası) | 0003 O-1 ile birlikte; 0201 persona kararı sonrası. |
-| O-2 | Örnekleme büyüklüğü n ve ölçüm sıklığı | 0309 pilotunda maliyet (K1) ve kararlılık (M5) dengesiyle. |
-| O-3 | Uptime hedefinin sözleşmesel SLO'ya dönüşüp dönüşmeyeceği | Kurumsal müşteri gereksinimlerine göre; 0310 ile. |
+| ~~O-1~~ | ~~Pilot kiracı sayısı ve segmenti (M1, M2 paydası)~~ | ✅ **KAPANDI**: 0205 O-3 kararı (6-8 kiracı: 3 P3 + 2-3 P2 + 1-2 P4) ve 0003 O-1 kararı ile uyumlu. 0007 D-79. |
+| ~~O-2~~ | ~~Örnekleme büyüklüğü n ve ölçüm sıklığı~~ | ✅ **KAPANDI**: n=3 (D-30), ölçüm sıklığı haftalık (Free/Pro) / günlük (Business/Enterprise) (0205 O-4). [K] kalibrasyon — pilot verisiyle revize edilir. 0007 D-88. |
+| ~~O-3~~ | ~~Uptime hedefinin sözleşmesel SLO'ya dönüşüp dönüşmeyeceği~~ | ✅ **KAPANDI**: İlk kurumsal müşteriyle birlikte sözleşmesel SLO tanımlanır. MVP'de %99.5 [K] tasarım hedefi olarak kalır. 0007 D-68. |
 
 ---
 
@@ -116,3 +116,6 @@ Metriklerin veri kaynakları: M1–M4 ürün telemetrisi (olay bazlı analitik);
 |---|---|---|
 | 1.0 | 12.07.2026 | İlk yayın: North Star (WAT%), M1–M14 kataloğu, K1–K3 koruma metrikleri, sert kural ve [K] kalibrasyon ayrımı, ölçüm altyapısı eşlemesi. |
 | 1.1 | 18.07.2026 | Aday metrik bölümü eklendi: TTFV, aktivasyon oranı, e-posta→pano geçişi, yeniden ölçüm oranı, tavsiye payı (0202 §10 devri). Tanımlar kalibrasyon öncesi adaydır. |
+| 1.2 | 21.07.2026 | O-3 kapandı: uptime SLO ilk kurumsal müşteriyle tanımlanır. MVP'de %99.5 [K] tasarım hedefi. 0007 D-68. |
+| 1.3 | 21.07.2026 | O-1 kapandı: pilot kiracı profili 0205 O-3 kararına referansla. 0007 D-79. |
+| 1.4 | 21.07.2026 | O-2 kapandı: n=3 (D-30), frekans haftalık/günlük (0205 O-4). 0007 D-88. |

@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0310 |
 | Proje | AI Visibility Intelligence Platform (kod adı: AVIP) |
-| Versiyon | 1.0 |
+| Versiyon | 1.2 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 13 Temmuz 2026 |
@@ -100,10 +100,13 @@ Doğrulama üç halkada işler. Sürekli (CI, 0403): bağımlılık ve imaj tara
 
 | ID | Soru | Not |
 |---|---|---|
-| O-1 | MFA zamanlaması (Yönetici rolü için HT1 adayı) | PO + TL; kurumsal kapı öncesi değer sinyali. |
-| O-2 | Oturum ve derin bağlantı sürelerinin başlangıç değerleri [K] | TL; M1 dönüşümü ile güvenlik dengesi; pilotta kalibre. |
+| ~~O-1~~ | ~~MFA zamanlaması (Yönetici rolü için HT1 adayı)~~ | ~~PO + TL; kurumsal kapı öncesi değer sinyali.~~ |
+| ✅ O-1 | MFA zamanlaması | **KAPANDI** (21.07.2026): HT1 — kurumsal kapı öncesi yönetici rolü için eklenecek. MVP'de MFA yok. |
+| ~~O-2~~ | ~~Oturum ve derin bağlantı sürelerinin başlangıç değerleri [K]~~ | ~~TL; M1 dönüşümü ile güvenlik dengesi; pilotta kalibre.~~ |
+| ✅ O-2 | Oturum ve derin bağlantı süreleri [K] | **KAPANDI** (21.07.2026): mutlak 7 gün, kayan 2 saat. Pilotta kalibre edilecek. |
 | O-3 | Nesne kilidi saklama süresi; saklama politikası bütünü | 0204 O-4 ile birlikte; PY + TL. |
-| O-4 | Harici sızma testinin pilot çıkış kapısına eklenmesi | 0205 §8 kriter seti revizyonu; PO. |
+| ~~O-4~~ | ~~Harici sızma testinin pilot çıkış kapısına eklenmesi~~ | ~~0205 §8 kriter seti revizyonu; PO.~~ |
+| **✅ O-4 (KAPANDI)** | **Pilot çıkış kapısına eklenmez. Sızma testi Dilim 4 (Sertleştirme) kapsamında yapılır, kapı kriteri değildir.** | **PO kararı (21.07.2026). 0007 D-47.** |
 
 ---
 
@@ -120,3 +123,5 @@ Doğrulama üç halkada işler. Sürekli (CI, 0403): bağımlılık ve imaj tara
 | Versiyon | Tarih | Değişiklik |
 |---|---|---|
 | 1.0 | 13.07.2026 | İlk yayın: yedi maddelik tehdit envanteri, oturum/CSRF ve derin bağlantı token tasarımı, iki rollü RBAC + isteğe bağlı çalışma alanı erişim listesi (O-3/O-1 kapanışı), katman-doğrulama eşli izolasyon stratejisi, anonimleştirme + zarf anahtarlı kripto-silme (KVKK uzlaşımı), karma zinciri ve governance modlu nesne kilidi, beş sınıflı sır rotasyonu, üç halkalı doğrulama çerçevesi. |
+| 1.1 | 21.07.2026 | O-1 kapandı: MFA HT1'de (kurumsal kapı öncesi). O-2 kapandı: oturum süreleri (mutlak 7gün, kayan 2sa). |
+| 1.2 | 21.07.2026 | O-4 kapandı: sızma testi Dilim 4'te, pilot kapısına eklenmez. 0007 D-47. |

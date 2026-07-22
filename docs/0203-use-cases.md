@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0203 |
 | Proje | AI Visibility Intelligence Platform (kod adı: AVIP) |
-| Versiyon | 1.0 |
+| Versiyon | 1.3 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 13 Temmuz 2026 |
@@ -192,10 +192,14 @@ Dağılım: 19 Çekirdek, 9 Genişletilmiş. Çekirdek kesit üç kümeden oluş
 
 | ID | Soru | Not |
 |---|---|---|
-| O-1 | UC-12 (benchmark) V1 kapsamına girer mi | 0202 O-3 gizlilik çözümüne bağlı; 0205'te kesinleşir. |
-| O-2 | UC-26 self-serve ödeme akışının sürüm hedefi | 0201 O-2 ve 0202 O-2 ile birleşik PO kararı. |
-| O-3 | Rol modeli granülaritesi: yönetici/üye yeterli mi, izleyici rolü gerekli mi | 0310 kimlik-yetkilendirme tasarımında; UC-25 detayını etkiler. |
-| O-4 | UC-21 API kapsamı: okuma-yalnız mı başlar | Öneri okuma-yalnız; 0204 gereksinimi ve 0304 ADR'siyle. |
+| ~~O-1~~ | ~~UC-12 (benchmark) V1 kapsamına girer mi~~ | ~~0202 O-3 gizlilik çözümüne bağlı; 0205'te kesinleşir.~~ |
+| ✅ O-1 | UC-12 (benchmark) V1 kapsamı | **KAPANDI** (21.07.2026): MVP dışı, HT2'ye bırakıldı. 0203'te Genişletilmiş statüsü korunuyor. |
+| ~~O-2~~ | ~~UC-26 self-serve ödeme akışının sürüm hedefi~~ | ~~0201 O-2 ve 0202 O-2 ile birleşik PO kararı.~~ |
+| ✅ O-2 | UC-26 self-serve ödeme akışının sürüm hedefi | **KAPANDI** (21.07.2026): hızlı takip 2 — genel ticari açılışla birlikte. Pilot döneminde arka ofis ataması yeterli. |
+| ~~O-3~~ | ~~Rol modeli granülaritesi: yönetici/üye yeterli mi, izleyici rolü gerekli mi~~ | ~~0310 kimlik-yetkilendirme tasarımında; UC-25 detayını etkiler.~~ |
+| ✅ O-3 | Rol modeli granülaritesi | **KAPANDI** (21.07.2026): yönetici + üye yeterli. İzleyici rolü MVP kapsamı dışı; platform ufku olarak not edilir. 0310 tasarımı iki rol üzerinden yapılır. |
+| ~~O-4~~ | ~~UC-21 API kapsamı: okuma-yalnız mı başlar~~ | ~~Öneri okuma-yalnız; 0204 gereksinimi ve 0304 ADR'siyle.~~ |
+| ✅ O-4 | UC-21 API kapsamı | **KAPANDI** (21.07.2026): okuma-yalnız başlar. Yazma yetkisi hızlı takip 1'e bırakıldı. |
 
 ---
 
@@ -212,3 +216,6 @@ Dağılım: 19 Çekirdek, 9 Genişletilmiş. Çekirdek kesit üç kümeden oluş
 | Versiyon | Tarih | Değişiklik |
 |---|---|---|
 | 1.0 | 13.07.2026 | İlk yayın: 6 aktör tipi, 7 grupta 28 senaryo (19 Çekirdek / 9 Genişletilmiş), altı detay kartı, persona kapsama kontrolü, 0205 karar kuralı ve 0204 türetme kuralı. |
+| 1.1 | 21.07.2026 | O-1 kapandı: UC-12 benchmark MVP dışı (HT2). O-3 kapandı: yönetici+üye rolleri yeterli, izleyici rolü MVP kapsamı dışı. 0007 D-08, D-09. |
+| 1.2 | 21.07.2026 | O-4 kapandı: UC-21 API okuma-yalnız başlar. 0007 D-10. |
+| 1.3 | 21.07.2026 | O-2 kapandı: UC-26 self-serve ödeme hızlı takip 2'de (genel açılışla). 0007 D-24. |

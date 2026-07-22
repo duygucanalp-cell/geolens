@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0309 |
 | Proje | AI Visibility Intelligence Platform (kod adı: AVIP) |
-| Versiyon | 1.0 |
+| Versiyon | 1.3 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 13 Temmuz 2026 |
@@ -68,10 +68,14 @@ Trend noktaları pencere bazlı üretilir ve panel versiyonuna bağlıdır; vers
 
 | ID | Soru | Not |
 |---|---|---|
-| O-1 | Örnekleme başlangıç değerleri: n, temperature sabitleri, bayraklı oran eşiği [K] | Pilot öncesi TL önerisi, pilotta kalibrasyon. |
-| O-2 | Partial kapsam eşiğinin başlangıcı [K] | PO + TL; dürüst kapsam dili ile birlikte. |
-| O-3 | Anlamlılık eşik setinin başlangıcı [K] | TL; M11 geri bildirimiyle kalibre. |
-| O-4 | Öneri kural kütüphanesinin ilk içerik seti | AN + PO; NG10 ve iddia dili denetimiyle; yayın PO onaylı. |
+| ~~O-1~~ | ~~Örnekleme başlangıç değerleri: n, temperature sabitleri, bayraklı oran eşiği [K]~~ | ~~Pilot öncesi TL önerisi, pilotta kalibrasyon.~~ |
+| **✅ O-1 (KAPANDI)** | **n=3, temperature=0 (deterministik), bayraklı oran ≥%50 → yetersiz-örneklem işareti.** | **TL önerisiyle kapatıldı (21.07.2026). Pilotta kalibre edilecek (0007 D-30).** |
+| ~~O-2~~ | ~~Partial kapsam eşiğinin başlangıcı [K]~~ | ~~PO + TL; dürüst kapsam dili ile birlikte.~~ |
+| **✅ O-2 (KAPANDI)** | **≥%50 motor tamamlandığında partial yayın yapılır (örn: 3 motorlu panelde ≥2 motor). Eksik motorlar açıkça listelenir. Pilotta kalibre edilecek.** | **PO+TL kararı (21.07.2026). 0007 D-56.** |
+| ~~O-3~~ | ~~Anlamlılık eşik setinin başlangıcı [K]~~ | ~~TL; M11 geri bildirimiyle kalibre.~~ |
+| **✅ O-3 (KAPANDI)** | **Mutlak fark ≥5 puan, %95 GA ayrışması, asgari örneklem n≥10.** | **TL önerisiyle kapatıldı (21.07.2026). M11 geri bildirimiyle kalibre edilecek (0007 D-31).** |
+| ~~O-4~~ | ~~Öneri kural kütüphanesinin ilk içerik seti~~ | ~~AN + PO; NG10 ve iddia dili denetimiyle; yayın PO onaylı.~~ |
+| **✅ O-4 (KAPANDI)** | **Skor bazlı öneriler: düşen skor, zayıf bileşen, rakip geçişi. AN hazırlayacak, NG10 filtresi + iddia dili denetiminden geçecek, PO onayıyla yayına alınacak. Pilot öncesi tamamlanmalı.** | **AN+PO kararı (21.07.2026). 0007 D-52.** |
 
 ---
 
@@ -88,3 +92,6 @@ Trend noktaları pencere bazlı üretilir ve panel versiyonuna bağlıdır; vers
 | Versiyon | Tarih | Değişiklik |
 |---|---|---|
 | 1.0 | 13.07.2026 | İlk yayın: stokastik ölçüm / deterministik hesap ayrımı, örnekleme planı (n, temperature, bayraklı oran), calculation_run ve yeniden üretim prosedürü, dört bileşenli skor modeli (0-100 ölçek kapanışı), GA ve fidelite kuralları (M12), üç koşullu anlamlılık, partial yayın kuralı, kural tabanlı öneri motoru (NG10 + iddia dili), trend versiyon işaretleri ve pilot kalibrasyon listesi. |
+| 1.1 | 21.07.2026 | O-1 kapandı: n=3, temp=0, bayraklı oran ≥%50. O-3 kapandı: 5 puan, %95 GA, n≥10. 0007 D-30, D-31. |
+| 1.2 | 21.07.2026 | O-4 kapandı: skor bazlı öneri kuralları (AN hazırlar, PO onaylar). 0007 D-52. |
+| 1.3 | 21.07.2026 | O-2 kapandı: partial yayın eşiği ≥%50 motor. 0007 D-56. |

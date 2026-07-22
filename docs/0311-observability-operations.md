@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0311 |
 | Proje | AI Visibility Intelligence Platform (kod adı: AVIP) |
-| Versiyon | 1.0 |
+| Versiyon | 1.2 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 13 Temmuz 2026 |
@@ -86,10 +86,13 @@ Aylık kapasite raporu dört göstergeyi izler: (1) büyük tablo hacimleri ve s
 
 | ID | Soru | Not |
 |---|---|---|
-| O-1 | Alarm eşiklerinin başlangıç seti [K] | TL önerisi + pilot kalibrasyonu. |
-| O-2 | Log ve metrik saklama sınıfları [K] | 0204 O-4 saklama ailesiyle; maliyet etkili; TL. |
+| ~~O-1~~ | ~~Alarm eşiklerinin başlangıç seti [K]~~ | ~~TL önerisi + pilot kalibrasyonu.~~ |
+| **✅ O-1 (KAPANDI)** | **Kritik ≥15 dk tepki, yüksek ≥1 sa tepki. Geniş seviye: orta ≥4 sa, düşük ≥8 sa (iş günü içi).** | **TL önerisiyle kapatıldı (21.07.2026). Pilotta kalibre edilecek (0007 D-33).** |
+| ~~O-2~~ | ~~Log ve metrik saklama sınıfları [K]~~ | ~~0204 O-4 saklama ailesiyle; maliyet etkili; TL.~~ |
+| **✅ O-2 (KAPANDI)** | **Operasyon logları 30 gün, metrik verileri 90 gün, denetim izi log kopyası 1 yıl. Pilotta kalibre edilecek.** | **TL kararı (21.07.2026). 0007 D-40.** |
 | O-3 | RTO/RPO sayısal hedefleri ve tatbikat kadansı [K] | 0402 altyapı seçimiyle; PO + TL. |
-| O-4 | Bölümleme tetik kriterinin sayısallaştırılması [K] | Hacim + gecikme eşleşmesi; TL. |
+| ~~O-4~~ | ~~Bölümleme tetik kriterinin sayısallaştırılması [K]~~ | ~~Hacim + gecikme eşleşmesi; TL.~~ |
+| **✅ O-4 (KAPANDI)** | **50M satır veya 10GB tablo hacmi + sorgu gecikmesinde ≥2x yavaşlama. İki koşul birlikte tetikler.** | **TL kararı (21.07.2026). Pilotta kalibre edilecek. 0007 D-41.** |
 
 ---
 
@@ -106,3 +109,5 @@ Aylık kapasite raporu dört göstergeyi izler: (1) büyük tablo hacimleri ve s
 | Versiyon | Tarih | Değişiklik |
 |---|---|---|
 | 1.0 | 13.07.2026 | İlk yayın: korelasyon zinciri sözleşmesi ve kardinalite kuralı, altı gruplu metrik kataloğu, iki seviyeli alarm envanteri (runbook bağlı), log/iz yönetimi, TTL tabanlı cache stratejisi (tazelik maskeleme yasağı), sekiz kalemlik rutin/runbook envanteri, PITR + yeniden inşa + zarf anahtarı yedeğiyle DR çerçevesi, dört göstergeli kapasite gözetimi. Faz 3 kapanışı. |
+| 1.1 | 21.07.2026 | O-1 kapandı: alarm eşik başlangıçları (kritik 15dk, yüksek 1sa, orta 4sa, düşük 8sa). 0007 D-33. |
+| 1.2 | 21.07.2026 | O-2 kapandı: log saklama (operasyon 30gün, metrik 90gün, denetim 1yıl). O-4 kapandı: bölümleme tetiği (50M satır/10GB + 2x gecikme). 0007 D-40, D-41. |

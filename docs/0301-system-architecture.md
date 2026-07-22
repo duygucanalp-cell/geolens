@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0301 |
 | Proje | AI Visibility Intelligence Platform (kod adı: AVIP) |
-| Versiyon | 1.0 |
+| Versiyon | 1.2 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 13 Temmuz 2026 |
@@ -159,9 +159,10 @@ Bu dokümandan türeyen temel çıkarımlar:
 
 | ID | Soru | Not |
 |---|---|---|
-| O-1 | Walking skeleton dilimlerinin zamanlama ve sıralama detayı | Faz 4 planlamasında netleşir; TL. |
-| O-2 | Worker profillerinin (measure, report, notify) bağımsız ölçekleme ihtiyacı | Performans testleriyle belirlenecek; 0311 kapasite gözetimi. |
-| O-3 | Tek etkin örnek zamanlayıcı için Redis kilidi kaybı senaryosu | 0307'de kısmen ele alınır; kesin politika pilot verisiyle. |
+| ~~O-1~~ | ~~Walking skeleton dilimlerinin zamanlama ve sıralama detayı~~ | ~~Faz 4 planlamasında netleşir; TL.~~ |
+| **✅ O-1 (KAPANDI)** | **0401 §7'deki 4 dilimli plan onaylandı: D1: platform+identity+config+measure+gov → D2: kalan motorlar+pano+denetim → D3: delivery+insight → D4: sertleştirme.** | **PO+TL kararı (21.07.2026). 0007 D-53.** |
+| ~~O-2~~ | ~~Worker profillerinin (measure, report, notify) bağımsız ölçekleme ihtiyacı~~ | ✅ **KAPANDI**: V1'de tek replika seti (tüm profiller aynı grupta). Pilot verisiyle yük gözlenir, ihtiyaç halinde HT1'de ayrıştırılır. 0007 D-72. |
+| ~~O-3~~ | ~~Tek etkin örnek zamanlayıcı için Redis kilidi kaybı senaryosu~~ | ✅ **KAPANDI**: Anında pasif (mevcut tasarım onay). Kilit kaybında üretim durur, yeni lider seçilene kadar beklenir. Tüketim etkilenmez. 0007 D-73. |
 
 ---
 
@@ -180,3 +181,5 @@ Bu dokümandan türeyen temel çıkarımlar:
 | Versiyon | Tarih | Değişiklik |
 |---|---|---|
 | 1.0 | 13.07.2026 | İlk yayın: 5 tasarım ilkesi, 3 konteyner sorumluluğu, 5 katmanlı izolasyon modeli, 9 adımlık uçtan uca ölçüm hattı, 7 katmanlı ara katman zinciri, 5 Önerildi statüsünde mimari karar, bağdaştırıcı soyutlaması ve değişime dayanıklılık ilkesi, walking skeleton önerisi, 7 temel çıkarım. |
+| 1.1 | 21.07.2026 | O-1 kapandı: 4 dilimli walking skeleton planı onayı. 0007 D-53. |
+| 1.2 | 21.07.2026 | O-2 kapandı: V1'de tek replika seti (HT1'de ayrıştırma adayı). O-3 kapandı: Redis kilit kaybı anında pasif. 0007 D-72, D-73. |

@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0306 |
 | Proje | AI Visibility Intelligence Platform (kod adı: AVIP) |
-| Versiyon | 1.0 |
+| Versiyon | 1.2 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 13 Temmuz 2026 |
@@ -79,10 +79,12 @@ Hızlı takip 1 penceresinde açılacak dış okuma API'si aynı sözleşme aile
 
 | ID | Soru | Not |
 |---|---|---|
-| O-1 | Aktif çalışma alanının yolda taşınmasının teyidi | Öneri path (bu doküman); alternatif başlık modeli reddi; TL. |
-| O-2 | Derin bağlantı token ömrü ve tek kullanım politikası [K] | 0310; M1 dönüşümü ile güvenlik dengesi; TL. |
+| ~~O-1~~ | ~~Aktif çalışma alanının yolda taşınmasının teyidi~~ | ~~Öneri path (bu doküman); alternatif başlık modeli reddi; TL.~~ |
+| **✅ O-1 (KAPANDI)** | **Path modeli: /v1/workspaces/(ws)/... Onaylandı.** | **TL kararı (21.07.2026). 0007 D-36.** |
+| ~~O-2~~ | ~~Derin bağlantı token ömrü ve tek kullanım politikası [K]~~ | ✅ **KAPANDI**: 7 gün ömür + tek kullanım. Haftalık özet döngüsüyle uyumlu. [K] kalibrasyon — pilota göre revize edilebilir. Kriptografi 0310. 0007 D-83. |
 | O-3 | Dış API anahtar ve kapsam modeli | HT1; 0204 O-3 ile; TL + PO. |
-| O-4 | OpenAPI üreteç araçlarının kesinleştirilmesi | oapi-codegen sınıfı; 0403 zinciriyle; TL. |
+| ~~O-4~~ | ~~OpenAPI üreteç araçlarının kesinleştirilmesi~~ | ~~oapi-codegen sınıfı; 0403 zinciriyle; TL.~~ |
+| **✅ O-4 (KAPANDI)** | **oapi-codegen. Go tipleri OpenAPI'den üretilecek. 0403 CI kapısı drift kontrolü yapacak.** | **TL kararı (21.07.2026). 0007 D-37.** |
 
 ---
 
@@ -99,3 +101,5 @@ Hızlı takip 1 penceresinde açılacak dış okuma API'si aynı sözleşme aile
 | Versiyon | Tarih | Değişiklik |
 |---|---|---|
 | 1.0 | 13.07.2026 | İlk yayın: sözleşme-öncelikli yaklaşım ve sürümleme kuralları, oturum/bağlam modeli (path tabanlı çalışma alanı), 15 satırlık temsili kaynak envanteri, 202 eşzamansız desen, hata sözlüğü (varlık sızdırmama ve kota ayrımı), imleç sayfalama, imzalı derin bağlantı ve webhook sözleşmeleri, dış okuma API yer tutucusu. |
+| 1.1 | 21.07.2026 | O-1 kapandı: path modeli onayı. O-4 kapandı: oapi-codegen seçildi. 0007 D-36, D-37. |
+| 1.2 | 21.07.2026 | O-2 kapandı: token ömrü 7 gün + tek kullanım. 0007 D-83. |

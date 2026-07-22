@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0401 |
 | Proje | AI Visibility Intelligence Platform (kod adı: AVIP) |
-| Versiyon | 1.0 |
+| Versiyon | 1.4 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 13 Temmuz 2026 |
@@ -73,10 +73,14 @@ Ritim haftalıktır: hafta açılışında kısa planlama (dilim hedefi ve kalem
 
 | ID | Soru | Not |
 |---|---|---|
-| O-1 | İş takip aracının seçimi | Süreçten bağımsız; izlenebilirlik kimliği alanı şart; TL. |
-| O-2 | Dilim 1 bağdaştırıcısının teyidi | Öneri Perplexity (§7 notu); TL. |
-| O-3 | Doküman gözden geçirme kadansının başlangıcı | Öneri çeyreklik; ilk tur pilot öncesi; PO. |
-| O-4 | Hotfix istisnasının sınırları | Hangi etiketlerde istisna geçersiz (migration, güvenlik); TL. |
+| ~~O-1~~ | ~~İş takip aracının seçimi~~ | ~~Süreçten bağımsız; izlenebilirlik kimliği alanı şart; TL.~~ |
+| ✅ O-1 | İş takip aracı seçimi | **KAPANDI** (21.07.2026): GitHub Projects/Issues. Depo ile aynı platform. İzlenebilirlik kimlik alanı eklenecek. |
+| ~~O-2~~ | ~~Dilim 1 bağdaştırıcısının teyidi~~ | ~~Öneri Perplexity (§7 notu); TL.~~ |
+| **✅ O-2 (KAPANDI)** | **Perplexity (Sonar API). Direct kademe, en yalın alıntı modeli — iskelet riskini düşürür.** | **TL kararı (21.07.2026). 0007 D-42.** |
+| ~~O-3~~ | ~~Doküman gözden geçirme kadansının başlangıcı~~ | ~~Öneri çeyreklik; ilk tur pilot öncesi; PO.~~ |
+| **✅ O-3 (KAPANDI)** | **İlk tur pilot öncesi — Faz 4 başlamadan tüm doküman seti gözden geçirilecek (v1.1 düzeltme turu). Çeyreklik döngü pilot sonrası devreye girer.** | **PO kararı (21.07.2026). 0007 D-48.** |
+| ~~O-4~~ | ~~Hotfix istisnasının sınırları~~ | ~~Hangi etiketlerde istisna geçersiz (migration, güvenlik); TL.~~ |
+| ✅ O-4 | Hotfix istisnasının sınırları | **KAPANDI** (21.07.2026): migration ve güvenlik etiketli PR'lar hotfix yolundan geçemez, tam PR süreci zorunlu. Hotfix yolu: tek onay + sonradan tam gözden geçirme. |
 
 ---
 
@@ -93,3 +97,7 @@ Ritim haftalıktır: hafta açılışında kısa planlama (dilim hedefi ve kalem
 | Versiyon | Tarih | Değişiklik |
 |---|---|---|
 | 1.0 | 13.07.2026 | İlk yayın: trunk-based akış ve bayrak kuralı, izlenebilirlik kimlikli iş kalemi döngüsü, dört alanlı PR şablonu ve hotfix istisnası, 8 maddelik DoD, doküman-kod senkron kuralı, dört dilimlik walking skeleton planı, haftalık ritim ve eskalasyon kuralı. |
+| 1.1 | 21.07.2026 | O-1 kapandı: GitHub Projects/Issues seçildi. İzlenebilirlik kimlik alanı şart. |
+| 1.2 | 21.07.2026 | O-4 kapandı: hotfix migration+güvenlik etiketlerinde geçersiz. |
+| 1.3 | 21.07.2026 | O-2 kapandı: Dilim 1 bağdaştırıcısı Perplexity (Sonar API). 0007 D-42. |
+| 1.4 | 21.07.2026 | O-3 kapandı: doküman gözden geçirme ilk tur pilot öncesi. 0007 D-48. |

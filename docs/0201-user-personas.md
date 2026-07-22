@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0201 |
 | Proje | AI Visibility Intelligence Platform (kod adı: AVIP) |
-| Versiyon | 1.0 |
+| Versiyon | 1.3 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 13 Temmuz 2026 |
@@ -125,9 +125,11 @@ Nitel eşleme; fiyat yok, kesin kota yok. Amaç, 0205 ve 0310 tasarımına perso
 
 İki tasarım kuralı: paket hakları yapılandırmadır, kod dalı değildir (tek platform ilkesi); güven öğeleri (fidelite, açıklanabilirlik, izolasyon) hiçbir pakette kısıtlanmaz.
 
+> **Frekans kademesi (0205 v1.4, §3 kararı):** Free ve Pro haftalık ölçüm; Business ve Enterprise günlük ölçüm. Frekans paket hakkı olarak uygulanır ve pilotta kalibre edilir.
+
 ## 7. Segment Önceliği Önerisi (0002 O-1; karar PO'da)
 
-> **Öneri:** V1 ticari odağı P3 (ajans) ve P2 (KOBİ) ikilisidir; P4 self-serve huniyle eş zamanlı açılır, P5 Free kademesinin büyüme motorudur. P1 (kurumsal) tasarım hedefi olarak korunur (mimari kurumsal-hazır kurulur, G7) ancak aktif satış odağı SOC 2 yolu ve tarihçe birikimi olgunlaşana kadar ertelenir. Gerekçe: 0104 stratejik sonucu "kamalardan giriş"; 0105 §6 KOBİ/orta bakir alanı; 0103 ajans zayıflığı; W5 kurumsal uyum eksiği. Bu öneri kabul edilirse 0002 O-1 kapanır ve 0007 karar kaydına işlenir.
+> ✅ **KARAR (21.07.2026, PO onayı):** V1 ticari odağı P3 (ajans) ve P2 (KOBİ) ikilisidir; P4 self-serve huniyle eş zamanlı açılır, P5 Free kademesinin büyüme motorudur. P1 (kurumsal) tasarım hedefi olarak korunur (mimari kurumsal-hazır kurulur, G7) ancak aktif satış odağı SOC 2 yolu ve tarihçe birikimi olgunlaşana kadar ertelenir. Gerekçe: 0104 stratejik sonucu "kamalardan giriş"; 0105 §6 KOBİ/orta bakir alanı; 0103 ajans zayıflığı; W5 kurumsal uyum eksiği. Bu kararla 0002 O-1 kapanmış, 0007 karar kaydına D-04 olarak işlenmiştir.
 
 ## 8. Anti-Personalar
 
@@ -156,16 +158,19 @@ Tamamlanma kriteri: P2 ve P3 kartları görüşme verisiyle güncellenmeden 0204
 2. 0204 (PRD) gereksinim önceliklendirmesi §5 matrisini temel alır; "Kritik" satırlar aday zorunlu gereksinimlerdir.
 3. 0205 (MVP Scope) paket iskeletini §6'dan alır; masa bahisleri (0103 §7) ile persona kritikleri kesiştirilir.
 4. 0310 güvenlik tasarımı P1 gereksinimlerini (SSO, denetim izi dışa aktarımı) ilk günden mimariye koyar; satışı beklemez (kurumsal-hazır ilke).
-5. Çapraz referans düzeltme notu: 0104 ve 0105'te geçen "0202 konumlandırma", "0203 GTM" ve "0405 içerik stratejisi" ifadeleri master plan başlıklarıyla uyumsuzdur (0202 User Journey, 0203 Use Cases, 0405 Security Review). Konumlandırma içeriği 0204'e, GTM ve içerik stratejisi notları set dışı çalışma olarak etiketlenmek üzere toplu revizyonda düzeltilecektir.
+5. Çapraz referans düzeltmesi: 0104 v1.1 ve 0105 v1.1'deki hatalı atıflar ("0202 konumlandırma" → 0204 ürün ilkeleri, "0203 GTM" → 0002 O-1 + 0205 çerçevesi, "0405 içerik stratejisi" → set dışı pazarlama çalışması) düzeltildi (v1.1 birleşik turu).
 6. Kanal hipotezleri (kart satırları) D-02 uygulamasının (responsive web + uyarı kanalları) tasarım girdisidir; doğrulama sonrası 0204'e gereksinim olarak iner.
 
 ## 11. Açık Sorular
 
 | ID | Soru | Not |
 |---|---|---|
-| O-1 | Segment önceliği önerisinin onayı (§7) | PO kararı; kabulle 0002 O-1 kapanır, 0007'ye işlenir. |
-| O-2 | P4/P5 self-serve hunisinin V1'de mi, hızlı-takip sürümde mi açılacağı | 0205 kapsam kararı; destek yükü ve ödeme altyapısı bağımlılığı. |
-| O-3 | Görüşme erişimi: P2/P3 adaylarına ulaşım kanalı ve takvim | AN yürütür; TR ajans ekosistemi (0102 §6) ilk havuz. |
+| ~~O-1~~ | ~~Segment önceliği önerisinin onayı (§7)~~ | ~~PO kararı; kabulle 0002 O-1 kapanır, 0007'ye işlenir.~~ |
+| ✅ O-1 | Segment önceliği önerisinin onayı (§7) | **KAPANDI** (21.07.2026, PO onayı): P3 (ajans) + P2 (KOBİ) odağı kabul edildi. 0002 O-1 böylece kapanmıştır. 0007 karar kaydına işlendi. |
+| ~~O-2~~ | ~~P4/P5 self-serve hunisinin V1'de mi, hızlı-takip sürümde mi açılacağı~~ | ~~0205 kapsam kararı; destek yükü ve ödeme altyapısı bağımlılığı.~~ |
+| ✅ O-2 | P4/P5 self-serve hunisi | **KAPANDI** (21.07.2026): self-serve kayıt V1 MVP'de teknik olarak açık. Pilot döneminde davetli + self-serve birlikte, paket atamaları arka ofisten. Genel açılış pilot çıkış kapısı sonrası. Ödeme bilgisi istenmez — sürtünmesiz kayıt (e-posta + şifre). |
+| ~~O-3~~ | ~~Görüşme erişimi: P2/P3 adaylarına ulaşım kanalı ve takvim~~ | ~~AN yürütür; TR ajans ekosistemi (0102 §6) ilk havuz.~~ |
+| ✅ O-3 | Görüşme erişimi: P2/P3 adaylarına ulaşım kanalı ve takvim | **KAPANDI** (21.07.2026): TR ajans ekosistemi üzerinden, AN yürütür. Pilot öncesi tamamlanmalı. |
 
 ---
 
@@ -182,3 +187,6 @@ Tamamlanma kriteri: P2 ve P3 kartları görüşme verisiyle güncellenmeden 0204
 | Versiyon | Tarih | Değişiklik |
 |---|---|---|
 | 1.0 | 13.07.2026 | İlk yayın: beş proto-persona (B2B: P1-P3, B2C: P4-P5), ihtiyaç matrisi, dört paketli yetkilendirme iskeleti, segment önceliği önerisi (0002 O-1), anti-personalar, doğrulama planı; 0104/0105 çapraz referans düzeltme notu. |
+| 1.1 | 21.07.2026 | Segment önceliği PO onayıyla karara bağlandı: P3+P2 odağı. §7 öneriden karara dönüştü; O-1 kapandı (0002 O-1 böylece kapanmıştır). 0007 karar kaydına D-04 olarak işlendi. |
+| 1.2 | 21.07.2026 | O-2 kapandı: self-serve V1'de açık, sürtünmesiz kayıt (ödeme bilgisi istenmez). 0007 D-07. |
+| 1.3 | 21.07.2026 | O-3 kapandı: P2/P3 görüşmeleri TR ajans ekosistemi üzerinden, pilot öncesi. AN yürütür. 0007 D-25. |

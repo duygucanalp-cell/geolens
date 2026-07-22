@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0204 |
 | Proje | AI Visibility Intelligence Platform (kod adı: AVIP) |
-| Versiyon | 1.1 |
+| Versiyon | 1.2 |
 | Durum | Review (Approved geçişi 0201 §9 doğrulama kapısına bağlı) |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 18 Temmuz 2026 |
@@ -227,10 +227,14 @@ Bir özellik ancak aşağıdakilerin tamamı sağlandığında "bitti" sayılır
 
 | ID | Soru | Not |
 |---|---|---|
-| O-1 | Nicel performans ve zamanındalık eşikleri ([K] işaretli hedefler) | 0404 + pilot verisiyle kalibrasyon; TL. |
-| O-2 | Benchmark gizlilik eşiği yöntemi (asgari kiracı sayısı, toplulaştırma kuralı) | 0309 + 0310; TL + PY. |
-| O-3 | Okuma API'sinin kaynak kapsamı ve sözleşme yaklaşımı | 0304 ADR; TL. |
-| O-4 | Ham yanıt arşivi ve rapor dosyaları saklama süreleri | Maliyet ve uyum dengesi; 0310 + 0007; TL + PO. |
+| ~~O-1~~ | ~~Nicel performans ve zamanındalık eşikleri ([K] işaretli hedefler)~~ | ~~0404 + pilot verisiyle kalibrasyon; TL.~~ |
+| **✅ O-1 (KAPANDI)** | **Pano <5sn, API <1sn (p50), ölçüm <60sn. [K] — pilotta kalibre edilecek.** | **TL kararı (21.07.2026). 0007 D-59.** |
+| ~~O-2~~ | ~~Benchmark gizlilik eşiği yöntemi (asgari kiracı sayısı, toplulaştırma kuralı)~~ | ~~0309 + 0310; TL + PY.~~ |
+| **✅ O-2 (KAPANDI)** | **≥5 kiracı. 5'ten az kiracı varsa benchmark gösterilmez. Anonim toplulaştırma (medyan, aralık).** | **TL+PY kararı (21.07.2026). 0007 D-60.** |
+| ~~O-3~~ | ~~Okuma API'sinin kaynak kapsamı ve sözleşme yaklaşımı~~ | ~~0304 ADR; TL.~~ |
+| **✅ O-3 (KAPANDI)** | **Okuma-yalnız API: skor, trend, alıntı, rapor meta uçları. /public/v1 öneki, API anahtarı ile.** | **TL kararı (21.07.2026). 0007 D-61.** |
+| ~~O-4~~ | ~~Ham yanıt arşivi ve rapor dosyaları saklama süreleri~~ | ~~Maliyet ve uyum dengesi; 0310 + 0007; TL + PO.~~ |
+| **✅ O-4 (KAPANDI)** | **0303 O-2 kararıyla uyumlu: ham veri 30gün STANDARD → 90gün GLACIER → sil. Rapor PDF'leri 1 yıl saklanır.** | **TL+PO kararı (21.07.2026). 0007 D-62.** |
 
 ---
 
@@ -248,3 +252,4 @@ Bir özellik ancak aşağıdakilerin tamamı sağlandığında "bitti" sayılır
 |---|---|---|
 | 1.0 | 13.07.2026 | İlk yayın: 5 ürün ilkesi, 38 işlevsel + 16 işlevsel olmayan gereksinim, 8 temsili kabul kriteri, çift yönlü izlenebilirlik matrisi, 8 maddelik Definition of Done, varsayım/bağımlılık tablosu. |
 | 1.1 | 18.07.2026 | Çekirdek sayım düzeltmesi (31 FR / 15 NFR; önceki metin 29/14); FR-F7 eklendi: temel CSV dışa aktarımı (Çekirdek; 0205 önerisinin kabulü); FR-D4'e panel versiyon işareti notu (0302 §5, 0309 §9); skor ölçeği teyidi 0-100 numeric(5,2) (0303 K7). Toplam 39 FR / 16 NFR. |
+| 1.2 | 21.07.2026 | O-1 kapandı: performans eşikleri (pano <5sn, API <1sn, ölçüm <60sn). O-2 kapandı: benchmark gizlilik ≥5 kiracı. O-3 kapandı: okuma API kapsamı (skor+trend+alıntı+rapor). O-4 kapandı: saklama 0303 ile uyumlu. 0007 D-59..D-62. |

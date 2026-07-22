@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0202 |
 | Proje | AI Visibility Intelligence Platform (kod adı: AVIP) |
-| Versiyon | 1.0 |
+| Versiyon | 1.2 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 13 Temmuz 2026 |
@@ -125,10 +125,13 @@ Adaylar formülsüz listelenmiştir; formül, eşik ve sahip ataması 0004 v1.1 
 
 | ID | Soru | Not |
 |---|---|---|
-| O-1 | İlk değere ulaşma süresi ve aktivasyon için sayısal eşikler | 0004 v1.1; TL+PO; pilot verisiyle kalibre edilir. |
-| O-2 | Free kayıtta ödeme bilgisi politikası | PO; sürtünme-dönüşüm dengesi; P4/P5 hunisini doğrudan etkiler (0201 O-2 ile birlikte). |
+| ~~O-1~~ | ~~İlk değere ulaşma süresi ve aktivasyon için sayısal eşikler~~ | ~~0004 v1.1; TL+PO; pilot verisiyle kalibre edilir.~~ |
+| ✅ O-1 | İlk değere ulaşma süresi ve aktivasyon için sayısal eşikler | **KAPANDI** (21.07.2026): adım 4 (site denetimi) < 30 saniye, adım 6 (ilk skor) < 24 saat. Tasarım hedefi; pilot verisiyle kalibre edilir. |
+| ~~O-2~~ | ~~Free kayıtta ödeme bilgisi politikası~~ | ~~PO; sürtünme-dönüşüm dengesi; P4/P5 hunisini doğrudan etkiler (0201 O-2 ile birlikte).~~ |
+| ✅ O-2 | Free kayıtta ödeme bilgisi politikası | **KAPANDI** (21.07.2026): sürtünmesiz kayıt — e-posta + şifre yeterli, ödeme bilgisi istenmez. 0201 O-2 ile birlikte karara bağlandı. 0007 D-07. |
 | O-3 | Benchmark kıyas verisinin gizlilik ve yöntem sınırları | Anonim toplulaştırma kuralları; 0309 + 0310; kiracı verisi asla çapraz sızmaz (M12 ilkesi). |
-| O-4 | Uyarı eşik varsayılanları | 0309 oynaklık pilotu sonrası; M11 hedefiyle kalibre. |
+| ~~O-4~~ | ~~Uyarı eşik varsayılanları~~ | ~~0309 oynaklık pilotu sonrası; M11 hedefiyle kalibre.~~ |
+| ✅ O-4 | Uyarı eşik varsayılanları | **KAPANDI** (21.07.2026): pilot verisiyle kalibre edilecek. MVP'de manuel eşik ayarı yeterli (FR-F2 daraltılmış). 0007 D-12. |
 
 ---
 
@@ -145,3 +148,5 @@ Adaylar formülsüz listelenmiştir; formül, eşik ve sahip ataması 0004 v1.1 
 | Versiyon | Tarih | Değişiklik |
 |---|---|---|
 | 1.0 | 13.07.2026 | İlk yayın: altı aşamalı çerçeve, yedi adımlı ortak omurga ve aşamalı ilk değer tasarımı, dört persona yolculuğu, beş yüzeyli kanal mimarisi, yedi satırlık sürtünme haritası, metrik eşlemesi ve beş yeni metrik adayı. |
+| 1.1 | 21.07.2026 | O-2 kapandı: sürtünmesiz free kayıt (ödeme bilgisi istenmez). 0201 O-2 ve 0007 D-07 ile birlikte. |
+| 1.2 | 21.07.2026 | O-1 kapandı: ilk değer eşikleri (adım 4 < 30sn, adım 6 < 24sa). O-4 kapandı: uyarı eşikleri pilotta kalibre edilecek. 0007 D-11, D-12. |

@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0205 |
 | Proje | AI Visibility Intelligence Platform (kod adı: AVIP) |
-| Versiyon | 1.1 |
+| Versiyon | 1.4 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 18 Temmuz 2026 |
@@ -15,7 +15,7 @@
 
 ## 1. Amaç ve Kapsam
 
-Bu doküman V1 MVP sınırını çizer: 0204'ün Çekirdek gereksinim setini masa bahisleri (0103 §7), panel maliyet korumaları (K1) ve motor kapsam kararıyla (D-03) kesiştirir; içeride kalanları, daraltılmış biçimde girenleri ve bilinçli açıkları gerekçeleriyle kaydeder. Sayım düzeltmesi: 0204 Çekirdek seti 30 işlevsel ve 15 işlevsel olmayan gereksinimden oluşur (0204 çıkarım 1'de 29/14 yazılmıştır; 0204 v1.1 toplu revizyonunda düzeltilecektir). Kapsam dışı: sürüm takvimi ve efor tahmini (planlama Faz 4 süreçleriyle), hızlı takip pencerelerinin detaylandırılması (0206).
+Bu doküman V1 MVP sınırını çizer: 0204'ün Çekirdek gereksinim setini masa bahisleri (0103 §7), panel maliyet korumaları (K1) ve motor kapsam kararıyla (D-03) kesiştirir; içeride kalanları, daraltılmış biçimde girenleri ve bilinçli açıkları gerekçeleriyle kaydeder. Sayım düzeltmesi: 0204 Çekirdek seti 31 işlevsel ve 15 işlevsel olmayan gereksinimden oluşur (0204 v1.1'de düzeltildi; FR-F7 eklendi). Kapsam dışı: sürüm takvimi ve efor tahmini (planlama Faz 4 süreçleriyle), hızlı takip pencerelerinin detaylandırılması (0206).
 
 ## 2. Kesit Yöntemi ve MVP Tanımı
 
@@ -28,7 +28,7 @@ MVP tanımı: M2 pilotunu (0004) çalıştırabilecek, sert kuralların (M6, M7,
 | Boyut | MVP kararı | Dayanak |
 |---|---|---|
 | Çekirdek motorlar | ChatGPT (resmî vekil: Responses web araması), Gemini (grounding vekili), Perplexity (doğrudan Sonar) | 0102 §7 önerisi; TR kullanım ağırlığı |
-| Google yüzeyi | D-03 (b) önerisi: Gemini-etiketli vekil MVP'de; lisanslı üçüncü taraf (c) hukuki incelemede | D-03 PENDING; §9 O-1 bloklayıcı |
+| Google yüzeyi | ✅ **D-03 kararlaştırıldı:** Gemini grounding vekili, official_proxy etiketiyle MVP'de (b); lisanslı üçüncü taraf (c) PY hukuki incelemesi paralel başladı | D-03 kararı verildi (21.07.2026); §9 O-1 kapandı |
 | İkinci halka | Claude ve Grok MVP dışı; hızlı takip 1 adayı | 0102 §7; panel maliyeti |
 | Fidelite etiketi | Üç kademe etiketi tüm skorlarda; kapsam etikete yansır (FR-B5, FR-C5) | İ2; 0102 §4 |
 | Ölçüm frekansı | Taban haftalık; pilot kiracıları ve üst paket günlük (nitel kademe) | Masa bahisi ↔ K1 dengesi |
@@ -84,7 +84,7 @@ Pilot, M2 çerçevesinde (0004) davetli kiracılarla yürütülür; profil 0201 
 | 4 | K1 maliyet gerçekleşmesi panel modeli öngörüsüyle uyumlu; kota ve tavan mekanizmaları devrede doğrulandı. |
 | 5 | D-03 kararı verildi ve motor kapsamı üretimde karara uygun çalışıyor. |
 | 6 | Pilot kiracılarından en az bir P3 ve bir P2 referans-adayı vaka sinyali alındı (M3/M4 destekli). |
-| 7 | Güvenlik kapanışı: 0405 pilot öncesi tam turu tamamlandı, açık kritik ve yüksek bulgu sıfır, harici sızma testi raporu alındı (0405 §6, 0310 O-4). |
+| 7 | Güvenlik kapanışı: 0405 pilot öncesi tam turu tamamlandı, açık kritik ve yüksek bulgu sıfır. Sızma testi Dilim 4 (Sertleştirme) kapsamında yapılır (0310 D-47, 0405 §6). |
 
 ## 8. AVIP için Çıkarımlar
 
@@ -98,10 +98,13 @@ Pilot, M2 çerçevesinde (0004) davetli kiracılarla yürütülür; profil 0201 
 
 | ID | Soru | Not |
 |---|---|---|
-| O-1 | D-03 Google yüzeyi kararı (bloklayıcı) | PO + TL; 0205 onayıyla birlikte istenir; 0308 sıralamasını açar. |
-| O-2 | FR-F7 (CSV dışa aktarımı) önerisinin 0204 v1.1'e kabulü | Kapandı (v1.1): FR-F7 0204'e eklendi. |
-| O-3 | Pilot kiracı sayısı ve davet karması (P3/P2/P4 oranı) | M2 çerçevesinde PO + AN; görüşme havuzuyla (0201 O-3) birlikte planlanır. |
-| O-4 | Frekans kademelerinin paket haklarına kesin eşlemesi | Nitel; 0201 §6 iskeletiyle PO onayı. |
+| ~~O-1~~ | ~~D-03 Google yüzeyi kararı (bloklayıcı)~~ | ~~PO + TL; 0205 onayıyla birlikte istenir; 0308 sıralamasını açar.~~ |
+| ✅ O-1 | D-03 Google yüzeyi kararı | **KAPANDI** (21.07.2026): (b) kabul — Gemini grounding vekili, official_proxy etiketiyle; (c) PY incelemesi başladı. 0102 v1.1, 0308 §2, 0007 karar kaydına işlendi. |
+| ✅ O-2 | FR-F7 (CSV dışa aktarımı) önerisinin 0204 v1.1'e kabulü | **KAPANDI** (v1.1): FR-F7 0204'e eklendi. |
+| ~~O-3~~ | ~~Pilot kiracı sayısı ve davet karması (P3/P2/P4 oranı)~~ | ~~M2 çerçevesinde PO + AN; görüşme havuzuyla (0201 O-3) birlikte planlanır.~~ |
+| ✅ O-3 | Pilot kiracı sayısı ve davet karması (P3/P2/P4 oranı) | **KAPANDI** (21.07.2026): 6-8 kiracı — 3 ajans (P3) + 2-3 KOBİ (P2) + 1-2 self-serve (P4). Pilot 8 hafta. AN görüşme havuzuyla planlayacak. |
+| ~~O-4~~ | ~~Frekans kademelerinin paket haklarına kesin eşlemesi~~ | ~~Nitel; 0201 §6 iskeletiyle PO onayı.~~ |
+| ✅ O-4 | Frekans kademelerinin paket haklarına kesin eşlemesi | **KAPANDI** (21.07.2026): Free/Pro haftalık, Business/Enterprise günlük. 0205 §3'e işlendi. |
 
 ---
 
@@ -119,3 +122,6 @@ Pilot, M2 çerçevesinde (0004) davetli kiracılarla yürütülür; profil 0201 
 |---|---|---|
 | 1.0 | 13.07.2026 | İlk yayın: kesit yöntemi, motor/ölçüm kapsamı, 25 tam + 5 daraltılmış FR kesiti (sıfır Çekirdek dışarıda), 10 kalemlik bilinçli açık tablosu, 5 kesit riski, 6 kriterli pilot çıkış kapısı; 0204 sayım düzeltme notu (30/15) ve FR-F7 önerisi. |
 | 1.1 | 18.07.2026 | FR-F7 kabulüyle kesit güncellendi (31 Çekirdek FR: 26 tam + 5 daraltılmış); O-2 kapandı; pilot çıkış kapısına 7. kriter eklendi (güvenlik kapanışı; 0405 §6 + 0310 O-4; PO onayı bu revizyon onayıyla). |
+| 1.2 | 21.07.2026 | D-03 karara bağlandı: (b) Gemini grounding vekili; O-1 bloklayıcı açık soru kapandı; Google yüzeyi satırı güncellendi; Faz 3 kritik yolundaki son blokaj kalktı. |
+| 1.3 | 21.07.2026 | O-3 pilot kiracı profili karara bağlandı: 6-8 kiracı (3 P3 + 2-3 P2 + 1-2 P4). |
+| 1.4 | 21.07.2026 | O-4 frekans kademeleri karara bağlandı: Free/Pro haftalık, Business/Enterprise günlük. |

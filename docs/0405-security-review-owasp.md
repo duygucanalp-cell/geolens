@@ -4,10 +4,10 @@
 |---|---|
 | Doküman ID | 0405 |
 | Proje | AI Visibility Intelligence Platform (kod adı: AVIP) |
-| Versiyon | 1.0 |
+| Versiyon | 1.3 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Engineering |
-| Tarih | 13 Temmuz 2026 |
+| Tarih | 21 Temmuz 2026 |
 | Karşıladığı madde | Türetilmiş doküman: 0310 §9 dönemsel halkasının çalışma aracı |
 | İlişkili | 0310, 0404, 0403, 0308, 0306 (girdi); 0007 raporlama, 0205 kapı önerisi (çıktı) |
 
@@ -70,9 +70,9 @@ Pilot çıkışından önce tam tur yürütülür: §3-4 listelerinin tamamı, l
 
 | ID | Soru | Not |
 |---|---|---|
-| O-1 | Önem-SLA sürelerinin sayısallaştırılması [K] | Sınıf çerçevesi §5'te; TL. |
-| O-2 | Dönemsel tam tur kadansının teyidi | Öneri çeyreklik; 0401 O-3 ile hizalı; PO. |
-| O-3 | Harici sızma testinin kapsamı ve tedarik zamanlaması | 0310 O-4 ile birlikte; PO + TL. |
+| ~~O-1~~ | ~~Önem-SLA sürelerinin sayısallaştırılması [K]~~ | ✅ **KAPANDI**: Kritik derhal (yayın dondurma yetkisiyle), yüksek 3 iş günü, orta sprint içi (2 hafta), düşük planlı birikim. [K] kalibrasyon — pilot verisiyle revize edilebilir. 0007 D-84. |
+| ~~O-2~~ | ~~Dönemsel tam tur kadansının teyidi~~ | ✅ **KAPANDI**: Çeyreklik (3 ayda bir). D-48 doküman gözden geçirme kadansıyla hizalı. Pilot öncesi tam tur + pilot sonrası çeyreklik döngü. 0007 D-71. |
+| ~~O-3~~ | ~~Harici sızma testinin kapsamı ve tedarik zamanlaması~~ | ✅ **KAPANDI**: Kapsam: dış yüzeyler + kiracı izolasyon senaryoları (§6 tanımı). Tedarik Dilim 3'te başlar (sözleşme, kapsam, takvim), uygulama Dilim 4'te (D-47). 0007 D-90. |
 | O-4 | SSRF koruma setinin 0308 v1.1'e işlenmesi | Changelog notu; v1.1 turunda; TL. |
 
 ---
@@ -90,3 +90,6 @@ Pilot çıkışından önce tam tur yürütülür: §3-4 listelerinin tamamı, l
 | Versiyon | Tarih | Değişiklik |
 |---|---|---|
 | 1.0 | 13.07.2026 | İlk yayın: üç seviyeli tur kadansı, Top 10 hizalı kontrol tablosu (A10 SSRF yakalaması ve 0308 v1.1 notu dahil), yedi platforma özgü ek kontrol, bulgu-yama kayıt formatı ve kapanış kanıtı kuralı, pilot öncesi tam tur ve kapı kriteri önerisi. |
+| 1.1 | 21.07.2026 | O-2 kapandı: güvenlik tam tur kadansı çeyreklik (D-48 hizalı). 0007 D-71. |
+| 1.2 | 21.07.2026 | O-1 kapandı: Önem-SLA süreleri (kritik derhal, yüksek 3 iş günü, orta sprint içi). 0007 D-84. |
+| 1.3 | 21.07.2026 | O-3 kapandı: sızma testi kapsamı (dış yüzeyler+izolasyon), tedarik Dilim 3. 0007 D-90. |

@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0101 |
 | Proje | AI Visibility Intelligence Platform (kod adı: AVIP) |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 12 Temmuz 2026 (araştırma tarihi) |
@@ -93,8 +93,8 @@ llms.txt gerçekçi durum tespiti: benimseme yaklaşık yüzde 10 (SE Ranking, 3
 
 | ID | Soru | Not |
 |---|---|---|
-| O-1 | TR pazarında motor kullanım dağılımı ve TR içerik alıntı davranışı | Küresel çalışmalar ABD ağırlıklı; 0102 ve 0105'te TR sinyali aranacak. |
-| O-2 | Bağlam (sentiment) sınıflandırmasının müşteri kararlarındaki ağırlığı | 0201 görüşmeleri; 0005 O-2 ile bağlantılı. |
+| O-1 | TR pazarında motor kullanım dağılımı ve TR içerik alıntı davranışı | **AN eylem planı (21.07.2026):** Masabaşı araştırma (Similarweb TR, yerel kaynaklar) pilot öncesi. AN yürütür, bulgular 0007 haftalık senkronunda raporlanır. 0007 D-78. 0102/0105'te TR sinyali aranacak. |
+| O-2 | Bağlam (sentiment) sınıflandırmasının müşteri kararlarındaki ağırlığı | **AN eylem planı (21.07.2026):** 0201 görüşme kılavuzuna madde eklendi. Pilot öncesi tamamlanır. AN yürütür. 0007 D-78. 0005 O-2 ile bağlantılı. |
 
 ---
 
@@ -123,3 +123,4 @@ llms.txt gerçekçi durum tespiti: benimseme yaklaşık yüzde 10 (SE Ranking, 3
 | Versiyon | Tarih | Değişiklik |
 |---|---|---|
 | 1.0 | 12.07.2026 | İlk yayın: canlı araştırmayla disiplin haritası, payda-açık alıntı verileri, H2/H3/H4 ön kanıtları, kanıt dereceli faktör kataloğu, bot taksonomisi ve llms.txt durum tespiti, 7 ürün çıkarımı. |
+| 1.1 | 21.07.2026 | O-1/O-2 eylem planı eklendi: TR verisi masabaşı araştırma + görüşmeler pilot öncesi. 0007 D-78. |

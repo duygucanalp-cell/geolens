@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0003 |
 | Proje | AI Visibility Intelligence Platform (kod adı: AVIP) |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 12 Temmuz 2026 |
@@ -83,8 +83,8 @@ Hedef ekleme, çıkarma veya ufuk değişikliği 0007'de tanımlanan karar süre
 
 | ID | Soru | Not |
 |---|---|---|
-| O-1 | G8 pilot doğrulaması için hedef müşteri profili ve sayısı | 0201 persona kararıyla birlikte 0004'te eşiklenecek. |
-| O-2 | MVP motor kapsamı: hangi AI motorları V1'e girer? | 0102 bulguları ve 0308 maliyet analiziyle 0205'te kesinleşecek. |
+| ~~O-1~~ | ~~G8 pilot doğrulaması için hedef müşteri profili ve sayısı~~ | ✅ **KAPANDI**: 0205 O-3 kararına göre: 6-8 kiracı (3 P3 ajans + 2-3 P2 KOBİ + 1-2 P4 serbest). 0205 v1.3 kaydı. 0007 D-79. |
+| ~~O-2~~ | ~~MVP motor kapsamı: hangi AI motorları V1'e girer?~~ | ✅ **KAPANDI**: ChatGPT (direct) + Gemini (official_proxy, D-03) + Perplexity (Sonar API, D-42). Claude ve Grok HT1'de. 0007 D-80. |
 
 ---
 
@@ -93,3 +93,4 @@ Hedef ekleme, çıkarma veya ufuk değişikliği 0007'de tanımlanan karar süre
 | Versiyon | Tarih | Değişiklik |
 |---|---|---|
 | 1.0 | 12.07.2026 | İlk yayın: G1–G9 hedefleri, NG1–NG10 gerekçeli hedef olmayanlar, V1 dışı yol haritası adayları, problem-hedef izlenebilirliği. Vision v0.1 Out of Scope listesi buraya taşındı ve genişletildi (NG8–NG10 eklendi). |
+| 1.1 | 21.07.2026 | O-1 kapandı: pilot profili 0205 O-3 kararı (6-8 kiracı). O-2 kapandı: MVP motor kapsamı (ChatGPT+Gemini+Perplexity). 0007 D-79, D-80. |

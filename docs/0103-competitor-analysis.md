@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0103 |
 | Proje | AI Visibility Intelligence Platform (kod adı: AVIP) |
-| Versiyon | 1.0 |
+| Versiyon | 1.2 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 12 Temmuz 2026 (araştırma tarihi) |
@@ -103,8 +103,9 @@ Güçlü yan tohumları: açıklanabilirlik mimarisi, fidelite dürüstlüğü, 
 | ID | Soru | Not |
 |---|---|---|
 | O-1 | Ön-yüz yakalama yönteminin hukuki ve platform-politikası seyri | PY takibi; rakip riski bizim konumumuzu güçlendirir, pazar normalleşirse baskı yaratır (R-04). |
-| O-2 | Evertune metodolojisinin derin incelemesi | H3 alanındaki tek doğrudan rakip iddiası; demo/dokümantasyon üzerinden AN incelemesi. |
-| O-3 | Mobil bildirim kanalı önceliği (e-posta, Slack, push) | 0201 persona görüşmelerinde doğrulanacak; D-02 uygulamasını etkiler. |
+| ~~O-2~~ | ~~Evertune metodolojisinin derin incelemesi~~ | ~~H3 alanındaki tek doğrudan rakip iddiası; demo/dokümantasyon üzerinden AN incelemesi.~~ |
+| **✅ O-2 (KAPANDI)** | **AN, Evertune'dan demo talep edecek ve metodoloji dokümanını inceleyecek. Bulgular 0007 haftalık senkronunda raporlanacak. Pilot öncesi tamamlanmalı.** | **AN+TL kararı (21.07.2026). 0007 D-49.** |
+| O-3 | Mobil bildirim kanalı önceliği (e-posta, Slack, push) | **AN eylem planı (21.07.2026):** 0201 görüşme kılavuzuna madde eklendi. Pilot öncesi tamamlanır. D-02 uygulamasını etkiler. AN yürütür. 0007 D-78. |
 
 ---
 
@@ -131,3 +132,5 @@ Güçlü yan tohumları: açıklanabilirlik mimarisi, fidelite dürüstlüğü, 
 | Versiyon | Tarih | Değişiklik |
 |---|---|---|
 | 1.0 | 12.07.2026 | İlk yayın: dört segmentli pazar haritası, altı rakip profili, on bir satırlık yetenek matrisi, ölçüm yöntemi ayrışması, mobil kanal bulgusu ve D-02 önerisi, beş boşluklu farklılaşma tezi, SWOT tohumları. |
+| 1.1 | 21.07.2026 | O-2 kapandı: Evertune demo talep + AN incelemesi. 0007 D-49. |
+| 1.2 | 21.07.2026 | O-3 eylem planı eklendi: görüşme kılavuzuna madde (kanal önceliği), pilot öncesi. 0007 D-78. |

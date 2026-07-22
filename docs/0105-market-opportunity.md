@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0105 |
 | Proje | AI Visibility Intelligence Platform (kod adı: AVIP) |
-| Versiyon | 1.1 |
+| Versiyon | 1.3 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 12 Temmuz 2026 (araştırma tarihi) |
@@ -91,9 +91,10 @@ Karşı senaryolar dürüstçe kaydedilir. Birincisi beklenti düzeltmesi: tahmi
 
 | ID | Soru | Not |
 |---|---|---|
-| O-1 | Bağımsız analist raporu edinimi ile §5 tahminlerinin doğrulanması | AN; üçüncül kaynak riski. Satın alma kararı PO'da. |
-| O-2 | TR pazarının nicel boyutu: dijital pazarlama/SEO harcama verileri | AN; IAB TR ve benzeri yerel kaynaklar taranacak; 0002 O-1 girdisi. |
-| O-3 | 12-18 aylık pencere varsayımının saha testi | 0201 persona ve müşteri görüşmelerinde TR alıcı olgunluğu doğrulaması. |
+| ~~O-1~~ | ~~Bağımsız analist raporu edinimi ile §5 tahminlerinin doğrulanması~~ | ~~AN; üçüncül kaynak riski. Satın alma kararı PO'da.~~ |
+| **✅ O-1 (KAPANDI)** | **Şimdilik satın alınmayacak. Mevcut tahminler yeterli. Pilot sonrası tekrar değerlendirilir.** | **PO kararı (21.07.2026). 0007 D-50.** |
+| O-2 | TR pazarının nicel boyutu: dijital pazarlama/SEO harcama verileri | **AN eylem planı (21.07.2026):** Masabaşı araştırma pilot öncesi. IAB TR ve yerel kaynaklar taranacak. AN yürütür, bulgular 0007 haftalık senkronunda raporlanır. 0007 D-78. 0002 O-1 girdisi. |
+| O-3 | 12-18 aylık pencere varsayımının saha testi | **AN eylem planı (21.07.2026):** 0201 görüşme kılavuzuna madde eklendi. TR alıcı olgunluğu sorgulanır. Pilot öncesi tamamlanır. AN yürütür. 0007 D-78. |
 
 ---
 
@@ -115,3 +116,5 @@ Karşı senaryolar dürüstçe kaydedilir. Birincisi beklenti düzeltmesi: tahmi
 |---|---|---|
 | 1.0 | 12.07.2026 | İlk yayın: davranış değişimi göstergeleri, ekonomik değer sinyali, beş kaynaklı pazar tahmin aralığı, uygulama açığı, TR penceresi, zamanlama gerekçesi ve KOŞULLU İLERLE sonucu; H5 doğrulandı, Faz 1 kapandı. |
 | 1.1 | 18.07.2026 | Çapraz referans düzeltmeleri: §8 işleyicisi 0204 ürün ilkelerine, içerik stratejisi set dışına, GTM boyutlandırma atıfları 0002 O-1'e bağlandı (v1.1 birleşik turu). |
+| 1.2 | 21.07.2026 | O-1 kapandı: analist raporu şimdilik satın alınmayacak. 0007 D-50. |
+| 1.3 | 21.07.2026 | O-2/O-3 eylem planı eklendi: TR pazar araştırması + görüşme kılavuzu maddeleri pilot öncesi. 0007 D-78. |
