@@ -1,21 +1,62 @@
 package perplexity
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"time"
+
+	"github.com/google/uuid"
+
 	"github.com/geolens/platform/engine"
 )
 
-// Tier constant
-const tier = engine.TierDirect // Perplexity Sonar API — Kademe 1 (direct)
+const (
+	tier      = engine.TierDirect // Perplexity Sonar API — Kademe 1 (direct)
+	apiURL    = "https://api.perplexity.ai/chat/completions"
+	modelName = "sonar-pro"
+	timeout   = 60 * time.Second
+)
+
+// sonarRequest is the request body for Perplexity Sonar API.
+type sonarRequest struct {
+	Model    string `json:"model"`
+	Messages []message `json:"messages"`
+}
+
+type message struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+// sonarResponse is the response body from Perplexity Sonar API.
+type sonarResponse struct {
+	ID      string   `json:"id"`
+	Model   string   `json:"model"`
+	Choices []choice `json:"choices"`
+	Citations []string `json:"citations"`
+}
+
+type choice struct {
+	Index   int     `json:"index"`
+	Message message `json:"message"`
+}
 
 // Adapter implements engine.Adapter for Perplexity Sonar API.
 type Adapter struct {
-	apiKey string
+	apiKey  string
+	httpClient *http.Client
 }
 
 // NewAdapter creates a new Perplexity adapter.
 func NewAdapter(apiKey string) *Adapter {
 	return &Adapter{
 		apiKey: apiKey,
+		httpClient: &http.Client{
+			Timeout: timeout,
+		},
 	}
 }
 
@@ -29,17 +70,81 @@ func (a *Adapter) Tier() engine.Tier {
 	return tier
 }
 
-// Execute sends a prompt to Perplexity Sonar API.
-// API çağrısı + yanıt ayrıştırma tek adımda yapılır.
-// Dilim 1 H1'de detaylandırılacak: gerçek API çağrısı, alıntı çıkarma, hata sınıfları.
+// Execute sends a prompt to Perplexity Sonar API and returns the normalized response.
 func (a *Adapter) Execute(prompt string) (*engine.RawResponse, error) {
-	// TODO(H1): Gerçek Perplexity Sonar API çağrısı + parseResponse çağrısı
-	return a.parseResponse(nil)
+	reqBody := sonarRequest{
+		Model: modelName,
+		Messages: []message{
+			{Role: "user", Content: prompt},
+		},
+	}
+
+	body, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, fmt.Errorf("perplexity istek serileştirme: %w", err)
+	}
+
+	httpReq, err := http.NewRequest("POST", apiURL, bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("perplexity http istek oluşturma: %w", err)
+	}
+	httpReq.Header.Set("Authorization", "Bearer "+a.apiKey)
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Accept", "application/json")
+
+	start := time.Now()
+	resp, err := a.httpClient.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("perplexity api çağrısı: %w", err)
+	}
+	defer resp.Body.Close()
+
+	durationMs := time.Since(start).Milliseconds()
+
+	rawBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("perplexity yanıt okuma: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("perplexity api hatası (HTTP %d): %s", resp.StatusCode, string(rawBody))
+	}
+
+	return a.parseResponse(rawBody, durationMs)
 }
 
 // parseResponse parses a raw Perplexity API response into RawResponse.
-// Private metod — Adapter arayüzünde değil, yalnızca Execute içinden çağrılır.
-func (a *Adapter) parseResponse(raw []byte) (*engine.RawResponse, error) {
-	// TODO(H1): JSON yanıt ayrıştırma, alıntı çıkarma, hata sınıfları
-	return nil, nil
+func (a *Adapter) parseResponse(raw []byte, durationMs int64) (*engine.RawResponse, error) {
+	var sr sonarResponse
+	if err := json.Unmarshal(raw, &sr); err != nil {
+		return nil, fmt.Errorf("perplexity yanıt ayrıştırma: %w", err)
+	}
+
+	if len(sr.Choices) == 0 {
+		return nil, fmt.Errorf("perplexity: boş choices dizisi")
+	}
+
+	content := sr.Choices[0].Message.Content
+
+	// Alıntıları dönüştür
+	citations := make([]engine.Citation, 0, len(sr.Citations))
+	for i, c := range sr.Citations {
+		citations = append(citations, engine.Citation{
+			URL:      c,
+			Position: i + 1,
+			Engine:   "perplexity",
+			Type:     "direct",
+		})
+	}
+
+	return &engine.RawResponse{
+		EngineName:    "perplexity",
+		RequestID:     sr.ID,
+		Content:       content,
+		Citations:     citations,
+		HasSearch:     len(sr.Citations) > 0,
+		Tier:          tier,
+		FidelityLabel: fmt.Sprintf("Kademe 1 · perplexity · sonar-pro"),
+		S3Ref:         "", // TODO(H2): S3'e kaydet
+	}, nil
 }

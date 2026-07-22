@@ -9,20 +9,21 @@ import (
 
 // Config holds all application configuration loaded from environment variables.
 type Config struct {
-	Port          string
-	DatabaseURL   string
-	RedisURL      string
-	S3Endpoint    string
-	S3Region      string
-	S3Bucket      string
-	S3AccessKey   string
-	S3SecretKey   string
-	LogLevel      slog.Level
-	PollInterval  time.Duration
-	ConsumerGroup string
-	JWTSecret     string
-	OTelEndpoint  string
-	Environment   string
+	Port             string
+	DatabaseURL      string
+	RedisURL         string
+	S3Endpoint       string
+	S3Region         string
+	S3Bucket         string
+	S3AccessKey      string
+	S3SecretKey      string
+	LogLevel         slog.Level
+	PollInterval     time.Duration
+	ConsumerGroup    string
+	JWTSecret        string
+	PerplexityAPIKey string
+	OTelEndpoint     string
+	Environment      string
 }
 
 // LoadFromEnv reads configuration from environment variables with sensible defaults.
@@ -39,9 +40,10 @@ func LoadFromEnv() Config {
 		LogLevel:      parseLogLevel(getEnv("LOG_LEVEL", "info")),
 		PollInterval:  parseDuration(getEnv("POLL_INTERVAL", "30s")),
 		ConsumerGroup: getEnv("CONSUMER_GROUP", "cg:measure"),
-		JWTSecret:     getEnv("JWT_SECRET", "dev-secret-change-in-production"),
-		OTelEndpoint:  getEnv("OTEL_ENDPOINT", "http://localhost:4318"),
-		Environment:   getEnv("ENVIRONMENT", "development"),
+		JWTSecret:        getEnv("JWT_SECRET", "dev-secret-change-in-production"),
+		PerplexityAPIKey: getEnv("PERPLEXITY_API_KEY", ""),
+		OTelEndpoint:     getEnv("OTEL_ENDPOINT", "http://localhost:4318"),
+		Environment:      getEnv("ENVIRONMENT", "development"),
 	}
 }
 

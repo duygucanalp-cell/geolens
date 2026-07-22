@@ -13,7 +13,11 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/joho/godotenv"
 
+	"github.com/geolens/platform/engine"
+	"github.com/geolens/platform/engine/perplexity"
+	"github.com/geolens/platform/internal/auth"
 	"github.com/geolens/platform/internal/config"
+	"github.com/geolens/platform/internal/measure"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/telemetry"
@@ -45,40 +49,64 @@ func main() {
 	}
 	defer pool.Close()
 
+	// JWT servisi
+	jwtService := auth.NewJWTService(cfg.JWTSecret)
+
+	// Engine registry (Dilim 1: yalnız Perplexity)
+	engines := engine.NewRegistry()
+	perplexityAdapter := perplexity.NewAdapter(cfg.PerplexityAPIKey)
+	engines.Register(perplexityAdapter)
+	slog.Info("motor kayıt defteri hazır", "engine_count", engines.Count(), "engines", engines.List())
+
+	// Handler'lar
+	authHandler := auth.NewHandler(pool, jwtService)
+	configHandler := config.NewHandler(pool)
+	measureHandler := measure.NewHandler(pool, engines)
+
 	// Router
 	r := chi.NewRouter()
 
-	// Middleware zinciri (sabit sıra)
+	// Global middleware zinciri (sabit sıra — 0501 §5)
 	r.Use(httpmw.PanicRecovery)
 	r.Use(httpmw.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(httpmw.Logger)
 	r.Use(httpmw.CORS)
-	r.Use(httpmw.Authenticate(pool))
-	r.Use(httpmw.TenantContext(pool))
-	r.Use(httpmw.RBAC)
 
-	// Health check
+	// Health check (auth'suz)
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"status":"ok"}`))
 	})
 
-	// API v1 router
+	// API v1
 	r.Route("/v1", func(r chi.Router) {
-		// Auth routes
-		r.Post("/auth/register", handleRegister(pool))
-		r.Post("/auth/login", handleLogin(pool))
-		r.Post("/auth/logout", handleLogout(pool))
+		// Public auth routes (JWT gerekmez)
+		r.Post("/auth/register", authHandler.Register)
+		r.Post("/auth/login", authHandler.Login)
 
-		// Workspace routes (auth gerekli — tenant context üzerinden)
+		// Protected routes (JWT gerekli)
 		r.Group(func(r chi.Router) {
-			r.Use(httpmw.RequireWorkspace)
+			r.Use(httpmw.Authenticate(jwtService.TokenValidator()))
+			r.Use(httpmw.TenantContext(pool))
+			r.Use(httpmw.RBAC)
 
-			r.Get("/workspaces/{ws}/brands", handleListBrands(pool))
-			r.Post("/workspaces/{ws}/measurements", handleTriggerMeasurement(pool))
-			r.Get("/workspaces/{ws}/scores", handleListScores(pool))
+			// Auth-protected utilities
+			r.Post("/auth/logout", authHandler.Logout)
+
+			// Workspace-scoped routes
+			r.Route("/workspaces/{ws}", func(r chi.Router) {
+				r.Use(httpmw.RequireWorkspace)
+
+				// Config
+				r.Get("/brands", configHandler.ListBrands)
+				r.Post("/brands", configHandler.CreateBrand)
+
+				// Measurement
+				r.Post("/measurements", measureHandler.TriggerMeasurement)
+				r.Get("/scores", measureHandler.ListScores)
+			})
 		})
 	})
 
@@ -87,7 +115,7 @@ func main() {
 		Addr:         ":" + cfg.Port,
 		Handler:      r,
 		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
+		WriteTimeout: 30 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
 
@@ -111,43 +139,5 @@ func main() {
 	if err := srv.Shutdown(ctx); err != nil {
 		slog.Error("sunucu kapatılamadı", "error", err)
 		os.Exit(1)
-	}
-}
-
-// ---- Geçici handler'lar (Dilim 1 H1'de detaylandırılacak) ----
-
-func handleRegister(pool *db.Pool) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotImplemented)
-	}
-}
-
-func handleLogin(pool *db.Pool) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotImplemented)
-	}
-}
-
-func handleLogout(pool *db.Pool) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotImplemented)
-	}
-}
-
-func handleListBrands(pool *db.Pool) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotImplemented)
-	}
-}
-
-func handleTriggerMeasurement(pool *db.Pool) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotImplemented)
-	}
-}
-
-func handleListScores(pool *db.Pool) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotImplemented)
 	}
 }

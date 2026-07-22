@@ -13,10 +13,10 @@ import (
 type contextKey string
 
 const (
-	ctxKeyRequestID  contextKey = "request_id"
-	ctxKeyTenantID   contextKey = "tenant_id"
-	ctxKeyWorkspaceID contextKey = "workspace_id"
-	ctxKeyUserID     contextKey = "user_id"
+	CtxKeyRequestID  contextKey = "request_id"
+	CtxKeyTenantID   contextKey = "tenant_id"
+	CtxKeyWorkspaceID contextKey = "workspace_id"
+	CtxKeyUserID     contextKey = "user_id"
 )
 
 // PanicRecovery catches panics and returns 500.
@@ -40,7 +40,7 @@ func RequestID(next http.Handler) http.Handler {
 			id = uuid.New().String()
 		}
 		w.Header().Set("X-Request-ID", id)
-		ctx := context.WithValue(r.Context(), ctxKeyRequestID, id)
+		ctx := context.WithValue(r.Context(), CtxKeyRequestID, id)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -75,33 +75,62 @@ func CORS(next http.Handler) http.Handler {
 	})
 }
 
-// Authenticate validates the user session or JWT token.
-// Dilim 1 H1'de detaylandırılacak.
-func Authenticate(_ *db.Pool) func(http.Handler) http.Handler {
+// TokenValidator validates a JWT token string and returns (userID, tenantID, role, error).
+// Bu callback yaklaşımı, httpmw'nin auth paketine bağımlı olmasını engeller (import cycle).
+type TokenValidator func(tokenStr string) (userID, tenantID, role string, err error)
+
+// Authenticate validates the JWT token from the Authorization header.
+// Public routes (health, auth register/login) are skipped via the router grouping.
+func Authenticate(validate TokenValidator) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// TODO(H1): JWT doğrulama, oturum kontrolü
-			next.ServeHTTP(w, r)
+			authHeader := r.Header.Get("Authorization")
+			if authHeader == "" {
+				http.Error(w, `{"error":"authorization_required"}`, http.StatusUnauthorized)
+				return
+			}
+
+			tokenStr := authHeader
+			if len(authHeader) > 7 && authHeader[:7] == "Bearer " {
+				tokenStr = authHeader[7:]
+			}
+
+			userID, tenantID, _, err := validate(tokenStr)
+			if err != nil {
+				http.Error(w, `{"error":"invalid_token"}`, http.StatusUnauthorized)
+				return
+			}
+
+			ctx := context.WithValue(r.Context(), CtxKeyUserID, userID)
+			ctx = context.WithValue(ctx, CtxKeyTenantID, tenantID)
+			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
 
-// TenantContext resolves tenant from the authenticated user.
-// Dilim 1 H1'de detaylandırılacak.
-func TenantContext(_ *db.Pool) func(http.Handler) http.Handler {
+// TenantContext sets the PostgreSQL session variable for RLS (SET LOCAL app.tenant_id).
+func TenantContext(pool *db.Pool) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// TODO(H1): Tenant context ekleme (SET LOCAL app.tenant_id)
+			tenantID := GetTenantID(r.Context())
+			if tenantID != "" {
+				// Her istekte tenant context'i PG session variable olarak ayarla (ADR-004)
+				_, err := pool.Exec(r.Context(), "SELECT set_config('app.tenant_id', $1, true)", tenantID)
+				if err != nil {
+					// Non-fatal: RLS çalışmazsa sorgular boş döner
+					// TODO(H4): Bu hatayı logla ve alarm üret
+				}
+			}
 			next.ServeHTTP(w, r)
 		})
 	}
 }
 
 // RBAC enforces role-based access control.
-// Dilim 1 H1'de detaylandırılacak.
 func RBAC(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// TODO(H1): Rol bazlı yetkilendirme
+		// TODO(H2): Rol bazlı yetkilendirme (yönetici/editör/izleyici)
+		// Şimdilik tüm auth'lı isteklere izin ver
 		next.ServeHTTP(w, r)
 	})
 }
@@ -114,14 +143,38 @@ func RequireWorkspace(next http.Handler) http.Handler {
 			http.Error(w, `{"error":"workspace_required"}`, http.StatusBadRequest)
 			return
 		}
-		ctx := context.WithValue(r.Context(), ctxKeyWorkspaceID, ws)
+		ctx := context.WithValue(r.Context(), CtxKeyWorkspaceID, ws)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
+// GetTenantID returns the tenant ID from context.
+func GetTenantID(ctx context.Context) string {
+	if id, ok := ctx.Value(CtxKeyTenantID).(string); ok {
+		return id
+	}
+	return ""
+}
+
+// GetWorkspaceID returns the workspace ID from context.
+func GetWorkspaceID(ctx context.Context) string {
+	if id, ok := ctx.Value(CtxKeyWorkspaceID).(string); ok {
+		return id
+	}
+	return ""
+}
+
+// GetUserID returns the user ID from context.
+func GetUserID(ctx context.Context) string {
+	if id, ok := ctx.Value(CtxKeyUserID).(string); ok {
+		return id
+	}
+	return ""
+}
+
 // GetRequestID returns the request ID from context.
 func GetRequestID(ctx context.Context) string {
-	if id, ok := ctx.Value(ctxKeyRequestID).(string); ok {
+	if id, ok := ctx.Value(CtxKeyRequestID).(string); ok {
 		return id
 	}
 	return ""
