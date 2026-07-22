@@ -1,0 +1,55 @@
+# golangci-lint configuration — GeoLens Platform
+# Reference: https://golangci-lint.run/usage/configuration/
+
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+  issues-exit-code: 1
+  tests: true
+
+output:
+  formats:
+    - format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+
+linters:
+  enable:
+    - errcheck       # Hataları kontrol eder
+    - gosimple       # Kodu basitleştirir
+    - govet          # Go vet
+    - ineffassign    # Etkisiz atamaları tespit eder
+    - staticcheck    # Statik analiz
+    - unused         # Kullanılmayan kod
+    - revive         # Genişletilmiş lint kuralları
+    - gofmt          # Format kontrolü
+    - misspell       # Yazım hataları
+    - gocyclo        # Döngüsel karmaşıklık
+    - gocritic       # Kod kalitesi
+    - prealloc       # Ön tahsis önerileri
+    - bodyclose      # HTTP response body kapanışı
+    - noctx          # Contextsiz HTTP isteği
+    - whitespace     # Boşluk denetimi
+
+linters-settings:
+  gocyclo:
+    min-complexity: 20
+  misspell:
+    locale: US
+  revive:
+    rules:
+      - name: exported
+        severity: warning
+      - name: blank-imports
+      - name: var-naming
+      - name: package-comments
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - errcheck
+        - gocyclo
+        - gocritic
+  max-issues-per-linter: 0
+  max-same-issues: 0

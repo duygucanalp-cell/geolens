@@ -1,0 +1,153 @@
+package main
+
+import (
+	"context"
+	"log/slog"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/joho/godotenv"
+
+	"github.com/geolens/platform/internal/config"
+	"github.com/geolens/platform/platform/db"
+	"github.com/geolens/platform/platform/httpmw"
+	"github.com/geolens/platform/platform/telemetry"
+)
+
+func main() {
+	// .env yükle (varsa)
+	_ = godotenv.Load()
+
+	// Yapılandırma
+	cfg := config.LoadFromEnv()
+
+	// Logger
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.LogLevel})))
+
+	// OpenTelemetry
+	shutdown, err := telemetry.InitOTel(context.Background(), cfg)
+	if err != nil {
+		slog.Error("opentelemetry başlatılamadı", "error", err)
+		os.Exit(1)
+	}
+	defer shutdown()
+
+	// PostgreSQL havuzu
+	pool, err := db.NewPool(context.Background(), cfg.DatabaseURL)
+	if err != nil {
+		slog.Error("veritabanı bağlantısı kurulamadı", "error", err)
+		os.Exit(1)
+	}
+	defer pool.Close()
+
+	// Router
+	r := chi.NewRouter()
+
+	// Middleware zinciri (sabit sıra)
+	r.Use(httpmw.PanicRecovery)
+	r.Use(httpmw.RequestID)
+	r.Use(middleware.RealIP)
+	r.Use(httpmw.Logger)
+	r.Use(httpmw.CORS)
+	r.Use(httpmw.Authenticate(pool))
+	r.Use(httpmw.TenantContext(pool))
+	r.Use(httpmw.RBAC)
+
+	// Health check
+	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"ok"}`))
+	})
+
+	// API v1 router
+	r.Route("/v1", func(r chi.Router) {
+		// Auth routes
+		r.Post("/auth/register", handleRegister(pool))
+		r.Post("/auth/login", handleLogin(pool))
+		r.Post("/auth/logout", handleLogout(pool))
+
+		// Workspace routes (auth gerekli — tenant context üzerinden)
+		r.Group(func(r chi.Router) {
+			r.Use(httpmw.RequireWorkspace)
+
+			r.Get("/workspaces/{ws}/brands", handleListBrands(pool))
+			r.Post("/workspaces/{ws}/measurements", handleTriggerMeasurement(pool))
+			r.Get("/workspaces/{ws}/scores", handleListScores(pool))
+		})
+	})
+
+	// HTTP sunucusu
+	srv := &http.Server{
+		Addr:         ":" + cfg.Port,
+		Handler:      r,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+
+	// Graceful shutdown
+	go func() {
+		slog.Info("api sunucusu başlatılıyor", "port", cfg.Port)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("sunucu hatası", "error", err)
+			os.Exit(1)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	slog.Info("sunucu kapatılıyor...")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		slog.Error("sunucu kapatılamadı", "error", err)
+		os.Exit(1)
+	}
+}
+
+// ---- Geçici handler'lar (Dilim 1 H1'de detaylandırılacak) ----
+
+func handleRegister(pool *db.Pool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotImplemented)
+	}
+}
+
+func handleLogin(pool *db.Pool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotImplemented)
+	}
+}
+
+func handleLogout(pool *db.Pool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotImplemented)
+	}
+}
+
+func handleListBrands(pool *db.Pool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotImplemented)
+	}
+}
+
+func handleTriggerMeasurement(pool *db.Pool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotImplemented)
+	}
+}
+
+func handleListScores(pool *db.Pool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotImplemented)
+	}
+}
