@@ -14,7 +14,7 @@
 
 ## 1. Amaç
 
-GeoLens'in pazara giriş stratejisini tanımlar: TR kama stratejisi, ajans kanalı, white-label modeli, pilot programı.
+GeoLens'in pazara giriş stratejisini tanımlar: TR kama stratejisi, ajans kanalı, pilot programı.
 
 ---
 
@@ -51,7 +51,7 @@ GeoLens'in pazara giriş stratejisini tanımlar: TR kama stratejisi, ajans kanal
 
 | Taktik | Açıklama | Zamanlama |
 |--------|----------|-----------|
-| **White-label pilot** | Seçili ajanslara ücretsiz beyaz etiket pilotu | Pilot |
+| **Pilot programı** | Seçili ajanslara ücretsiz pilot | Pilot |
 | **Ortaklık programı** | Müşteri başına gelir paylaşımı | TR Açılışı |
 | **GAVF sertifikası** | Ajansın "GAVF uyumlu rapor" vermesi | TR Büyüme |
 | **Vaka çalışmaları** | Ajans referanslarıyla sektör yayılımı | TR Büyüme |

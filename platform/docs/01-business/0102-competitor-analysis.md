@@ -31,7 +31,7 @@ AI görünürlük araçları pazarı dört ana segmentte şekillenmiştir:
 | **A · AI-native platformlar** | Kategori için sıfırdan kurulmuş ürünler | Profound, Peec AI, Otterly, Scrunch, Evertune, Bluefish, AthenaHQ, Goodie, Sanbi, ZipTie, Rankscale, Knowatoa, MaxAEO (30+ araç — Sanbi tipolojisi) | **Doğrudan rekabet.** Hızlı çoğalma, düşük giriş bariyeri. |
 | **B · Yerleşik SEO süitleri** | Mevcut SEO platformlarına eklenen AI modülleri | Semrush AI Toolkit, Ahrefs Brand Radar, SE Ranking, Conductor, BrightEdge, HubSpot AEO Grader | **Geniş taban, sığ derinlik.** Müşteri mevcut sözleşmeye eklemlenir. |
 | **C · Dikey nişler** | Problem uzayının komşu dilimleri | AppTweak (mobil uygulama AI görünürlüğü), Amazon Rufus modülleri | **Doğrudan rakip değil.** Gelecekte genişleme alanı. |
-| **D · Hizmet katmanı** | GEO/AIO danışmanlık ve ajans hizmetleri | Cremicro, Sheltron (TR); küresel GEO ajansları | **TR'de ürün yok, hizmet var.** İş birliği ve white-label fırsatı. |
+| **D · Hizmet katmanı** | GEO/AIO danışmanlık ve ajans hizmetleri | Cremicro, Sheltron (TR); küresel GEO ajansları | **TR'de ürün yok, hizmet var.** İş birliği fırsatı. |
 
 **Pazar momentumu:** Kategori 2025 ortası ile 2026 baharı arasında **$300M+** yatırım çekti. "AI visibility tools" arama hacmi yıllık **~%1,900** arttı.
 
@@ -63,7 +63,7 @@ AI görünürlük araçları pazarı dört ana segmentte şekillenmiştir:
 | Boyut | Değer |
 |-------|-------|
 | Konum | Giriş-Orta segment; ajans dostu |
-| Güçlü | Anahtar kelimeden prompt üretimi; GEO denetimi; white-label; MCP ve API; güçlü G2 varlığı |
+| Güçlü | Anahtar kelimeden prompt üretimi; GEO denetimi; MCP ve API; güçlü G2 varlığı |
 | Zayıf | Düşük kademede dar prompt kotası; bazı motorlar ek ücretli |
 | GeoLens fırsatı | Ölçüm kalitesi ve metodoloji şeffaflığı (Otterly'nin yöntemi "belirsiz") |
 

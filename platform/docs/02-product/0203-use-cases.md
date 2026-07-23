@@ -317,18 +317,18 @@ UC-XX: [Başlık]
 
 | Öncelik | Sayı | UC'ler |
 |:-------:|:----:|--------|
-| **MVP** | 15 | UC-01, UC-02, UC-03, UC-04, UC-05, UC-06, UC-07, UC-08, UC-09, UC-10, UC-11, UC-12, UC-14, UC-16, UC-19 |
+| **MVP** | 14 | UC-01, UC-02, UC-03, UC-04, UC-05, UC-06, UC-07, UC-08, UC-09, UC-10, UC-12, UC-14, UC-16, UC-19 |
 | **MVP+** | 5 | UC-11, UC-13, UC-17, UC-18, UC-20 |
 | **V2** | 1 | UC-15 |
-| **Toplam** | **21** | |
+| **Toplam** | **20** | |
 
 ---
 
 ## 8. GeoLens İçin Çıkarımlar
 
-1. **21 kullanım senaryosu** tanımlanmıştır: 15'i MVP, 5'i MVP+, 1'i V2.
+1. **20 kullanım senaryosu** tanımlanmıştır: 14'ü MVP, 5'i MVP+, 1'i V2.
 2. **P3 ağırlıklıdır:** 9 senaryo yalnızca P3'e özgü. Ajans segmentinin ürün yüzeyi KOBİ'den daha geniştir.
-3. **Specification bağlantısı:** White-label rapor (UC-10) ve zamanlanmış rapor (UC-11), GAVF standardının ticarileştiği noktalardır. Raporun altında "GAVF uyumlu" ibaresi, ajansın fiyatlandırma gücünü artırır.
+3. **Specification bağlantısı:** Zamanlanmış rapor (UC-10), GAVF standardının ticarileştiği noktalardan biridir. Raporun altında "GAVF uyumlu" ibaresi, ajansın fiyatlandırma gücünü artırır.
 4. **Güven anı:** UC-06 (skor görüntüleme), ürünün vaadinin kanıtlandığı en kritik senaryodur. Fidelite etiketi burada devreye girer.
 5. **Filtre bağlantısı:** MVP senaryolarının tekrarlanabilirliği **F2** (ölçek) ve uzun vadeli kullanım sürekliliği **F1** (5 yıl) filtrelerini karşılar.
 
@@ -339,7 +339,6 @@ UC-XX: [Başlık]
 | ID | Soru | Durum |
 |----|------|-------|
 | O-1 | Benchmark kıyas verisinin gizlilik sınırları | ⏳ AVIP D-60: ≥5 kiracı eşiği devralındı. |
-| O-2 | UC-10 white-label rapor şablonu özelleştirme derecesi | ⏳ MVP'de logo+renk yeterli. Tam domain özelleştirmesi HT1'de. |
 
 ### Devralınan AVIP Kararları
 
@@ -356,7 +355,7 @@ UC-XX: [Başlık]
 
 - 0201 User Personas — aktör seti, ihtiyaç matrisi
 - 0202 User Journeys — yolculuk adımları, sürtünme haritası
-- 0102 Rekabet Analizi — fidelite kuralı, white-label boşluğu
+- 0102 Rekabet Analizi — fidelite kuralı
 - 0101 Pazar Analizi — site denetim fırsatı, uygulama açığı
 
 ## Changelog

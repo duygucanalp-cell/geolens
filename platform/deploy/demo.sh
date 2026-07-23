@@ -63,18 +63,18 @@ echo "║                                                  ║"
 echo "║  Web UI:      http://localhost:3000              ║"
 echo "║  API:         http://localhost:8080              ║"
 echo "║  MinIO Konsol: http://localhost:9001             ║"
-echo "║  PostgreSQL:  localhost:5432 (geolens/geolens)   ║"
-echo "║  Redis:       localhost:6379                     ║"
-echo "║                                                  ║"
-echo "║  Demo Giriş:                                     ║"
-echo "║    E-posta:  demo@acme.example.com               ║"
-echo "║    Şifre:    (kayıt olmanız gerekiyor)           ║"
-echo "║                                                  ║"
-echo "║  Kullanım:                                       ║"
-║    1. http://localhost:3000 adresine git            ║
-║    2. Kayıt ol (demo@acme.example.com)              ║
-║    3. Panel oluştur veya varolanı kullan            ║
-║    4. Ölçüm başlat                                  ║
-║    5. Skorları gör                                   ║
-║                                                  ║
+echo "║  PostgreSQL:  localhost:5432 (geolens/geolens)   ║
+echo "║  Redis:       localhost:6379                     ║
+echo "║                                                  ║
+echo "║  Demo Giriş:                                     ║
+echo "║    E-posta:  demo@acme.example.com               ║
+echo "║    Şifre:    (kayıt olmanız gerekiyor)           ║
+echo "║                                                  ║
+echo "║  Kullanım:                                       ║
+echo "║    1. http://localhost:3000 adresine git          ║
+echo "║    2. Kayıt ol (demo@acme.example.com)            ║
+echo "║    3. Panel oluştur veya varolanı kullan          ║
+echo "║    4. Ölçüm başlat                                ║
+echo "║    5. Skorları gör                                ║
+echo "║                                                    ║
 echo "╚══════════════════════════════════════════════════╝"

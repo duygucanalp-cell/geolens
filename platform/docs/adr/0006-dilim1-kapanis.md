@@ -60,6 +60,14 @@ Karar: Tenant ID, JWT'den çıkarılır, HTTP middleware ile context'e yazılır
 
 Karar: Her motor sorgusu 3 kez paralel çalıştırılır. Sonuçlar birleştirilir, boş/başarısız örnekler atlanır.
 
+### K6: sqlc ertelendi (orijinal plandan sapma)
+
+| Öngörü | Gerçekleşen |
+|--------|-------------|
+| H0: sqlc ile repository katmanı | Raw pgx sorguları (doğrudan SQL + pgxpool.Query) |
+
+**Gerekçe:** Dilim 1 ölçeğinde sqlc'nin getirdiği tip güvenliği, raw pgx'in esnekliğine kıyasla yeterli kazanç sağlamıyordu. Kod tabanı 30+ tablo sorgusu içeriyor; sqlc'ye geçiş Dilim 2'de değerlendirilecek. sqlc.yaml silindi, Makefile target'ı kaldırıldı.
+
 ---
 
 ## Mimari Bileşenler

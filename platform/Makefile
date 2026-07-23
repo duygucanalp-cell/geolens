@@ -80,5 +80,4 @@ tools: ## Install required tools
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 	go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 
-sqlc: ## Generate Go code from SQL
-	sqlc generate
+# sqlc: deferred to Dilim 2 — codebase uses raw pgx

@@ -25,7 +25,7 @@ Ajans segmentine yönelik satış sürecini, konumlandırmayı ve taktikleri tan
 | **Keşif** | İçerik, meslektaş, GAVF yayınları | Ajans tavsiyesi, arama |
 | **İletişim** | LinkedIn/e-posta — keşif dili | Self-serve kayıt |
 | **Demo** | "Müşterinize nasıl rapor satarsınız?" | Ürün içi onboarding |
-| **Pilot** | 1 müşteri için white-label rapor | 1 marka için ücretsiz deneme |
+| **Pilot** | 1 müşteri için PDF rapor | 1 marka için ücretsiz deneme |
 | **Satın alma** | Business paketi, koltuk sayısı | Pro paketi |
 | **Genişleme** | Yeni müşteri ekleme, API | Rakip ekleme, Business'a geçiş |
 
@@ -38,7 +38,7 @@ Ajans segmentine yönelik satış sürecini, konumlandırmayı ve taktikleri tan
 | Soru | Cevap |
 |------|-------|
 | **Ne işe yarar?** | GeoLens, ajansınızın her müşteriye AI görünürlük raporu satmasını sağlar. |
-| **Neden farklı?** | White-label, GAVF uyumlu, çok motorlu. Rakipleriniz bunu yapamıyor. |
+| **Neden farklı?** | GAVF uyumlu, çok motorlu. Rakipleriniz bunu yapamıyor. |
 | **Neden şimdi?** | Müşterileriniz AI'da görünür olmak istiyor. Onlara bunu sunan ilk ajans olun. |
 | **ROI?** | Müşteri başına aylık $X rapor geliri + farklılaşma. |
 

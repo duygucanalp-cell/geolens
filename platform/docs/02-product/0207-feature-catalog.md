@@ -106,7 +106,6 @@ Her özellik aşağıdaki alanlarla kaydedilir:
 | FR-F1 | Anlamlı uyarı | İstatistiksel eşikten geçen değişimlerde uyarı, aynı gün birleştirme, yanlış alarm geri bildirimi | 🟢 | MVP | Pro+ |
 | FR-F2 | Uyarı ayarları | Uyarı eşikleri ve kanal yapılandırması | 🟡 | MVP (dar.) | Pro+ |
 | FR-F3 | Haftalık e-posta özeti | Otomatik haftalık özet e-postası, panoya derin bağlantılar | 🟢 | MVP | Tümü |
-| **FR-F4** | **White-label PDF rapor** | **Sunucu tarafında eşzamansız PDF üretimi, ajans logosu/renkleriyle** | **🟢** | **MVP** | **Business** |
 | FR-F5 | Zamanlanmış rapor | Raporların zamanlanmış periyodik üretimi | 🟡 | MVP (dar.) | Business |
 | FR-F6 | REST API erişimi | Okuma amaçlı `/public/v1` REST API, API anahtarı ile | 🔴 | HT1 | Business+ |
 | FR-F7 | CSV/PDF dışa aktarım | Skor ve alıntı verilerinin temel CSV/PDF dışa aktarımı | 🟢 | MVP | Tümü |
@@ -116,7 +115,6 @@ Her özellik aşağıdaki alanlarla kaydedilir:
 | ID | Özellik | Açıklama | MVP | Pencere | Paket |
 |:--:|---------|----------|:---:|:-------:|:-----:|
 | **FR-G1** | **Ajans çalışma alanı** | **Müşteri başına ayrık, izole marka/prompt/rapor alanı** | **🟢** | **MVP** | **Business** |
-| **FR-G2** | **White-label şablon** | **Ajans logosu ve renkleriyle özelleştirilebilir rapor şablonu** | **🟢** | **MVP** | **Business** |
 | FR-G3 | Müşteri arşivleme | Çalışma alanı arşivleme ve devretme | 🔴 | HT1 | Business |
 
 ### 3.8 Yönetim
@@ -166,13 +164,13 @@ Her özellik aşağıdaki alanlarla kaydedilir:
 
 | Pencere | FR | NFR | Toplam |
 |:-------:|:--:|:---:|:------:|
-| **MVP** (Tam) | 27 | 15 | 42 |
+| **MVP** (Tam) | 25 | 15 | 40 |
 | **MVP** (Daraltılmış) | 5 | — | 5 |
 | **HT1** | 4 | — | 4 |
 | **HT2** | 3 | 1 | 4 |
 | **Kurumsal** | 1 | — | 1 |
 | **Ufuk** | — | — | — |
-| **Toplam** | **40** | **16** | **56** |
+| **Toplam** | **38** | **16** | **54** |
 
 > Not: NFR-13 (benchmark gizliliği) FR-D5 MVP dışı olduğu için pasiftir; teknik olarak MVP'de kodlanır ancak çalışma zamanında etkisizdir. Toplam 16 NFR'den 15'i MVP'de aktif, 1'i (NFR-13) HT2'de pasif durumdadır.
 
@@ -189,7 +187,6 @@ Her özellik aşağıdaki alanlarla kaydedilir:
 | Skor ve analiz | ✅ | ✅ | ✅ | ✅ |
 | Öneri motoru | ✅ | ✅ | ✅ | ✅ |
 | Haftalık e-posta özeti | ✅ | ✅ | ✅ | ✅ |
-| White-label PDF rapor | — | — | ✅ | ✅ |
 | Ajans çalışma alanı | — | — | ✅ | ✅ |
 | API erişimi | — | — | ✅ | ✅ |
 | SSO/SAML | — | — | — | ✅ |
@@ -207,18 +204,18 @@ Bu katalog aşağıdaki amaçlarla kullanılır:
 |------|-----------------|
 | **Faz 3 mimari tasarım** (0301-0311) | MVP özellikleri (42 kalem) öncelikli implementasyon seti; her FR/NFR mimari kararı yönlendirir |
 | **Sprint planlama** (0401) | MVP Tam → MVP Daraltılmış → HT1 sırası; bağımlılıklar sprint backlog'una yansıtılır |
-| **Test stratejisi** (0404) | Her FR için en az bir test senaryosu; FR-C5, FR-F4, FR-G1 kritik yol |
+| **Test stratejisi** (0404) | Her FR için en az bir test senaryosu; FR-C5, FR-G1 kritik yol |
 | **Pilot planlama** (0205 §7) | Pilot kiracılara hangi özelliklerin açılacağı paket haklarına göre belirlenir |
-| **Satış ve pazarlama** (0107) | Paket bazlı özellik matrisi; ajans satışında FR-G1/G2, KOBİ satışında FR-C5/FR-F3 öne çıkar |
+| **Satış ve pazarlama** (0107) | Paket bazlı özellik matrisi; ajans satışında FR-G1, KOBİ satışında FR-C5/FR-F3 öne çıkar |
 
 ---
 
 ## 8. GeoLens İçin Çıkarımlar
 
 1. **MVP'de 42 özellik tam, 5 özellik daraltılmış.** Hiçbir Çekirdek gereksinim tamamen dışarıda değildir. Daraltılmış 5 özellik HT1'de genişletilir.
-2. **Ajans özellikleri (FR-G1, FR-G2, FR-F4) Business paketinde kilitlenir.** Bu, ajansın white-label rapor ve çalışma alanına erişimini lisanslar; B2B2B çarpanı Business paketinin gelir omurgasını oluşturur.
+2. **Ajans özelliği (FR-G1) Business paketinde kilitlenir.** Bu, ajansın çalışma alanına erişimini lisanslar; B2B2B çarpanı Business paketinin gelir omurgasını oluşturur.
 3. **Fidelite etiketi (FR-C5) tüm paketlerde zorunludur.** Temel ürün vaadi olan fidelite, ücretsiz kademede bile kısıtlanmaz — bu güven inşasının olmazsa olmazıdır.
-4. **Specification bağlantısı:** FR-C4, FR-C5, FR-C6, FR-C7 skorlama özellikleri GAVF standardına uygun üretilir. White-label raporda (FR-G2) GAVF uyumluluk ibaresi yer alır.
+4. **Specification bağlantısı:** FR-C4, FR-C5, FR-C6, FR-C7 skorlama özellikleri GAVF standardına uygun üretilir.
 5. **Katalog, Faz 3 dokümanlarının girdisidir.** 0301 (System Architecture) her özellik için bir mimari bileşen atar. Test stratejisi (0404) her FR için test yöntemi tanımlar.
 
 ---
