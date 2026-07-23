@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | project-plan |
 | Proje | GeoLens Platform |
-| Versiyon | 1.4 |
+| Versiyon | 1.5 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
@@ -819,3 +819,4 @@ H13: kripto-silme ──→ H14: alarm ──→ H15: kalibrasyon ──→ H16:
 | 1.2 | 22.07.2026 | AVIP kapalı kararları eklendi: D-13 (GitHub Projects), D-14 (GitHub Actions), D-53 (walking skeleton onayı). H4 satırında GitHub Actions referansı eklendi. |
 | 1.3 | 23.07.2026 | Dilim 2, 3 ve 4'e `### İlk Çıktı Takvimi` h3 başlıkları eklendi. Arşivdeki 0401-development-process.md ile tutarlılık sağlandı. |
 | 1.4 | 23.07.2026 | Dilim 1 `### Implementasyon` h3'ü eklendi. Birim testleri yazıldı (7 paket, 30+ test). GitHub Actions CI/CD pipeline eklendi. |
+| 1.5 | 23.07.2026 | React SPA iskeleti + skor kartı prototipi tamamlandı (ScoreCard, ScoreDashboard, auth, API client). |
