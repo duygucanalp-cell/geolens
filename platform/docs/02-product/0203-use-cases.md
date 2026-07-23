@@ -151,35 +151,23 @@ UC-XX: [Başlık]
 | **Aşama** | Kurulum / Genişleme |
 | **Tetikleyici** | Ajans yeni bir müşterisi için izleme başlatmak istiyor |
 | **Ön koşul** | Ajans çalışma alanı oluşturulmuş |
-| **Ana akış** | 1. Kullanıcı "Müşteri Ekle" butonuna tıklar<br>2. Kullanıcı müşteri marka adını ve alan adını girer<br>3. Sistem ortak omurga akışını tekrarlar (UC-02, UC-03)<br>4. Kullanıcı müşteriye özel prompt setini belirler<br>5. Kullanıcı raporlama tercihlerini ayarlar (PDF/BI/white-label)<br>6. Sistem müşteriyi çalışma alanına ekler |
+| **Ana akış** | 1. Kullanıcı "Müşteri Ekle" butonuna tıklar<br>2. Kullanıcı müşteri marka adını ve alan adını girer<br>3. Sistem ortak omurga akışını tekrarlar (UC-02, UC-03)<br>4. Kullanıcı müşteriye özel prompt setini belirler<br>5. Kullanıcı raporlama tercihlerini ayarlar (PDF/BI)<br>6. Sistem müşteriyi çalışma alanına ekler |
 | **Başarı** | Müşteri bağımsız olarak izlenebilir. Diğer müşterilerden veri izolasyonu sağlanır. |
 | **Öncelik** | **MVP** |
 
-### UC-10: White-label Rapor Oluşturma
-
-| Alan | Değer |
-|---|---|
-| **Aktör** | P3 |
-| **Aşama** | İlk Değer / Ritim |
-| **Tetikleyici** | Ajans müşterisine kendi markalı raporu sunmak istiyor |
-| **Ön koşul** | Müşteri için en az bir ölçüm tamamlanmış |
-| **Ana akış** | 1. Kullanıcı "Rapor Oluştur" butonuna tıklar<br>2. Kullanıcı rapor şablonunu seçer (ajans logosu, renkleri ile)<br>3. Kullanıcı rapor kapsamını belirler (hangi motorlar, hangi promptlar)<br>4. Sistem PDF raporu üretir<br>5. Sistem raporu müşteriye e-posta ile gönderebilir (opsiyonel)<br>6. Kullanıcı raporu indirir/paylaşır |
-| **Başarı** | Ajans, müşterisine kendi markasıyla profesyonel bir AI görünürlük raporu sunar. Rapor GAVF uyumludur. |
-| **Öncelik** | **MVP** |
-
-### UC-11: Zamanlanmış Rapor Ayarlama
+### UC-10: Zamanlanmış Rapor Ayarlama
 
 | Alan | Değer |
 |---|---|
 | **Aktör** | P3 |
 | **Aşama** | Ritim |
 | **Tetikleyici** | Ajans müşteri raporlarını otomatikleştirmek istiyor |
-| **Ön koşul** | En az bir müşteri eklenmiş, white-label şablonu hazır |
+| **Ön koşul** | En az bir müşteri eklenmiş |
 | **Ana akış** | 1. Kullanıcı "Zamanlanmış Rapor" ayarlarını açar<br>2. Kullanıcı sıklığı seçer (haftalık/aylık)<br>3. Kullanıcı teslim kanalını seçer (e-posta/Slack/BI)<br>4. Kullanıcı hedef müşterileri seçer<br>5. Sistem zamanlayıcıyı kaydeder<br>6. Sistem belirtilen sıklıkta raporları otomatik üretir ve gönderir |
 | **Başarı** | Rapor üretimi tamamen otomatik. Ajansın operasyonel yükü sıfırlanır. |
 | **Öncelik** | **MVP** |
 
-### UC-12: Çok Müşteri Panorama Görüntüleme
+### UC-11: Çok Müşteri Panorama Görüntüleme
 
 | Alan | Değer |
 |---|---|
@@ -191,7 +179,7 @@ UC-XX: [Başlık]
 | **Başarı** | Ajans, müşteri portföyünün tamamını bir bakışta değerlendirebilir. |
 | **Öncelik** | **MVP+** |
 
-### UC-13: Uyarı Kanalı ve Eşik Ayarlama
+### UC-12: Uyarı Kanalı ve Eşik Ayarlama
 
 | Alan | Değer |
 |---|---|
@@ -203,7 +191,7 @@ UC-XX: [Başlık]
 | **Başarı** | Ajans kritik değişimleri kaçırmaz. Uyarı yorgunluğu minimize edilir. |
 | **Öncelik** | **MVP** |
 
-### UC-14: API/BI Entegrasyonu
+### UC-13: API/BI Entegrasyonu
 
 | Alan | Değer |
 |---|---|
@@ -215,7 +203,7 @@ UC-XX: [Başlık]
 | **Başarı** | GeoLens verisi ajansın mevcut raporlama altyapısına entegre olur. |
 | **Öncelik** | **MVP+** |
 
-### UC-15: Koltuk Yönetimi
+### UC-14: Koltuk Yönetimi
 
 | Alan | Değer |
 |---|---|
@@ -227,7 +215,7 @@ UC-XX: [Başlık]
 | **Başarı** | Ekip yönetimi esnek ve kontrol edilebilir. |
 | **Öncelik** | **MVP** |
 
-### UC-16: Müşteri Arşivleme
+### UC-15: Müşteri Arşivleme
 
 | Alan | Değer |
 |---|---|
@@ -245,7 +233,7 @@ UC-XX: [Başlık]
 
 0202 §5'teki KOBİ yolculuğundan türetilen senaryolar.
 
-### UC-17: Haftalık Özet Görüntüleme
+### UC-16: Haftalık Özet Görüntüleme
 
 | Alan | Değer |
 |---|---|
@@ -257,7 +245,7 @@ UC-XX: [Başlık]
 | **Başarı** | Kullanıcı panoya girmeden haftalık durumu anlar. İhtiyaç duyarsa detaya iner (WAT%). |
 | **Öncelik** | **MVP** |
 
-### UC-18: Benchmark Karşılaştırma
+### UC-17: Benchmark Karşılaştırma
 
 | Alan | Değer |
 |---|---|
@@ -269,7 +257,7 @@ UC-XX: [Başlık]
 | **Başarı** | Kullanıcı skorunu bağlam içinde değerlendirebilir. Düşük skor moral bozmaz, aksiyon yönlendirir. |
 | **Öncelik** | **MVP+** |
 
-### UC-19: Rakip Ekleme ve Karşılaştırma
+### UC-18: Rakip Ekleme ve Karşılaştırma
 
 | Alan | Değer |
 |---|---|
@@ -281,7 +269,7 @@ UC-XX: [Başlık]
 | **Başarı** | Kullanıcı kendisini rakipleriyle aynı koşullarda karşılaştırabilir. |
 | **Öncelik** | **MVP+** |
 
-### UC-20: Pro'dan Business'a Paket Yükseltme
+### UC-19: Pro'dan Business'a Paket Yükseltme
 
 | Alan | Değer |
 |---|---|
@@ -293,7 +281,7 @@ UC-XX: [Başlık]
 | **Başarı** | Sorunsuz paket geçişi. Kullanıcı veri kaybı yaşamaz. |
 | **Öncelik** | **MVP** (özellik erişim kontrolü ile birlikte) |
 
-### UC-21: Öneri Etki Takibi
+### UC-20: Öneri Etki Takibi
 
 | Alan | Değer |
 |---|---|
@@ -315,12 +303,12 @@ UC-XX: [Başlık]
 |---------|:--------------:|-----------------|
 | Çok motorlu izleme | P2+P3 | UC-05, UC-06 |
 | Alıntı/kaynak analizi | P3 | UC-06 |
-| Kanıt dereceli öneriler | P2+P3 | UC-07, UC-21 |
-| Rakip kıyası | P3 | UC-19 |
-| Trend ve uyarılar | P3 | UC-13, UC-17 |
-| White-label / dışa aktarım | **P3** | UC-10, UC-11 |
+| Kanıt dereceli öneriler | P2+P3 | UC-07, UC-20 |
+| Rakip kıyası | P3 | UC-18 |
+| Trend ve uyarılar | P3 | UC-12, UC-16 |
+| PDF/CSV dışa aktarım | **P3** | UC-10 |
 | SSO, denetim izi | P1 (ileri) | — |
-| API / BI entegrasyonu | P3 | UC-14 |
+| API / BI entegrasyonu | P3 | UC-13 |
 | TR dil/prompt setleri | P2+P3 | UC-03 |
 
 ---
@@ -329,9 +317,9 @@ UC-XX: [Başlık]
 
 | Öncelik | Sayı | UC'ler |
 |:-------:|:----:|--------|
-| **MVP** | 15 | UC-01, UC-02, UC-03, UC-04, UC-05, UC-06, UC-07, UC-08, UC-09, UC-10, UC-11, UC-13, UC-15, UC-17, UC-20 |
-| **MVP+** | 5 | UC-12, UC-14, UC-18, UC-19, UC-21 |
-| **V2** | 1 | UC-16 |
+| **MVP** | 15 | UC-01, UC-02, UC-03, UC-04, UC-05, UC-06, UC-07, UC-08, UC-09, UC-10, UC-11, UC-12, UC-14, UC-16, UC-19 |
+| **MVP+** | 5 | UC-11, UC-13, UC-17, UC-18, UC-20 |
+| **V2** | 1 | UC-15 |
 | **Toplam** | **21** | |
 
 ---
@@ -357,10 +345,10 @@ UC-XX: [Başlık]
 
 | ID | Karar | Kaynak |
 |----|-------|--------|
-| **D-08** | **Benchmark (UC-12) MVP dışı, HT2'ye bırakıldı.** PO 21.07.2026. | AVIP 0203 O-1 |
+| **D-08** | **Benchmark (UC-11) MVP dışı, HT2'ye bırakıldı.** PO 21.07.2026. | AVIP 0203 O-1 |
 | **D-24** | **Self-serve ödeme (UC-26):** HT2 — genel açılışla. Pilotta arka ofis. PO 21.07.2026. | AVIP 0203 O-2 |
 | **D-09** | **Rol modeli:** Yönetici+üye yeterli. İzleyici MVP dışı. PO 21.07.2026. | AVIP 0203 O-3 |
-| **D-10** | **API kapsamı (UC-21):** Okuma-yalnız başlar. Yazma HT1'de. PO 21.07.2026. | AVIP 0203 O-4 |
+| **D-10** | **API kapsamı (UC-20):** Okuma-yalnız başlar. Yazma HT1'de. PO 21.07.2026. | AVIP 0203 O-4 |
 
 ---
 
@@ -375,6 +363,6 @@ UC-XX: [Başlık]
 
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
-| 1.0 | 22.07.2026 | İlk yayın: GeoLens Platform kullanım senaryoları. P3 (ajans) ve P2 (KOBİ) odaklı. 21 UC tanımı (UC-01–UC-21), 7 UC'lik ortak omurga, 9 P3 senaryosu, 5 P2 senaryosu. MVP/MVP+/V2 sınıflandırması. |
+| 1.0 | 22.07.2026 | İlk yayın: GeoLens Platform kullanım senaryoları. P3 (ajans) ve P2 (KOBİ) odaklı. 21 UC tanımı (UC-01–UC-20), 7 UC'lik ortak omurga, 9 P3 senaryosu, 5 P2 senaryosu. MVP/MVP+/V2 sınıflandırması. |
 | 1.1 | 22.07.2026 | Tutarlılık düzeltmesi: changelog'daki UC sayısı 20'den 21'e güncellendi (tabloyla uyum). |
 | 1.2 | 22.07.2026 | AVIP kapalı kararları taşındı: D-08 (benchmark HT2), D-24 (self-serve ödeme HT2), D-09 (rol modeli), D-10 (API okuma-yalnız). Devralınan Kararlar eklendi. |

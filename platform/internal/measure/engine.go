@@ -65,6 +65,9 @@ type MeasurementResult struct {
 	Citations    []engine.Citation    `json:"citations"`
 	EngineMeta   engine.EngineMeta    `json:"engine_meta"`
 	BrandName    string               `json:"brand_name"`
+	PanelID      string               `json:"panel_id"`
+	WorkspaceID  string               `json:"workspace_id"`
+	TenantID     string               `json:"tenant_id"`
 }
 
 // Service defines the interface for the measurement/scoring engine.

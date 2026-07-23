@@ -68,17 +68,16 @@ Tüm personalar aynı çekirdek akıştan geçer. Farklar paket haklarıyla aç�
 |-------|------|----------------|--------|
 | 🔍 **Keşif** | TR ekosistem içerikleri, metodoloji yayınları (GAVF söylemi), meslektaş tavsiyesi. **Niyet:** "Müşterime AI görünürlük raporu satmak istiyorum." | Kategori araçlarına güvensizlik (0102 §5) | Kanal atıf verisi |
 | ⚙️ **Kurulum** | Ajans çalışma alanı oluşturma. Ortak omurga ilk iki müşteri için tekrarlanır. Müşteri başına marka/prompt seti. Ekip koltukları. | Müşteri başına kurulum yükü | Kurulum tamamlama oranı |
-| 💎 **İlk Değer** | İlk müşteri raporu: **white-label PDF** + paylaşılabilir özet. Müşteriye sunulabilir metodoloji sayfası (fidelite dili satış aracına dönüşür). | Rapor kişiselleştirme ihtiyacı | İlk rapor üretim süresi |
+| 💎 **İlk Değer** | İlk müşteri raporu: **PDF** + paylaşılabilir özet. Müşteriye sunulabilir metodoloji sayfası (fidelite dili satış aracına dönüşür). | Rapor kişiselleştirme ihtiyacı | İlk rapor üretim süresi |
 | 🔄 **Haftalık Ritim** | Zamanlanmış müşteri raporları (M10). Slack uyarıları. Pano üzerinden çok müşteri panoraması. | Uyarı yorgunluğu (M11) | M1 (WAT%), M3, M10 |
 | 📈 **Genişleme** | Müşteri ekleme. Koltuk artışı. BI/API ile ajans iç raporlamasına bağlama. GAVF uyumlu rapor standardı. | Müşteri başına maliyet endişesi (S5 panel modeliyle karşılanır) | Kiracı içi büyüme |
-| 🗣️ **Savunuculuk** | Vaka çalışması ve referans. Ajans ağında yayılım. "Ben GeoLens kullanıyorum" — sektörde prestij. | Rakip white-label teklifleri (0102 §3.3) | Referans dönüşümü |
+| 🗣️ **Savunuculuk** | Vaka çalışması ve referans. Ajans ağında yayılım. "Ben GeoLens kullanıyorum" — sektörde prestij. | Rakip teklifleri (0102 §3.3) | Referans dönüşümü |
 
 ### 4.2 P3'e Özel Detaylar
 
 **Ajans çalışma alanının kritik özellikleri:**
 
 - Müşteri başına **izole marka/prompt seti/rapor** — veri sızıntısı yok
-- **White-label rapor:** Ajansın kendi logosu, kendi renkleri, kendi alan adı
 - **Toplu işlem:** Toplu müşteri ekleme, toplu prompt seti güncelleme
 - **Kota yönetimi:** Müşteri başına prompt kotası, toplam kullanım görünürlüğü
 - **Faturalandırma çıktısı:** Müşteri başına maliyet raporu (S5)
@@ -124,7 +123,7 @@ P2'nin en güçlü keşif kanalı P3'tür — ajansı olan KOBİ, ajansı aracı
 | 🌐 **Web pano** (responsive) | Derin analiz, kaynak detayı, yapılandırma. "Detaya inme"nin gerçekleştiği yer. | P3 (yoğun), P2 (haftalık) |
 | 📧 **E-posta özetleri** | Haftalık ritmin taşıyıcısı. Panoya derin bağlantılar. Yönetici özeti formatı. | P2 (ana yüzey), P1 |
 | 💬 **Slack/Webhook uyarıları** | Anlamlı değişim bildirimi. Eşikler oynaklık modeline bağlı. | P3 |
-| 📄 **Zamanlanmış PDF/BI** | Müşteriye giden white-label rapor. BI beslemesi. | P3 |
+| 📄 **Zamanlanmış PDF/BI** | Müşteriye giden PDF rapor. BI beslemesi. | P3 |
 | 📱 **Mobil bildirim** | Hafif sinyal katmanı. Responsive web'e köprü. | P2, P4, P5 (ileri) |
 
 **Uyarı tasarım ilkeleri:**
@@ -164,7 +163,7 @@ P2'nin en güçlü keşif kanalı P3'tür — ajansı olan KOBİ, ajansı aracı
 ## 9. GeoLens İçin Çıkarımlar
 
 1. **0203 (Use Cases)** envanteri bu dokümanın adımlarından türetilir: her tablo satırı bir kullanım senaryosu adayıdır.
-2. **0204 (PRD)** gereksinim adayları: kurulum sihirbazı, prompt şablon kütüphanesi, site erişim denetimi modülü, aşamalı ölçüm ilerleme görünümü, açıklama katmanı (calculation_run detayı), e-posta özet motoru, uyarı eşik/kanal ayarları, white-label rapor şablonu, ajans çalışma alanı.
+2. **0204 (PRD)** gereksinim adayları: kurulum sihirbazı, prompt şablon kütüphanesi, site erişim denetimi modülü, aşamalı ölçüm ilerleme görünümü, açıklama katmanı (calculation_run detayı), e-posta özet motoru, uyarı eşik/kanal ayarları, ajans çalışma alanı.
 3. **0205 (MVP)** ortak omurgayı çekirdek alır. Site denetimi (adım 4) düşük maliyet/yüksek değer MVP adayıdır.
 4. **Specification bağlantısı:** GAVF standardı, P3 için raporu satılabilir bir hizmete dönüştürür. "GAVF uyumlu rapor" ajansın fiyatlandırabildiği bir çıktıdır. P2 için de metodoloji güveni sağlar — "GAVF standartlarıyla ölçülmüştür" ibaresi, KOBİ'nin raporu yönetimine veya müşterisine sunmasını kolaylaştırır.
 5. **Filtre bağlantısı:** P3 ve P2 yolculuklarının tekrarlanabilirliği **F2** (ölçek), uzun vadeli ritim tasarımı ve e-posta odaklı iletişim **F1** (5 yıl) filtresini karşılar.

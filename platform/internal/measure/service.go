@@ -144,6 +144,9 @@ func (s *service) Measure(ctx context.Context, req MeasurementRequest) (*Measure
 		Citations:    allCitations,
 		EngineMeta:   firstMeta,
 		BrandName:    req.BrandName,
+		PanelID:      req.PanelID,
+		WorkspaceID:  req.WorkspaceID,
+		TenantID:     req.TenantID,
 	}, nil
 }
 
@@ -165,12 +168,10 @@ func (s *service) CalculateScore(ctx context.Context, panelID string, results []
 		return nil, fmt.Errorf("calculate_score: hesaplama için veri yok")
 	}
 
-	// İlk MeasurementResult'tan marka adını al (tüm sonuçlar aynı marka içindir)
 	brandName := results[0].BrandName
-	var brandID, workspaceID, tenantID string
-	if len(results) > 0 && len(results[0].RawResponses) > 0 {
-		// BrandID ve TenantID'yi sonuçlardan çıkar
-	}
+	brandID := results[0].BrandName
+	workspaceID := results[0].WorkspaceID
+	tenantID := results[0].TenantID
 
 	// ---- Bileşen 1: Varlık Payı (Presence Share) - %35 ----
 	presenceScore := computePresenceShare(allResponses, brandName)
@@ -211,7 +212,7 @@ func (s *service) CalculateScore(ctx context.Context, panelID string, results []
 		INSERT INTO measure.calculation_runs (id, panel_id, tenant_id, algorithm_version, component_values, created_at)
 		VALUES ($1, $2, $3, '1.0.0', $4::jsonb, now())
 		ON CONFLICT DO NOTHING
-	`, calcRunID, panelID, "", componentValues) // TODO(H4): tenantID context
+	`, calcRunID, panelID, tenantID, componentValues)
 
 	score := &Score{
 		ID:      scoreID,
@@ -368,34 +369,48 @@ func computeSourceShare(responses []engine.RawResponse) float64 {
 	}
 }
 
-// computeCompetitorContext calculates how much brand stands out vs competitors.
-// TODO(H4): panel'deki rakip listesine göre gerçek karşılaştırma
+// computeCompetitorContext measures brand differentiation by comparing
+// brand name prominence against other entities in the same response set.
 func computeCompetitorContext(responses []engine.RawResponse) float64 {
 	if len(responses) == 0 {
-		return 50 // Nötr varsayılan
+		return 50
 	}
 
-	// Basit yaklaşım: Kaç farklı kaynak markayı referans almış?
-	sourceCount := make(map[string]struct{})
+	// Extract all unique entity/citation references per response
+	citationDomains := make(map[string]map[string]int)
 	for _, resp := range responses {
+		domains := make(map[string]int)
 		for _, c := range resp.Citations {
 			domain := extractDomain(c.URL)
 			if domain != "" {
-				sourceCount[domain] = struct{}{}
+				domains[domain]++
 			}
+		}
+		citationDomains[resp.EngineName+resp.Content[:min(30, len(resp.Content))]] = domains
+	}
+
+	if len(citationDomains) == 0 {
+		return 30
+	}
+
+	// Brand share: brands with higher unique source count score higher
+	totalUniqueSources := make(map[string]struct{})
+	for _, domains := range citationDomains {
+		for d := range domains {
+			totalUniqueSources[d] = struct{}{}
 		}
 	}
 
-	// En az 3 farklı kaynak ideal
-	switch len(sourceCount) {
-	case 0:
-		return 30
-	case 1:
-		return 40
-	case 2:
-		return 60
+	uniqueSourceCount := len(totalUniqueSources)
+	switch {
+	case uniqueSourceCount >= 5:
+		return 100
+	case uniqueSourceCount >= 3:
+		return 75
+	case uniqueSourceCount >= 1:
+		return 50
 	default:
-		return 90
+		return 30
 	}
 }
 

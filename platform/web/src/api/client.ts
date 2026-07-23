@@ -49,3 +49,7 @@ export function triggerMeasurement(ws: string, brandId: string, panelId?: string
     body: JSON.stringify({ brand_id: brandId, panel_id: panelId }),
   })
 }
+
+export function getScoreHistory(ws: string, brandId: string): Promise<Score[]> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/brands/${brandId}/scores`)
+}

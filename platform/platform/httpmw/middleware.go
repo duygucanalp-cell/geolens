@@ -133,8 +133,7 @@ func TenantContext(pool *db.Pool) func(http.Handler) http.Handler {
 				// Her istekte tenant context'i PG session variable olarak ayarla (ADR-004)
 				_, err := pool.Exec(r.Context(), "SELECT set_config('app.tenant_id', $1, true)", tenantID)
 				if err != nil {
-					// Non-fatal: RLS çalışmazsa sorgular boş döner
-					// TODO(H4): Bu hatayı logla ve alarm üret
+				slog.Warn("app.tenant_id session variable ayarlanamadı, RLS devre dışı", "tenant_id", tenantID, "error", err)
 				}
 			}
 			next.ServeHTTP(w, r)

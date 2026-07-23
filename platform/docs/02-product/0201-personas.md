@@ -71,9 +71,9 @@ GeoLens beş farklı segmentte kullanıcıya hitap eder. Hepsi **tek platform**,
 | **Bağlam** | Dijital pazarlama ajansı. Çok müşterili portföy. Müşterilerine yeni AIO/GEO hizmeti satmak istiyor. |
 | **Hedef** | Müşteri başına görünürlük raporu üretmek. Hizmeti ölçeklenebilir ve markalı sunmak. Yeni gelir hattı açmak. |
 | **Ağrılar** | Elle derlenen ekran görüntüsü raporları. Kategori liderinde dahi çok-hesap yönetimi zayıf (0102 §3.1). Rapor üretimi zaman yiyor. |
-| **Karar kriterleri** | Çok müşterili çalışma alanı, **white-label rapor**, koltuk politikası, API/BI entegrasyonu, müşteri başına maliyet öngörülebilirliği. |
+| **Karar kriterleri** | Çok müşterili çalışma alanı, koltuk politikası, API/BI entegrasyonu, müşteri başına maliyet öngörülebilirliği. |
 | **Kanal** | Pano yoğun kullanım + Slack uyarıları. Müşteriye giden zamanlanmış PDF/BI raporu. |
-| **GeoLens eşleşmesi** | Çok kiracılı ajans modeli (S6), white-label, panel-tabanlı maliyet modeli (S5). |
+| **GeoLens eşleşmesi** | Çok kiracılı ajans modeli (S6), panel-tabanlı maliyet modeli (S5). |
 | **Paket** | Business (ajans çalışma alanı) |
 | **MVP durumu** | 🟡 **Birincil hedef.** En kısa satış döngüsü, en yüksek B2B2B çarpanı. |
 
@@ -114,7 +114,7 @@ GeoLens beş farklı segmentte kullanıcıya hitap eder. Hepsi **tek platform**,
 | Kanıt dereceli öneriler | 🟡 Orta | 🔴 Kritik | 🔴 Kritik | 🔴 Kritik | 🟡 Orta |
 | Rakip kıyası | 🔴 Kritik | 🟡 Orta | 🔴 Kritik | 🟡 Orta | 🟡 Orta |
 | Trend ve uyarılar | 🔴 Kritik | 🟡 Orta | 🔴 Kritik | 🟡 Orta | 🟡 Orta |
-| White-label / dışa aktarım | 🟡 Orta | ⚪ Düşük | 🔴 **Kritik** | 🔴 Kritik | ⚪ Düşük |
+| Dışa aktarım (PDF/CSV) | 🟡 Orta | ⚪ Düşük | 🔴 **Kritik** | 🔴 Kritik | ⚪ Düşük |
 | SSO, denetim izi | 🔴 **Kritik** | ⚪ Düşük | 🟡 Orta | ⚪ Düşük | ⚪ Düşük |
 | API / BI entegrasyonu | 🔴 Kritik | ⚪ Düşük | 🔴 Kritik | ⚪ Düşük | ⚪ Düşük |
 | TR dil/prompt setleri | 🟡 Orta | 🔴 **Kritik** | 🔴 **Kritik** | 🔴 Kritik | 🔴 Kritik |
@@ -129,7 +129,7 @@ GeoLens beş farklı segmentte kullanıcıya hitap eder. Hepsi **tek platform**,
 |-------|------------------|-------------------|:-------------:|
 | **Free** | P5, P4 (deneme) | Tek marka, dar prompt kotası, temel skor, fidelite etiketi dahil | Haftalık |
 | **Pro** | P4, P2 | Çekirdek motor seti, haftalık izleme, öneriler, PDF dışa aktarım | Haftalık |
-| **Business** | P3, P2 (büyüyen) | Çok müşterili çalışma alanı, white-label rapor, API/BI, ekip koltukları | Günlük |
+| **Business** | P3, P2 (büyüyen) | Çok müşterili çalışma alanı, API/BI, ekip koltukları | Günlük |
 | **Enterprise** | P1 | SSO/SAML, denetim izi, genişletilmiş tarihçe, sözleşmesel destek | Günlük |
 
 **İki kural:**
@@ -143,7 +143,7 @@ GeoLens beş farklı segmentte kullanıcıya hitap eder. Hepsi **tek platform**,
 > **Karar (22.07.2026):** V1 ticari odağı **P3 (ajans) + P2 (KOBİ)** ikilisidir.
 
 **Gerekçe:**
-- **P3 (ajans):** En kısa satış döngüsü, B2B2B çarpanı — 1 ajans müşterisi onlarca markaya ulaşır (0101 §8). Kategorideki en büyük boşluk: ajans/çok-hesap yönetimi lider dahil zayıf (0102 §3.1, §7). White-label rapor ajansın doğrudan faturalandırabildiği çıktıdır.
+- **P3 (ajans):** En kısa satış döngüsü, B2B2B çarpanı — 1 ajans müşterisi onlarca markaya ulaşır (0101 §8). Kategorideki en büyük boşluk: ajans/çok-hesap yönetimi lider dahil zayıf (0102 §3.1, §7).
 - **P2 (KOBİ):** En geniş bakir alan — %92 planlıyor, %40.6 uyguluyor (0101 §6). Düşük satın alma bariyeri, self-serve uygunluk.
 
 **Ertelenen:**
@@ -168,7 +168,7 @@ GeoLens beş farklı segmentte kullanıcıya hitap eder. Hepsi **tek platform**,
 |---------|-------------------|
 | Kart varsayımları (hedef, ağrı, kriter) | Segment başına en az 5 yarı yapılandırılmış görüşme. P3 ve P2 öncelikli. |
 | Bildirim kanalı tercihleri | Görüşme + erken pilotta kanal etkileşim ölçümü. |
-| Ajans önceliği ve white-label ihtiyacı | TR ajans görüşmeleri (5 soruluk kılavuz: iş akışı, faturalandırma, araç eksikleri, KOBİ farkındalığı, karar verici haritası). |
+| Ajans önceliği ve ihtiyaçları | TR ajans görüşmeleri (5 soruluk kılavuz: iş akışı, faturalandırma, araç eksikleri, KOBİ farkındalığı, karar verici haritası). |
 | TR pencere varsayımı (12-18 ay) | Alıcı olgunluğu soruları. |
 | Free-Pro dönüşümü (P4/P5) | Bekleme listesi + açılış deneyi. |
 
@@ -181,7 +181,7 @@ GeoLens beş farklı segmentte kullanıcıya hitap eder. Hepsi **tek platform**,
 | 🔴 1 | **Sheltron** | Predictive SEO, AI görünürlük denetim süreci |
 | 🔴 2 | **Cremicro** | Çok dilli GEO, cross-border müşteri yönetimi |
 | 🔴 3 | **Seobaz** | "Ölçülebilir GEO", müşteri başına maliyet modeli |
-| 🔴 4 | **Webtures** | Agentic Web Optimization, white-label ihtiyacı |
+| 🔴 4 | **Webtures** | Agentic Web Optimization |
 | 🟡 5 | **Zeo Agency** | Veri odaklı GEO, BI/API entegrasyon ihtiyacı |
 | 🟡 6 | **Mobitek** | Büyük katalog yönetimi, e-ticaret müşteri farkındalığı |
 | 🟡 7 | **Aora Digital** | Ankara perspektifi, orta ölçekli müşteri profili |

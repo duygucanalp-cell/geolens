@@ -27,3 +27,16 @@ export interface ScoreComponent {
   weight: number
   color: string
 }
+
+export interface ScoreHistory {
+  brand_name: string
+  brand_id: string
+  scores: Score[]
+}
+
+export interface TrendDataPoint {
+  date: string
+  value: number
+  ci_low: number
+  ci_high: number
+}

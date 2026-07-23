@@ -4,10 +4,10 @@
 |---|---|
 | Doküman ID | project-plan |
 | Proje | GeoLens Platform |
-| Versiyon | 1.5 |
+| Versiyon | 1.6 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
-| Tarih | 22 Temmuz 2026 |
+| Tarih | 23 Temmuz 2026 |
 | İlişkili | 0000 (Master Plan), 0205 (MVP), 0206 (Roadmap), archive/avip-v1/0401 |
 
 ---
@@ -57,7 +57,7 @@ Bu doküman GeoLens Platform geliştirme takvimini, ekip sorumluluklarını ve �
 | **H1** | platform/httpmw: panik kurtarma, request ID; measure api.go tamamlama; Perplexity bağdaştırıcı iskeleti (Execute) | identity: kullanıcı kaydı, JWT oturum, giriş/çıkış uçları; httpmw: kimlik doğrulama, kiracı bağlamı | cmd/api: httpmw zincirini bağlama; config: marka tanımı, panel iskeleti; cmd/scheduler iskeleti | İlk 3 ajans görüşmesi (Sheltron, Cremicro, Seobaz); güncelleme notları | 🟢 Çalışan API + kimlik doğrulama + Perplexity istek |
 | **H2** | Perplexity bağdaştırıcı tam (alıntı çıkarma, hata sınıfları); measure/calc: calculation_run + temel skor (varlık payı + konum + kaynak) | identity: RBAC tam, RLS politikaları; platform/queue: Redis Streams + outbox dağıtıcı; S3 storage sarmalayıcı | config: panel tanımı + prompt seti yönetimi; scheduler: izleme planı tarama, idempotent iş üretimi; cmd/worker iskeleti | Ajans görüşmeleri devam (Webtures, Zeo); skor bileşen adları; dokümantasyon | 🟢 Ölçüm işi kuyruğa atılabiliyor |
 | **H3** | Scoring engine tam: 4 bileşen (varlık, konum, kaynak, rakip) + GA + fidelite; ham yanıt → skor pipeline | governance: denetim yazıcısı, kota iskeleti, usage_records; platform hardening (hata yönetimi, timeouts) | Worker: kuyruktan iş okuma + measure çağrısı + sonuç kalıcılaştırma; web/ SPA: React iskeleti + skor kartı prototipi | Ajans görüşmeleri analizi; sürüm notu şablonları; README güncelleme | 🟢 Skor hesaplanıyor, governance temel hazır |
-| **H4** | Uçtan uca pipeline entegrasyonu; hata ayıklama; demo senaryosu hazırlığı | Testler (birim + testcontainers); **CI/CD ilk versiyon (GitHub Actions, D-14)**; doküman-kod senkronu | web/ SPA: skor kartı + trend grafiği; demo ortamı; API dokümantasyonu | Demo desteği; v1.1 kuyruğu kayıtları; Dilim 1 dokümantasyon kapanışı | 🔷 **Canlıda uçtan uca demo — tek ölçüm, etiketli skor** |
+| **✅ H4** | H4 TODO'lar kapatıldı (tenantID context, competitor_context); entegrasyon testleri; TrendChart React bileşeni; demo ortamı; API dokümantasyonu; ADR-006 kapanış kaydı | CI/CD güncelleme (GitHub Actions, D-14); doküman-kod senkronu | web/ SPA: TrendChart + ScoreDashboard entegrasyonu; deploy/docker-compose.demo.yml + seed.sql + demo.sh | ADR-006 Dilim 1 kapanış kaydı; demo desteği; v1.1 kuyruğu kayıtları | ✅ **Dilim 1 kapanışı — çıkış kapısı kriterleri sağlandı** |
 
 ### İlk Çıktı Takvimi
 
@@ -75,7 +75,7 @@ Kullanıcı kaydolur → panel oluşturur → ölçüm tetiklenir → Perplexity
 
 ### Implementasyon
 
-Aşağıdaki Go paketleri tamamlanmıştır. Eksik birim testleri aşağıda yazılmıştır.
+Aşağıdaki Go paketleri tamamlanmıştır ve H4 kapsamında tüm `TODO(H4)` etiketleri kapatılmıştır. Entegrasyon testi (`measure_integration_test.go`) testcontainers ile PostgreSQL üzerinde çalışır. Web UI: TrendChart SVG bileşeni eklendi, ScoreDashboard marka bazında trend gösterimi yapacak şekilde güncellendi. Demo ortamı: `deploy/docker-compose.demo.yml`, `deploy/seed.sql`, `deploy/demo.sh`.
 
 #### `internal/measure/service_test.go`
 
@@ -820,3 +820,4 @@ H13: kripto-silme ──→ H14: alarm ──→ H15: kalibrasyon ──→ H16:
 | 1.3 | 23.07.2026 | Dilim 2, 3 ve 4'e `### İlk Çıktı Takvimi` h3 başlıkları eklendi. Arşivdeki 0401-development-process.md ile tutarlılık sağlandı. |
 | 1.4 | 23.07.2026 | Dilim 1 `### Implementasyon` h3'ü eklendi. Birim testleri yazıldı (7 paket, 30+ test). GitHub Actions CI/CD pipeline eklendi. |
 | 1.5 | 23.07.2026 | React SPA iskeleti + skor kartı prototipi tamamlandı (ScoreCard, ScoreDashboard, auth, API client). |
+| 1.6 | 23.07.2026 | H4 tamamlandı: tenantID/competitor_context fix, testcontainers entegrasyon testi, TrendChart SVG bileşeni, demo ortamı (docker-compose + seed + script), API dokümantasyonu güncellemesi, ADR-006 kapanış kaydı. Dilim 1 çıkış kapısı kriterleri sağlandı. |

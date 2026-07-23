@@ -45,3 +45,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
 .engine-val { width: 28px; text-align: right; font-size: 0.8rem; font-weight: 600; color: #1e293b; }
 .score-meta { margin-top: 0.75rem; font-size: 0.75rem; color: #94a3b8; }
+
+.brand-section { background: #fff; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
+.trend-chart { width: 100%; }
+.trend-title { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.75rem; color: #334155; }
+.trend-svg { width: 100%; height: auto; display: block; }
+.trend-axis-label { font-size: 0.7rem; fill: #94a3b8; }
+.trend-x-label { font-size: 0.65rem; fill: #94a3b8; }
+.trend-empty { text-align: center; padding: 2rem; color: #94a3b8; font-size: 0.85rem; }

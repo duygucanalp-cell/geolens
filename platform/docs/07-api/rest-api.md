@@ -54,6 +54,8 @@ Bu doküman GeoLens Platform REST API sözleşmesini tanımlar. Sözleşme-önce
 | GET/PUT/DELETE | /v1/workspaces/{ws}/brands/{id} | Marka detayı | FR-B1 |
 | GET/POST | /v1/workspaces/{ws}/sites | Site yönetimi | FR-B1 |
 | GET/POST | /v1/workspaces/{ws}/prompt-sets | Prompt setleri | FR-B2 |
+| GET / POST | /v1/workspaces/{ws}/panels | Panel listesi/oluşturma | FR-B3 |
+| GET / PUT / DELETE | /v1/workspaces/{ws}/panels/{panelID} | Panel detayı/güncelleme/silme | FR-B3 |
 | GET | /v1/prompt-templates | Şablon kütüphanesi | FR-B2 |
 | POST | /v1/workspaces/{ws}/site-audits | Site denetimi | FR-B4 |
 
@@ -65,7 +67,8 @@ Bu doküman GeoLens Platform REST API sözleşmesini tanımlar. Sözleşme-önce
 | GET | /v1/workspaces/{ws}/measurements/{id} | İş durumu | FR-C1 |
 | GET | /v1/workspaces/{ws}/scores | Skor listesi | FR-C4-C7 |
 | GET | /v1/workspaces/{ws}/scores/{id} | Skor detayı | FR-C4-C7 |
-| GET | /v1/workspaces/{ws}/calculation-runs/{id} | Hesap koşusu | İ3 |
+| GET | /v1/workspaces/{ws}/brands/{brandID}/scores | Marka skor geçmişi | FR-C5 |
+| GET | /v1/workspaces/{ws}/calculation-runs/{id} | Hesap koşusu detayı | İ3 |
 | GET | /v1/workspaces/{ws}/trends | Trend verisi | FR-D4 |
 
 ### İçgörü (BC4)
@@ -159,3 +162,4 @@ Durumlar: `queued`, `running`, `completed`, `partial`, `failed`
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: REST API sözleşmesi, 30+ uç, eşzamansız desen, hata formatı. |
 | 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-36 (path), D-37 (oapi-codegen), D-83 (token ömrü), D-35 (ULID). Devralınan Kararlar eklendi. |
+| 1.2 | 23.07.2026 | Panel CRUD uçları eklendi (GET/POST /panels, GET/PUT/DELETE /panels/{panelID}), marka skor geçmişi ucu eklendi (GET /brands/{brandID}/scores). |
