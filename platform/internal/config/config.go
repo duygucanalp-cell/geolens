@@ -24,6 +24,12 @@ type Config struct {
 	PerplexityAPIKey string
 	OTelEndpoint     string
 	Environment      string
+	RateLimitEnabled  bool
+	AuditEnabled       bool
+	MaxEnginesPerTenant int
+	MaxBrandsPerWorkspace int
+	DefaultPageSize  int
+	MaxRequestBodyMB int
 }
 
 // LoadFromEnv reads configuration from environment variables with sensible defaults.
@@ -42,8 +48,14 @@ func LoadFromEnv() Config {
 		ConsumerGroup: getEnv("CONSUMER_GROUP", "cg:measure"),
 		JWTSecret:        getEnv("JWT_SECRET", "dev-secret-change-in-production"),
 		PerplexityAPIKey: getEnv("PERPLEXITY_API_KEY", ""),
-		OTelEndpoint:     getEnv("OTEL_ENDPOINT", "http://localhost:4318"),
-		Environment:      getEnv("ENVIRONMENT", "development"),
+		OTelEndpoint:       getEnv("OTEL_ENDPOINT", "http://localhost:4318"),
+		Environment:        getEnv("ENVIRONMENT", "development"),
+		RateLimitEnabled:   getEnv("RATE_LIMIT_ENABLED", "true") == "true",
+		AuditEnabled:       getEnv("AUDIT_ENABLED", "true") == "true",
+		MaxEnginesPerTenant: GetEnvInt("MAX_ENGINES_PER_TENANT", 3),
+		MaxBrandsPerWorkspace: GetEnvInt("MAX_BRANDS_PER_WORKSPACE", 20),
+		DefaultPageSize:    GetEnvInt("DEFAULT_PAGE_SIZE", 50),
+		MaxRequestBodyMB:   GetEnvInt("MAX_REQUEST_BODY_MB", 1),
 	}
 }
 

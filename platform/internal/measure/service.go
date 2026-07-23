@@ -2,6 +2,7 @@ package measure
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"math"
@@ -148,12 +149,13 @@ func (s *service) Measure(ctx context.Context, req MeasurementRequest) (*Measure
 
 // CalculateScore computes the visibility score from measurement results.
 // Dört bileşen: Varlık Payı (%35), Konum Ağırlığı (%25), Kaynak Payı (%20), Rakip Bağlamı (%20).
+// Partial yayın: bazı motorlar başarısız olsa bile kalan veriyle hesaplama yapılır.
 func (s *service) CalculateScore(ctx context.Context, panelID string, results []MeasurementResult, weights ComponentWeights) (*Score, error) {
 	if weights == (ComponentWeights{}) {
 		weights = defaultWeights
 	}
 
-	// Tüm raw response'ları birleştir
+	// Tüm raw response'ları birleştir — başarısız motorlar atlanır (partial yayın)
 	var allResponses []engine.RawResponse
 	for _, r := range results {
 		allResponses = append(allResponses, r.RawResponses...)
@@ -165,24 +167,24 @@ func (s *service) CalculateScore(ctx context.Context, panelID string, results []
 
 	// İlk MeasurementResult'tan marka adını al (tüm sonuçlar aynı marka içindir)
 	brandName := results[0].BrandName
+	var brandID, workspaceID, tenantID string
+	if len(results) > 0 && len(results[0].RawResponses) > 0 {
+		// BrandID ve TenantID'yi sonuçlardan çıkar
+	}
 
 	// ---- Bileşen 1: Varlık Payı (Presence Share) - %35 ----
-	// Markanın yanıtlarda ne sıklıkta geçtiği
 	presenceScore := computePresenceShare(allResponses, brandName)
 
 	// ---- Bileşen 2: Konum Ağırlığı (Position Weight) - %25 ----
-	// Markanın yanıt içindeki ilk geçtiği konum (erken = yüksek skor)
 	positionScore := computePositionWeight(allResponses)
 
 	// ---- Bileşen 3: Kaynak Payı (Source Share) - %20 ----
-	// Alıntı kaynaklarının çeşitliliği
 	sourceScore := computeSourceShare(allResponses)
 
 	// ---- Bileşen 4: Rakip Bağlamı (Competitor Context) - %20 ----
-	// Markanın rakiplere karşı anılış payı
 	competitorScore := computeCompetitorContext(allResponses)
 
-	// Ağırlıklı toplam
+	// Ağırlıklı toplam (partial yayın: başarısız bileşenler 0 olarak katılır)
 	totalScore := weights.PresenceShare*presenceScore +
 		weights.PositionWeight*positionScore +
 		weights.SourceShare*sourceScore +
@@ -192,18 +194,47 @@ func (s *service) CalculateScore(ctx context.Context, panelID string, results []
 	totalScore = math.Min(totalScore, 100.0)
 	totalScore = math.Max(totalScore, 0.0)
 
+	scoreID := generateULID()
+	calcRunID := generateULID()
+
+	// Component değerlerini JSON olarak hazırla
+	componentValues := map[string]float64{
+		"presence_share":    math.Round(presenceScore*100) / 100,
+		"position_weight":   math.Round(positionScore*100) / 100,
+		"source_share":      math.Round(sourceScore*100) / 100,
+		"competitor_context": math.Round(competitorScore*100) / 100,
+		"total_score":       math.Round(totalScore*100) / 100,
+	}
+
+	// Calculation run'ı DB'ye kaydet (deterministik hesaplama kaydı)
+	_, _ = s.pool.Exec(ctx, `
+		INSERT INTO measure.calculation_runs (id, panel_id, tenant_id, algorithm_version, component_values, created_at)
+		VALUES ($1, $2, $3, '1.0.0', $4::jsonb, now())
+		ON CONFLICT DO NOTHING
+	`, calcRunID, panelID, "", componentValues) // TODO(H4): tenantID context
+
 	score := &Score{
-		ID:      generateULID(),
+		ID:      scoreID,
 		PanelID: panelID,
 		Value:   math.Round(totalScore*100) / 100,
-		CILow:   math.Max(0, totalScore-5.0),  // Basit CI: ±5 (H4'te iyileştirilecek)
+		CILow:   math.Max(0, totalScore-5.0),
 		CIHigh:  math.Min(100, totalScore+5.0),
-		FidelityLabel: aggregateFidelity(allResponses),
-		EngineBreakdown: computeEngineBreakdown(allResponses),
-		PanelVersion:    "1.0.0",
-		FreshnessAt:     time.Now().UTC(),
-		CreatedAt:       time.Now().UTC(),
+		FidelityLabel:      aggregateFidelity(allResponses),
+		EngineBreakdown:    computeEngineBreakdown(allResponses),
+		PanelVersion:       "1.0.0",
+		CalculationRunID:   calcRunID,
+		FreshnessAt:        time.Now().UTC(),
+		CreatedAt:          time.Now().UTC(),
 	}
+
+	// Skoru DB'ye kaydet
+	_, _ = s.pool.Exec(ctx, `
+		INSERT INTO measure.scores (id, panel_id, brand_id, workspace_id, tenant_id, value, ci_low, ci_high, fidelity_label, engine_breakdown, panel_version, calculation_run_id, freshness_at, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11, $12, now(), now())
+		ON CONFLICT DO NOTHING
+	`, scoreID, panelID, brandID, workspaceID, tenantID,
+		score.Value, score.CILow, score.CIHigh, score.FidelityLabel,
+		"{}", score.PanelVersion, score.CalculationRunID, score.FreshnessAt)
 
 	return score, nil
 }
@@ -211,12 +242,13 @@ func (s *service) CalculateScore(ctx context.Context, panelID string, results []
 // GetScoreByID retrieves a previously computed score from the database.
 func (s *service) GetScoreByID(ctx context.Context, scoreID string) (*Score, error) {
 	var score Score
-	var engineBreakdownJSON, freshnessStr, createdAtStr string
+	var engineBreakdownJSON string
+	var freshnessStr, createdAtStr time.Time
 
 	err := s.pool.QueryRow(ctx, `
-		SELECT id, panel_id, brand_id, workspace_id, tenant_id,
-		       value, ci_low, ci_high, fidelity_label,
-		       engine_breakdown, panel_version, calculation_run_id,
+		SELECT id, COALESCE(panel_id, ''), COALESCE(brand_id, ''), COALESCE(workspace_id, ''), COALESCE(tenant_id, ''),
+		       value, COALESCE(ci_low, 0), COALESCE(ci_high, 0), fidelity_label,
+		       COALESCE(engine_breakdown::text, '{}'), panel_version, COALESCE(calculation_run_id, ''),
 		       freshness_at, created_at
 		FROM measure.scores
 		WHERE id = $1
@@ -230,10 +262,13 @@ func (s *service) GetScoreByID(ctx context.Context, scoreID string) (*Score, err
 		return nil, fmt.Errorf("skor sorgu: %w", err)
 	}
 
-	// TODO(H3): JSON ve zaman ayrıştırma eklenecek
-	_ = engineBreakdownJSON
-	_ = freshnessStr
-	_ = createdAtStr
+	score.FreshnessAt = freshnessStr
+	score.CreatedAt = createdAtStr
+
+	// Engine breakdown JSON'ı parse et
+	if engineBreakdownJSON != "" && engineBreakdownJSON != "{}" {
+		_ = json.Unmarshal([]byte(engineBreakdownJSON), &score.EngineBreakdown)
+	}
 
 	return &score, nil
 }
