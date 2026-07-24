@@ -261,24 +261,29 @@ func processMessage(
 		}
 	}
 
-	// measurement_jobs tablosuna kaydet
-	jobID := generateID()
-	idempotencyKey := fmt.Sprintf("worker:%s:%s:%d", job.BrandID, job.EngineName, job.SampleIndex)
-	_, err = pool.Exec(ctx, `
+	// measurement_jobs tablosuna kaydet (idempotent: conflict'te güncelle, her durumda id döner)
+	// msgID Redis mesaj ID'sidir, her mesaj için unique — idempotency key'i unique yapar
+	idempotencyKey := fmt.Sprintf("worker:%s:%s:%d:%s", job.BrandID, job.EngineName, job.SampleIndex, msgID)
+	var jobID string
+	err = pool.QueryRow(ctx, `
 		INSERT INTO measure.measurement_jobs (id, brand_id, panel_id, engine_name, status, tenant_id, workspace_id, prompt_text, sample_count, idempotency_key, created_at)
-		VALUES ($1, $2, $3, $4, 'completed', $5, $6, '', 3, $7, now())
-	`, jobID, job.BrandID, job.PanelID, job.EngineName, job.TenantID, job.WorkspaceID, idempotencyKey)
+		VALUES (gen_random_uuid()::text, $1, $2, $3, 'completed', $4, $5, '', 3, $6, now())
+		ON CONFLICT (idempotency_key) DO UPDATE SET status = 'completed', updated_at = now()
+		RETURNING id
+	`, job.BrandID, job.PanelID, job.EngineName, job.TenantID, job.WorkspaceID, idempotencyKey).Scan(&jobID)
 	if err != nil {
 		logger.Error("worker: measurement_job kaydetme hatası", "error", err)
 	}
 
-	// Ham yanıtı raw_responses tablosuna kaydet
-	_, err = pool.Exec(ctx, `
-		INSERT INTO measure.raw_responses (id, job_id, engine_name, raw_body, content_text, s3_ref, tenant_id, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, now())
-	`, generateID(), jobID, job.EngineName, result.Content, result.Content, s3Ref, job.TenantID)
-	if err != nil {
-		logger.Error("worker: raw_response kaydetme hatası", "error", err)
+	// Ham yanıtı raw_responses tablosuna kaydet (sadece job kaydı başarılıysa)
+	if jobID != "" {
+		_, err = pool.Exec(ctx, `
+			INSERT INTO measure.raw_responses (id, job_id, engine_name, raw_body, content_text, s3_ref, tenant_id, created_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, now())
+		`, generateID(), jobID, job.EngineName, result.Content, result.Content, s3Ref, job.TenantID)
+		if err != nil {
+			logger.Error("worker: raw_response kaydetme hatası", "error", err)
+		}
 	}
 
 	// Redis Stream'den ACK'le

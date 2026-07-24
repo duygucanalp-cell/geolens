@@ -144,6 +144,7 @@ func (s *service) Measure(ctx context.Context, req MeasurementRequest) (*Measure
 		RawResponses: allRaw,
 		Citations:    allCitations,
 		EngineMeta:   firstMeta,
+		BrandID:      req.BrandID,
 		BrandName:    req.BrandName,
 		PanelID:      req.PanelID,
 		WorkspaceID:  req.WorkspaceID,
@@ -170,7 +171,7 @@ func (s *service) CalculateScore(ctx context.Context, panelID string, results []
 	}
 
 	brandName := results[0].BrandName
-	brandID := results[0].BrandName
+	brandID := results[0].BrandID
 	workspaceID := results[0].WorkspaceID
 	tenantID := results[0].TenantID
 
@@ -209,11 +210,12 @@ func (s *service) CalculateScore(ctx context.Context, panelID string, results []
 	}
 
 	// Calculation run'ı DB'ye kaydet (deterministik hesaplama kaydı)
-	_, _ = s.pool.Exec(ctx, `
+	if _, err := s.pool.Exec(ctx, `
 		INSERT INTO measure.calculation_runs (id, panel_id, tenant_id, algorithm_version, component_values, created_at)
 		VALUES ($1, $2, $3, '1.0.0', $4::jsonb, now())
-		ON CONFLICT DO NOTHING
-	`, calcRunID, panelID, tenantID, componentValues)
+	`, calcRunID, panelID, tenantID, componentValues); err != nil {
+		slog.Warn("calculation_run kaydetme hatası", "error", err)
+	}
 
 	score := &Score{
 		ID:               scoreID,
@@ -229,14 +231,15 @@ func (s *service) CalculateScore(ctx context.Context, panelID string, results []
 		CreatedAt:        time.Now().UTC(),
 	}
 
-	// Skoru DB'ye kaydet
-	_, _ = s.pool.Exec(ctx, `
+	// Skoru DB'ye kaydet (freshness_at + created_at SQL'de now() ile doldurulur)
+	if _, err := s.pool.Exec(ctx, `
 		INSERT INTO measure.scores (id, panel_id, brand_id, workspace_id, tenant_id, value, ci_low, ci_high, fidelity_label, engine_breakdown, panel_version, calculation_run_id, freshness_at, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11, $12, now(), now())
-		ON CONFLICT DO NOTHING
 	`, scoreID, panelID, brandID, workspaceID, tenantID,
 		score.Value, score.CILow, score.CIHigh, score.FidelityLabel,
-		"{}", score.PanelVersion, score.CalculationRunID, score.FreshnessAt)
+		"{}", score.PanelVersion, score.CalculationRunID); err != nil {
+		slog.Warn("skor kaydetme hatası", "error", err)
+	}
 
 	return score, nil
 }

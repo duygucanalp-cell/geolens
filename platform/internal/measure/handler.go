@@ -1,6 +1,7 @@
 package measure
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -22,6 +23,37 @@ type Handler struct {
 // NewHandler creates a new measure handler.
 func NewHandler(pool *db.Pool, engines *engine.Registry) *Handler {
 	return &Handler{pool: pool, engines: engines}
+}
+
+// immediateMeasureAndScore performs a synchronous measurement + scoring for the given brand.
+// This is a demo convenience: the async worker pipeline handles the full flow,
+// but immediate scoring lets the UI show results right away.
+func (h *Handler) immediateMeasureAndScore(ctx context.Context, brandName, brandID, websiteURL, panelID, workspaceID, tenantID, promptText string) {
+	svc := NewService(h.pool, h.engines, nil)
+
+	// n=3 Measurement (tek engine — mock engine hızlı yanıt verir)
+	result, err := svc.Measure(ctx, MeasurementRequest{
+		BrandID:     brandID,
+		BrandName:   brandName,
+		WebsiteURL:  websiteURL,
+		PromptText:  promptText,
+		TenantID:    tenantID,
+		WorkspaceID: workspaceID,
+		PanelID:     panelID,
+	})
+	if err != nil {
+		slog.Warn("anlık ölçüm başarısız (asenkron pipeline işlemeye devam eder)", "error", err)
+		return
+	}
+
+	// CalculateScore
+	score, err := svc.CalculateScore(ctx, panelID, []MeasurementResult{*result}, ComponentWeights{})
+	if err != nil {
+		slog.Warn("anlık skor hesaplama başarısız (asenkron pipeline işlemeye devam eder)", "error", err)
+		return
+	}
+
+	slog.Info("anlık skor hesaplandı", "brand", brandName, "score", score.Value)
 }
 
 // TriggerMeasurement handles POST /v1/workspaces/{ws}/measurements
@@ -108,6 +140,11 @@ func (h *Handler) TriggerMeasurement(w http.ResponseWriter, r *http.Request) {
 		"samples", len(engineNames)*3,
 	)
 
+	// Demo: asenkron job'ların yanında senkron ölçüm + skor da hesapla
+	// (mock engine ile anlık sonuç alınır, worker pipeline'ı da paralel işler)
+	// context.Background() kullanılır çünkü HTTP request context'i goroutine çalışana kadar iptal olabilir
+	go h.immediateMeasureAndScore(context.Background(), brandName, req.BrandID, websiteURL, panelID, workspaceID, tenantID, promptText)
+
 	httputil.WriteJSON(w, http.StatusAccepted, map[string]interface{}{
 		"status":  "queued",
 		"brand":   brandName,
@@ -138,11 +175,11 @@ func (h *Handler) ListScores(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close()
 
 	type scoreRow struct {
-		ID            string  `json:"id"`
-		BrandName     string  `json:"brand_name"`
-		Value         float64 `json:"value"`
-		FidelityLabel string  `json:"fidelity_label"`
-		FreshnessAt   string  `json:"freshness_at"`
+		ID            string    `json:"id"`
+		BrandName     string    `json:"brand_name"`
+		Value         float64   `json:"value"`
+		FidelityLabel string    `json:"fidelity_label"`
+		FreshnessAt   time.Time `json:"freshness_at"`
 	}
 
 	scores := make([]scoreRow, 0)
