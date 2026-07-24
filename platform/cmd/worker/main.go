@@ -22,6 +22,7 @@ import (
 	"github.com/geolens/platform/internal/config"
 	"github.com/geolens/platform/internal/measure"
 	"github.com/geolens/platform/platform/db"
+	"github.com/geolens/platform/platform/metrics"
 	"github.com/geolens/platform/platform/queue"
 	"github.com/geolens/platform/platform/storage"
 	"github.com/geolens/platform/platform/telemetry"
@@ -252,8 +253,17 @@ func processMessage(
 	result, err := adapter.Execute(job.PromptText)
 	duration := time.Since(start)
 
+	// Engine metriklerini kaydet
+	metrics.EngineCallsTotal.WithLabelValues(job.EngineName, job.TenantID).Inc()
+	metrics.EngineCallDuration.WithLabelValues(job.EngineName).Observe(duration.Seconds())
+	if result != nil {
+		metrics.EngineResponseSize.WithLabelValues(job.EngineName).Observe(float64(len(result.Content)))
+	}
+
 	if err != nil {
 		logger.Error("worker: engine çağrı hatası", "error", err, "duration", duration)
+		metrics.EngineCallsFailed.WithLabelValues(job.EngineName, job.TenantID).Inc()
+		metrics.QueueMessagesFailed.WithLabelValues(stream).Inc()
 		sendToDeadLetter(rdb, msgID, job, err.Error())
 		ackMessage(rdb, stream, msgID, consumerGroup)
 		return
@@ -300,6 +310,10 @@ func processMessage(
 			logger.Error("worker: raw_response kaydetme hatası", "error", err)
 		}
 	}
+
+	// Kuyruk metriklerini güncelle
+	metrics.QueueMessagesConsumed.WithLabelValues(stream).Inc()
+	metrics.QueueMessageProcessingDuration.WithLabelValues(stream).Observe(duration.Seconds())
 
 	// Redis Stream'den ACK'le
 	ackMessage(rdb, stream, msgID, consumerGroup)

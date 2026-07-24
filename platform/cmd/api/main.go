@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/joho/godotenv"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/geolens/platform/engine"
 	"github.com/geolens/platform/engine/chatgpt"
@@ -112,6 +113,7 @@ func main() {
 	r.Use(httpmw.RequestTimeout(30 * time.Second))
 	r.Use(httpmw.MaxBodySize(1 << 20)) // 1MB max body
 	r.Use(middleware.RealIP)
+	r.Use(httpmw.MetricsMiddleware) // H14: Prometheus metrikleri
 	r.Use(httpmw.Logger)
 	r.Use(httpmw.CORS)
 
@@ -121,6 +123,9 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"status":"ok"}`))
 	})
+
+	// Prometheus metrics endpoint (auth'suz, herkes erişebilir)
+	r.Get("/metrics", promhttp.Handler().ServeHTTP)
 
 	// API v1
 	r.Route("/v1", func(r chi.Router) {
