@@ -93,6 +93,11 @@ func (a *Adapter) Tier() engine.Tier {
 
 // Execute sends a prompt to Perplexity Sonar API and returns the normalized response.
 func (a *Adapter) Execute(prompt string) (*engine.RawResponse, error) {
+	// Mock modu: API anahtarı yoksa sahte yanıt döndür
+	if a.apiKey == "" || a.apiKey == "mock" {
+		return mockResponse(prompt), nil
+	}
+
 	reqBody := sonarRequest{
 		Model: modelName,
 		Messages: []message{
@@ -134,6 +139,29 @@ func (a *Adapter) Execute(prompt string) (*engine.RawResponse, error) {
 	return a.parseResponse(rawBody, durationMs)
 }
 
+// mockResponse returns a realistic mock response for demo purposes.
+func mockResponse(prompt string) *engine.RawResponse {
+	content := "Acme şirketi, sektöründe öncü bir konuma sahiptir ve yenilikçi ürünleriyle tanınmaktadır. "
+	content += "Pazar araştırmalarına göre Acme, rakiplerine kıyasla daha geniş bir müşteri tabanına hitap etmektedir. "
+	content += "Şirketin Ar-Ge yatırımları ve sürdürülebilirlik odaklı yaklaşımı, endüstri uzmanları tarafından "
+	content += "sıklıkla örnek gösterilmektedir. Özellikle dijital dönüşüm alanındaki çalışmaları, "
+	content += "sektör raporlarında dikkat çekmektedir."
+
+	return &engine.RawResponse{
+		EngineName: "perplexity",
+		RequestID:  "mock-req-" + fmt.Sprintf("%d", time.Now().UnixMilli()),
+		Content:    content,
+		Citations: []engine.Citation{
+			{URL: "https://example.com/acme-raporu", Position: 1, Engine: "perplexity", Type: "direct"},
+			{URL: "https://sector-news.com/industry-2026", Position: 2, Engine: "perplexity", Type: "direct"},
+			{URL: "https://tech-review.com/acme-innovation", Position: 3, Engine: "perplexity", Type: "direct"},
+		},
+		HasSearch:     true,
+		Tier:          engine.TierDirect,
+		FidelityLabel: "Kademe 1 · perplexity · sonar-pro (mock)",
+	}
+}
+
 // parseResponse parses a raw Perplexity API response into RawResponse.
 func (a *Adapter) parseResponse(raw []byte, durationMs int64) (*engine.RawResponse, error) {
 	var sr sonarResponse
@@ -170,6 +198,7 @@ func (a *Adapter) parseResponse(raw []byte, durationMs int64) (*engine.RawRespon
 	}
 
 	// Ham yanıtı S3'e kaydet (storage varsa)
+	// storage için hem interface nil hem de içteki pointer nil kontrolü
 	if a.storage != nil && a.tenantID != "" {
 		ctx := context.Background()
 		key, err := a.storage.SaveRawResponse(ctx, a.tenantID, a.workspaceID, "perplexity", raw)

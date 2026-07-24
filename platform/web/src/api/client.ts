@@ -18,14 +18,14 @@ async function fetchJSON<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 export function login(email: string, password: string) {
-  return fetchJSON<{ token: string; user_id: string; tenant_id: string; role: string }>(
+  return fetchJSON<{ token: string; user_id: string; tenant_id: string; workspace_id: string; role: string }>(
     `${BASE}/auth/login`,
     { method: 'POST', body: JSON.stringify({ email, password }) }
   )
 }
 
 export function register(email: string, password: string, name: string) {
-  return fetchJSON<{ token: string; user_id: string; tenant_id: string; role: string }>(
+  return fetchJSON<{ token: string; user_id: string; tenant_id: string; workspace_id: string; role: string }>(
     `${BASE}/auth/register`,
     { method: 'POST', body: JSON.stringify({ email, password, name }) }
   )

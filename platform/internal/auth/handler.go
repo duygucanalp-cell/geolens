@@ -28,19 +28,18 @@ type loginRequest struct {
 }
 
 type authResponse struct {
-	Token     string `json:"token"`
-	ExpiresAt string `json:"expires_at"`
-	UserID    string `json:"user_id"`
-	TenantID  string `json:"tenant_id"`
-	Role      string `json:"role"`
+	Token       string `json:"token"`
+	ExpiresAt   string `json:"expires_at"`
+	UserID      string `json:"user_id"`
+	TenantID    string `json:"tenant_id"`
+	WorkspaceID string `json:"workspace_id"`
+	Role        string `json:"role"`
 }
-
-
 
 // Handler holds dependencies for auth HTTP handlers.
 type Handler struct {
-	pool  *db.Pool
-	jwt   *JWTService
+	pool *db.Pool
+	jwt  *JWTService
 }
 
 // NewHandler creates a new auth handler.
@@ -54,17 +53,17 @@ func NewHandler(pool *db.Pool, jwt *JWTService) *Handler {
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	var req registerRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			httputil.WriteError(w, http.StatusBadRequest, "geçersiz istek")
+		httputil.WriteError(w, http.StatusBadRequest, "geçersiz istek")
 		return
 	}
 
 	if req.Email == "" || req.Password == "" || req.Name == "" {
-			httputil.WriteError(w, http.StatusBadRequest, "e-posta, şifre ve isim zorunludur")
+		httputil.WriteError(w, http.StatusBadRequest, "e-posta, şifre ve isim zorunludur")
 		return
 	}
 
 	if len(req.Password) < 8 {
-			httputil.WriteError(w, http.StatusBadRequest, "şifre en az 8 karakter olmalıdır")
+		httputil.WriteError(w, http.StatusBadRequest, "şifre en az 8 karakter olmalıdır")
 		return
 	}
 
@@ -72,7 +71,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	hashedPW, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		slog.Error("şifre hash hatası", "error", err)
-			httputil.WriteError(w, http.StatusInternalServerError, "kayıt başarısız")
+		httputil.WriteError(w, http.StatusInternalServerError, "kayıt başarısız")
 		return
 	}
 
@@ -81,12 +80,12 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	tx, err := h.pool.Begin(ctx)
 	if err != nil {
 		slog.Error("transaction başlatma hatası", "error", err)
-			httputil.WriteError(w, http.StatusInternalServerError, "kayıt başarısız")
+		httputil.WriteError(w, http.StatusInternalServerError, "kayıt başarısız")
 		return
 	}
 	defer tx.Rollback(ctx)
 
-	var tenantID, userID string
+	var tenantID, userID, workspaceID string
 	err = tx.QueryRow(ctx, `
 		INSERT INTO identity.tenants (id, name, slug, tier)
 		VALUES (gen_random_uuid()::text, $1, lower(regexp_replace($1, '[^a-z0-9]', '', 'g')), 'free')
@@ -94,7 +93,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	`, req.Name).Scan(&tenantID)
 	if err != nil {
 		slog.Error("kiracı oluşturma hatası", "error", err)
-			httputil.WriteError(w, http.StatusConflict, "bu isimle kayıt yapılamaz")
+		httputil.WriteError(w, http.StatusConflict, "bu isimle kayıt yapılamaz")
 		return
 	}
 
@@ -105,13 +104,36 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	`, tenantID, req.Email, string(hashedPW), req.Name).Scan(&userID)
 	if err != nil {
 		slog.Error("kullanıcı oluşturma hatası", "error", err)
-			httputil.WriteError(w, http.StatusConflict, "bu e-posta zaten kayıtlı")
+		httputil.WriteError(w, http.StatusConflict, "bu e-posta zaten kayıtlı")
+		return
+	}
+
+	// Varsayılan çalışma alanı oluştur
+	err = tx.QueryRow(ctx, `
+		INSERT INTO config.workspaces (id, tenant_id, name, slug)
+		VALUES (gen_random_uuid()::text, $1, 'Varsayılan Çalışma Alanı', 'default')
+		RETURNING id
+	`, tenantID).Scan(&workspaceID)
+	if err != nil {
+		slog.Error("çalışma alanı oluşturma hatası", "error", err)
+		httputil.WriteError(w, http.StatusInternalServerError, "kayıt başarısız")
+		return
+	}
+
+	// Kullanıcıyı çalışma alanına admin olarak ekle
+	_, err = tx.Exec(ctx, `
+		INSERT INTO config.memberships (id, workspace_id, user_id, tenant_id, role)
+		VALUES (gen_random_uuid()::text, $1, $2, $3, 'admin')
+	`, workspaceID, userID, tenantID)
+	if err != nil {
+		slog.Error("üyelik oluşturma hatası", "error", err)
+		httputil.WriteError(w, http.StatusInternalServerError, "kayıt başarısız")
 		return
 	}
 
 	if err := tx.Commit(ctx); err != nil {
 		slog.Error("transaction commit hatası", "error", err)
-			httputil.WriteError(w, http.StatusInternalServerError, "kayıt başarısız")
+		httputil.WriteError(w, http.StatusInternalServerError, "kayıt başarısız")
 		return
 	}
 
@@ -119,16 +141,17 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	token, expiresAt, err := h.jwt.GenerateToken(userID, tenantID, "admin")
 	if err != nil {
 		slog.Error("jwt oluşturma hatası", "error", err)
-			httputil.WriteError(w, http.StatusInternalServerError, "kayıt başarısız")
+		httputil.WriteError(w, http.StatusInternalServerError, "kayıt başarısız")
 		return
 	}
 
 	httputil.WriteJSON(w, http.StatusCreated, authResponse{
-		Token:     token,
-		ExpiresAt: expiresAt.Format(time.RFC3339),
-		UserID:    userID,
-		TenantID:  tenantID,
-		Role:      "admin",
+		Token:       token,
+		ExpiresAt:   expiresAt.Format(time.RFC3339),
+		UserID:      userID,
+		TenantID:    tenantID,
+		WorkspaceID: workspaceID,
+		Role:        "admin",
 	})
 }
 
@@ -136,7 +159,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	var req loginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			httputil.WriteError(w, http.StatusBadRequest, "geçersiz istek")
+		httputil.WriteError(w, http.StatusBadRequest, "geçersiz istek")
 		return
 	}
 
@@ -146,7 +169,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	var userID, tenantID, passwordHash, role string
+	var userID, tenantID, passwordHash, role, workspaceID string
 	err := h.pool.QueryRow(ctx, `
 		SELECT u.id, u.tenant_id, u.password_hash, u.role
 		FROM identity.users u
@@ -154,7 +177,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	`, req.Email).Scan(&userID, &tenantID, &passwordHash, &role)
 
 	if errors.Is(err, pgx.ErrNoRows) {
-			httputil.WriteError(w, http.StatusUnauthorized, "geçersiz e-posta veya şifre")
+		httputil.WriteError(w, http.StatusUnauthorized, "geçersiz e-posta veya şifre")
 		return
 	}
 	if err != nil {
@@ -164,8 +187,18 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(req.Password)); err != nil {
-			httputil.WriteError(w, http.StatusUnauthorized, "geçersiz e-posta veya şifre")
+		httputil.WriteError(w, http.StatusUnauthorized, "geçersiz e-posta veya şifre")
 		return
+	}
+
+	// Kullanıcının ilk çalışma alanını bul
+	err = h.pool.QueryRow(ctx, `
+		SELECT m.workspace_id FROM config.memberships m
+		WHERE m.user_id = $1 AND m.tenant_id = $2
+		ORDER BY m.created_at LIMIT 1
+	`, userID, tenantID).Scan(&workspaceID)
+	if err != nil {
+		workspaceID = ""
 	}
 
 	token, expiresAt, err := h.jwt.GenerateToken(userID, tenantID, role)
@@ -176,11 +209,12 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, authResponse{
-		Token:     token,
-		ExpiresAt: expiresAt.Format(time.RFC3339),
-		UserID:    userID,
-		TenantID:  tenantID,
-		Role:      role,
+		Token:       token,
+		ExpiresAt:   expiresAt.Format(time.RFC3339),
+		UserID:      userID,
+		TenantID:    tenantID,
+		WorkspaceID: workspaceID,
+		Role:        role,
 	})
 }
 
@@ -190,5 +224,3 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	// TODO(HT1): Token blacklist / Redis
 	httputil.WriteJSON(w, http.StatusOK, map[string]string{"status": "logged_out"})
 }
-
-

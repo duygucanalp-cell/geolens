@@ -5,17 +5,18 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/geolens/platform/engine"
 	"github.com/geolens/platform/platform/db"
-	"github.com/geolens/platform/platform/httputil"
 	"github.com/geolens/platform/platform/httpmw"
+	"github.com/geolens/platform/platform/httputil"
 )
 
 // Handler holds dependencies for measure HTTP handlers.
 type Handler struct {
-	pool      *db.Pool
-	engines   *engine.Registry
+	pool    *db.Pool
+	engines *engine.Registry
 }
 
 // NewHandler creates a new measure handler.
@@ -30,8 +31,8 @@ func (h *Handler) TriggerMeasurement(w http.ResponseWriter, r *http.Request) {
 	tenantID := httpmw.GetTenantID(r.Context())
 
 	var req struct {
-		BrandID  string `json:"brand_id"`
-		PanelID  string `json:"panel_id"`
+		BrandID string `json:"brand_id"`
+		PanelID string `json:"panel_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "geçersiz istek"})
@@ -79,9 +80,10 @@ func (h *Handler) TriggerMeasurement(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// n=3 örneklemeli job'ları outbox'a yaz (asenkron)
+	attemptID := fmt.Sprintf("%d", time.Now().UnixNano())
 	for _, engineName := range engineNames {
 		for i := 0; i < 3; i++ {
-			idempotencyKey := fmt.Sprintf("measure:%s:%s:%d", req.BrandID, engineName, i)
+			idempotencyKey := fmt.Sprintf("measure:%s:%s:%d:%s", req.BrandID, engineName, i, attemptID)
 			job := JobPayload{
 				BrandID:     req.BrandID,
 				BrandName:   brandName,
@@ -155,5 +157,3 @@ func (h *Handler) ListScores(w http.ResponseWriter, r *http.Request) {
 
 	httputil.WriteJSON(w, http.StatusOK, scores)
 }
-
-

@@ -57,8 +57,15 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	// Outbox dağıtıcıyı başlat
+	dispatcher := queue.NewDispatcher(pool.Pool, rdb, cfg.PollInterval, cfg.ConsumerGroup)
+
 	var wg sync.WaitGroup
-	wg.Add(1)
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		dispatcher.Start(ctx)
+	}()
 	go func() {
 		defer wg.Done()
 		runScheduler(ctx, pool.Pool, engines, cfg.PollInterval)
@@ -75,8 +82,8 @@ func main() {
 }
 
 // runScheduler periodically scans panels and enqueues measurement jobs.
-func runScheduler(ctx context.Context, pool *pgxpool.Pool, engines *engine.Registry, pollInterval string) {
-	ticker := time.NewTicker(parseIntervalOrDefault(pollInterval, 5*time.Minute))
+func runScheduler(ctx context.Context, pool *pgxpool.Pool, engines *engine.Registry, pollInterval time.Duration) {
+	ticker := time.NewTicker(pollInterval)
 	defer ticker.Stop()
 
 	for {

@@ -54,14 +54,18 @@ func main() {
 	jwtService := auth.NewJWTService(cfg.JWTSecret)
 
 	// S3 Storage (MinIO)
-	s3Client, err := storage.NewClient(cfg.S3Endpoint, cfg.S3AccessKey, cfg.S3SecretKey, cfg.S3Bucket, cfg.S3Region, false)
+	s3Storage, err := storage.NewClient(cfg.S3Endpoint, cfg.S3AccessKey, cfg.S3SecretKey, cfg.S3Bucket, cfg.S3Region, false)
 	if err != nil {
 		slog.Warn("S3 istemci oluşturulamadı, storage olmadan çalışılacak", "error", err)
+	}
+	var storageSaver perplexity.RawSaver
+	if err == nil {
+		storageSaver = s3Storage
 	}
 
 	// Engine registry (Dilim 1: yalnız Perplexity)
 	engines := engine.NewRegistry()
-	perplexityAdapter := perplexity.NewAdapter(cfg.PerplexityAPIKey, s3Client)
+	perplexityAdapter := perplexity.NewAdapter(cfg.PerplexityAPIKey, storageSaver)
 	engines.Register(perplexityAdapter)
 	slog.Info("motor kayıt defteri hazır", "engine_count", engines.Count(), "engines", engines.List())
 

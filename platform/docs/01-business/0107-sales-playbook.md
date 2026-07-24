@@ -59,7 +59,7 @@ Ajans segmentine yönelik satış sürecini, konumlandırmayı ve taktikleri tan
 |--------|----------|
 | **GAVF ile satış** | "GAVF uyumlu rapor" — standardı olan tek araç. Ajansın satış aracı. |
 | **Site denetimi kapısı** | Ücretsiz site denetimi → skor görme → ölçüm satın alma |
-| **Ajans ortaklığı** | White-label pilot → müşteri kazanma → genişleme |
+| **Ajans ortaklığı** | Pilot → müşteri kazanma → genişleme |
 | **Referans döngüsü** | Memnun ajans → diğer ajanslara tavsiye |
 | **Kriz anı satışı** | Motor politikası değişikliği (örn. Reddit filtresi) → görünürlük düşüşü → acil ölçüm ihtiyacı |
 
@@ -69,7 +69,7 @@ Ajans segmentine yönelik satış sürecini, konumlandırmayı ve taktikleri tan
 
 | İtiraz | Yanıt |
 |--------|-------|
-| "Zaten SEO ajansımız var." | GeoLens ajansınızın aracı olabilir. Onlara white-label rapor verin. |
+| "Zaten SEO ajansımız var." | GeoLens ajansınızın aracı olabilir. Onlara GeoLens raporu verin. |
 | "Bu çok yeni." | Kategori hızlı büyüyor. Beklerseniz avantajı kaçırırsınız. |
 | "Profound/Peec kullanıyoruz." | Onların ajans yönetimi zayıf — biz çok kiracılı yapıyla doğduk. |
 | "Bütçemiz yok." | Site denetimi ücretsiz, Pro $49/ay. Denemesi bedava. |

@@ -6,6 +6,21 @@ interface TrendChartProps {
   brandName: string
 }
 
+interface Point {
+  x: number
+  y: number
+  ciLow?: number
+  ciHigh?: number
+  label: string
+  date: string
+}
+
+interface ChartData {
+  points: Point[]
+  yMin: number
+  yMax: number
+}
+
 const WIDTH = 500
 const HEIGHT = 200
 const PAD = { top: 20, right: 20, bottom: 30, left: 40 }
@@ -13,7 +28,7 @@ const CHART_W = WIDTH - PAD.left - PAD.right
 const CHART_H = HEIGHT - PAD.top - PAD.bottom
 
 export function TrendChart({ scores, brandName }: TrendChartProps) {
-  const { points, yMin, yMax } = useMemo(() => {
+  const { points, yMin, yMax } = useMemo<ChartData>(() => {
     if (scores.length === 0) return { points: [], yMin: 0, yMax: 100 }
 
     const sorted = [...scores].sort(
@@ -21,19 +36,19 @@ export function TrendChart({ scores, brandName }: TrendChartProps) {
     )
 
     const vals = sorted.map((s) => s.value)
-    let min = Math.min(...vals)
-    let max = Math.max(...vals)
+    const min = Math.min(...vals)
+    const max = Math.max(...vals)
     const range = max - min
     const padding = range * 0.2 || 10
-    yMin = Math.max(0, Math.floor(min - padding))
-    yMax = Math.min(100, Math.ceil(max + padding))
+    const computedYMin = Math.max(0, Math.floor(min - padding))
+    const computedYMax = Math.min(100, Math.ceil(max + padding))
 
     const xScale = (i: number) =>
       PAD.left + (sorted.length > 1 ? (i / (sorted.length - 1)) * CHART_W : CHART_W / 2)
     const yScale = (v: number) =>
-      PAD.top + CHART_H - ((v - yMin) / (yMax - yMin)) * CHART_H
+      PAD.top + CHART_H - ((v - computedYMin) / (computedYMax - computedYMin)) * CHART_H
 
-    const pts = sorted.map((s, i) => ({
+    const pts: Point[] = sorted.map((s, i) => ({
       x: xScale(i),
       y: yScale(s.value),
       ciLow: s.ci_low !== undefined ? yScale(s.ci_low) : undefined,
@@ -42,28 +57,28 @@ export function TrendChart({ scores, brandName }: TrendChartProps) {
       date: new Date(s.freshness_at).toLocaleDateString('tr-TR'),
     }))
 
-    return { points: pts, yMin, yMax }
+    return { points: pts, yMin: computedYMin, yMax: computedYMax }
   }, [scores])
 
   if (points.length === 0) {
     return <div className="trend-empty">Trend verisi yok</div>
   }
 
-  const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')
+  const linePath = points.map((p: Point, i: number) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')
 
   const ciAreaPath =
     points.length > 1
       ? points
-          .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${(p.ciHigh ?? p.y).toFixed(1)}`)
+          .map((p: Point, i: number) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${(p.ciHigh ?? p.y).toFixed(1)}`)
           .join(' ') +
         ' ' +
         points
-          .map((p, i) => `L${points[points.length - 1 - i].x.toFixed(1)},${(points[points.length - 1 - i].ciLow ?? points[points.length - 1 - i].y).toFixed(1)}`)
+          .map((_p: Point, i: number) => `L${points[points.length - 1 - i].x.toFixed(1)},${(points[points.length - 1 - i].ciLow ?? points[points.length - 1 - i].y).toFixed(1)}`)
           .join(' ') +
         ' Z'
       : ''
 
-  const yTicks = []
+  const yTicks: number[] = []
   const step = Math.max(1, Math.round((yMax - yMin) / 4))
   for (let v = yMin; v <= yMax; v += step) {
     yTicks.push(v)
@@ -100,7 +115,7 @@ export function TrendChart({ scores, brandName }: TrendChartProps) {
 
         <path d={linePath} fill="none" stroke="#6366f1" strokeWidth={2} strokeLinejoin="round" />
 
-        {points.map((p, i) => (
+        {points.map((p: Point, i: number) => (
           <g key={i}>
             <circle cx={p.x} cy={p.y} r={4} fill="#6366f1" stroke="#fff" strokeWidth={2} />
             {p.ciLow !== undefined && p.ciHigh !== undefined && (

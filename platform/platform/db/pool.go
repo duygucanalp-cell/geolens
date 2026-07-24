@@ -40,5 +40,7 @@ func NewPool(ctx context.Context, databaseURL string) (*Pool, error) {
 
 // Close closes the connection pool.
 func (p *Pool) Close() {
-	p.Pool.Close()
+	if p.Pool != nil {
+		p.Pool.Close()
+	}
 }

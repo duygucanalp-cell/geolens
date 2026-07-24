@@ -48,7 +48,7 @@ func TestComputePositionWeight_EarlyPosition(t *testing.T) {
 
 func TestComputePositionWeight_MidPosition(t *testing.T) {
 	content := ""
-	for i := 0; i < 25; i++ {
+	for i := 0; i < 15; i++ {
 		content += "Bu bir orta konum test cümlesidir. "
 	}
 	resp := []engine.RawResponse{{Content: content}}

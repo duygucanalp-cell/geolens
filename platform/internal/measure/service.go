@@ -2,6 +2,7 @@ package measure
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -18,9 +19,9 @@ import (
 // ---- Default Component Weights (0409 §2'den) ----
 
 var defaultWeights = ComponentWeights{
-	PresenceShare:    0.35,
-	PositionWeight:   0.25,
-	SourceShare:      0.20,
+	PresenceShare:     0.35,
+	PositionWeight:    0.25,
+	SourceShare:       0.20,
 	CompetitorContext: 0.20,
 }
 
@@ -200,11 +201,11 @@ func (s *service) CalculateScore(ctx context.Context, panelID string, results []
 
 	// Component değerlerini JSON olarak hazırla
 	componentValues := map[string]float64{
-		"presence_share":    math.Round(presenceScore*100) / 100,
-		"position_weight":   math.Round(positionScore*100) / 100,
-		"source_share":      math.Round(sourceScore*100) / 100,
+		"presence_share":     math.Round(presenceScore*100) / 100,
+		"position_weight":    math.Round(positionScore*100) / 100,
+		"source_share":       math.Round(sourceScore*100) / 100,
 		"competitor_context": math.Round(competitorScore*100) / 100,
-		"total_score":       math.Round(totalScore*100) / 100,
+		"total_score":        math.Round(totalScore*100) / 100,
 	}
 
 	// Calculation run'ı DB'ye kaydet (deterministik hesaplama kaydı)
@@ -215,17 +216,17 @@ func (s *service) CalculateScore(ctx context.Context, panelID string, results []
 	`, calcRunID, panelID, tenantID, componentValues)
 
 	score := &Score{
-		ID:      scoreID,
-		PanelID: panelID,
-		Value:   math.Round(totalScore*100) / 100,
-		CILow:   math.Max(0, totalScore-5.0),
-		CIHigh:  math.Min(100, totalScore+5.0),
-		FidelityLabel:      aggregateFidelity(allResponses),
-		EngineBreakdown:    computeEngineBreakdown(allResponses),
-		PanelVersion:       "1.0.0",
-		CalculationRunID:   calcRunID,
-		FreshnessAt:        time.Now().UTC(),
-		CreatedAt:          time.Now().UTC(),
+		ID:               scoreID,
+		PanelID:          panelID,
+		Value:            math.Round(totalScore*100) / 100,
+		CILow:            math.Max(0, totalScore-5.0),
+		CIHigh:           math.Min(100, totalScore+5.0),
+		FidelityLabel:    aggregateFidelity(allResponses),
+		EngineBreakdown:  computeEngineBreakdown(allResponses),
+		PanelVersion:     "1.0.0",
+		CalculationRunID: calcRunID,
+		FreshnessAt:      time.Now().UTC(),
+		CreatedAt:        time.Now().UTC(),
 	}
 
 	// Skoru DB'ye kaydet
@@ -464,9 +465,10 @@ func generateULID() string {
 func randomString(n int) string {
 	const letters = "abcdefghijklmnopqrstuvwxyz0123456789"
 	b := make([]byte, n)
+	randBuf := make([]byte, n)
+	_, _ = rand.Read(randBuf)
 	for i := range b {
-		// Basit pseudo-random (H3'te iyileştir)
-		b[i] = letters[(time.Now().UnixNano()+int64(i*7))%int64(len(letters))]
+		b[i] = letters[int(randBuf[i])%len(letters)]
 	}
 	return string(b)
 }

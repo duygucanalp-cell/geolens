@@ -36,7 +36,6 @@ func EnqueueMeasurement(ctx context.Context, pool *db.Pool, job JobPayload, idem
 	_, err = pool.Exec(ctx, `
 		INSERT INTO public.event_outbox (id, event_type, stream, payload, tenant_id, idempotency_key, created_at)
 		VALUES ($1, 'measurement.requested', 'q:measure', $2::jsonb, $3, $4, now())
-		ON CONFLICT (idempotency_key) DO NOTHING
 	`, id, string(payload), job.TenantID, idempotencyKey)
 
 	if err != nil {

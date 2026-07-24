@@ -22,7 +22,7 @@ export default function App() {
         : await login(email, password)
       localStorage.setItem('token', res.token)
       localStorage.setItem('tenant_id', res.tenant_id)
-      setWorkspaceId(res.tenant_id)
+      setWorkspaceId(res.workspace_id)
       setPage('dashboard')
     } catch (err) {
       setAuthError(err instanceof Error ? err.message : 'İşlem başarısız')

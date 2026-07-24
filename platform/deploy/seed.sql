@@ -16,19 +16,26 @@ ON CONFLICT (id) DO NOTHING;
 -- ============================================================================
 INSERT INTO config.workspaces (id, tenant_id, name, slug)
 VALUES ('WS01', 'T01', 'Ana Çalışma Alanı', 'ana-calisma')
-ON CONFLICT (id, tenant_id) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================================
 -- 3. Kullanıcı
 -- ============================================================================
 INSERT INTO identity.users (id, tenant_id, email, password_hash, role, full_name)
 VALUES ('U01', 'T01', 'demo@acme.example.com',
-        '$2a$10$dummyhashplaceholder123456789abcdefghijklmnopqrstuvwxyz',  -- BCrypt hash
+        '$2a$06$ZnrycdBTB5QJgz7Q0KFmaeStV37cvzbf/2qr4vJsII9bwiZKXUGNS',  -- BCrypt hash (şifre: demo1234)
         'admin', 'Demo Kullanıcı')
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================================
--- 4. Markalar
+-- 4. Üyelik (Membership) — Bu olmazsa workspace_access_denied hatası alınır
+-- ============================================================================
+INSERT INTO config.memberships (id, workspace_id, user_id, tenant_id, role)
+VALUES ('M01', 'WS01', 'U01', 'T01', 'admin')
+ON CONFLICT (id) DO NOTHING;
+
+-- ============================================================================
+-- 5. Markalar
 -- ============================================================================
 INSERT INTO config.brands (id, workspace_id, tenant_id, name, website_url)
 VALUES
@@ -38,7 +45,7 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================================
--- 5. Prompt Setleri
+-- 6. Prompt Setleri
 -- ============================================================================
 INSERT INTO config.prompt_sets (id, workspace_id, tenant_id, name, prompt_text, category)
 VALUES
@@ -51,21 +58,27 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================================
--- 6. Paneller
+-- 7. Paneller
 -- ============================================================================
-INSERT INTO config.panels (id, workspace_id, tenant_id, name, description, brand_ids, competitor_ids, prompt_set_id, schedule, is_active)
+INSERT INTO config.panels (id, workspace_id, tenant_id, name, description, prompt_set_id, schedule_cron, is_active)
 VALUES
     ('P01', 'WS01', 'T01', 'Haftalık Takip',
      'Ana markaların haftalık görünürlük takibi',
-     '["B01","B02","B03"]'::jsonb,
-     '["B02","B03"]'::jsonb,
      'PS01', '0 8 * * 1', true),
     ('P02', 'WS01', 'T01', 'Aylık Rapor',
      'Detaylı aylık görünürlük raporu',
-     '["B01","B02"]'::jsonb,
-     '["B02"]'::jsonb,
      'PS02', '0 9 1 * *', true)
 ON CONFLICT (id) DO NOTHING;
+
+-- Panel-Marka ilişkileri
+INSERT INTO config.panel_brands (panel_id, brand_id, workspace_id, tenant_id)
+VALUES
+    ('P01', 'B01', 'WS01', 'T01'),
+    ('P01', 'B02', 'WS01', 'T01'),
+    ('P01', 'B03', 'WS01', 'T01'),
+    ('P02', 'B01', 'WS01', 'T01'),
+    ('P02', 'B02', 'WS01', 'T01')
+ON CONFLICT (panel_id, brand_id) DO NOTHING;
 
 COMMIT;
 

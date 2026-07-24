@@ -16,6 +16,7 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"github.com/geolens/platform/engine"
+	"github.com/geolens/platform/engine/perplexity"
 	"github.com/geolens/platform/internal/config"
 	"github.com/geolens/platform/internal/measure"
 	"github.com/geolens/platform/platform/db"
@@ -53,23 +54,38 @@ func main() {
 	defer rdb.Close()
 
 	// S3 Storage
-	s3Client, err := storage.NewClient(cfg.S3Endpoint, cfg.S3AccessKey, cfg.S3SecretKey, cfg.S3Bucket, cfg.S3Region, false)
+	s3Storage, err := storage.NewClient(cfg.S3Endpoint, cfg.S3AccessKey, cfg.S3SecretKey, cfg.S3Bucket, cfg.S3Region, false)
 	if err != nil {
 		slog.Warn("S3 istemci oluşturulamadı, storage olmadan çalışılacak", "error", err)
+	}
+	var storageSaver perplexity.RawSaver
+	if err == nil {
+		storageSaver = s3Storage
 	}
 
 	// Engine registry
 	engines := engine.NewRegistry()
+	perplexityAdapter := perplexity.NewAdapter(cfg.PerplexityAPIKey, storageSaver)
+	engines.Register(perplexityAdapter)
 	slog.Info("motor kayıt defteri hazır", "engine_count", engines.Count(), "engines", engines.List())
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	// Redis Stream consumer group'u oluştur (yoksa)
+	for _, s := range []string{queue.StreamMeasure} {
+		if err := rdb.XGroupCreateMkStream(ctx, s, cfg.ConsumerGroup, "0").Err(); err != nil {
+			slog.Warn("redis stream grubu oluşturma", "stream", s, "error", err)
+		} else {
+			slog.Info("redis stream grubu oluşturuldu", "stream", s, "group", cfg.ConsumerGroup)
+		}
+	}
+
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		runWorker(ctx, pool.Pool, rdb, engines, s3Client)
+		runWorker(ctx, pool.Pool, rdb, engines, storageSaver, cfg.ConsumerGroup, cfg.ConsumerGroup)
 	}()
 
 	slog.Info("worker başlatılıyor", "consumer_group", cfg.ConsumerGroup)
@@ -93,7 +109,7 @@ type streamMessage struct {
 }
 
 // runWorker continuously reads from Redis Stream and processes measurement jobs.
-func runWorker(ctx context.Context, pool *pgxpool.Pool, rdb *redis.Client, engines *engine.Registry, s3Client interface{ SaveRawResponse(ctx context.Context, tenantID, workspaceID, engineName string, data []byte) (string, error) }) {
+func runWorker(ctx context.Context, pool *pgxpool.Pool, rdb *redis.Client, engines *engine.Registry, s3Client perplexity.RawSaver, consumerGroup, ackGroup string) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -101,7 +117,7 @@ func runWorker(ctx context.Context, pool *pgxpool.Pool, rdb *redis.Client, engin
 		default:
 			// Redis Stream'den mesaj oku (BLOCK ile bekle)
 			results, err := rdb.XReadGroup(ctx, &redis.XReadGroupArgs{
-				Group:    "workers",
+				Group:    consumerGroup,
 				Consumer: consumerName,
 				Streams:  []string{queue.StreamMeasure, ">"},
 				Count:    10,
@@ -109,7 +125,15 @@ func runWorker(ctx context.Context, pool *pgxpool.Pool, rdb *redis.Client, engin
 			}).Result()
 
 			if err != nil && err != redis.Nil {
-				slog.Error("redis stream okuma hatası", "error", err)
+				if isNoGroupError(err) {
+					// Stream veya consumer group silinmiş olabilir, yeniden oluştur
+					slog.Warn("redis stream grubu bulunamadı, yeniden oluşturuluyor", "error", err)
+					for _, s := range []string{queue.StreamMeasure} {
+						_ = rdb.XGroupCreateMkStream(ctx, s, consumerGroup, "0").Err()
+					}
+				} else {
+					slog.Error("redis stream okuma hatası", "error", err)
+				}
 				time.Sleep(1 * time.Second)
 				continue
 			}
@@ -120,7 +144,7 @@ func runWorker(ctx context.Context, pool *pgxpool.Pool, rdb *redis.Client, engin
 
 			for _, stream := range results {
 				for _, msg := range stream.Messages {
-					processMessage(ctx, pool, rdb, engines, s3Client, stream.Stream, msg.ID, msg.Values)
+					processMessage(ctx, pool, rdb, engines, s3Client, stream.Stream, msg.ID, msg.Values, ackGroup)
 				}
 			}
 		}
@@ -133,9 +157,10 @@ func processMessage(
 	pool *pgxpool.Pool,
 	rdb *redis.Client,
 	engines *engine.Registry,
-	s3Client interface{ SaveRawResponse(context.Context, string, string, string, []byte) (string, error) },
+	s3Client perplexity.RawSaver,
 	stream, msgID string,
 	values map[string]interface{},
+	consumerGroup string,
 ) {
 	logger := slog.With("msg_id", msgID, "stream", stream)
 
@@ -145,14 +170,14 @@ func processMessage(
 		dataStr = fmt.Sprintf("%v", v)
 	} else {
 		logger.Warn("worker: data alanı eksik")
-		ackMessage(rdb, stream, msgID)
+		ackMessage(rdb, stream, msgID, consumerGroup)
 		return
 	}
 
 	var msgData map[string]interface{}
 	if err := json.Unmarshal([]byte(dataStr), &msgData); err != nil {
 		logger.Warn("worker: data ayrıştırma hatası", "error", err)
-		ackMessage(rdb, stream, msgID)
+		ackMessage(rdb, stream, msgID, consumerGroup)
 		return
 	}
 
@@ -160,7 +185,7 @@ func processMessage(
 	eventType, _ := values["event"].(string)
 	if eventType != "measurement.requested" {
 		// Tanınmayan event tipi — yine de ACK'le
-		ackMessage(rdb, stream, msgID)
+		ackMessage(rdb, stream, msgID, consumerGroup)
 		return
 	}
 
@@ -168,21 +193,21 @@ func processMessage(
 	payloadRaw, ok := msgData["payload"]
 	if !ok {
 		logger.Warn("worker: payload alanı eksik")
-		ackMessage(rdb, stream, msgID)
+		ackMessage(rdb, stream, msgID, consumerGroup)
 		return
 	}
 
 	payloadJSON, err := json.Marshal(payloadRaw)
 	if err != nil {
 		logger.Warn("worker: payload marshal hatası", "error", err)
-		ackMessage(rdb, stream, msgID)
+		ackMessage(rdb, stream, msgID, consumerGroup)
 		return
 	}
 
 	var job measure.JobPayload
 	if err := json.Unmarshal(payloadJSON, &job); err != nil {
 		logger.Warn("worker: job payload ayrıştırma hatası", "error", err)
-		ackMessage(rdb, stream, msgID)
+		ackMessage(rdb, stream, msgID, consumerGroup)
 		return
 	}
 
@@ -195,7 +220,7 @@ func processMessage(
 		logger.Warn("worker: motor bulunamadı")
 		// Dead letter queue'ya yönlendir
 		sendToDeadLetter(rdb, msgID, job, fmt.Sprintf("engine %s not found", job.EngineName))
-		ackMessage(rdb, stream, msgID)
+		ackMessage(rdb, stream, msgID, consumerGroup)
 		return
 	}
 
@@ -215,7 +240,7 @@ func processMessage(
 	if err != nil {
 		logger.Error("worker: engine çağrı hatası", "error", err, "duration", duration)
 		sendToDeadLetter(rdb, msgID, job, err.Error())
-		ackMessage(rdb, stream, msgID)
+		ackMessage(rdb, stream, msgID, consumerGroup)
 		return
 	}
 
@@ -238,31 +263,52 @@ func processMessage(
 
 	// measurement_jobs tablosuna kaydet
 	jobID := generateID()
+	idempotencyKey := fmt.Sprintf("worker:%s:%s:%d", job.BrandID, job.EngineName, job.SampleIndex)
 	_, err = pool.Exec(ctx, `
-		INSERT INTO measure.measurement_jobs (id, brand_id, brand_name, panel_id, engine_name, sample_index, status, raw_response_ref, tenant_id, workspace_id, duration_ms, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, 'completed', $7, $8, $9, $10, now())
-	`, jobID, job.BrandID, job.BrandName, job.PanelID, job.EngineName, job.SampleIndex, s3Ref, job.TenantID, job.WorkspaceID, duration.Milliseconds())
+		INSERT INTO measure.measurement_jobs (id, brand_id, panel_id, engine_name, status, tenant_id, workspace_id, prompt_text, sample_count, idempotency_key, created_at)
+		VALUES ($1, $2, $3, $4, 'completed', $5, $6, '', 3, $7, now())
+	`, jobID, job.BrandID, job.PanelID, job.EngineName, job.TenantID, job.WorkspaceID, idempotencyKey)
 	if err != nil {
 		logger.Error("worker: measurement_job kaydetme hatası", "error", err)
 	}
 
 	// Ham yanıtı raw_responses tablosuna kaydet
 	_, err = pool.Exec(ctx, `
-		INSERT INTO measure.raw_responses (id, job_id, engine_name, model_version, content, s3_ref, fidelity_label, duration_ms, tenant_id, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, now())
-	`, generateID(), jobID, job.EngineName, result.FidelityLabel, result.Content, s3Ref, result.FidelityLabel, duration.Milliseconds(), job.TenantID)
+		INSERT INTO measure.raw_responses (id, job_id, engine_name, raw_body, content_text, s3_ref, tenant_id, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, now())
+	`, generateID(), jobID, job.EngineName, result.Content, result.Content, s3Ref, job.TenantID)
 	if err != nil {
 		logger.Error("worker: raw_response kaydetme hatası", "error", err)
 	}
 
 	// Redis Stream'den ACK'le
-	ackMessage(rdb, stream, msgID)
+	ackMessage(rdb, stream, msgID, consumerGroup)
 	logger.Info("worker: iş tamamlandı")
 }
 
+// isGroupAlreadyExists checks if a Redis error is BUSYGROUP (group already exists).
+// isNoGroupError checks if the error is NOGROUP (stream or group doesn't exist).
+func isNoGroupError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errStr := err.Error()
+	return len(errStr) >= 7 && errStr[:7] == "NOGROUP"
+}
+
+func isGroupAlreadyExists(err error) bool {
+	if err == nil {
+		return false
+	}
+	errStr := err.Error()
+	return errStr == "BUSYGROUP Consumer Group name already exists" ||
+		errStr == "BUSYGROUP consumer group already exists" ||
+		len(errStr) >= 9 && errStr[:9] == "BUSYGROUP"
+}
+
 // ackMessage acknowledges a message from Redis Stream.
-func ackMessage(rdb *redis.Client, stream, msgID string) {
-	if err := rdb.XAck(context.Background(), stream, "workers", msgID).Err(); err != nil {
+func ackMessage(rdb *redis.Client, stream, msgID, consumerGroup string) {
+	if err := rdb.XAck(context.Background(), stream, consumerGroup, msgID).Err(); err != nil {
 		slog.Warn("worker: XAck hatası", "stream", stream, "msg_id", msgID, "error", err)
 	}
 }

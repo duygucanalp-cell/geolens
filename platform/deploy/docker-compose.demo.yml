@@ -15,7 +15,6 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./migrations:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U geolens"]
       interval: 5s
@@ -37,7 +36,7 @@ services:
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
-    command: server /data --console-addr ":9001"
+    command: server /data --console-address ":9001"
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -52,7 +51,7 @@ services:
   # === Application ===
   api:
     build:
-      context: .
+      context: ..
       dockerfile: Dockerfile
       target: api
     ports:
@@ -75,7 +74,7 @@ services:
 
   scheduler:
     build:
-      context: .
+      context: ..
       dockerfile: Dockerfile
       target: scheduler
     environment:
@@ -93,7 +92,7 @@ services:
 
   worker:
     build:
-      context: .
+      context: ..
       dockerfile: Dockerfile
       target: worker
     environment:
@@ -112,7 +111,7 @@ services:
 
   web:
     build:
-      context: ./web
+      context: ../web
       dockerfile: Dockerfile
     ports:
       - "3000:80"
