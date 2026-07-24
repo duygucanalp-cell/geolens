@@ -98,10 +98,26 @@ func main() {
 	}
 
 	var wg sync.WaitGroup
+
+	// Ana worker goroutine (mesaj işleme)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		runWorker(ctx, pool.Pool, rdb, engines, saver, cfg.ConsumerGroup, cfg.ConsumerGroup)
+	}()
+
+	// Queue depth collector (periyodik XLEN ile kuyruk derinliği metrikleri)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		runQueueDepthCollector(ctx, rdb)
+	}()
+
+	// Account metrics collector (periyodik DB sorguları ile iş metrikleri)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		runAccountMetricsCollector(ctx, pool.Pool)
 	}()
 
 	slog.Info("worker başlatılıyor", "consumer_group", cfg.ConsumerGroup)
@@ -364,6 +380,156 @@ func sendToDeadLetter(rdb *redis.Client, msgID string, job measure.JobPayload, r
 		},
 	}).Err(); err != nil {
 		slog.Error("worker: dead letter gönderme hatası", "error", err)
+	}
+}
+
+// runAccountMetricsCollector periodically queries the database for account-level business metrics
+// and updates Prometheus gauges (ActiveUsers, TotalBrands, MeasurementsCompleted, AuditsCompleted).
+// Her 5 dakikada bir çalışır — bu metrikler yavaş değişir.
+func runAccountMetricsCollector(ctx context.Context, pool *pgxpool.Pool) {
+	ticker := time.NewTicker(5 * time.Minute)
+	defer ticker.Stop()
+
+	slog.Info("hesap metrikleri toplayıcı başlatıldı", "interval", "5m")
+
+	for {
+		select {
+		case <-ctx.Done():
+			slog.Info("hesap metrikleri toplayıcı durduruldu")
+			return
+		case <-ticker.C:
+			collectAccountMetrics(ctx, pool)
+		}
+	}
+}
+
+// collectAccountMetrics runs all account-level DB queries and updates Prometheus gauges.
+func collectAccountMetrics(ctx context.Context, pool *pgxpool.Pool) {
+	// ActiveUsers: her tenant için kullanıcı sayısı
+	rows, err := pool.Query(ctx, `
+		SELECT tenant_id, COUNT(*) AS count
+		FROM identity.users
+		GROUP BY tenant_id
+	`)
+	if err != nil {
+		slog.Warn("account metric: active_users sorgu hatası", "error", err)
+	} else {
+		for rows.Next() {
+			var tenantID string
+			var count int
+			if err := rows.Scan(&tenantID, &count); err != nil {
+				slog.Warn("account metric: active_users satır okuma hatası", "error", err)
+				continue
+			}
+			metrics.ActiveUsers.WithLabelValues(tenantID).Set(float64(count))
+		}
+		rows.Close()
+	}
+
+	// TotalBrands: her tenant için marka sayısı
+	rows, err = pool.Query(ctx, `
+		SELECT tenant_id, COUNT(*) AS count
+		FROM config.brands
+		GROUP BY tenant_id
+	`)
+	if err != nil {
+		slog.Warn("account metric: total_brands sorgu hatası", "error", err)
+	} else {
+		for rows.Next() {
+			var tenantID string
+			var count int
+			if err := rows.Scan(&tenantID, &count); err != nil {
+				slog.Warn("account metric: total_brands satır okuma hatası", "error", err)
+				continue
+			}
+			metrics.TotalBrands.WithLabelValues(tenantID).Set(float64(count))
+		}
+		rows.Close()
+	}
+
+	// MeasurementsCompleted: her tenant için tamamlanmış ölçüm sayısı
+	rows, err = pool.Query(ctx, `
+		SELECT tenant_id, COUNT(*) AS count
+		FROM measure.measurement_jobs
+		WHERE status = 'completed'
+		GROUP BY tenant_id
+	`)
+	if err != nil {
+		slog.Warn("account metric: measurements_completed sorgu hatası", "error", err)
+	} else {
+		for rows.Next() {
+			var tenantID string
+			var count int
+			if err := rows.Scan(&tenantID, &count); err != nil {
+				slog.Warn("account metric: measurements_completed satır okuma hatası", "error", err)
+				continue
+			}
+			metrics.MeasurementsCompleted.WithLabelValues(tenantID).Set(float64(count))
+		}
+		rows.Close()
+	}
+
+	// AuditsCompleted: her tenant için audit sayısı (governance.audit_results)
+	rows, err = pool.Query(ctx, `
+		SELECT tenant_id, COUNT(*) AS count
+		FROM governance.audit_results
+		GROUP BY tenant_id
+	`)
+	if err != nil {
+		slog.Warn("account metric: audits_completed sorgu hatası", "error", err)
+	} else {
+		for rows.Next() {
+			var tenantID string
+			var count int
+			if err := rows.Scan(&tenantID, &count); err != nil {
+				slog.Warn("account metric: audits_completed satır okuma hatası", "error", err)
+				continue
+			}
+			metrics.AuditsCompleted.WithLabelValues(tenantID).Set(float64(count))
+		}
+		rows.Close()
+	}
+
+	slog.Debug("hesap metrikleri güncellendi")
+}
+
+// runQueueDepthCollector periodically reads Redis Stream lengths (XLEN) and updates Prometheus gauges.
+// Her 15 saniyede bir tüm stream'lerin derinliğini ölçer ve QueueDepth/QueueDeadLetterSize metriklerini günceller.
+func runQueueDepthCollector(ctx context.Context, rdb *redis.Client) {
+	ticker := time.NewTicker(15 * time.Second)
+	defer ticker.Stop()
+
+	streams := []string{queue.StreamMeasure, queue.StreamAudit, queue.StreamReport, queue.StreamNotify}
+	deadStreams := []string{queue.StreamDead}
+
+	slog.Info("kuyruk derinliği toplayıcı başlatıldı", "interval", "15s")
+
+	for {
+		select {
+		case <-ctx.Done():
+			slog.Info("kuyruk derinliği toplayıcı durduruldu")
+			return
+		case <-ticker.C:
+			// Normal stream derinlikleri
+			for _, stream := range streams {
+				length, err := rdb.XLen(ctx, stream).Result()
+				if err != nil {
+					slog.Warn("XLEN hatası", "stream", stream, "error", err)
+					continue
+				}
+				metrics.QueueDepth.WithLabelValues(stream).Set(float64(length))
+			}
+
+			// Dead letter queue derinliği
+			for _, stream := range deadStreams {
+				length, err := rdb.XLen(ctx, stream).Result()
+				if err != nil {
+					slog.Warn("XLEN hatası (dead)", "stream", stream, "error", err)
+					continue
+				}
+				metrics.QueueDeadLetterSize.WithLabelValues(stream).Set(float64(length))
+			}
+		}
 	}
 }
 

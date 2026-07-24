@@ -6,6 +6,7 @@ import { AuditPanel } from './AuditPanel'
 import { NotificationSettings } from './NotificationSettings'
 import { ReportsPanel } from './ReportsPanel'
 import { RecommendationsPanel } from './RecommendationsPanel'
+import { MonitoringPanel } from './MonitoringPanel'
 import { getScores, getBrands, getPanels } from '../api/client'
 import type { Score, Brand, Panel } from '../types'
 import { ENGINE_NAMES } from '../types'
@@ -14,7 +15,7 @@ interface ScoreDashboardProps {
   workspaceId: string
 }
 
-type Tab = 'scores' | 'audit' | 'notifications' | 'reports' | 'recommendations'
+type Tab = 'scores' | 'audit' | 'notifications' | 'reports' | 'recommendations' | 'monitoring'
 
 export function ScoreDashboard({ workspaceId }: ScoreDashboardProps) {
   const [scores, setScores] = useState<Score[]>([])
@@ -136,6 +137,12 @@ export function ScoreDashboard({ workspaceId }: ScoreDashboardProps) {
         >
           Öneriler
         </button>
+        <button
+          className={`tab-btn ${activeTab === 'monitoring' ? 'active' : ''}`}
+          onClick={() => setActiveTab('monitoring')}
+        >
+          İzleme
+        </button>
       </div>
 
       {activeTab === 'audit' ? (
@@ -146,6 +153,8 @@ export function ScoreDashboard({ workspaceId }: ScoreDashboardProps) {
         <NotificationSettings workspaceId={workspaceId} />
       ) : activeTab === 'recommendations' ? (
         <RecommendationsPanel workspaceId={workspaceId} brands={brands} />
+      ) : activeTab === 'monitoring' ? (
+        <MonitoringPanel />
       ) : (
         <>
           {/* Filters */}

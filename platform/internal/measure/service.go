@@ -51,8 +51,11 @@ func (s *service) Measure(ctx context.Context, req MeasurementRequest) (*Measure
 		return nil, fmt.Errorf("measure: kayıtlı motor bulunamadı")
 	}
 
-	// n=3 örnekleme: her motora aynı prompt 3 kez gönderilir
-	const sampleCount = 3
+	// n={sampleCount} örnekleme: her motora aynı prompt N kez gönderilir
+	sampleCount := 3 // default
+	if s.cfg != nil && s.cfg.SampleCount > 0 {
+		sampleCount = s.cfg.SampleCount
+	}
 
 	type sampleResult struct {
 		engineName string
@@ -77,7 +80,7 @@ func (s *service) Measure(ctx context.Context, req MeasurementRequest) (*Measure
 			adapter = ce.WithContext(req.TenantID, req.WorkspaceID)
 		}
 
-		// n=3 paralel örnekleme
+		// n={sampleCount} paralel örnekleme
 		var wg sync.WaitGroup
 		samples := make([]*engine.RawResponse, sampleCount)
 		var sampleErr error

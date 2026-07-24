@@ -27,6 +27,7 @@ import (
 	"github.com/geolens/platform/internal/recommendation"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
+	"github.com/geolens/platform/platform/queue"
 	"github.com/geolens/platform/platform/storage"
 	"github.com/geolens/platform/platform/telemetry"
 )
@@ -89,6 +90,15 @@ func main() {
 
 	slog.Info("motor kayıt defteri hazır", "engine_count", engines.Count(), "engines", engines.List())
 
+	// Redis client (queue ile aynı — mevcut bağlantıyı kullan)
+	redisClient, err := queue.NewRedisClient(cfg.RedisURL)
+	if err != nil {
+		slog.Warn("redis istemci oluşturulamadı, cache olmadan çalışılacak", "error", err)
+	}
+	if redisClient != nil {
+		defer redisClient.Close()
+	}
+
 	// Handler'lar
 	authHandler := auth.NewHandler(pool, jwtService)
 	configHandler := config.NewHandler(pool)
@@ -148,6 +158,22 @@ func main() {
 			r.Route("/workspaces/{ws}", func(r chi.Router) {
 				r.Use(httpmw.RequireWorkspace)
 				r.Use(httpmw.RequireWorkspaceAccess(pool))
+
+				// Cache middleware (GET endpoint'leri için Redis önbellek)
+				var cacheCfg httpmw.CacheConfig
+				if redisClient != nil {
+					cacheCfg = httpmw.CacheConfig{RDB: redisClient, TTL: 30 * time.Second}
+				}
+				r.Group(func(r chi.Router) {
+					r.Use(httpmw.CacheMiddleware(cacheCfg))
+					r.Get("/brands", configHandler.ListBrands)
+					r.Get("/panels", panelHandler.ListPanels)
+					r.Get("/panels/{panelID}", panelHandler.GetPanel)
+					r.Get("/prompt-sets", panelHandler.ListPromptSets)
+					r.Get("/scores", measureHandler.ListScores)
+					r.Get("/notifications/settings", deliveryHandler.GetSettings)
+					r.Get("/recommendations", recommendationHandler.ListRecommendations)
+				})
 
 				// Admin-only routes
 				r.Group(func(r chi.Router) {

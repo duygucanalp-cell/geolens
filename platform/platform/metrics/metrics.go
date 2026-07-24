@@ -115,9 +115,9 @@ var (
 )
 
 // ---- Account / Business Metrics ----
-// TODO(H14): Bu metrikler periyodik DB sorguları ile populate edilmelidir.
-// Örn: her 5 dakikada bir cron job ile DB'den aktif kullanıcı sayısı okunup ActiveUsers.Set() çağrılmalıdır.
-// Şu anda sadece tanımlıdır (register), değer atanmamıştır.
+// Bu metrikler, worker'daki runAccountMetricsCollector goroutine'i tarafından
+// her 5 dakikada bir periyodik DB sorguları ile populate edilir.
+// Gauge tipi kullanılır çünkü her poll'da anlık snapshot alınır.
 
 var (
 	// ActiveUsers tracks the number of active users per tenant.
@@ -132,27 +132,29 @@ var (
 		Help: "Toplam marka sayısı (tenant ayrımıyla)",
 	}, []string{LabelTenant})
 
-	// MeasurementsCompleted counts completed measurements.
-	MeasurementsCompleted = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "geolens_measurements_completed_total",
-		Help: "Tamamlanan ölçüm sayısı (tenant ayrımıyla)",
+	// MeasurementsCompleted tracks completed measurements per tenant.
+	MeasurementsCompleted = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "geolens_measurements_completed",
+		Help: "Tamamlanan ölçüm sayısı (tenant ayrımıyla, periyodik snapshot)",
 	}, []string{LabelTenant})
 
-	// AuditsCompleted counts completed site audits.
-	AuditsCompleted = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "geolens_audits_completed_total",
-		Help: "Tamamlanan site denetim sayısı (tenant ayrımıyla)",
+	// AuditsCompleted tracks completed site audits per tenant.
+	AuditsCompleted = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "geolens_audits_completed",
+		Help: "Tamamlanan site denetim sayısı (tenant ayrımıyla, periyodik snapshot)",
 	}, []string{LabelTenant})
 
-	// RecommendationsGenerated counts generated recommendations.
-	RecommendationsGenerated = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "geolens_recommendations_generated_total",
+	// RecommendationsGenerated tracks generated recommendations per tenant.
+	// TODO: henüz DB'den populate edilmiyor — recommendations tablosu yok.
+	RecommendationsGenerated = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "geolens_recommendations_generated",
 		Help: "Oluşturulan öneri sayısı (tenant ayrımıyla)",
 	}, []string{LabelTenant})
 
-	// EmailsSent counts sent emails.
-	EmailsSent = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "geolens_emails_sent_total",
+	// EmailsSent tracks sent emails per tenant.
+	// TODO: henüz DB'den populate edilmiyor — emails tablosu yok.
+	EmailsSent = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "geolens_emails_sent",
 		Help: "Gönderilen e-posta sayısı (tenant ayrımıyla)",
 	}, []string{LabelTenant})
 )

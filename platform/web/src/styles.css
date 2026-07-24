@@ -203,3 +203,41 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .rec-apply-btn:hover { background: #f0fdf4; border-color: #22c55e; color: #22c55e; }
 .rec-dismiss-btn:hover { background: #fef2f2; border-color: #ef4444; color: #ef4444; }
 .rec-apply-btn:disabled, .rec-dismiss-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Monitoring Panel */
+.monitoring-panel { background: #fff; border-radius: 12px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.monitoring-header { margin-bottom: 1.5rem; }
+.monitoring-header h3 { font-size: 1.1rem; margin-bottom: 0.25rem; }
+.monitoring-desc { font-size: 0.85rem; color: #64748b; }
+.monitoring-services { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
+.monitoring-card { display: flex; align-items: center; gap: 0.75rem; padding: 1rem; background: #f8fafc; border-radius: 10px; text-decoration: none; border-top: 3px solid #6366f1; transition: all 0.2s; }
+.monitoring-card:hover { background: #f1f5f9; transform: translateY(-1px); }
+.monitoring-card-icon { font-size: 1.5rem; width: 40px; text-align: center; }
+.monitoring-card-info { flex: 1; }
+.monitoring-card-info h4 { font-size: 0.9rem; font-weight: 600; color: #1e293b; margin-bottom: 0.15rem; }
+.monitoring-card-info p { font-size: 0.78rem; color: #64748b; margin-bottom: 0.25rem; }
+.monitoring-card-value { font-size: 0.85rem; font-weight: 700; }
+.monitoring-section { margin-bottom: 1.5rem; }
+.monitoring-section h4 { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.75rem; color: #334155; }
+.monitoring-quick-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.75rem; }
+.quick-stat { padding: 0.75rem; background: #f8fafc; border-radius: 8px; }
+.quick-stat-label { display: block; font-size: 0.8rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 0.5rem; }
+.quick-stat-list { list-style: none; padding: 0; }
+.quick-stat-list li { font-size: 0.75rem; color: #475569; padding: 0.3rem 0; border-bottom: 1px solid #e2e8f0; }
+.quick-stat-list li:last-child { border-bottom: none; }
+.quick-stat-list code { font-size: 0.7rem; background: #e2e8f0; padding: 0.1rem 0.3rem; border-radius: 3px; color: #6366f1; }
+.monitoring-collapse-btn { width: 100%; padding: 0.6rem 1rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; cursor: pointer; text-align: left; color: #475569; transition: all 0.2s; }
+.monitoring-collapse-btn:hover { background: #f1f5f9; }
+.alarm-list { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.75rem; }
+.alarm-card { padding: 0.75rem; border-radius: 8px; border-left: 3px solid; background: #f8fafc; }
+.alarm-card.alarm-critical { border-left-color: #ef4444; }
+.alarm-card.alarm-high { border-left-color: #f97316; }
+.alarm-card.alarm-medium { border-left-color: #eab308; }
+.alarm-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.3rem; }
+.alarm-header strong { font-size: 0.85rem; color: #1e293b; }
+.alarm-severity { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.3px; padding: 0.1rem 0.4rem; border-radius: 3px; }
+.severity-critical { color: #ef4444; }
+.severity-high { color: #f97316; }
+.severity-medium { color: #eab308; }
+.alarm-desc { font-size: 0.8rem; color: #64748b; margin-bottom: 0.4rem; }
+.alarm-rule { font-size: 0.75rem; background: #1e293b; color: #22c55e; padding: 0.3rem 0.5rem; border-radius: 4px; display: inline-block; font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace; }

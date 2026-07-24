@@ -31,6 +31,7 @@ type Config struct {
 	Environment           string
 	RateLimitEnabled      bool
 	AuditEnabled          bool
+	SampleCount           int
 	MaxEnginesPerTenant   int
 	MaxBrandsPerWorkspace int
 	DefaultPageSize       int
@@ -60,6 +61,7 @@ func LoadFromEnv() Config {
 		SendGridFromName:      getEnv("SENDGRID_FROM_NAME", "GeoLens"),
 		OTelEndpoint:          getEnv("OTEL_ENDPOINT", "http://localhost:4318"),
 		Environment:           getEnv("ENVIRONMENT", "development"),
+		SampleCount:           GetEnvInt("SAMPLE_COUNT", 3),
 		RateLimitEnabled:      getEnv("RATE_LIMIT_ENABLED", "true") == "true",
 		AuditEnabled:          getEnv("AUDIT_ENABLED", "true") == "true",
 		MaxEnginesPerTenant:   GetEnvInt("MAX_ENGINES_PER_TENANT", 3),

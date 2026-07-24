@@ -23,9 +23,10 @@ const (
 
 // geminiRequest is the request body for Gemini generateContent API.
 type geminiRequest struct {
-	Contents        []content        `json:"contents"`
-	Tools           []tool           `json:"tools,omitempty"`
-	GroundingConfig *groundingConfig `json:"groundingConfig,omitempty"`
+	Contents         []content         `json:"contents"`
+	Tools            []tool            `json:"tools,omitempty"`
+	GroundingConfig  *groundingConfig  `json:"groundingConfig,omitempty"`
+	GenerationConfig *generationConfig `json:"generationConfig,omitempty"` // H15: temp=0
 }
 
 type content struct {
@@ -44,6 +45,10 @@ type googleSearch struct{}
 
 type groundingConfig struct {
 	Threshold string `json:"threshold,omitempty"` // e.g. "BLOCK_MEDIUM_AND_ABOVE"
+}
+
+type generationConfig struct {
+	Temperature float64 `json:"temperature"`
 }
 
 // ---- Response Types ----
@@ -139,6 +144,9 @@ func (a *Adapter) Execute(prompt string) (*engine.RawResponse, error) {
 		},
 		Tools: []tool{
 			{GoogleSearch: &googleSearch{}},
+		},
+		GenerationConfig: &generationConfig{
+			Temperature: 0, // H15: deterministik çıktı için
 		},
 	}
 

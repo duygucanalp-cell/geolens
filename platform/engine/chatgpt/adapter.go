@@ -21,8 +21,9 @@ const (
 
 // chatRequest is the request body for OpenAI Chat Completions API.
 type chatRequest struct {
-	Model    string    `json:"model"`
-	Messages []message `json:"messages"`
+	Model       string    `json:"model"`
+	Messages    []message `json:"messages"`
+	Temperature float64   `json:"temperature"` // H15: temp=0 for deterministic output
 }
 
 type message struct {
@@ -119,7 +120,8 @@ func (a *Adapter) Execute(prompt string) (*engine.RawResponse, error) {
 	}
 
 	reqBody := chatRequest{
-		Model: modelName,
+		Model:       modelName,
+		Temperature: 0, // H15: deterministik çıktı için
 		Messages: []message{
 			{Role: "user", Content: prompt},
 		},
