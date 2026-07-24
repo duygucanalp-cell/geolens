@@ -144,49 +144,7 @@ func (s *service) checkRobotsTxt(websiteURL string) *RobotsTxtCheck {
 	}
 
 	body, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20)) // max 1MB
-	content := string(body)
-
-	check := &RobotsTxtCheck{
-		Exists:       true,
-		BlockedPaths: []string{},
-	}
-
-	// Parse robots.txt içeriği
-	lines := strings.Split(content, "\n")
-	var currentAgent string
-
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		lineLower := strings.ToLower(line)
-
-		if strings.HasPrefix(lineLower, "user-agent:") {
-			currentAgent = strings.TrimSpace(line[11:])
-		} else if strings.HasPrefix(lineLower, "disallow:") {
-			path := strings.TrimSpace(line[9:])
-			if currentAgent == "*" || currentAgent == "" {
-				if path == "/" {
-					check.DisallowedAll = true
-				}
-				check.BlockedPaths = append(check.BlockedPaths, path)
-			}
-
-			// AI bot kontrolü
-			for _, crawler := range aiCrawlers {
-				if strings.EqualFold(currentAgent, crawler.UserAgent) || strings.EqualFold(currentAgent, strings.Split(crawler.UserAgent, "/")[0]) {
-					if path == "/" {
-						check.AllowsAIBots = false
-					}
-				}
-			}
-		}
-	}
-
-	// Varsayılan: AI botlarına özel kural yoksa ve genel kural varsa onu kullan
-	if !check.DisallowedAll {
-		check.AllowsAIBots = true
-	}
-
-	return check
+	return parseRobotsTxtContent(body, true)
 }
 
 // checkBotAccess tests AI bot accessibility.
@@ -338,6 +296,54 @@ func (s *service) computeOverallScore(result *AuditResult) float64 {
 	}
 
 	return score
+}
+
+// parseRobotsTxtContent parses raw robots.txt content into a RobotsTxtCheck.
+// exists parameter indicates whether the file was found (HTTP 200).
+func parseRobotsTxtContent(body []byte, exists bool) *RobotsTxtCheck {
+	content := string(body)
+
+	check := &RobotsTxtCheck{
+		Exists:       exists,
+		BlockedPaths: []string{},
+		AllowsAIBots: true, // Varsayılan: AI botlarına izin var
+	}
+
+	lines := strings.Split(content, "\n")
+	var currentAgent string
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		lineLower := strings.ToLower(line)
+
+		if strings.HasPrefix(lineLower, "user-agent:") {
+			currentAgent = strings.TrimSpace(line[11:])
+		} else if strings.HasPrefix(lineLower, "disallow:") {
+			path := strings.TrimSpace(line[9:])
+			if currentAgent == "*" || currentAgent == "" {
+				if path == "/" {
+					check.DisallowedAll = true
+				}
+				check.BlockedPaths = append(check.BlockedPaths, path)
+			}
+
+			// AI bot kontrolü — eşleşen AI botu için Disallow: / varsa AllowsAIBots=false
+			for _, crawler := range aiCrawlers {
+				if strings.EqualFold(currentAgent, crawler.UserAgent) || strings.EqualFold(currentAgent, strings.Split(crawler.UserAgent, "/")[0]) {
+					if path == "/" {
+						check.AllowsAIBots = false
+					}
+				}
+			}
+		}
+	}
+
+	// Tüm botlar engellenmişse (User-agent: * Disallow: /) AI botları da engellenmiştir
+	if check.DisallowedAll {
+		check.AllowsAIBots = false
+	}
+
+	return check
 }
 
 // ---- Yardımcı Fonksiyonlar ----
