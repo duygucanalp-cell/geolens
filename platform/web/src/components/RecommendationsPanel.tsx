@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getRecommendations, markRecommendationApplied, markRecommendationDismissed } from '../api/client'
 import type { Recommendation, Brand } from '../types'
-import { SEVERITY_LABELS, CATEGORY_LABELS, SEVERITY_COLORS, ENGINE_COLORS } from '../types'
+import { SEVERITY_LABELS, CATEGORY_LABELS, SEVERITY_COLORS } from '../types'
 
 interface Props {
   workspaceId: string

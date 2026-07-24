@@ -164,6 +164,8 @@ func main() {
 				r.Put("/notifications/settings", deliveryHandler.UpdateSettings)
 				r.Post("/notifications/test", deliveryHandler.SendTestEmail)
 				r.Get("/recommendations", recommendationHandler.ListRecommendations)
+				r.Post("/recommendations/{recId}/apply", recommendationHandler.MarkApplied)
+				r.Post("/recommendations/{recId}/dismiss", recommendationHandler.MarkDismissed)
 				r.Post("/reports/digest", pdfHandler.GenerateWeeklyDigest)
 			})
 		})
