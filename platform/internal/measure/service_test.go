@@ -139,4 +139,16 @@ func TestGenerateULID_Unique(t *testing.T) {
 		}
 		ids[id] = true
 	}
+	if len(ids) != 100 {
+		t.Errorf("beklenen 100 unique ULID, gerçek %d", len(ids))
+	}
+	// ULID formatı: 26 karakterli base32 (örn. 01ARZ3NDEKTSV4RRFFQ69G5FAV)
+	first := ""
+	for id := range ids {
+		first = id
+		break
+	}
+	if len(first) != 26 {
+		t.Errorf("ULID 26 karakter olmalı, gerçek %d: %s", len(first), first)
+	}
 }

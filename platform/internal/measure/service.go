@@ -2,7 +2,6 @@ package measure
 
 import (
 	"context"
-	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -14,6 +13,7 @@ import (
 	"github.com/geolens/platform/engine"
 	"github.com/geolens/platform/internal/config"
 	"github.com/geolens/platform/platform/db"
+	"github.com/oklog/ulid/v2"
 )
 
 // ---- Default Component Weights (0409 §2'den) ----
@@ -458,22 +458,9 @@ func computeEngineBreakdown(responses []engine.RawResponse) map[string]float64 {
 
 // ---- Yardımcı Fonksiyonlar ----
 
-// generateULID creates a simple ULID-like ID using timestamp + random.
+// generateULID creates a new ULID using the oklog/ulid library.
 func generateULID() string {
-	// TODO(H3): Gerçek ULID kütüphanesi kullan (örn. github.com/oklog/ulid/v2)
-	now := time.Now().UnixMilli()
-	return fmt.Sprintf("%d-%s", now, randomString(8))
-}
-
-func randomString(n int) string {
-	const letters = "abcdefghijklmnopqrstuvwxyz0123456789"
-	b := make([]byte, n)
-	randBuf := make([]byte, n)
-	_, _ = rand.Read(randBuf)
-	for i := range b {
-		b[i] = letters[int(randBuf[i])%len(letters)]
-	}
-	return string(b)
+	return ulid.Make().String()
 }
 
 // extractDomain extracts a domain from a URL string.

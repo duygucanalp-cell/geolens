@@ -81,6 +81,9 @@ func main() {
 	// Global middleware zinciri (sabit sıra — 0501 §5)
 	r.Use(httpmw.PanicRecovery)
 	r.Use(httpmw.RequestID)
+	r.Use(httpmw.SecureHeaders)
+	r.Use(httpmw.RequestTimeout(30 * time.Second))
+	r.Use(httpmw.MaxBodySize(1 << 20)) // 1MB max body
 	r.Use(middleware.RealIP)
 	r.Use(httpmw.Logger)
 	r.Use(httpmw.CORS)
@@ -94,6 +97,9 @@ func main() {
 
 	// API v1
 	r.Route("/v1", func(r chi.Router) {
+		// JSON body validation for all POST/PUT/PATCH routes
+		r.Use(httpmw.ValidateContentType("application/json"))
+
 		// Public auth routes (JWT gerekmez)
 		r.Post("/auth/register", authHandler.Register)
 		r.Post("/auth/login", authHandler.Login)
