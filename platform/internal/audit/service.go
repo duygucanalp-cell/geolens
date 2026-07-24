@@ -1,8 +1,11 @@
 package audit
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -118,6 +121,39 @@ func (s *service) Audit(brandID, brandName, websiteURL string) (*AuditResult, er
 	}
 
 	return result, nil
+}
+
+// Save persists an audit result to the audit_results table.
+// This should be called after WorkspaceID and TenantID are set on the result.
+func (s *service) Save(result *AuditResult) error {
+	if s.pool == nil {
+		return nil
+	}
+
+	robotsJSON, _ := json.Marshal(result.RobotsTxtCheck)
+	botJSON, _ := json.Marshal(result.BotAccessCheck)
+	ssrJSON, _ := json.Marshal(result.SSRCheck)
+	ssrfJSON, _ := json.Marshal(result.SSRFCheck)
+	issuesJSON, _ := json.Marshal(result.Issues)
+	resultJSON, _ := json.Marshal(result)
+
+	_, err := s.pool.Exec(context.Background(), `
+		INSERT INTO governance.audit_results
+			(id, brand_id, workspace_id, tenant_id, brand_name, website_url,
+			 overall_score, robots_txt, bot_access, ssr, ssrf, issues, raw_result, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10::jsonb, $11::jsonb, $12::jsonb, $13::jsonb, now())
+	`, result.ID, result.BrandID, result.WorkspaceID, result.TenantID,
+		result.BrandName, result.WebsiteURL,
+		result.OverallScore,
+		string(robotsJSON), string(botJSON), string(ssrJSON), string(ssrfJSON),
+		string(issuesJSON), string(resultJSON))
+
+	if err != nil {
+		return fmt.Errorf("audit kaydetme: %w", err)
+	}
+
+	slog.Debug("audit result saved", "brand", result.BrandID, "score", result.OverallScore)
+	return nil
 }
 
 // checkRobotsTxt fetches and parses robots.txt.

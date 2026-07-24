@@ -6,8 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/geolens/platform/platform/db"
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
 type contextKey string
@@ -133,7 +134,7 @@ func TenantContext(pool *db.Pool) func(http.Handler) http.Handler {
 				// Her istekte tenant context'i PG session variable olarak ayarla (ADR-004)
 				_, err := pool.Exec(r.Context(), "SELECT set_config('app.tenant_id', $1, true)", tenantID)
 				if err != nil {
-				slog.Warn("app.tenant_id session variable ayarlanamadı, RLS devre dışı", "tenant_id", tenantID, "error", err)
+					slog.Warn("app.tenant_id session variable ayarlanamadı, RLS devre dışı", "tenant_id", tenantID, "error", err)
 				}
 			}
 			next.ServeHTTP(w, r)
@@ -208,7 +209,7 @@ func hasSufficientRole(userRole, minimumRole string) bool {
 // RequireWorkspace checks that the workspace parameter exists.
 func RequireWorkspace(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ws := r.PathValue("ws")
+		ws := chi.URLParam(r, "ws")
 		if ws == "" {
 			http.Error(w, `{"error":"workspace_required"}`, http.StatusBadRequest)
 			return

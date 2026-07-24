@@ -1,24 +1,26 @@
 package delivery
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
-	"sync"
 	"time"
 
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
+
+	"github.com/geolens/platform/platform/db"
 )
 
 // service implements the Service interface for delivery.
 type service struct {
-	config   EmailConfig
-	settings sync.Map // map[string]*NotificationSettings — in-memory store, TODO(H11): DB persistence
+	config EmailConfig
+	pool   *db.Pool
 }
 
 // NewService creates a new delivery service.
-func NewService(cfg EmailConfig) Service {
-	return &service{config: cfg}
+func NewService(cfg EmailConfig, pool *db.Pool) Service {
+	return &service{config: cfg, pool: pool}
 }
 
 // SendNotification sends a single notification.
@@ -28,7 +30,6 @@ func (s *service) SendNotification(notif Notification) error {
 	case ChannelEmail:
 		return s.sendEmailNotification(&notif)
 	case ChannelInApp:
-		// TODO(H10): In-app notification storage + polling
 		slog.Debug("in-app notification (not yet implemented)", "id", notif.ID)
 		return nil
 	default:
@@ -126,31 +127,66 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 }
 
 // GetSettings returns the notification settings for a workspace.
-// Uses in-memory store; returns defaults if none saved yet.
-func (s *service) GetSettings(workspaceID string) (*NotificationSettings, error) {
-	val, ok := s.settings.Load(workspaceID)
-	if ok {
-		return val.(*NotificationSettings), nil
+// Reads from PostgreSQL; returns defaults if no record exists.
+func (s *service) GetSettings(workspaceID, tenantID string) (*NotificationSettings, error) {
+	settings := &NotificationSettings{WorkspaceID: workspaceID}
+
+	err := s.pool.QueryRow(context.Background(), `
+		SELECT email_address, digest_enabled, digest_day, digest_time,
+		       digest_format, notify_on_drop, drop_threshold
+		FROM delivery.notification_settings
+		WHERE workspace_id = $1 AND tenant_id = $2
+	`, workspaceID, tenantID).Scan(
+		&settings.EmailAddress, &settings.DigestEnabled, &settings.DigestDay,
+		&settings.DigestTime, &settings.DigestFormat,
+		&settings.NotifyOnDrop, &settings.DropThreshold,
+	)
+
+	if err != nil {
+		// Return sensible defaults
+		return &NotificationSettings{
+			WorkspaceID:   workspaceID,
+			DigestDay:     "monday",
+			DigestTime:    "09:00",
+			DigestFormat:  "email",
+			DigestEnabled: true,
+			NotifyOnDrop:  true,
+			DropThreshold: 10,
+		}, nil
 	}
-	// Return sensible defaults
-	return &NotificationSettings{
-		WorkspaceID:   workspaceID,
-		DigestDay:     "monday",
-		DigestTime:    "09:00",
-		DigestFormat:  "email",
-		DigestEnabled: true,
-		NotifyOnDrop:  true,
-		DropThreshold: 10,
-	}, nil
+
+	return settings, nil
 }
 
 // UpdateSettings validates and saves the notification settings for a workspace.
-func (s *service) UpdateSettings(settings *NotificationSettings) error {
+func (s *service) UpdateSettings(settings *NotificationSettings, tenantID string) error {
 	if err := ValidateSettings(settings); err != nil {
 		return err
 	}
-	s.settings.Store(settings.WorkspaceID, settings)
-	slog.Info("notification settings updated", "workspace", settings.WorkspaceID, "enabled", settings.DigestEnabled)
+
+	_, err := s.pool.Exec(context.Background(), `
+		INSERT INTO delivery.notification_settings
+			(workspace_id, tenant_id, email_address, digest_enabled, digest_day,
+			 digest_time, digest_format, notify_on_drop, drop_threshold, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, now())
+		ON CONFLICT (workspace_id, tenant_id) DO UPDATE SET
+			email_address = EXCLUDED.email_address,
+			digest_enabled = EXCLUDED.digest_enabled,
+			digest_day = EXCLUDED.digest_day,
+			digest_time = EXCLUDED.digest_time,
+			digest_format = EXCLUDED.digest_format,
+			notify_on_drop = EXCLUDED.notify_on_drop,
+			drop_threshold = EXCLUDED.drop_threshold,
+			updated_at = now()
+	`, settings.WorkspaceID, tenantID, settings.EmailAddress, settings.DigestEnabled,
+		settings.DigestDay, settings.DigestTime, settings.DigestFormat,
+		settings.NotifyOnDrop, settings.DropThreshold)
+
+	if err != nil {
+		return fmt.Errorf("delivery: ayarlar kaydedilemedi: %w", err)
+	}
+
+	slog.Info("notification settings saved to DB", "workspace", settings.WorkspaceID, "tenant", tenantID, "enabled", settings.DigestEnabled)
 	return nil
 }
 

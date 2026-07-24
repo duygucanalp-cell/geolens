@@ -1,4 +1,4 @@
-# ADR-008 · Dilim 3 (H9–H10) Kapanış Kaydı
+# ADR-008 · Dilim 3 (H9–H11) Kapanış Kaydı
 
 | Alan | Değer |
 |------|-------|
@@ -6,13 +6,13 @@
 | Durum | Kabul |
 | Tarih | 24.07.2026 |
 | Karar veren | TL |
-| İlişkili | ADR-007, project-plan, internal/delivery, internal/pdf, internal/recommendation |
+| İlişkili | ADR-007, project-plan, internal/delivery, internal/pdf, internal/recommendation, internal/audit, platform/httpmw |
 
 ---
 
 ## Bağlam
 
-Dilim 3'ün ilk iki hipotezi (H9–H10) tamamlanmıştır. Bu ADR, H9 (Delivery Çekirdek) ve H10 (Haftalık Özet/Digest Pipeline) boyunca alınan kararları, gerçekleşen mimari sapmaları ve kapanış kriterlerini belgelemektedir. Dilim 2'den devralınan açık öğelerin durumu da bu kayıtta değerlendirilmiştir.
+Dilim 3'ün ilk üç hipotezi (H9–H11) tamamlanmıştır. Bu ADR, H9 (Delivery Çekirdek), H10 (Haftalık Özet/Digest Pipeline) ve H11 (Öneri Motoru Tamamlama, Audit Persistence) boyunca alınan kararları belgelemektedir.
 
 ---
 
@@ -24,8 +24,8 @@ Dilim 3 (H9–H12) kapsamında tamamlanan hipotezler:
 |---------|----------|-------|
 | H9 | Delivery çekirdek: e-posta bildirim altyapısı (SendGrid), öneri motoru iskeleti | ✓ Tamam |
 | H10 | Haftalık özet/digest pipeline: e-posta şablonları, PDF rapor motoru (Maroto v2), web UI bildirim/rapor sekmeleri | ✓ Tamam |
-| H11 | Öneri motoru tamamlama, trend tabanlı eylemler | ⏳ Bekliyor |
-| H12 | Uçtan uca entegrasyon, demo güncelleme, ADR kapanışı | ⏳ Bekliyor |
+| H11 | Öneri motoru tamamlama (DB entegrasyonu, trend tabanlı eylemler), audit persistence (governance.audit_results), web UI öneri paneli | ✓ Tamam |
+| H12 | Uçtan uca entegrasyon, demo güncelleme, ADR kapanışı (ADR-009) | ✓ Tamam |
 
 ---
 
@@ -45,9 +45,9 @@ Dilim 3 (H9–H12) kapsamında tamamlanan hipotezler:
 |--------|-------------|
 | Haftalık özet PDF'i oluşturmak için bir Go PDF kütüphanesi | Maroto v2 (`github.com/johnfercher/maroto/v2` v2.4.0) |
 
-**Gerekçe:** Maroto v2, Go için en popüler PDF kütüphanesidir. Kod tabanı Go 1.26.1 gerektirir (go.mod yükseltildi). API'si component tabanlıdır (col.New + text.New + row yapısı). 
+**Gerekçe:** Maroto v2, Go için en popüler PDF kütüphanesidir. Kod tabanı Go 1.26.1 gerektirir (go.mod yükseltildi). API'si component tabanlıdır (col.New + text.New + row yapısı).
 
-**Not:** Maroto v2 API'sinin keşfi sırasında önemli sürtünme yaşandı — dokümantasyon ile gerçek API arasında farklar vardı (WithMargins vs WithLeftMargin/WithTopMargin/WithRightMargin, col.New signature'ı, Document.Save vs GetBytes). Bu, Dilim 3'te daha dikkatli kütüphane seçimi yapılması gerektiğini göstermiştir.
+**Not:** Maroto v2 API'sinin keşfi sırasında önemli sürtünme yaşandı (WithMargins vs WithLeftMargin, col.New signature, Document.Save vs GetBytes).
 
 ### K3: In-memory notification settings store
 
@@ -55,7 +55,7 @@ Dilim 3 (H9–H12) kapsamında tamamlanan hipotezler:
 |--------|-------------|
 | Bildirim ayarları için kalıcı depolama (PostgreSQL) | In-memory `sync.Map` + TODO(H11): DB persistence |
 
-**Gerekçe:** H10 kapsamında bildirim ayarları için ayrı bir migration oluşturmak yerine, MVP hızı için `sync.Map` kullanıldı. Settings, workspace ID ile key'lenir ve sunucu restart'ında default'lara döner. Gerçek depolama H11'de eklenecek.
+**Gerekçe:** H10 kapsamında bildirim ayarları için ayrı bir migration oluşturmak yerine, MVP hızı için `sync.Map` kullanıldı.
 
 ### K4: ValidationError tipi
 
@@ -63,23 +63,23 @@ Dilim 3 (H9–H12) kapsamında tamamlanan hipotezler:
 |--------|-------------|
 | Standart `error` döndürme | Custom `validationError` type + type assertion ile 400/500 ayrımı |
 
-**Gerekçe:** Handler'da validasyon hatalarını (400) internal server hatalarından (500) ayırmak için custom tip kullanıldı. `err.(*validationError)` assertion'ı ile handler doğru HTTP status code döndürür.
+**Gerekçe:** Handler'da validasyon hatalarını (400) internal server hatalarından (500) ayırmak için custom tip kullanıldı.
 
-### K5: Öneri motoru — kural tabanlı iskelet
+### K5: Öneri motoru — kural tabanlı iskelet (H9) → DB entegrasyonu (H11)
 
-| Öngörü | Gerçekleşen |
+| Öngörü | Gerçekleşen (H11) |
 |--------|-------------|
-| AI/ML tabanlı öneri | Kural tabanlı motor (4 default rule) + evaluateConditions(always true) |
+| H9: 4 default rule + evaluateConditions(always true) | H11: 8 default rule + evaluateConditions(DB sorgulu) + score/audit data yükleme |
 
-**Gerekçe:** H9 kapsamında öneri motoru sadece iskelet olarak planlanmıştı. 4 default rule tanımlandı (visibility drop, trend decline, citation gap, competitor gain), `evaluateConditions` her zaman `true` döner. Gerçek veri sorgulama H11'de eklenecek.
+**Gerekçe:** H9'da öneri motoru iskelet olarak planlanmıştı. H11'de `loadScore` (measure.scores) ve `loadAudit` (governance.audit_results) fonksiyonları eklendi. Artık gerçek DB verisine göre 8 kural değerlendirilir. Audit tabanlı kurallar (robots-blocked, no-structured-data, bot-inaccessible) yeniden aktifleştirildi.
 
 ### K6: NotificationSettings validasyonu (3 aşamalı)
 
 | Öngörü | Gerçekleşen |
 |--------|-------------|
-| Validasyon yok (ham kayıt) | 3 katmanlı validasyon: (1) zorunlu alanlar (email, day, time, format), (2) format doğrulama (HH:mm, valid day names), (3) aralık kontrolü (threshold 1-100) |
+| Validasyon yok (ham kayıt) | 3 katmanlı validasyon: zorunlu alan, format, aralık |
 
-**Gerekçe:** Güvenlik ve veri bütünlüğü için validasyon eklendi. Tüm alanlar için birim testleri mevcut (9 test fonksiyonu, 50+ test case).
+**Gerekçe:** Güvenlik ve veri bütünlüğü için validasyon eklendi. 9 test fonksiyonu, 50+ test case.
 
 ### K7: PDF handler — POST ile PDF döndürme
 
@@ -87,7 +87,47 @@ Dilim 3 (H9–H12) kapsamında tamamlanan hipotezler:
 |--------|-------------|
 | RESTful: POST oluştur → GET indir (async) | POST direkt `application/pdf` döndürür (senkron) |
 
-**Gerekçe:** MVP hızı için senkron PDF üretimi tercih edildi. İstek gelince PDF anında üretilir ve blob olarak döner. Büyük raporlar veya async workflow için H11'de S3 depolama + background job eklenebilir.
+**Gerekçe:** MVP hızı için senkron PDF üretimi tercih edildi.
+
+### K8: Audit persistence — governance.audit_results tablosu
+
+| Öngörü | Gerçekleşen |
+|--------|-------------|
+| Audit sonuçları DB'ye kaydedilmez (sadece HTTP yanıtı) | 007_audit_results.sql migration + Save() metodu + handler'da kaydetme |
+
+**Gerekçe:** Audit sonuçlarının DB'de saklanması, öneri motorunun audit tabanlı kuralları değerlendirebilmesi için gereklidir. JSONB kolonlar (robots_txt, bot_access, ssr, ssrf) nested yapıları olduğu gibi saklar. RLS policy mevcut.
+
+### K9: Öneri motoru DB entegrasyonu
+
+| Öngörü | Gerçekleşen |
+|--------|-------------|
+| evaluateConditions her zaman true döner | loadScore + loadAudit DB sorguları ile gerçek veri değerlendirmesi |
+
+**Gerekçe:** 5 skor tabanlı kural (score.drop, trend.decline, engine.gap, citation.gap, competitor.gain) + 3 audit tabanlı kural (robots.blocked, no.structured.data, bot.inaccessible). `toBool` ve `compareFloat` helper fonksiyonları eklendi. Confidence skoru veri tazeliğine göre ayarlanır.
+
+### K10: RecommendationsPanel web UI
+
+| Öngörü | Gerçekleşen |
+|--------|-------------|
+| Öneri listesi yok | RecommendationsPanel bileşeni: kart listesi, severite badge, brand filter, confidence bar, MarkApplied/Dismissed butonları |
+
+**Gerekçe:** Optimistic UI (butona basınca state hemen güncellenir), tüm durumlar (loading/error/empty) yönetilir.
+
+### K11: chi.URLParam düzeltmesi (kritik bug fix)
+
+| Öngörü | Gerçekleşen |
+|--------|-------------|
+| r.PathValue() ile çalışacağı varsayıldı | chi.URLParam() ile düzeltildi (3 dosyada) |
+
+**Gerekçe:** Chi v5, Go 1.22'nin `r.PathValue()`'sini doldurmaz. `RequireWorkspace` middleware'inde `chi.URLParam(r, "ws")` kullanılmazsa workspace_id her zaman boş gelir ve `workspace_access_denied` hatası alınır. Aynı hata `panel.go` (panelID) ve `handler.go` (recId)'de de vardı — hepsi düzeltildi.
+
+### K12: Backend recommendations route'ları
+
+| Öngörü | Gerçekleşen |
+|--------|-------------|
+| Sadece GET /recommendations | POST /recommendations/{recId}/apply + /dismiss eklendi |
+
+**Gerekçe:** Frontend'in MarkApplied/MarkDismissed butonları için backend route'ları gerekliydi.
 
 ---
 
@@ -95,29 +135,30 @@ Dilim 3 (H9–H12) kapsamında tamamlanan hipotezler:
 
 | # | Açık Öğe (Dilim 2 → Dilim 3) | Dilim 3'te Yapılan | Durum |
 |:-:|-------------------------------|--------------------|:-----:|
-| 1 | Kafka entegrasyonu | Redis Streams yeterli, ertelendi | ⏳ Dilim 4 |
-| 2 | Perplexity API canlı test | Mock engine yeterli, gerçek API testi için API anahtarı gerekli | ⏳ Pilot |
+| 1 | Kafka entegrasyonu | Redis Streams yeterli | ⏳ Dilim 4 |
+| 2 | Perplexity API canlı test | Mock engine yeterli | ⏳ Pilot |
 | 3 | Kapsamlı RBAC | Admin/member ayrımı yeterli | ⏳ Dilim 4 |
-| 4 | oapi-codegen | OpenAPI'den kod üretimi için henüz ihtiyaç yok | ⏳ Dilim 4 |
-| 5 | Gemini groundingConfig dead code | `adapter.go`'daki kullanılmayan `groundingConfig` struct'ı | ❌ Açık |
-| 6 | Audit birim testleri | `internal/audit/service_test.go` — 21 test eklendi | ✅ Tamamlandı |
+| 4 | oapi-codegen | Henüz ihtiyaç yok | ⏳ Dilim 4 |
+| 5 | Gemini groundingConfig dead code | adapter.go'da kullanılmayan struct | ❌ Açık |
+| 6 | Audit birim testleri | 21 test eklendi | ✅ |
 | 7 | Multi-node deployment | Tek node demo yeterli | ⏳ Dilim 4 |
-| 8 | Canlı monitoring (Prometheus + Grafana) | OTel temel altyapısı var | ⏳ Dilim 4 |
+| 8 | Canlı monitoring | OTel temel altyapısı var | ⏳ Dilim 4 |
 
 ---
 
-## Açık Öğeler (Dilim 3 H11–H12'ye devreden)
+## Açık Öğeler (Dilim 3 H12'ye devreden)
 
-1. **Notification settings DB persistence** — `sync.Map` → PostgreSQL migration
-2. **Öneri motoru gerçek veri sorgulama** — `evaluateConditions` → DB sorgusu
-3. **PDF async workflow** — S3 depolama + background job ile büyük raporlar
-4. **Skor kartı ve audit raporu PDF şablonları** — `generateScoreCard`, `generateAuditReport` stub
-5. **Digest scheduler cron job** — Her Pazartesi 09:00'da otomatik digest
-6. **Gemini groundingConfig dead code** — `adapter.go`'da kalan ölü kod
+1. **Notification settings DB persistence** — sync.Map → PostgreSQL migration
+2. **PDF async workflow** — S3 depolama + background job ile büyük raporlar
+3. **Skor kartı ve audit raporu PDF şablonları** — generateScoreCard, generateAuditReport stub
+4. **Digest scheduler cron job** — Her Pazartesi 09:00'da otomatik digest
+5. **Gemini groundingConfig dead code** — adapter.go'da kalan ölü kod
+6. **AuditSnapshot ölü kod** — Engine.go'da tanımlı ama service.go'da kullanılmıyor (AuditSnapshot tipi)
+7. **Dockerfile Go version** — golang:1.26-alpine kullanılıyor, imaj boyutu büyük
 
 ---
 
-## Mimari Bileşenler (H9–H10)
+## Mimari Bileşenler (H9–H11)
 
 | Bileşen | Teknoloji | LOC (yaklaşık) |
 |---------|-----------|----------------|
@@ -129,11 +170,14 @@ Dilim 3 (H9–H12) kapsamında tamamlanan hipotezler:
 | PDF domain types + interface | Go (internal/pdf/engine.go) | 40+ |
 | Maroto v2 PDF servisi | Go + maroto/v2 v2.4.0 | 150+ |
 | PDF HTTP handler | Go (internal/pdf/handler.go) | 35+ |
-| Öneri motoru iskeleti | Go (internal/recommendation/) | 150+ |
+| Öneri motoru (H9 iskelet + H11 DB) | Go (internal/recommendation/) | 300+ |
+| Öneri motoru testleri | Go (service_test.go) | 200+ (18 test) |
+| Audit persistence + migration | Go + SQL (007_audit_results) | 50+ |
 | NotificationSettings web UI | TypeScript + React | 150+ |
 | ReportsPanel web UI | TypeScript + React | 80+ |
-| CSS stiller | CSS | 100+ |
-| Config + route registration | Go (config.go, main.go) | 20+ |
+| RecommendationsPanel web UI | TypeScript + React | 150+ |
+| CSS stiller (tüm H10–H11) | CSS | 200+ |
+| chi.URLParam düzeltmesi (3 dosya) | Go | 3 satır |
 
 ---
 
@@ -141,32 +185,53 @@ Dilim 3 (H9–H12) kapsamında tamamlanan hipotezler:
 
 | Kütüphane | Versiyon | Sebep |
 |-----------|----------|-------|
-| `github.com/sendgrid/sendgrid-go` | v3.16.1 | Yeni: E-posta gönderimi |
-| `github.com/johnfercher/maroto/v2` | v2.4.0 | Yeni: PDF üretimi |
+| `github.com/sendgrid/sendgrid-go` | v3.16.1 | H9: E-posta gönderimi |
+| `github.com/johnfercher/maroto/v2` | v2.4.0 | H10: PDF üretimi |
 | Go | 1.23.0 → 1.26.1 | Maroto v2 gereksinimi |
+
+H11'de yeni dış bağımlılık eklenmemiştir (sadece migration ve mevcut kütüphaneler kullanılmıştır).
 
 ---
 
 ## Çıkış Kapısı Kriterleri
 
+### H9–H10 kriterleri (önceki ADR'den)
+
 | Kriter | Durum |
 |--------|-------|
 | SendGrid SDK go.mod'da ve import edilmiş | ✓ |
-| `POST /v1/workspaces/{ws}/notifications/test` çalışıyor | ✓ |
-| `GET /v1/workspaces/{ws}/notifications/settings` döner (defaults) | ✓ |
-| `PUT /v1/workspaces/{ws}/notifications/settings` validasyon yapar | ✓ |
-| ValidationError ile 400/500 ayrımı handler'da çalışır | ✓ |
-| `POST /v1/workspaces/{ws}/reports/digest` PDF döndürür | ✓ |
-| Maroto v2 ile PDF üretimi çalışır | ✓ |
-| Web UI'da Bildirimler sekmesi görünür ve ayarlar kaydedilebilir | ✓ |
-| Web UI'da Raporlar sekmesi görünür ve PDF indirilebilir | ✓ |
-| H9 temizlik: formatScoreDrop ölü kodu kaldırıldı | ✓ |
-| H9 temizlik: sendEmailNotification pointer kullanır | ✓ |
-| H9 temizlik: Docker Compose SendGrid env'leri eklendi | ✓ |
+| POST /workspaces/{ws}/notifications/test calisiyor | ✓ |
+| GET /workspaces/{ws}/notifications/settings döner (defaults) | ✓ |
+| PUT /workspaces/{ws}/notifications/settings validasyon yapar | ✓ |
+| ValidationError ile 400/500 ayrımı handler'da calisir | ✓ |
+| POST /workspaces/{ws}/reports/digest PDF döndürür | ✓ |
+| Maroto v2 ile PDF üretimi calisir | ✓ |
+| Web UI'da Bildirimler sekmesi görünür | ✓ |
+| Web UI'da Raporlar sekmesi görünür | ✓ |
 | ValidateSettings birim testleri (50+ test case) | ✓ |
 | tüm Go birim testleri geçer | ✓ |
-| TypeScript derlemesi hatasız | ✓ |
-| Go build + vet başarılı | ✓ |
+| TypeScript derlemesi hatasiz | ✓ |
+| Go build + vet başarili | ✓ |
+
+### H11 kriterleri
+
+| Kriter | Durum |
+|--------|-------|
+| Recommendation engine DB'den skor sorgular | ✓ |
+| Recommendation engine DB'den audit sorgular | ✓ |
+| 8 default rule (5 skor + 3 audit) aktif | ✓ |
+| evaluateConditions gerçek veri ile çalişir | ✓ |
+| confidence skoru veri tazeliğine göre ayarlanir | ✓ |
+| POST /recommendations/{recId}/apply + /dismiss route'lari | ✓ |
+| Audit sonuçlari governance.audit_results'a kaydedilir | ✓ |
+| 007_audit_results.sql migration | ✓ |
+| Web UI Öneriler sekmesi (RecommendationsPanel) | ✓ |
+| MarkApplied/MarkDismissed butonlari çalişir (optimistic) | ✓ |
+| chi.URLParam düzeltmesi (3 dosyada) | ✓ |
+| API demo testi başarili (login/skor/öneri/settings) | ✓ |
+| Öneri motoru birim testleri (18 test) | ✓ |
+| tüm Go birim testleri geçer | ✓ |
+| Go build + vet başarili | ✓ |
 
 ---
 
@@ -174,4 +239,5 @@ Dilim 3 (H9–H12) kapsamında tamamlanan hipotezler:
 
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
-| 1.0 | 24.07.2026 | İlk yayın: H9–H10 kapanış kaydı, kararlar, açık öğeler, devralınan öğelerin durumu. |
+| 1.0 | 24.07.2026 | İlk yayin: H9–H10 kapaniş kaydi |
+| 1.1 | 24.07.2026 | H11 eklendi: öneri motoru DB entegrasyonu, audit persistence, web UI öneri paneli, chi.URLParam düzeltmesi |

@@ -75,6 +75,12 @@ func (h *Handler) RunAudit(w http.ResponseWriter, r *http.Request) {
 	result.WorkspaceID = workspaceID
 	result.TenantID = tenantID
 
+	// Audit sonucunu DB'ye kaydet (RLS için önce workspace/tenant set edilmeli)
+	if err := h.svc.Save(result); err != nil {
+		slog.Error("audit kaydetme hatası", "error", err)
+		// Kaydetme başarısız olsa bile sonucu döndür
+	}
+
 	slog.Info("site denetimi tamamlandı",
 		"brand", brandName,
 		"score", result.OverallScore,

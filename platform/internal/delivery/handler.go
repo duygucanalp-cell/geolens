@@ -20,7 +20,7 @@ type Handler struct {
 // NewHandler creates a new delivery handler.
 func NewHandler(pool *db.Pool, cfg EmailConfig) *Handler {
 	return &Handler{
-		svc:    NewService(cfg),
+		svc:    NewService(cfg, pool),
 		pool:   pool,
 		config: cfg,
 	}
@@ -29,8 +29,9 @@ func NewHandler(pool *db.Pool, cfg EmailConfig) *Handler {
 // GetSettings handles GET /v1/workspaces/{ws}/notifications/settings
 func (h *Handler) GetSettings(w http.ResponseWriter, r *http.Request) {
 	workspaceID := httpmw.GetWorkspaceID(r.Context())
+	tenantID := httpmw.GetTenantID(r.Context())
 
-	settings, err := h.svc.GetSettings(workspaceID)
+	settings, err := h.svc.GetSettings(workspaceID, tenantID)
 	if err != nil {
 		slog.Error("notification settings okuma hatası", "error", err)
 		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "ayarlar okunamadı"})
@@ -43,6 +44,7 @@ func (h *Handler) GetSettings(w http.ResponseWriter, r *http.Request) {
 // UpdateSettings handles PUT /v1/workspaces/{ws}/notifications/settings
 func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 	workspaceID := httpmw.GetWorkspaceID(r.Context())
+	tenantID := httpmw.GetTenantID(r.Context())
 
 	var req NotificationSettings
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -51,7 +53,7 @@ func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 	}
 	req.WorkspaceID = workspaceID
 
-	if err := h.svc.UpdateSettings(&req); err != nil {
+	if err := h.svc.UpdateSettings(&req, tenantID); err != nil {
 		slog.Error("notification settings kaydetme hatası", "error", err)
 		status := http.StatusInternalServerError
 		// Validation errors should be 400, not 500

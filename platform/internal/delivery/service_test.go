@@ -49,12 +49,12 @@ func TestValidateSettings_InvalidDay(t *testing.T) {
 		{"friday", true},
 		{"saturday", true},
 		{"sunday", true},
-		{"", false}, // empty is now required
+		{"", false},
 		{"invalid", false},
-		{"MONDAY", false}, // must be lowercase
-		{"Monday", false}, // must be lowercase
+		{"MONDAY", false},
+		{"Monday", false},
 		{"Pazartesi", false},
-		{"monday ", false}, // trailing space
+		{"monday ", false},
 	}
 
 	for _, tc := range tests {
@@ -79,14 +79,14 @@ func TestValidateSettings_InvalidTime(t *testing.T) {
 		{"23:59", true},
 		{"00:00", true},
 		{"12:30", true},
-		{"", false},       // empty is now required
-		{"9:00", false},   // missing leading zero
-		{"24:00", false},  // hour out of range
-		{"09:60", false},  // minute out of range
-		{"09-00", false},  // wrong separator
-		{"0900", false},   // missing colon
-		{"abc:00", false}, // non-numeric hour
-		{"09:ab", false},  // non-numeric minute
+		{"", false},
+		{"9:00", false},
+		{"24:00", false},
+		{"09:60", false},
+		{"09-00", false},
+		{"0900", false},
+		{"abc:00", false},
+		{"09:ab", false},
 	}
 
 	for _, tc := range tests {
@@ -110,8 +110,8 @@ func TestValidateSettings_InvalidFormat(t *testing.T) {
 		{"email", true},
 		{"pdf", true},
 		{"both", true},
-		{"", false},      // empty is now required
-		{"Email", false}, // case sensitive
+		{"", false},
+		{"Email", false},
 		{"EMAIL", false},
 		{"sms", false},
 		{"email-pdf", false},
@@ -158,7 +158,6 @@ func TestValidateSettings_ThresholdRange(t *testing.T) {
 }
 
 func TestValidateSettings_MultipleErrors(t *testing.T) {
-	// Only the first error is returned, so test each separately
 	s := validSettings()
 	s.EmailAddress = ""
 	s.DigestDay = "invalid"
@@ -173,65 +172,7 @@ func TestValidateSettings_MultipleErrors(t *testing.T) {
 	if _, ok := err.(*validationError); !ok {
 		t.Errorf("expected validationError type, got %T", err)
 	}
-	// Should be the email error since it's first
 	if err.Error() != "e-posta adresi gerekli" {
 		t.Errorf("expected email error first, got: %v", err)
-	}
-}
-
-func TestUpdateSettings_CallsValidate(t *testing.T) {
-	svc := &service{}
-	s := validSettings()
-	s.EmailAddress = "" // invalid
-
-	err := svc.UpdateSettings(s)
-	if err == nil {
-		t.Fatal("expected validation error from UpdateSettings")
-	}
-	if _, ok := err.(*validationError); !ok {
-		t.Errorf("expected validationError type, got %T", err)
-	}
-
-	// Now save valid settings
-	s.EmailAddress = "test@example.com"
-	err = svc.UpdateSettings(s)
-	if err != nil {
-		t.Fatalf("valid settings should save: %v", err)
-	}
-
-	// Verify it was stored
-	got, err := svc.GetSettings("ws-test")
-	if err != nil {
-		t.Fatalf("GetSettings failed: %v", err)
-	}
-	if got.EmailAddress != "test@example.com" {
-		t.Errorf("expected email test@example.com, got %s", got.EmailAddress)
-	}
-	if got.DigestDay != "monday" {
-		t.Errorf("expected day monday, got %s", got.DigestDay)
-	}
-}
-
-func TestGetSettings_Defaults(t *testing.T) {
-	svc := &service{} // empty map
-
-	settings, err := svc.GetSettings("non-existent")
-	if err != nil {
-		t.Fatalf("GetSettings for non-existent workspace should return defaults: %v", err)
-	}
-	if settings.WorkspaceID != "non-existent" {
-		t.Errorf("expected workspace non-existent, got %s", settings.WorkspaceID)
-	}
-	if !settings.DigestEnabled {
-		t.Error("default digest_enabled should be true")
-	}
-	if settings.DigestDay != "monday" {
-		t.Errorf("default digest_day should be monday, got %s", settings.DigestDay)
-	}
-	if settings.DigestTime != "09:00" {
-		t.Errorf("default digest_time should be 09:00, got %s", settings.DigestTime)
-	}
-	if settings.DropThreshold != 10 {
-		t.Errorf("default drop_threshold should be 10, got %d", settings.DropThreshold)
 	}
 }

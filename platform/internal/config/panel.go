@@ -7,21 +7,22 @@ import (
 	"time"
 
 	"github.com/geolens/platform/platform/db"
-	"github.com/geolens/platform/platform/httputil"
 	"github.com/geolens/platform/platform/httpmw"
+	"github.com/geolens/platform/platform/httputil"
+	"github.com/go-chi/chi/v5"
 )
 
 // ---- Domain Types ----
 
 // Panel represents a reusable measurement configuration.
 type Panel struct {
-	ID          string    `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description,omitempty"`
-	PromptSetID string    `json:"prompt_set_id,omitempty"`
-	ScheduleCron string   `json:"schedule_cron,omitempty"`
-	IsActive    bool      `json:"is_active"`
-	CreatedAt   time.Time `json:"created_at"`
+	ID           string    `json:"id"`
+	Name         string    `json:"name"`
+	Description  string    `json:"description,omitempty"`
+	PromptSetID  string    `json:"prompt_set_id,omitempty"`
+	ScheduleCron string    `json:"schedule_cron,omitempty"`
+	IsActive     bool      `json:"is_active"`
+	CreatedAt    time.Time `json:"created_at"`
 }
 
 // PanelRequest is the request body for creating/updating a panel.
@@ -131,7 +132,7 @@ func (h *PanelHandler) CreatePanel(w http.ResponseWriter, r *http.Request) {
 func (h *PanelHandler) GetPanel(w http.ResponseWriter, r *http.Request) {
 	workspaceID := httpmw.GetWorkspaceID(r.Context())
 	tenantID := httpmw.GetTenantID(r.Context())
-	panelID := r.PathValue("panelID")
+	panelID := chi.URLParam(r, "panelID")
 
 	var p Panel
 	err := h.pool.QueryRow(r.Context(), `

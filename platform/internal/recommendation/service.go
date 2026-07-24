@@ -77,6 +77,48 @@ var defaultRules = []Rule{
 		Detail: "Markanızın AI görünürlük skoru düşüş trendinde. Rakiplerinizin AI stratejisini analiz etmeniz önerilir.",
 		Active: true,
 	},
+	{
+		ID:          "rule-robots-blocked",
+		Name:        "robots.txt AI Engel Tespiti",
+		Description: "robots.txt AI botlarını engelliyorsa uyar",
+		Category:    CategoryTechnical,
+		Severity:    SeverityCritical,
+		Conditions: []Condition{
+			{Field: "audit.robots_txt.disallowed_all", Operator: "eq", Value: true},
+		},
+		Title:     "AI botları robots.txt tarafından engelleniyor",
+		Detail:    "Sitenizin robots.txt dosyası AI botlarının sitenizi taramasını engelliyor. Bu, AI görünürlük ölçümlerinizi doğrudan etkiler.",
+		ActionURL: "/audit",
+		Active:    true,
+	},
+	{
+		ID:          "rule-no-structured-data",
+		Name:        "Yapılandırılmış Veri Eksik",
+		Description: "Sitede JSON-LD veya Schema.org yoksa öner",
+		Category:    CategoryContent,
+		Severity:    SeverityMedium,
+		Conditions: []Condition{
+			{Field: "audit.ssr.has_structured_data", Operator: "eq", Value: false},
+		},
+		Title:     "Yapılandırılmış veri ekleyin",
+		Detail:    "Sitenizde JSON-LD veya Schema.org yapılandırılmış verisi bulunamadı. AI motorları içeriğinizi daha iyi anlamak için yapılandırılmış veri kullanır.",
+		ActionURL: "/audit",
+		Active:    true,
+	},
+	{
+		ID:          "rule-bot-inaccessible",
+		Name:        "AI Bot Erişim Engeli",
+		Description: "AI botları sitenize erişemiyorsa uyar",
+		Category:    CategoryTechnical,
+		Severity:    SeverityCritical,
+		Conditions: []Condition{
+			{Field: "audit.bot_access.accessible", Operator: "eq", Value: false},
+		},
+		Title:     "AI botları sitenize erişemiyor",
+		Detail:    "AI botları sitenize erişim sağlayamıyor. Sunucu yapılandırmanızı ve güvenlik duvarı ayarlarınızı kontrol edin.",
+		ActionURL: "/audit",
+		Active:    true,
+	},
 }
 
 // service implements the Service interface for recommendations.
@@ -100,12 +142,14 @@ func (s *service) Evaluate(brandID, workspaceID, tenantID string) ([]Recommendat
 
 	ctx := context.Background()
 	snapshot := s.loadScore(ctx, brandID, workspaceID, tenantID)
+	audit := s.loadAudit(ctx, brandID, tenantID)
 
 	evalCtx := &EvaluationContext{
 		BrandID:     brandID,
 		WorkspaceID: workspaceID,
 		TenantID:    tenantID,
 		Score:       snapshot,
+		Audit:       audit,
 	}
 
 	return s.evaluateBrand(evalCtx), nil
@@ -134,12 +178,14 @@ func (s *service) EvaluateAll(workspaceID, tenantID string) ([]Recommendation, e
 		}
 
 		snapshot := s.loadScore(ctx, brandID, workspaceID, tenantID)
+		audit := s.loadAudit(ctx, brandID, tenantID)
 		evalCtx := &EvaluationContext{
 			BrandID:     brandID,
 			BrandName:   brandName,
 			WorkspaceID: workspaceID,
 			TenantID:    tenantID,
 			Score:       snapshot,
+			Audit:       audit,
 		}
 		results = append(results, s.evaluateBrand(evalCtx)...)
 	}
@@ -195,6 +241,40 @@ func (s *service) loadScore(ctx context.Context, brandID, workspaceID, tenantID 
 	}
 
 	return snapshot
+}
+
+// loadAudit fetches the latest audit result for a brand from governance.audit_results.
+func (s *service) loadAudit(ctx context.Context, brandID, tenantID string) *AuditSnapshot {
+	audit := &AuditSnapshot{}
+
+	var robotsDisallowed bool
+	var hasStructured bool
+	var botAccessible bool
+	var overallScore float64
+
+	err := s.pool.QueryRow(ctx, `
+		SELECT
+			COALESCE((robots_txt->>'disallowed_all')::boolean, false),
+			COALESCE((ssr->>'has_structured_data')::boolean, false),
+			COALESCE((bot_access->>'accessible')::boolean, false),
+			COALESCE(overall_score, 0)
+		FROM governance.audit_results
+		WHERE brand_id = $1 AND tenant_id = $2
+		ORDER BY created_at DESC LIMIT 1
+	`, brandID, tenantID).Scan(&robotsDisallowed, &hasStructured, &botAccessible, &overallScore)
+
+	if err != nil {
+		slog.Debug("recommendation: audit bulunamadı", "brand", brandID)
+		return audit
+	}
+
+	audit.HasData = true
+	audit.RobotsDisallowedAll = robotsDisallowed
+	audit.HasStructuredData = hasStructured
+	audit.BotAccessible = botAccessible
+	audit.OverallScore = overallScore
+
+	return audit
 }
 
 // evaluateBrand runs all rules against a single brand's context.
@@ -289,6 +369,24 @@ func (s *service) evaluateCondition(ctx *EvaluationContext, c Condition) bool {
 		}
 		return compareFloat(max-min, c.Operator, toFloat64(c.Value))
 
+	case "audit.robots_txt.disallowed_all":
+		if ctx.Audit == nil || !ctx.Audit.HasData {
+			return false
+		}
+		return ctx.Audit.RobotsDisallowedAll == toBool(c.Value)
+
+	case "audit.ssr.has_structured_data":
+		if ctx.Audit == nil || !ctx.Audit.HasData {
+			return false
+		}
+		return ctx.Audit.HasStructuredData == toBool(c.Value)
+
+	case "audit.bot_access.accessible":
+		if ctx.Audit == nil || !ctx.Audit.HasData {
+			return false
+		}
+		return ctx.Audit.BotAccessible == toBool(c.Value)
+
 	default:
 		slog.Warn("recommendation: bilinmeyen condition field", "field", c.Field)
 		return false
@@ -352,6 +450,11 @@ func (s *service) RegisterCustomRule(rule Rule) error {
 
 func generateULID() string {
 	return ulid.Make().String()
+}
+
+func toBool(v interface{}) bool {
+	b, ok := v.(bool)
+	return ok && b
 }
 
 func toFloat64(v interface{}) float64 {

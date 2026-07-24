@@ -11,7 +11,7 @@
 
 ---
 
-## Kriter: Kullanıcı bildirim ayarlarını yapılandırabilir (e-posta, digest sıklığı, skor düşüş eşiği), test e-postası gönderebilir, haftalık özet PDF'i oluşturup indirebilir. Öneri motoru iskelet çalışır durumdadır.
+## Kriter: Kullanıcı bildirim ayarlarını yapılandırabilir (e-posta, digest sıklığı, skor düşüş eşiği), test e-postası gönderebilir, haftalık özet PDF'i oluşturup indirebilir, öneri motoru gerçek veriyle çalışır, audit sonuçları DB'ye kaydedilir.
 
 | # | Kriter | Durum | Not |
 |:-:|--------|:-----:|-----|

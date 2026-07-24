@@ -156,8 +156,8 @@ type Service interface {
 	SendWeeklyDigest(workspaceID, tenantID string) error
 
 	// GetSettings returns the notification settings for a workspace.
-	GetSettings(workspaceID string) (*NotificationSettings, error)
+	GetSettings(workspaceID, tenantID string) (*NotificationSettings, error)
 
 	// UpdateSettings saves notification settings for a workspace.
-	UpdateSettings(settings *NotificationSettings) error
+	UpdateSettings(settings *NotificationSettings, tenantID string) error
 }
