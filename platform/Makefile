@@ -74,6 +74,56 @@ lint-fix: ## Run golangci-lint with auto-fix
 clean: ## Clean build artifacts
 	rm -rf bin/ coverage.out coverage.html
 
+## === Secrets Management (SOPS+Age) ===
+
+SECRETS_PLAIN := .env.secrets
+SECRETS_ENC := docker/.env.secrets.enc
+AGE_KEY_FILE := docker/age-key.txt
+
+encrypt-secrets: ## Encrypt .env.secrets → docker/.env.secrets.enc
+ifneq ($(shell command -v sops 2>/dev/null),)
+	sops encrypt $(SECRETS_PLAIN) > $(SECRETS_ENC)
+else ifneq ($(shell docker --version 2>/dev/null),)
+	@echo "sops yerelde yok, Docker ile şifreleniyor..."
+	docker run --rm -i -v "$(PWD):/work" alpine:3.20 sh -c \
+	  'apk add --no-cache age sops > /dev/null 2>&1 && \
+	   export SOPS_AGE_KEY=$$(cat /work/$(AGE_KEY_FILE) | grep -v "^#" | tr -d "\n\r") && \
+	   sops --config /work/.sops.yaml --encrypt /work/$(SECRETS_PLAIN) > /work/$(SECRETS_ENC)'
+	@echo "$(SECRETS_ENC) şifrelendi"
+else
+	@echo "HATA: sops veya docker gerekli"
+	exit 1
+endif
+
+decrypt-secrets: ## Decrypt docker/.env.secrets.enc → .env.secrets
+ifneq ($(shell command -v sops 2>/dev/null),)
+	sops decrypt $(SECRETS_ENC) > $(SECRETS_PLAIN)
+else ifneq ($(shell docker --version 2>/dev/null),)
+	@docker run --rm -i -v "$(PWD):/work" alpine:3.20 sh -c \
+	  'apk add --no-cache age sops > /dev/null 2>&1 && \
+	   export SOPS_AGE_KEY=$$(cat /work/$(AGE_KEY_FILE) | grep -v "^#" | tr -d "\n\r") && \
+	   sops --config /work/.sops.yaml --decrypt /work/$(SECRETS_ENC) > /work/$(SECRETS_PLAIN)'
+	@echo "$(SECRETS_PLAIN) çözüldü (gitignore'da, commit ETMEYİN)"
+else
+	@echo "HATA: sops veya docker gerekli"
+	exit 1
+endif
+
+edit-secrets: ## Edit encrypted secrets (opens in editor)
+ifneq ($(shell command -v sops 2>/dev/null),)
+	sops $(SECRETS_ENC)
+else
+	@echo "HATA: sops gerekli (şifreli dosyayı direkt düzenleyemezsiniz)"
+	@echo "      1. decrypt-secrets"
+	@echo "      2. .env.secrets'i düzenle"
+	@echo "      3. encrypt-secrets"
+	exit 1
+endif
+
+show-key: ## Show age public key
+	@echo "Age Public Key:"
+	@grep "public key" $(AGE_KEY_FILE) 2>/dev/null || cat $(AGE_KEY_FILE) | grep -v "^#" | head -1
+
 ## === Tools ===
 
 tools: ## Install required tools

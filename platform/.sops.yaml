@@ -1,0 +1,19 @@
+# GeoLens — SOPS+Age yapılandırması
+# Kullanım:
+#   sops encrypt .env.secrets > .env.secrets.enc
+#   sops decrypt .env.secrets.enc > .env.secrets
+#
+# Veya doğrudan:
+#   sops .env.secrets.enc  # (edit mode, decrypts/encrypts transparently)
+#
+# Age public key:
+#   age1en7xynf2kughudnx55tq3s3559cerrjf7apwgvguvr36jxdm2ufs0xpfyt
+#
+# Not: Bu dosya ve age-key.txt ORTAK GELİŞTİRME amacıyladır.
+# Üretimde farklı bir age key pair kullanılmalıdır
+# ve private key Docker Secret / kasa ile yönetilmelidir.
+
+creation_rules:
+  # .enc ile biten tüm dosyalar için geçerlidir
+  - path_regex: \.enc$
+    age: age1en7xynf2kughudnx55tq3s3559cerrjf7apwgvguvr36jxdm2ufs0xpfyt

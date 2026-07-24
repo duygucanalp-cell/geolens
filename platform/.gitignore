@@ -39,6 +39,9 @@ Desktop.ini
 # === Environment ===
 .env
 .env.local
+.env.secrets
+# Encrypted secrets (şifrelisi repo'da, plaintext .env.secrets gitignore'da)
+!.env.secrets.enc
 .env.production
 .env.development
 *.env

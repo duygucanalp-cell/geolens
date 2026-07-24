@@ -53,15 +53,32 @@ services:
     ports:
       - "8080:8080"
     environment:
+      # ========== Dev default'lar ==========
+      # Bunlar local development için hardcoded'dır.
+      # Üretimde AGE_KEY ortam değişkeni set edilir ve
+      # entrypoint.sh bu değerleri SOPS+Age şifreli dosyadan override eder.
+      ENVIRONMENT: development
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: geolens
+      S3_REGION: us-east-1
       DATABASE_URL: postgres://geolens:geolens@postgres:5432/geolens?sslmode=disable
       REDIS_URL: redis://redis:6379/0
-      S3_ENDPOINT: http://minio:9000
       S3_ACCESS_KEY: minioadmin
       S3_SECRET_KEY: minioadmin
-      S3_BUCKET: geolens
       JWT_SECRET: dev-secret-change-in-production
       PERPLEXITY_API_KEY: ${PERPLEXITY_API_KEY:-}
-      ENVIRONMENT: development
+      CHATGPT_API_KEY: ${CHATGPT_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
+      SENDGRID_FROM_EMAIL: geolens@example.com
+      SENDGRID_FROM_NAME: GeoLens
+      # ========== SOPS+Age ==========
+      # AGE_KEY set edilirse, entrypoint.sh decrypt eder ve yukarıdaki
+      # default'ları override eder (sadece dolu değerler override edilir).
+      AGE_KEY: ${AGE_KEY:-}
+    volumes:
+      - ./docker/.env.secrets.enc:/etc/geolens/secrets/.env.secrets.enc:ro
+      - ./docker/age-key.txt:/etc/geolens/secrets/age-key.txt:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -76,14 +93,22 @@ services:
       dockerfile: Dockerfile
       target: scheduler
     environment:
+      ENVIRONMENT: development
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: geolens
+      S3_REGION: us-east-1
       DATABASE_URL: postgres://geolens:geolens@postgres:5432/geolens?sslmode=disable
       REDIS_URL: redis://redis:6379/0
-      S3_ENDPOINT: http://minio:9000
       S3_ACCESS_KEY: minioadmin
       S3_SECRET_KEY: minioadmin
-      S3_BUCKET: geolens
       JWT_SECRET: dev-secret-change-in-production
-      ENVIRONMENT: development
+      PERPLEXITY_API_KEY: ${PERPLEXITY_API_KEY:-}
+      CHATGPT_API_KEY: ${CHATGPT_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      AGE_KEY: ${AGE_KEY:-}
+    volumes:
+      - ./docker/.env.secrets.enc:/etc/geolens/secrets/.env.secrets.enc:ro
+      - ./docker/age-key.txt:/etc/geolens/secrets/age-key.txt:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -98,15 +123,25 @@ services:
       dockerfile: Dockerfile
       target: worker
     environment:
+      ENVIRONMENT: development
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: geolens
+      S3_REGION: us-east-1
       DATABASE_URL: postgres://geolens:geolens@postgres:5432/geolens?sslmode=disable
       REDIS_URL: redis://redis:6379/0
-      S3_ENDPOINT: http://minio:9000
       S3_ACCESS_KEY: minioadmin
       S3_SECRET_KEY: minioadmin
-      S3_BUCKET: geolens
       JWT_SECRET: dev-secret-change-in-production
       PERPLEXITY_API_KEY: ${PERPLEXITY_API_KEY:-}
-      ENVIRONMENT: development
+      CHATGPT_API_KEY: ${CHATGPT_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
+      SENDGRID_FROM_EMAIL: geolens@example.com
+      SENDGRID_FROM_NAME: GeoLens
+      AGE_KEY: ${AGE_KEY:-}
+    volumes:
+      - ./docker/.env.secrets.enc:/etc/geolens/secrets/.env.secrets.enc:ro
+      - ./docker/age-key.txt:/etc/geolens/secrets/age-key.txt:ro
     depends_on:
       postgres:
         condition: service_healthy

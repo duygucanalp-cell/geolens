@@ -20,37 +20,48 @@ RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o /build/api ./cmd/api && \
     CGO_ENABLED=0 go build -ldflags="-s -w" -o /build/scheduler ./cmd/scheduler && \
     CGO_ENABLED=0 go build -ldflags="-s -w" -o /build/worker ./cmd/worker
 
+# ------------------------------------------------------------
+# Secrets management: age + sops yüklü temel katman
+# ------------------------------------------------------------
+FROM alpine:3.20 AS secrets-base
+
+RUN apk add --no-cache \
+    ca-certificates \
+    tzdata \
+    age \
+    sops
+
+# Entrypoint script (decrypts .env.secrets.enc if AGE_KEY provided)
+COPY docker/entrypoint.sh /usr/local/bin/geolens-entrypoint
+RUN chmod +x /usr/local/bin/geolens-entrypoint
+
 # ============================================================
 # Stage 2: API server
 # ============================================================
-FROM alpine:3.20 AS api
-
-RUN apk add --no-cache ca-certificates tzdata
+FROM secrets-base AS api
 
 COPY --from=builder /build/api /usr/local/bin/geolens-api
 
 EXPOSE 8080
 
-ENTRYPOINT ["geolens-api"]
+ENTRYPOINT ["geolens-entrypoint", "geolens-api"]
 
 # ============================================================
 # Stage 3: Scheduler
 # ============================================================
-FROM alpine:3.20 AS scheduler
-
-RUN apk add --no-cache ca-certificates tzdata
+FROM secrets-base AS scheduler
 
 COPY --from=builder /build/scheduler /usr/local/bin/geolens-scheduler
 
-ENTRYPOINT ["geolens-scheduler"]
+ENTRYPOINT ["geolens-entrypoint", "geolens-scheduler"]
 
 # ============================================================
 # Stage 4: Worker
 # ============================================================
-FROM alpine:3.20 AS worker
+FROM secrets-base AS worker
 
-RUN apk add --no-cache ca-certificates tzdata curl
+RUN apk add --no-cache curl
 
 COPY --from=builder /build/worker /usr/local/bin/geolens-worker
 
-ENTRYPOINT ["geolens-worker"]
+ENTRYPOINT ["geolens-entrypoint", "geolens-worker"]

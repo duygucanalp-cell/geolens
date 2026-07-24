@@ -130,6 +130,114 @@ func TestExtractDomain(t *testing.T) {
 	}
 }
 
+// ---- H15: Partial Yayın Testleri ----
+
+// TestPartialPublication_SingleEngine validates scoring works with only 1 engine's data (2 engines failed).
+func TestPartialPublication_SingleEngine(t *testing.T) {
+	// Sadece 1 engine'den gelen veri (diğer 2 engine başarısız olmuş)
+	partialData := []engine.RawResponse{
+		{EngineName: "perplexity", Content: "Acme sektör lideridir. Yenilikçi ürünleriyle tanınır.",
+			Citations: []engine.Citation{
+				{URL: "https://example.com/acme", Position: 1, Engine: "perplexity", Type: "direct"},
+				{URL: "https://test.org/report", Position: 2, Engine: "perplexity", Type: "direct"},
+			},
+		},
+	}
+
+	// Tüm component fonksiyonları partial data ile çalışmalı
+	presence := computePresenceShare(partialData, "Acme")
+	if presence == 0 {
+		t.Error("partial data ile PresenceShare 0 olmamalı")
+	}
+
+	position := computePositionWeight(partialData)
+	if position == 0 {
+		t.Error("partial data ile PositionWeight 0 olmamalı")
+	}
+
+	source := computeSourceShare(partialData)
+	if source == 0 {
+		t.Error("partial data ile SourceShare 0 olmamalı")
+	}
+
+	competitor := computeCompetitorContext(partialData)
+	if competitor == 0 {
+		t.Error("partial data ile CompetitorContext 0 olmamalı")
+	}
+
+	// Engine breakdown da partial veriyle çalışmalı
+	breakdown := computeEngineBreakdown(partialData)
+	if len(breakdown) != 1 {
+		t.Errorf("beklenen 1 engine breakdown, gerçek %d", len(breakdown))
+	}
+	if _, ok := breakdown["perplexity"]; !ok {
+		t.Error("perplexity engine breakdown'da bulunmalı")
+	}
+}
+
+// TestPartialPublication_EmptyData verifies that component functions return 0 for empty data.
+func TestPartialPublication_EmptyData(t *testing.T) {
+	// Hiçbir engine'dan veri gelmemesi durumu
+	presence := computePresenceShare(nil, "Acme")
+	if presence != 0 {
+		t.Errorf("boş data ile PresenceShare 0 olmalı, gerçek %f", presence)
+	}
+
+	position := computePositionWeight(nil)
+	if position != 0 {
+		t.Errorf("boş data ile PositionWeight 0 olmalı, gerçek %f", position)
+	}
+
+	source := computeSourceShare(nil)
+	if source != 20 {
+		t.Errorf("boş data ile SourceShare 20 olmalı (default), gerçek %f", source)
+	}
+
+	competitor := computeCompetitorContext(nil)
+	if competitor != 50 {
+		t.Errorf("boş data ile CompetitorContext 50 olmalı (default), gerçek %f", competitor)
+	}
+
+	breakdown := computeEngineBreakdown(nil)
+	if len(breakdown) != 0 {
+		t.Errorf("boş data ile breakdown boş olmalı, gerçek %d", len(breakdown))
+	}
+}
+
+// TestPartialPublication_MixedEngines verifies scoring with 2 engines out of 3 (one failed).
+func TestPartialPublication_MixedEngines(t *testing.T) {
+	data := []engine.RawResponse{
+		{EngineName: "perplexity", Content: "Acme yenilikçi bir firma.",
+			Citations: []engine.Citation{{URL: "https://example.com", Position: 1, Engine: "perplexity", Type: "direct"}},
+		},
+		{EngineName: "chatgpt", Content: "Acme pazar lideridir ve sektörde öncüdür.",
+			Citations: []engine.Citation{{URL: "https://test.org", Position: 1, Engine: "chatgpt", Type: "direct"}},
+		},
+		// gemini: başarısız oldu, verisi yok
+	}
+
+	// 2 engine verisiyle tüm fonksiyonlar çalışmalı
+	presence := computePresenceShare(data, "Acme")
+	if presence == 0 {
+		t.Error("mixed data ile PresenceShare 0 olmamalı")
+	}
+
+	breakdown := computeEngineBreakdown(data)
+	if len(breakdown) != 2 {
+		t.Errorf("beklenen 2 engine breakdown, gerçek %d", len(breakdown))
+	}
+
+	// Ağırlıklı toplam hesapla (CalculateScore'daki mantık)
+	total := 0.35*computePresenceShare(data, "Acme") +
+		0.25*computePositionWeight(data) +
+		0.20*computeSourceShare(data) +
+		0.20*computeCompetitorContext(data)
+
+	if total <= 0 {
+		t.Errorf("partial yayın toplam skoru pozitif olmalı, gerçek %f", total)
+	}
+}
+
 func TestGenerateULID_Unique(t *testing.T) {
 	ids := make(map[string]bool)
 	for i := 0; i < 100; i++ {
