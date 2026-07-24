@@ -20,7 +20,10 @@ import (
 	"github.com/geolens/platform/internal/audit"
 	"github.com/geolens/platform/internal/auth"
 	"github.com/geolens/platform/internal/config"
+	"github.com/geolens/platform/internal/delivery"
 	"github.com/geolens/platform/internal/measure"
+	"github.com/geolens/platform/internal/pdf"
+	"github.com/geolens/platform/internal/recommendation"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/storage"
@@ -91,6 +94,13 @@ func main() {
 	panelHandler := config.NewPanelHandler(pool)
 	measureHandler := measure.NewHandler(pool, engines)
 	auditHandler := audit.NewHandler(pool)
+	deliveryHandler := delivery.NewHandler(pool, delivery.EmailConfig{
+		FromName:    cfg.SendGridFromName,
+		FromEmail:   cfg.SendGridFromEmail,
+		SendGridKey: cfg.SendGridAPIKey,
+	})
+	recommendationHandler := recommendation.NewHandler(pool)
+	pdfHandler := pdf.NewHandler()
 
 	// Router
 	r := chi.NewRouter()
@@ -150,6 +160,11 @@ func main() {
 				r.Post("/measurements", measureHandler.TriggerMeasurement)
 				r.Get("/scores", measureHandler.ListScores)
 				r.Post("/audit", auditHandler.RunAudit)
+				r.Get("/notifications/settings", deliveryHandler.GetSettings)
+				r.Put("/notifications/settings", deliveryHandler.UpdateSettings)
+				r.Post("/notifications/test", deliveryHandler.SendTestEmail)
+				r.Get("/recommendations", recommendationHandler.ListRecommendations)
+				r.Post("/reports/digest", pdfHandler.GenerateWeeklyDigest)
 			})
 		})
 	})

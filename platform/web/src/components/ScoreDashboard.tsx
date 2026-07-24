@@ -3,6 +3,9 @@ import { ScoreCard } from './ScoreCard'
 import { TrendChart } from './TrendChart'
 import { EngineComparison } from './EngineComparison'
 import { AuditPanel } from './AuditPanel'
+import { NotificationSettings } from './NotificationSettings'
+import { ReportsPanel } from './ReportsPanel'
+import { RecommendationsPanel } from './RecommendationsPanel'
 import { getScores, getBrands, getPanels } from '../api/client'
 import type { Score, Brand, Panel } from '../types'
 import { ENGINE_NAMES } from '../types'
@@ -11,7 +14,7 @@ interface ScoreDashboardProps {
   workspaceId: string
 }
 
-type Tab = 'scores' | 'audit'
+type Tab = 'scores' | 'audit' | 'notifications' | 'reports' | 'recommendations'
 
 export function ScoreDashboard({ workspaceId }: ScoreDashboardProps) {
   const [scores, setScores] = useState<Score[]>([])
@@ -115,10 +118,34 @@ export function ScoreDashboard({ workspaceId }: ScoreDashboardProps) {
         >
           Site Denetim
         </button>
+        <button
+          className={`tab-btn ${activeTab === 'reports' ? 'active' : ''}`}
+          onClick={() => setActiveTab('reports')}
+        >
+          Raporlar
+        </button>
+        <button
+          className={`tab-btn ${activeTab === 'notifications' ? 'active' : ''}`}
+          onClick={() => setActiveTab('notifications')}
+        >
+          Bildirimler
+        </button>
+        <button
+          className={`tab-btn ${activeTab === 'recommendations' ? 'active' : ''}`}
+          onClick={() => setActiveTab('recommendations')}
+        >
+          Öneriler
+        </button>
       </div>
 
       {activeTab === 'audit' ? (
         <AuditPanel workspaceId={workspaceId} brands={brands} />
+      ) : activeTab === 'reports' ? (
+        <ReportsPanel workspaceId={workspaceId} />
+      ) : activeTab === 'notifications' ? (
+        <NotificationSettings workspaceId={workspaceId} />
+      ) : activeTab === 'recommendations' ? (
+        <RecommendationsPanel workspaceId={workspaceId} brands={brands} />
       ) : (
         <>
           {/* Filters */}

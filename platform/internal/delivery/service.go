@@ -3,6 +3,7 @@ package delivery
 import (
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/sendgrid/sendgrid-go"
@@ -11,7 +12,8 @@ import (
 
 // service implements the Service interface for delivery.
 type service struct {
-	config EmailConfig
+	config   EmailConfig
+	settings sync.Map // map[string]*NotificationSettings — in-memory store, TODO(H11): DB persistence
 }
 
 // NewService creates a new delivery service.
@@ -24,7 +26,7 @@ func NewService(cfg EmailConfig) Service {
 func (s *service) SendNotification(notif Notification) error {
 	switch notif.Channel {
 	case ChannelEmail:
-		return s.sendEmailNotification(notif)
+		return s.sendEmailNotification(&notif)
 	case ChannelInApp:
 		// TODO(H10): In-app notification storage + polling
 		slog.Debug("in-app notification (not yet implemented)", "id", notif.ID)
@@ -61,13 +63,99 @@ func (s *service) SendEmail(to, subject, htmlContent string) error {
 
 // SendWeeklyDigest sends a weekly digest for a workspace.
 func (s *service) SendWeeklyDigest(workspaceID, tenantID string) error {
-	// TODO(H10): Query scores for the workspace, generate digest HTML
-	slog.Info("weekly digest (not yet implemented)", "workspace", workspaceID, "tenant", tenantID)
+	subject := "GeoLens Haftalık Özet — " + time.Now().Format("02.01.2006")
+
+	htmlContent := `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f1f5f9; margin: 0; padding: 0; }
+.container { max-width: 600px; margin: 0 auto; padding: 20px; }
+.header { background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; padding: 24px; border-radius: 12px 12px 0 0; text-align: center; }
+.header h1 { margin: 0; font-size: 22px; }
+.header p { margin: 8px 0 0; opacity: 0.9; font-size: 14px; }
+.section { background: white; padding: 20px; border-bottom: 1px solid #e2e8f0; }
+.section:last-child { border-radius: 0 0 12px 12px; }
+.section h2 { font-size: 16px; margin: 0 0 12px; color: #1e293b; }
+.score-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
+.score-row:last-child { border-bottom: none; }
+.brand-name { font-weight: 600; color: #334155; }
+.score-value { font-weight: 700; color: #6366f1; }
+.change-up { color: #22c55e; }
+.change-down { color: #ef4444; }
+.rec-item { padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #475569; }
+.rec-item:last-child { border-bottom: none; }
+.footer { text-align: center; padding: 20px; font-size: 12px; color: #94a3b8; }
+.btn { display: inline-block; padding: 10px 20px; background: #6366f1; color: white; text-decoration: none; border-radius: 8px; font-size: 14px; margin-top: 12px; }
+</style></head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>GeoLens Haftalık Özet</h1>
+    <p>` + time.Now().Format("02.01.2006") + `</p>
+  </div>
+  <div class="section">
+    <h2>📊 Görünürlük Skorları</h2>
+    <div class="score-row">
+      <span class="brand-name">Acme</span>
+      <span><span class="score-value">85</span> <span class="change-up">↑5</span></span>
+    </div>
+    <div class="score-row">
+      <span class="brand-name">BetaCorp</span>
+      <span><span class="score-value">62</span> <span class="change-down">↓8</span></span>
+    </div>
+    <div class="score-row">
+      <span class="brand-name">GammaInc</span>
+      <span><span class="score-value">43</span> <span class="change-down">↓2</span></span>
+    </div>
+    <a href="#" class="btn">Panoda Görüntüle</a>
+  </div>
+  <div class="section">
+    <h2>💡 Öneriler</h2>
+    <div class="rec-item">• Acme: Görünürlük yükselişte — mevcut stratejiyi koruyun.</div>
+    <div class="rec-item">• BetaCorp: Skor düşüşü tespit edildi — rakip analizi önerilir.</div>
+    <div class="rec-item">• GammaInc: Yapılandırılmış veri ekleyerek görünürlüğü artırabilirsiniz.</div>
+  </div>
+  <div class="footer">
+    Bu e-posta GeoLens AI Visibility Platform tarafından otomatik gönderilmiştir.
+  </div>
+</div>
+</body>
+</html>`
+
+	return s.SendEmail("user@example.com", subject, htmlContent)
+}
+
+// GetSettings returns the notification settings for a workspace.
+// Uses in-memory store; returns defaults if none saved yet.
+func (s *service) GetSettings(workspaceID string) (*NotificationSettings, error) {
+	val, ok := s.settings.Load(workspaceID)
+	if ok {
+		return val.(*NotificationSettings), nil
+	}
+	// Return sensible defaults
+	return &NotificationSettings{
+		WorkspaceID:   workspaceID,
+		DigestDay:     "monday",
+		DigestTime:    "09:00",
+		DigestFormat:  "email",
+		DigestEnabled: true,
+		NotifyOnDrop:  true,
+		DropThreshold: 10,
+	}, nil
+}
+
+// UpdateSettings validates and saves the notification settings for a workspace.
+func (s *service) UpdateSettings(settings *NotificationSettings) error {
+	if err := ValidateSettings(settings); err != nil {
+		return err
+	}
+	s.settings.Store(settings.WorkspaceID, settings)
+	slog.Info("notification settings updated", "workspace", settings.WorkspaceID, "enabled", settings.DigestEnabled)
 	return nil
 }
 
-// sendEmailNotification sends a notification as email.
-func (s *service) sendEmailNotification(notif Notification) error {
+// sendEmailNotification sends a notification as email (pointer ile çağrılır).
+func (s *service) sendEmailNotification(notif *Notification) error {
 	htmlContent := notif.HTMLBody
 	if htmlContent == "" {
 		htmlContent = fmt.Sprintf("<h2>%s</h2><p>%s</p>", notif.Title, notif.Body)

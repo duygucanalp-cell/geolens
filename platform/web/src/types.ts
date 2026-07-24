@@ -85,6 +85,62 @@ export interface TrendDataPoint {
   ci_high: number
 }
 
+export interface NotificationSettings {
+  workspace_id: string
+  email_address: string
+  digest_enabled: boolean
+  digest_day: string
+  digest_time: string
+  digest_format: string
+  notify_on_drop: boolean
+  drop_threshold: number
+}
+
+export interface ReportSummary {
+  id: string
+  type: string
+  file_name: string
+  page_count: number
+  generated_at: string
+}
+
+export interface Recommendation {
+  id: string
+  tenant_id: string
+  workspace_id: string
+  brand_id: string
+  category: 'visibility' | 'content' | 'technical' | 'competitor'
+  severity: 'critical' | 'high' | 'medium' | 'low'
+  title: string
+  detail: string
+  action_url?: string
+  score: number
+  applied: boolean
+  dismissed: boolean
+  created_at: string
+}
+
+export const SEVERITY_LABELS: Record<string, string> = {
+  critical: 'Kritik',
+  high: 'Yüksek',
+  medium: 'Orta',
+  low: 'Düşük',
+}
+
+export const CATEGORY_LABELS: Record<string, string> = {
+  visibility: 'Görünürlük',
+  content: 'İçerik',
+  technical: 'Teknik',
+  competitor: 'Rakip',
+}
+
+export const SEVERITY_COLORS: Record<string, string> = {
+  critical: '#ef4444',
+  high: '#f97316',
+  medium: '#eab308',
+  low: '#22c55e',
+}
+
 export const ENGINE_COLORS: Record<string, string> = {
   perplexity: '#6366f1',
   chatgpt: '#10b981',

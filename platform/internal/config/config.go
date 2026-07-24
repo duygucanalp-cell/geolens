@@ -24,6 +24,9 @@ type Config struct {
 	PerplexityAPIKey      string
 	ChatGPTAPIKey         string
 	GeminiAPIKey          string
+	SendGridAPIKey        string
+	SendGridFromEmail     string
+	SendGridFromName      string
 	OTelEndpoint          string
 	Environment           string
 	RateLimitEnabled      bool
@@ -52,6 +55,9 @@ func LoadFromEnv() Config {
 		PerplexityAPIKey:      getEnv("PERPLEXITY_API_KEY", ""),
 		ChatGPTAPIKey:         getEnv("CHATGPT_API_KEY", ""),
 		GeminiAPIKey:          getEnv("GEMINI_API_KEY", ""),
+		SendGridAPIKey:        getEnv("SENDGRID_API_KEY", ""),
+		SendGridFromEmail:     getEnv("SENDGRID_FROM_EMAIL", "geolens@example.com"),
+		SendGridFromName:      getEnv("SENDGRID_FROM_NAME", "GeoLens"),
 		OTelEndpoint:          getEnv("OTEL_ENDPOINT", "http://localhost:4318"),
 		Environment:           getEnv("ENVIRONMENT", "development"),
 		RateLimitEnabled:      getEnv("RATE_LIMIT_ENABLED", "true") == "true",
