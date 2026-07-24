@@ -217,6 +217,13 @@ func (s *service) CalculateScore(ctx context.Context, panelID string, results []
 		slog.Warn("calculation_run kaydetme hatası", "error", err)
 	}
 
+	engineBreakdown := computeEngineBreakdown(allResponses)
+	engineBreakdownRaw, err := json.Marshal(engineBreakdown)
+	engineBreakdownJSON := "{}"
+	if err == nil && string(engineBreakdownRaw) != "null" {
+		engineBreakdownJSON = string(engineBreakdownRaw)
+	}
+
 	score := &Score{
 		ID:               scoreID,
 		PanelID:          panelID,
@@ -224,7 +231,7 @@ func (s *service) CalculateScore(ctx context.Context, panelID string, results []
 		CILow:            math.Max(0, totalScore-5.0),
 		CIHigh:           math.Min(100, totalScore+5.0),
 		FidelityLabel:    aggregateFidelity(allResponses),
-		EngineBreakdown:  computeEngineBreakdown(allResponses),
+		EngineBreakdown:  engineBreakdown,
 		PanelVersion:     "1.0.0",
 		CalculationRunID: calcRunID,
 		FreshnessAt:      time.Now().UTC(),
@@ -237,7 +244,7 @@ func (s *service) CalculateScore(ctx context.Context, panelID string, results []
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11, $12, now(), now())
 	`, scoreID, panelID, brandID, workspaceID, tenantID,
 		score.Value, score.CILow, score.CIHigh, score.FidelityLabel,
-		"{}", score.PanelVersion, score.CalculationRunID); err != nil {
+		string(engineBreakdownJSON), score.PanelVersion, score.CalculationRunID); err != nil {
 		slog.Warn("skor kaydetme hatası", "error", err)
 	}
 

@@ -53,3 +53,47 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .trend-axis-label { font-size: 0.7rem; fill: #94a3b8; }
 .trend-x-label { font-size: 0.65rem; fill: #94a3b8; }
 .trend-empty { text-align: center; padding: 2rem; color: #94a3b8; font-size: 0.85rem; }
+
+/* Dashboard Tabs */
+.dashboard-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+.tab-btn { padding: 0.5rem 1.25rem; border: 1px solid #e2e8f0; background: #fff; border-radius: 8px; cursor: pointer; font-size: 0.85rem; color: #64748b; transition: all 0.2s; }
+.tab-btn:hover { background: #f8fafc; }
+.tab-btn.active { background: #6366f1; color: #fff; border-color: #6366f1; }
+
+/* Filters */
+.dashboard-filters { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.filter-select { padding: 0.4rem 0.75rem; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.85rem; background: #fff; color: #475569; cursor: pointer; }
+.filter-select:focus { outline: none; border-color: #6366f1; }
+
+/* Engine Comparison */
+.engine-comparison { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; }
+.engine-comparison h4 { font-size: 0.85rem; font-weight: 600; color: #64748b; margin-bottom: 0.5rem; }
+.engine-empty { font-size: 0.8rem; color: #94a3b8; }
+
+/* Audit Panel */
+.audit-panel { background: #fff; border-radius: 12px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.audit-panel h3 { font-size: 1.1rem; margin-bottom: 1rem; }
+.audit-controls { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.audit-select { flex: 1; min-width: 200px; padding: 0.6rem 0.75rem; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem; background: #fff; }
+.audit-select:focus { outline: none; border-color: #6366f1; }
+.audit-btn { padding: 0.6rem 1.5rem; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.9rem; cursor: pointer; }
+.audit-btn:hover { background: #4f46e5; }
+.audit-btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+.audit-error { color: #ef4444; font-size: 0.85rem; margin-bottom: 1rem; }
+.audit-result { margin-top: 1rem; }
+.audit-score { text-align: center; margin-bottom: 1.5rem; }
+.audit-score-value { font-size: 3rem; font-weight: 700; color: #6366f1; display: block; }
+.audit-score-label { font-size: 0.85rem; color: #64748b; }
+.audit-checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
+.audit-check-card { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: #f8fafc; border-radius: 8px; }
+.check-status { font-size: 1.25rem; }
+.audit-check-card strong { display: block; font-size: 0.85rem; margin-bottom: 0.2rem; }
+.audit-check-card p { font-size: 0.8rem; color: #64748b; }
+.audit-issues h4 { font-size: 0.95rem; margin-bottom: 0.75rem; }
+.audit-issue { padding: 0.75rem; margin-bottom: 0.5rem; border-left: 3px solid; background: #f8fafc; border-radius: 0 8px 8px 0; }
+.issue-header { display: flex; gap: 0.5rem; margin-bottom: 0.25rem; }
+.issue-severity { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px; }
+.issue-category { font-size: 0.7rem; color: #94a3b8; background: #e2e8f0; padding: 0.1rem 0.4rem; border-radius: 3px; }
+.issue-title { font-size: 0.85rem; font-weight: 600; margin-bottom: 0.2rem; }
+.issue-detail { font-size: 0.8rem; color: #64748b; }
+.issue-recommendation { font-size: 0.8rem; color: #6366f1; margin-top: 0.3rem; }

@@ -43,22 +43,17 @@ type choice struct {
 	Message message `json:"message"`
 }
 
-// RawSaver defines the interface for saving raw API responses to persistent storage.
-type RawSaver interface {
-	SaveRawResponse(ctx context.Context, tenantID, workspaceID, engineName string, data []byte) (string, error)
-}
-
 // Adapter implements engine.Adapter for Perplexity Sonar API.
 type Adapter struct {
 	apiKey      string
 	httpClient  *http.Client
-	storage     RawSaver
+	storage     engine.RawSaver
 	tenantID    string
 	workspaceID string
 }
 
 // NewAdapter creates a new Perplexity adapter.
-func NewAdapter(apiKey string, storage RawSaver) *Adapter {
+func NewAdapter(apiKey string, storage engine.RawSaver) *Adapter {
 	return &Adapter{
 		apiKey: apiKey,
 		httpClient: &http.Client{

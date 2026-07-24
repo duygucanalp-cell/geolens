@@ -1,5 +1,7 @@
 package engine
 
+import "context"
+
 // ---- Domain Types ----
 
 // Tier represents the access tier of an AI engine.
@@ -13,14 +15,14 @@ const (
 
 // RawResponse is the raw response from a single AI engine call.
 type RawResponse struct {
-	EngineName  string `json:"engine_name"`
-	RequestID   string `json:"request_id"`
-	Content     string `json:"content"`
-	Citations   []Citation `json:"citations,omitempty"`
-	HasSearch   bool   `json:"has_search"`
-	Tier        Tier   `json:"tier"`
-	FidelityLabel string `json:"fidelity_label"`
-	S3Ref       string `json:"s3_ref,omitempty"`
+	EngineName    string     `json:"engine_name"`
+	RequestID     string     `json:"request_id"`
+	Content       string     `json:"content"`
+	Citations     []Citation `json:"citations,omitempty"`
+	HasSearch     bool       `json:"has_search"`
+	Tier          Tier       `json:"tier"`
+	FidelityLabel string     `json:"fidelity_label"`
+	S3Ref         string     `json:"s3_ref,omitempty"`
 }
 
 // Citation represents a single citation extracted from an AI response.
@@ -39,6 +41,14 @@ type EngineMeta struct {
 	ModelVersion string `json:"model_version"`
 	Tier         Tier   `json:"tier"`
 	DurationMs   int64  `json:"duration_ms"`
+}
+
+// ---- Shared Interfaces ----
+
+// RawSaver defines the interface for saving raw API responses to persistent storage.
+// Her adapter paketi aynı arayüzü kopyalamak yerine engine.RawSaver kullanır.
+type RawSaver interface {
+	SaveRawResponse(ctx context.Context, tenantID, workspaceID, engineName string, data []byte) (string, error)
 }
 
 // ---- Engine Adapter Interface ----

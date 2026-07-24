@@ -1,4 +1,4 @@
-import type { Score, Brand, Panel } from '../types'
+import type { Score, Brand, Panel, AuditResult } from '../types'
 
 const BASE = '/v1'
 
@@ -47,6 +47,13 @@ export function triggerMeasurement(ws: string, brandId: string, panelId?: string
   return fetchJSON(`${BASE}/workspaces/${ws}/measurements`, {
     method: 'POST',
     body: JSON.stringify({ brand_id: brandId, panel_id: panelId }),
+  })
+}
+
+export function triggerAudit(ws: string, brandId: string, brandName: string, websiteUrl: string): Promise<AuditResult> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/audit`, {
+    method: 'POST',
+    body: JSON.stringify({ brand_id: brandId, brand_name: brandName, website_url: websiteUrl }),
   })
 }
 

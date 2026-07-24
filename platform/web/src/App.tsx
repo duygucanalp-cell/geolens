@@ -22,6 +22,7 @@ export default function App() {
         : await login(email, password)
       localStorage.setItem('token', res.token)
       localStorage.setItem('tenant_id', res.tenant_id)
+      localStorage.setItem('workspace_id', res.workspace_id)
       setWorkspaceId(res.workspace_id)
       setPage('dashboard')
     } catch (err) {
@@ -32,6 +33,7 @@ export default function App() {
   function handleLogout() {
     localStorage.removeItem('token')
     localStorage.removeItem('tenant_id')
+    localStorage.removeItem('workspace_id')
     setPage('login')
   }
 

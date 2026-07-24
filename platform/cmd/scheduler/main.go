@@ -15,6 +15,9 @@ import (
 	"github.com/joho/godotenv"
 
 	"github.com/geolens/platform/engine"
+	"github.com/geolens/platform/engine/chatgpt"
+	"github.com/geolens/platform/engine/gemini"
+	"github.com/geolens/platform/engine/perplexity"
 	"github.com/geolens/platform/internal/config"
 	"github.com/geolens/platform/internal/measure"
 	"github.com/geolens/platform/platform/db"
@@ -50,8 +53,21 @@ func main() {
 
 	slog.Info("zamanlayıcı başlatılıyor", "poll_interval", cfg.PollInterval)
 
-	// Engine registry — yalnızca mevcut motorları tara
+	// Engine registry
 	engines := engine.NewRegistry()
+
+	// Perplexity (Kademe 1) — storage'sız, sadece motor adı için
+	perplexityAdapter := perplexity.NewAdapter(cfg.PerplexityAPIKey, nil)
+	engines.Register(perplexityAdapter)
+
+	// ChatGPT / OpenAI (Kademe 1) — storage'sız, sadece motor adı için
+	chatgptAdapter := chatgpt.NewAdapter(cfg.ChatGPTAPIKey, nil)
+	engines.Register(chatgptAdapter)
+
+	// Gemini / Google AI (Kademe 1) — storage'sız, sadece motor adı için
+	geminiAdapter := gemini.NewAdapter(cfg.GeminiAPIKey, nil)
+	engines.Register(geminiAdapter)
+
 	slog.Info("motor kayıt defteri hazır", "engine_count", engines.Count(), "engines", engines.List())
 
 	ctx, cancel := context.WithCancel(context.Background())

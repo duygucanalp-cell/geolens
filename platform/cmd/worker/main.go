@@ -16,6 +16,8 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"github.com/geolens/platform/engine"
+	"github.com/geolens/platform/engine/chatgpt"
+	"github.com/geolens/platform/engine/gemini"
 	"github.com/geolens/platform/engine/perplexity"
 	"github.com/geolens/platform/internal/config"
 	"github.com/geolens/platform/internal/measure"
@@ -58,15 +60,28 @@ func main() {
 	if err != nil {
 		slog.Warn("S3 istemci oluşturulamadı, storage olmadan çalışılacak", "error", err)
 	}
-	var storageSaver perplexity.RawSaver
-	if err == nil {
-		storageSaver = s3Storage
-	}
 
 	// Engine registry
 	engines := engine.NewRegistry()
-	perplexityAdapter := perplexity.NewAdapter(cfg.PerplexityAPIKey, storageSaver)
+
+	// Ortak RawSaver: nil-hatasız storage backend
+	var saver engine.RawSaver
+	if err == nil {
+		saver = s3Storage
+	}
+
+	// Perplexity (Kademe 1)
+	perplexityAdapter := perplexity.NewAdapter(cfg.PerplexityAPIKey, saver)
 	engines.Register(perplexityAdapter)
+
+	// ChatGPT / OpenAI (Kademe 1)
+	chatgptAdapter := chatgpt.NewAdapter(cfg.ChatGPTAPIKey, saver)
+	engines.Register(chatgptAdapter)
+
+	// Gemini / Google AI (Kademe 1)
+	geminiAdapter := gemini.NewAdapter(cfg.GeminiAPIKey, saver)
+	engines.Register(geminiAdapter)
+
 	slog.Info("motor kayıt defteri hazır", "engine_count", engines.Count(), "engines", engines.List())
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -85,7 +100,7 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		runWorker(ctx, pool.Pool, rdb, engines, storageSaver, cfg.ConsumerGroup, cfg.ConsumerGroup)
+		runWorker(ctx, pool.Pool, rdb, engines, saver, cfg.ConsumerGroup, cfg.ConsumerGroup)
 	}()
 
 	slog.Info("worker başlatılıyor", "consumer_group", cfg.ConsumerGroup)
@@ -109,7 +124,7 @@ type streamMessage struct {
 }
 
 // runWorker continuously reads from Redis Stream and processes measurement jobs.
-func runWorker(ctx context.Context, pool *pgxpool.Pool, rdb *redis.Client, engines *engine.Registry, s3Client perplexity.RawSaver, consumerGroup, ackGroup string) {
+func runWorker(ctx context.Context, pool *pgxpool.Pool, rdb *redis.Client, engines *engine.Registry, s3Client engine.RawSaver, consumerGroup, ackGroup string) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -157,7 +172,7 @@ func processMessage(
 	pool *pgxpool.Pool,
 	rdb *redis.Client,
 	engines *engine.Registry,
-	s3Client perplexity.RawSaver,
+	s3Client engine.RawSaver,
 	stream, msgID string,
 	values map[string]interface{},
 	consumerGroup string,

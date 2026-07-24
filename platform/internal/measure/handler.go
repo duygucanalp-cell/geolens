@@ -159,7 +159,7 @@ func (h *Handler) ListScores(w http.ResponseWriter, r *http.Request) {
 	tenantID := httpmw.GetTenantID(r.Context())
 
 	rows, err := h.pool.Query(r.Context(), `
-		SELECT s.id, b.name, s.value, s.fidelity_label, s.freshness_at
+		SELECT s.id, b.name, s.value, s.ci_low, s.ci_high, s.fidelity_label, COALESCE(s.engine_breakdown::text, '{}'), s.freshness_at, b.id
 		FROM measure.scores s
 		JOIN config.brands b ON b.id = s.brand_id
 		WHERE s.workspace_id = $1 AND s.tenant_id = $2
@@ -175,19 +175,27 @@ func (h *Handler) ListScores(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close()
 
 	type scoreRow struct {
-		ID            string    `json:"id"`
-		BrandName     string    `json:"brand_name"`
-		Value         float64   `json:"value"`
-		FidelityLabel string    `json:"fidelity_label"`
-		FreshnessAt   time.Time `json:"freshness_at"`
+		ID              string             `json:"id"`
+		BrandName       string             `json:"brand_name"`
+		Value           float64            `json:"value"`
+		CILow           float64            `json:"ci_low"`
+		CIHigh          float64            `json:"ci_high"`
+		FidelityLabel   string             `json:"fidelity_label"`
+		EngineBreakdown map[string]float64 `json:"engine_breakdown,omitempty"`
+		FreshnessAt     time.Time          `json:"freshness_at"`
+		BrandID         string             `json:"brand_id"`
 	}
 
 	scores := make([]scoreRow, 0)
 	for rows.Next() {
 		var s scoreRow
-		if err := rows.Scan(&s.ID, &s.BrandName, &s.Value, &s.FidelityLabel, &s.FreshnessAt); err != nil {
+		var engBreakdown string
+		if err := rows.Scan(&s.ID, &s.BrandName, &s.Value, &s.CILow, &s.CIHigh, &s.FidelityLabel, &engBreakdown, &s.FreshnessAt, &s.BrandID); err != nil {
 			slog.Error("skor satır okuma hatası", "error", err)
 			continue
+		}
+		if engBreakdown != "" && engBreakdown != "{}" {
+			_ = json.Unmarshal([]byte(engBreakdown), &s.EngineBreakdown)
 		}
 		scores = append(scores, s)
 	}

@@ -14,7 +14,10 @@ import (
 	"github.com/joho/godotenv"
 
 	"github.com/geolens/platform/engine"
+	"github.com/geolens/platform/engine/chatgpt"
+	"github.com/geolens/platform/engine/gemini"
 	"github.com/geolens/platform/engine/perplexity"
+	"github.com/geolens/platform/internal/audit"
 	"github.com/geolens/platform/internal/auth"
 	"github.com/geolens/platform/internal/config"
 	"github.com/geolens/platform/internal/measure"
@@ -58,15 +61,28 @@ func main() {
 	if err != nil {
 		slog.Warn("S3 istemci oluşturulamadı, storage olmadan çalışılacak", "error", err)
 	}
-	var storageSaver perplexity.RawSaver
+
+	// Engine registry
+	engines := engine.NewRegistry()
+
+	// Ortak RawSaver: nil-hatasız storage backend
+	var saver engine.RawSaver
 	if err == nil {
-		storageSaver = s3Storage
+		saver = s3Storage
 	}
 
-	// Engine registry (Dilim 1: yalnız Perplexity)
-	engines := engine.NewRegistry()
-	perplexityAdapter := perplexity.NewAdapter(cfg.PerplexityAPIKey, storageSaver)
+	// Perplexity (Kademe 1)
+	perplexityAdapter := perplexity.NewAdapter(cfg.PerplexityAPIKey, saver)
 	engines.Register(perplexityAdapter)
+
+	// ChatGPT / OpenAI (Kademe 1)
+	chatgptAdapter := chatgpt.NewAdapter(cfg.ChatGPTAPIKey, saver)
+	engines.Register(chatgptAdapter)
+
+	// Gemini / Google AI (Kademe 1)
+	geminiAdapter := gemini.NewAdapter(cfg.GeminiAPIKey, saver)
+	engines.Register(geminiAdapter)
+
 	slog.Info("motor kayıt defteri hazır", "engine_count", engines.Count(), "engines", engines.List())
 
 	// Handler'lar
@@ -74,6 +90,7 @@ func main() {
 	configHandler := config.NewHandler(pool)
 	panelHandler := config.NewPanelHandler(pool)
 	measureHandler := measure.NewHandler(pool, engines)
+	auditHandler := audit.NewHandler(pool)
 
 	// Router
 	r := chi.NewRouter()
@@ -132,6 +149,7 @@ func main() {
 				r.Post("/prompt-sets", panelHandler.CreatePromptSet)
 				r.Post("/measurements", measureHandler.TriggerMeasurement)
 				r.Get("/scores", measureHandler.ListScores)
+				r.Post("/audit", auditHandler.RunAudit)
 			})
 		})
 	})
