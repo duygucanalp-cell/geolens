@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/minio/minio-go/v7"
@@ -18,7 +19,9 @@ type Client struct {
 }
 
 // NewClient creates a new S3 storage client.
+// The endpoint is expected in "host:port" format; if an "http(s)://" scheme is present it is stripped.
 func NewClient(endpoint, accessKey, secretKey, bucket, region string, useSSL bool) (*Client, error) {
+	endpoint = stripS3Scheme(endpoint)
 	mc, err := minio.New(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
 		Secure: useSSL,
@@ -41,6 +44,18 @@ func NewClient(endpoint, accessKey, secretKey, bucket, region string, useSSL boo
 	}
 
 	return &Client{mc: mc, bucket: bucket}, nil
+}
+
+// stripS3Scheme removes "http://" or "https://" prefix from an S3 endpoint.
+// The minio-go client rejects endpoints with scheme prefixes.
+func stripS3Scheme(endpoint string) string {
+	e := endpoint
+	if strings.HasPrefix(e, "https://") {
+		e = e[8:]
+	} else if strings.HasPrefix(e, "http://") {
+		e = e[7:]
+	}
+	return e
 }
 
 // SaveRawResponse saves a raw engine response to S3 and returns the object key.
