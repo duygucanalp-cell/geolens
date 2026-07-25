@@ -62,11 +62,131 @@ func (s *service) SendEmail(to, subject, htmlContent string) error {
 	return nil
 }
 
-// SendWeeklyDigest sends a weekly digest for a workspace.
+// digestBrandScore holds score data for a single brand in the digest.
+type digestBrandScore struct {
+	BrandID       string
+	BrandName     string
+	Score         float64
+	PreviousScore float64
+	Change        float64
+}
+
+// digestRecommendation holds recommendation data for the digest.
+type digestRecommendation struct {
+	BrandName string
+	Title     string
+	Detail    string
+}
+
+// SendWeeklyDigest sends a weekly digest for a workspace using real DB data.
+// Skorları, trend verilerini ve önerileri veritabanından çeker.
+// Derin bağlantılı URL'ler ile panoya yönlendirme yapar.
 func (s *service) SendWeeklyDigest(workspaceID, tenantID string) error {
+	ctx := context.Background()
 	subject := "GeoLens Haftalık Özet — " + time.Now().Format("02.01.2006")
 
-	htmlContent := `<!DOCTYPE html>
+	// 1. Marka skorlarını ve trend verilerini çek
+	brands, err := s.loadDigestScores(ctx, workspaceID, tenantID)
+	if err != nil {
+		slog.Error("digest: skor yükleme hatası", "error", err)
+		// Skor yoksa bile boş özet gönder
+		brands = []digestBrandScore{}
+	}
+
+	// 2. Önerileri çek
+	recs, err := s.loadDigestRecommendations(ctx, workspaceID, tenantID)
+	if err != nil {
+		slog.Error("digest: öneri yükleme hatası", "error", err)
+		recs = []digestRecommendation{}
+	}
+
+	// 3. HTML oluştur
+	htmlContent := s.buildDigestHTML(subject, brands, recs, workspaceID, tenantID)
+
+	// 4. Alıcı e-posta adresini ayarlardan al
+	settings, err := s.GetSettings(workspaceID, tenantID)
+	if err != nil {
+		slog.Warn("digest: ayarlar okunamadı, varsayılan e-posta kullanılacak", "error", err)
+	}
+
+	toEmail := settings.EmailAddress
+	if toEmail == "" {
+		toEmail = "user@example.com"
+	}
+
+	return s.SendEmail(toEmail, subject, htmlContent)
+}
+
+// loadDigestScores loads brand scores with previous values for the digest.
+func (s *service) loadDigestScores(ctx context.Context, workspaceID, tenantID string) ([]digestBrandScore, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT DISTINCT ON (b.id)
+			b.id AS brand_id,
+			b.name AS brand_name,
+			s.value AS score,
+			LAG(s.value) OVER (PARTITION BY b.id ORDER BY s.freshness_at) AS prev_score
+		FROM config.brands b
+		JOIN measure.scores s ON s.brand_id = b.id
+		WHERE b.workspace_id = $1 AND b.tenant_id = $2 AND b.is_active = true
+		ORDER BY b.id, s.freshness_at DESC
+	`, workspaceID, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var brands []digestBrandScore
+	for rows.Next() {
+		var b digestBrandScore
+		var prevScore *float64
+		if err := rows.Scan(&b.BrandID, &b.BrandName, &b.Score, &prevScore); err != nil {
+			slog.Warn("digest: skor satır okuma hatası", "error", err)
+			continue
+		}
+		if prevScore != nil {
+			b.PreviousScore = *prevScore
+			b.Change = b.Score - b.PreviousScore
+		}
+		brands = append(brands, b)
+	}
+	return brands, rows.Err()
+}
+
+// loadDigestRecommendations loads the latest recommendations for the digest.
+func (s *service) loadDigestRecommendations(ctx context.Context, workspaceID, tenantID string) ([]digestRecommendation, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT b.name, r.title, r.detail
+		FROM recommendation.results r
+		JOIN config.brands b ON b.id = r.brand_id
+		WHERE r.workspace_id = $1 AND r.tenant_id = $2
+		ORDER BY r.created_at DESC
+		LIMIT 5
+	`, workspaceID, tenantID)
+	if err != nil {
+		// Tablo henüz yoksa boş dön
+		slog.Debug("digest: recommendation.results tablosu henüz oluşturulmamış olabilir", "error", err)
+		return nil, nil
+	}
+	defer rows.Close()
+
+	var recs []digestRecommendation
+	for rows.Next() {
+		var r digestRecommendation
+		if err := rows.Scan(&r.BrandName, &r.Title, &r.Detail); err != nil {
+			slog.Warn("digest: öneri satır okuma hatası", "error", err)
+			continue
+		}
+		recs = append(recs, r)
+	}
+	return recs, rows.Err()
+}
+
+// buildDigestHTML constructs the HTML email content for the weekly digest.
+func (s *service) buildDigestHTML(subject string, brands []digestBrandScore, recs []digestRecommendation, workspaceID, tenantID string) string {
+	// Dashboard derin bağlantısı
+	dashboardURL := fmt.Sprintf("https://app.geolens.ai/v1/workspaces/%s/dashboard", workspaceID)
+
+	html := `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><style>
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f1f5f9; margin: 0; padding: 0; }
@@ -83,10 +203,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .score-value { font-weight: 700; color: #6366f1; }
 .change-up { color: #22c55e; }
 .change-down { color: #ef4444; }
+.change-neutral { color: #94a3b8; }
 .rec-item { padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #475569; }
 .rec-item:last-child { border-bottom: none; }
+.rec-brand { font-weight: 600; color: #6366f1; }
 .footer { text-align: center; padding: 20px; font-size: 12px; color: #94a3b8; }
 .btn { display: inline-block; padding: 10px 20px; background: #6366f1; color: white; text-decoration: none; border-radius: 8px; font-size: 14px; margin-top: 12px; }
+.empty-state { text-align: center; padding: 20px; color: #94a3b8; font-size: 14px; }
 </style></head>
 <body>
 <div class="container">
@@ -95,35 +218,99 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
     <p>` + time.Now().Format("02.01.2006") + `</p>
   </div>
   <div class="section">
-    <h2>📊 Görünürlük Skorları</h2>
+    <h2>📊 Görünürlük Skorları</h2>`
+
+	if len(brands) == 0 {
+		html += `<div class="empty-state">Henüz ölçüm yapılmamış. İlk ölçümünüzü başlatmak için panoya gidin.</div>`
+	} else {
+		for _, b := range brands {
+			changeHTML := ""
+			if b.Change > 0 {
+				changeHTML = fmt.Sprintf(`<span class="change-up">↑%.0f</span>`, b.Change)
+			} else if b.Change < 0 {
+				changeHTML = fmt.Sprintf(`<span class="change-down">↓%.0f</span>`, -b.Change)
+			} else {
+				changeHTML = `<span class="change-neutral">—</span>`
+			}
+
+			brandURL := fmt.Sprintf("%s?brand=%s", dashboardURL, b.BrandID)
+			html += fmt.Sprintf(`
     <div class="score-row">
-      <span class="brand-name">Acme</span>
-      <span><span class="score-value">85</span> <span class="change-up">↑5</span></span>
-    </div>
-    <div class="score-row">
-      <span class="brand-name">BetaCorp</span>
-      <span><span class="score-value">62</span> <span class="change-down">↓8</span></span>
-    </div>
-    <div class="score-row">
-      <span class="brand-name">GammaInc</span>
-      <span><span class="score-value">43</span> <span class="change-down">↓2</span></span>
-    </div>
-    <a href="#" class="btn">Panoda Görüntüle</a>
+      <a href="%s" style="text-decoration:none;color:inherit;"><span class="brand-name">%s</span></a>
+      <span><span class="score-value">%.0f</span> %s</span>
+    </div>`, brandURL, escapeHTML(b.BrandName), b.Score, changeHTML)
+		}
+	}
+
+	html += fmt.Sprintf(`
+    <a href="%s" class="btn">Panoda Görüntüle</a>
   </div>
   <div class="section">
-    <h2>💡 Öneriler</h2>
-    <div class="rec-item">• Acme: Görünürlük yükselişte — mevcut stratejiyi koruyun.</div>
-    <div class="rec-item">• BetaCorp: Skor düşüşü tespit edildi — rakip analizi önerilir.</div>
-    <div class="rec-item">• GammaInc: Yapılandırılmış veri ekleyerek görünürlüğü artırabilirsiniz.</div>
+    <h2>💡 Öneriler</h2>`, dashboardURL)
+
+	if len(recs) == 0 {
+		html += `<div class="empty-state">Henüz öneri bulunmuyor.</div>`
+	} else {
+		for _, r := range recs {
+			html += fmt.Sprintf(`
+    <div class="rec-item"><span class="rec-brand">%s:</span> %s</div>`, escapeHTML(r.BrandName), escapeHTML(r.Detail))
+		}
+	}
+
+	html += `
   </div>
   <div class="footer">
-    Bu e-posta GeoLens AI Visibility Platform tarafından otomatik gönderilmiştir.
+    Bu e-posta GeoLens AI Visibility Platform tarafından otomatik gönderilmiştir.<br>
+    <a href="` + dashboardURL + `" style="color:#6366f1;">Panoya Git</a>
   </div>
 </div>
 </body>
 </html>`
 
-	return s.SendEmail("user@example.com", subject, htmlContent)
+	return html
+}
+
+// escapeHTML escapes special HTML characters in a string.
+// HTML entity'leri Go string literal'ine gömülü olarak değil,
+// parça parça birleştirilerek oluşturulur (oto-formatlamanın bozmaması için).
+func escapeHTML(s string) string {
+	var result []byte
+	for i := 0; i < len(s); i++ {
+		switch s[i] {
+		case '&':
+			result = append(result, '&')
+			result = append(result, 'a')
+			result = append(result, 'm')
+			result = append(result, 'p')
+			result = append(result, ';')
+		case '<':
+			result = append(result, '&')
+			result = append(result, 'l')
+			result = append(result, 't')
+			result = append(result, ';')
+		case '>':
+			result = append(result, '&')
+			result = append(result, 'g')
+			result = append(result, 't')
+			result = append(result, ';')
+		case '"':
+			result = append(result, '&')
+			result = append(result, 'q')
+			result = append(result, 'u')
+			result = append(result, 'o')
+			result = append(result, 't')
+			result = append(result, ';')
+		case '\'':
+			result = append(result, '&')
+			result = append(result, '#')
+			result = append(result, '3')
+			result = append(result, '9')
+			result = append(result, ';')
+		default:
+			result = append(result, s[i])
+		}
+	}
+	return string(result)
 }
 
 // GetSettings returns the notification settings for a workspace.

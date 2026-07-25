@@ -3,6 +3,7 @@ package recommendation
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -125,16 +126,18 @@ var defaultRules = []Rule{
 type service struct {
 	rules []Rule
 	pool  *db.Pool
+	ng10  *NG10Filter
 }
 
 // NewService creates a new recommendation service with database access.
 func NewService(pool *db.Pool) Service {
 	rules := make([]Rule, len(defaultRules))
 	copy(rules, defaultRules)
-	return &service{rules: rules, pool: pool}
+	return &service{rules: rules, pool: pool, ng10: NewNG10Filter()}
 }
 
 // Evaluate evaluates all rules against real data for a single brand.
+// Sonuçlar NG10 filtresinden geçirilir: sadece NG (nötr) ve P (pozitif) öneriler döner.
 func (s *service) Evaluate(brandID, workspaceID, tenantID string) ([]Recommendation, error) {
 	if brandID == "" {
 		return s.EvaluateAll(workspaceID, tenantID)
@@ -152,10 +155,23 @@ func (s *service) Evaluate(brandID, workspaceID, tenantID string) ([]Recommendat
 		Audit:       audit,
 	}
 
-	return s.evaluateBrand(evalCtx), nil
+	recs := s.evaluateBrand(evalCtx)
+
+	// NG10 filtresi uygula
+	filtered := s.ng10.FilterRecommendations(recs)
+	if len(filtered) != len(recs) {
+		slog.Debug("recommendation: NG10 filtreleme yapıldı",
+			"brand", brandID,
+			"before", len(recs),
+			"after", len(filtered),
+		)
+	}
+
+	return filtered, nil
 }
 
 // EvaluateAll evaluates all rules for every brand in a workspace.
+// Sonuçlar NG10 filtresinden geçirilir: sadece NG (nötr) ve P (pozitif) öneriler döner.
 func (s *service) EvaluateAll(workspaceID, tenantID string) ([]Recommendation, error) {
 	ctx := context.Background()
 
@@ -190,8 +206,18 @@ func (s *service) EvaluateAll(workspaceID, tenantID string) ([]Recommendation, e
 		results = append(results, s.evaluateBrand(evalCtx)...)
 	}
 
-	slog.Debug("recommendation evaluation complete", "workspace", workspaceID, "results", len(results))
-	return results, nil
+	// NG10 filtresi uygula
+	filtered := s.ng10.FilterRecommendations(results)
+	if len(filtered) != len(results) {
+		slog.Debug("recommendation: NG10 filtreleme yapıldı",
+			"workspace", workspaceID,
+			"before", len(results),
+			"after", len(filtered),
+		)
+	}
+
+	slog.Debug("recommendation evaluation complete", "workspace", workspaceID, "results", len(filtered))
+	return filtered, nil
 }
 
 // loadScore fetches the latest (and previous) score values for a brand.
@@ -278,6 +304,7 @@ func (s *service) loadAudit(ctx context.Context, brandID, tenantID string) *Audi
 }
 
 // evaluateBrand runs all rules against a single brand's context.
+// Sonuçları DB'ye kaydeder (recommendation.results).
 func (s *service) evaluateBrand(ctx *EvaluationContext) []Recommendation {
 	var results []Recommendation
 	for _, rule := range s.rules {
@@ -285,7 +312,7 @@ func (s *service) evaluateBrand(ctx *EvaluationContext) []Recommendation {
 			continue
 		}
 		if s.evaluateConditions(ctx, rule.Conditions) {
-			results = append(results, Recommendation{
+			rec := Recommendation{
 				ID:          generateULID(),
 				TenantID:    ctx.TenantID,
 				WorkspaceID: ctx.WorkspaceID,
@@ -297,10 +324,32 @@ func (s *service) evaluateBrand(ctx *EvaluationContext) []Recommendation {
 				ActionURL:   rule.ActionURL,
 				Score:       s.computeConfidence(ctx, rule),
 				CreatedAt:   time.Now().UTC(),
-			})
+			}
+			results = append(results, rec)
+
+			// DB'ye kaydet (idempotent: aynı ID tekrar kaydedilmez)
+			s.saveRecommendation(rec)
 		}
 	}
 	return results
+}
+
+// saveRecommendation persists a recommendation to the database.
+func (s *service) saveRecommendation(rec Recommendation) {
+	ctx := context.Background()
+	_, err := s.pool.Exec(ctx, `
+		INSERT INTO recommendation.results
+			(id, brand_id, workspace_id, tenant_id, category, severity,
+			 title, detail, action_url, confidence, applied, dismissed, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		ON CONFLICT (id) DO NOTHING
+	`, rec.ID, rec.BrandID, rec.WorkspaceID, rec.TenantID,
+		string(rec.Category), string(rec.Severity),
+		rec.Title, rec.Detail, rec.ActionURL, rec.Score,
+		rec.Applied, rec.Dismissed, rec.CreatedAt)
+	if err != nil {
+		slog.Warn("recommendation: kaydetme hatası", "id", rec.ID, "error", err)
+	}
 }
 
 // evaluateConditions evaluates conditions against real score/audit data.
@@ -424,14 +473,34 @@ func (s *service) GetRules() []Rule {
 	return s.rules
 }
 
-// MarkApplied marks a recommendation as applied.
+// MarkApplied marks a recommendation as applied in the database.
 func (s *service) MarkApplied(id string) error {
+	now := time.Now().UTC()
+	_, err := s.pool.Exec(context.Background(), `
+		UPDATE recommendation.results
+		SET applied = true, applied_at = $2, updated_at = $2
+		WHERE id = $1
+	`, id, now)
+	if err != nil {
+		slog.Error("recommendation: uygulama hatası", "id", id, "error", err)
+		return fmt.Errorf("recommendation: uygulama hatası: %w", err)
+	}
 	slog.Info("recommendation marked as applied", "id", id)
 	return nil
 }
 
-// MarkDismissed marks a recommendation as dismissed.
+// MarkDismissed marks a recommendation as dismissed in the database.
 func (s *service) MarkDismissed(id string) error {
+	now := time.Now().UTC()
+	_, err := s.pool.Exec(context.Background(), `
+		UPDATE recommendation.results
+		SET dismissed = true, dismissed_at = $2, updated_at = $2
+		WHERE id = $1
+	`, id, now)
+	if err != nil {
+		slog.Error("recommendation: gizleme hatası", "id", id, "error", err)
+		return fmt.Errorf("recommendation: gizleme hatası: %w", err)
+	}
 	slog.Info("recommendation marked as dismissed", "id", id)
 	return nil
 }

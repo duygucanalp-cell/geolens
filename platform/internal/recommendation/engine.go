@@ -90,6 +90,7 @@ type Rule struct {
 	Detail      string      `json:"detail"`
 	ActionURL   string      `json:"action_url,omitempty"`
 	Active      bool        `json:"active"`
+	ClaimLang   ClaimLang   `json:"claim_lang,omitempty"` // NG10: N=filtered, NG=allowed, P=allowed
 }
 
 // ---- Service Interface ----
