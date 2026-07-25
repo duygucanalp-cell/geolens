@@ -5,7 +5,7 @@
 | Doküman ID | 0305 |
 | Proje | GeoLens Specification + Platform |
 | Versiyon | 1.0.1 |
-| Durum | Draft |
+| Durum | Review |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
 | İlişkili | 0101, 0109, 0301, platform/docs/0401, platform/docs/0204 |

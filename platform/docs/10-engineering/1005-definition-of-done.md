@@ -1,14 +1,14 @@
-# Definition of Done (Tamamlanma Tanımı)
+# 1005 · Definition of Done (Tamamlanma Tanımı)
 
 | Alan | Değer |
-|---|---|
-| Doküman ID | 10-engineering/definition-of-done |
+|---|---|---|
+| Doküman ID | 1005 |
 | Proje | GeoLens Platform |
 | Versiyon | 1.0 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
-| İlişkili | 10-engineering/*, 0204, 0205, 0404 |
+| İlişkili | 1000–1006, 0204, 0205, 0404 |
 
 ---
 
@@ -96,11 +96,11 @@ MVP için ek DoD kriterleri (0205 §7 ile uyumlu):
 
 ## Kaynaklar
 
-- 10-engineering/code-review — review süreci
-- 10-engineering/testing — test stratejisi
-- 0205 MVP — pilot çıkış kapısı kriterleri
-- 0204 PRD — NFR gereksinimleri
-- 09-devops/ci-cd — CI pipeline ve kapılar
+- 1004 — review süreci
+- 1002 — test stratejisi
+- 0205 — pilot çıkış kapısı kriterleri
+- 0204 — NFR gereksinimleri
+- 0901 — CI pipeline ve kapılar
 - archive/avip-v1/0401-development-process.md
 
 ## Changelog

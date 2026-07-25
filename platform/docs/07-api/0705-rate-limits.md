@@ -1,14 +1,14 @@
-# Hız Sınırları (Rate Limits)
+# 0705 · Hız Sınırları (Rate Limits)
 
 | Alan | Değer |
-|---|---|
-| Doküman ID | 07-api/rate-limits |
+|---|---|---|
+| Doküman ID | 0705 |
 | Proje | GeoLens Platform |
 | Versiyon | 1.0 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
-| İlişkili | 07-api/rest-api, 07-api/authentication, 0508, 0204 |
+| İlişkili | 0701, 0702, 0508, 0204 |
 
 ---
 
@@ -77,8 +77,8 @@ Sayaçlar Redis'te tutulur; gerçek kaynak usage_records tablosudur. Redis kayb�
 
 ## Kaynaklar
 
-- 07-api/rest-api — REST API
-- 07-api/authentication — auth yöntemleri
+- 0701 — REST API
+- 0702 — auth yöntemleri
 - 0508 Security — güvenlik mimarisi
 - 0503 Event-Driven — kota kapısı
 - 0204 PRD — NFR-16 (kota, hız sınırı)

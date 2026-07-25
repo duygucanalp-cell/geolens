@@ -5,7 +5,7 @@
 | Doküman ID | 0005 |
 | Proje | GeoLens Platform + Specification |
 | Versiyon | 1.1 |
-| Durum | Draft |
+| Durum | Review |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
 | İlişkili | specification/0000 §5, specification/adr/0005, platform/docs/10-engineering/branching, platform/docs/10-engineering/git-flow, platform/docs/02-product/0206-roadmap, specification/docs/03-compliance/0305 |

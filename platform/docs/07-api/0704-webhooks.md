@@ -1,14 +1,14 @@
-# Webhooks
+# 0704 · Webhooks
 
 | Alan | Değer |
-|---|---|
-| Doküman ID | 07-api/webhooks |
+|---|---|---|
+| Doküman ID | 0704 |
 | Proje | GeoLens Platform |
 | Versiyon | 1.0 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
-| İlişkili | 07-api/rest-api, 0503, 0304, 0204 |
+| İlişkili | 0701, 0503, 0304, 0204 |
 
 ---
 
@@ -80,11 +80,11 @@ X-GeoLens-Timestamp: 2026-07-22T12:00:00Z
 
 ## Kaynaklar
 
-- 07-api/rest-api — REST API uçları
+- 0701 — REST API uçları
 - 0503 Event-Driven — olay kuyruğu ve garantileri
 - 0304 Domain Events — 21 alan olayı kataloğu
 - 0204 PRD — FR-F1, FR-F2 (bildirim)
-- 07-api/authentication — HMAC imza detayı
+- 0702 — HMAC imza detayı
 
 ## Changelog
 

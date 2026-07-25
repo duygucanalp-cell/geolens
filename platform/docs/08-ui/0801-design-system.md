@@ -1,14 +1,14 @@
-# Tasarım Sistemi (Design System)
+# 0801 · Tasarım Sistemi (Design System)
 
 | Alan | Değer |
-|---|---|
-| Doküman ID | 08-ui/design-system |
+|---|---|---|
+| Doküman ID | 0801 |
 | Proje | GeoLens Platform |
 | Versiyon | 1.1 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
-| İlişkili | 08-ui/*, 0202, 0201, 0204 |
+| İlişkili | 0800–0805, 0202, 0201, 0204 |
 
 ---
 
@@ -113,9 +113,9 @@ Bu doküman GeoLens Platform tasarım sistemini tanımlar. Renk paleti, tipograf
 
 ## Kaynaklar
 
-- 08-ui/dashboard — pano tasarımı
-- 08-ui/navigation — navigasyon yapısı
-- 08-ui/onboarding — onboarding akışı
+- 0802 — pano tasarımı
+- 0803 — navigasyon yapısı
+- 0804 — onboarding akışı
 - 0202 User Journeys — kullanıcı yolculukları
 - 0201 Personas — kullanıcı profilleri
 

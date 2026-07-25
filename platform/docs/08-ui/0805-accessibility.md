@@ -1,14 +1,14 @@
-# Erişilebilirlik (Accessibility)
+# 0805 · Erişilebilirlik (Accessibility)
 
 | Alan | Değer |
-|---|---|
-| Doküman ID | 08-ui/accessibility |
+|---|---|---|
+| Doküman ID | 0805 |
 | Proje | GeoLens Platform |
 | Versiyon | 1.1 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
-| İlişkili | 08-ui/*, 0204, 0202 |
+| İlişkili | 0800–0805, 0204, 0202 |
 
 ---
 
@@ -88,8 +88,8 @@ Bu doküman GeoLens Platform erişilebilirlik standartlarını tanımlar. WCAG 2
 
 ## Kaynaklar
 
-- 08-ui/design-system — renk paleti, kontrast
-- 08-ui/dashboard — pano erişilebilirliği
+- 0801 — renk paleti, kontrast
+- 0802 — pano erişilebilirliği
 - 0204 PRD — NFR-15 (erişilebilirlik)
 - WCAG 2.1 — erişilebilirlik standardı
 

@@ -1,14 +1,14 @@
-# Onboarding (Kullanıcı Karşılama)
+# 0804 · Onboarding (Kullanıcı Karşılama)
 
 | Alan | Değer |
-|---|---|
-| Doküman ID | 08-ui/onboarding |
+|---|---|---|
+| Doküman ID | 0804 |
 | Proje | GeoLens Platform |
 | Versiyon | 1.1 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
-| İlişkili | 08-ui/*, 0202, 0201, 0204 |
+| İlişkili | 0800–0805, 0202, 0201, 0204 |
 
 ---
 
@@ -84,8 +84,8 @@ Kayıt → E-posta Doğrulama → [İlk Giriş] → Kurulum Sihirbazı → İlk 
 
 ## Kaynaklar
 
-- 08-ui/design-system — bileşen kullanımı
-- 08-ui/navigation — kurulum sonrası yönlendirme
+- 0801 — bileşen kullanımı
+- 0803 — kurulum sonrası yönlendirme
 - 0202 User Journeys — kullanıcı yolculukları (UC-01, UC-02, UC-03)
 - 0201 Personas — P2 KOBİ, P4 self-serve
 - 0204 PRD — FR-A1, FR-B3

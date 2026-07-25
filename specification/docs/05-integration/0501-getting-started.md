@@ -5,7 +5,7 @@
 | Doküman ID | 0501 |
 | Proje | GeoLens Specification |
 | Versiyon | 1.0.0 |
-| Durum | Draft |
+| Durum | Review |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
 | İlişkili | 0000, 0101, 0301 |

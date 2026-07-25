@@ -5,7 +5,7 @@
 | Doküman ID | 0404 |
 | Proje | GeoLens Specification |
 | Versiyon | 1.0 |
-| Durum | Draft |
+| Durum | Review |
 | Sahip | U2 AI Studio · Research |
 | Tarih | 22 Temmuz 2026 |
 | İlişkili | 0108, 0301 |

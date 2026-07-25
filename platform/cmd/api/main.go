@@ -24,6 +24,7 @@ import (
 	"github.com/geolens/platform/internal/delivery"
 	"github.com/geolens/platform/internal/measure"
 	"github.com/geolens/platform/internal/pdf"
+	"github.com/geolens/platform/internal/privacy"
 	"github.com/geolens/platform/internal/recommendation"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
@@ -110,6 +111,7 @@ func main() {
 		FromEmail:   cfg.SendGridFromEmail,
 		SendGridKey: cfg.SendGridAPIKey,
 	})
+	privacyHandler := privacy.NewHandler(pool)
 	recommendationHandler := recommendation.NewHandler(pool)
 	pdfHandler := pdf.NewHandler()
 
@@ -153,6 +155,11 @@ func main() {
 
 			// Auth-protected utilities
 			r.Post("/auth/logout", authHandler.Logout)
+
+			// KVKK/GDPR account deletion (tenant-level, workspace gerektirmez)
+			r.Post("/account/deletion", privacyHandler.RequestDeletion)
+			r.Get("/deletion-requests", privacyHandler.ListDeletionRequests)
+			r.Post("/deletion-requests/{id}/process", privacyHandler.ProcessDeletionRequest)
 
 			// Workspace-scoped routes (auth + workspace membership gerekli)
 			r.Route("/workspaces/{ws}", func(r chi.Router) {

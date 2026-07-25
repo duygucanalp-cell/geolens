@@ -1,14 +1,14 @@
-# Navigasyon
+# 0803 · Navigasyon
 
 | Alan | Değer |
-|---|---|
-| Doküman ID | 08-ui/navigation |
+|---|---|---|
+| Doküman ID | 0803 |
 | Proje | GeoLens Platform |
 | Versiyon | 1.1 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
-| İlişkili | 08-ui/*, 0202, 0201 |
+| İlişkili | 0800–0805, 0202, 0201 |
 
 ---
 
@@ -96,11 +96,11 @@ E-posta özetlerinden gelen imzalı bağlantılar:
 
 ## Kaynaklar
 
-- 08-ui/design-system — görsel bileşenler
-- 08-ui/dashboard — pano düzeni
-- 02-product/0202-user-journeys — kullanıcı yolculukları
-- 02-product/0201-personas — kullanıcı profilleri
-- 07-api/rest-api — API uçları
+- 0801 — görsel bileşenler
+- 0802 — pano düzeni
+- 0202 — kullanıcı yolculukları
+- 0201 — kullanıcı profilleri
+- 0701 — API uçları
 
 ## Changelog
 

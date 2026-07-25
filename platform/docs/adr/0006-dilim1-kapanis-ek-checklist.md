@@ -5,7 +5,7 @@
 | Doküman ID | adr/0006-ek-checklist |
 | Proje | GeoLens Platform |
 | Versiyon | 1.0 |
-| Durum | Draft |
+| Durum | Review |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 23 Temmuz 2026 |
 

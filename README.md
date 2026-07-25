@@ -72,32 +72,57 @@ platform/
 specification/
 └── docs/
     ├── 00-overview/        # Standard vizyonu, problem, glossary
-    ├── 01-standard/        # GAVF, Citation Standard, Visibility Score
-    ├── 02-methodology/     # Prompt Taxonomy, Authority Score
-    └── 03-whitepaper/      # Akademik yayınlar, teknik raporlar
+    ├── 01-standard/        # GAVF, Citation Standard, Visibility Score, Fidelity Tiers
+    ├── 02-methodology/     # Prompt Taxonomy, Authority Score, Share of Voice
+    ├── 03-compliance/      # Uyumluluk seviyeleri ve sertifikasyon
+    ├── 04-whitepapers/     # Akademik yayınlar, teknik raporlar
+    ├── 05-integration/     # Üçüncü taraf entegrasyon rehberleri
+    └── adr/                # Standart karar kayıtları
 ```
 
 ---
+
+## Hızlı Başlangıç
+
+```bash
+# Bağımlılıkları ayağa kaldır (PostgreSQL + Redis + MinIO)
+cd platform && make dev
+
+# API'yi çalıştır (ayrı terminal)
+cd platform && go run ./cmd/api
+
+# Worker'ı çalıştır (ayrı terminal)
+cd platform && go run ./cmd/worker
+
+# Frontend'i çalıştır (ayrı terminal)
+cd platform/web && npm run dev
+```
+
+Detaylı komutlar için: [`platform/Makefile`](platform/Makefile) ve [`AGENTS.md`](AGENTS.md).
 
 ## Temel Teknoloji Yığını
 
 | Katman | Seçim |
 |--------|-------|
-| Backend | Go (modüler monolit + işçi havuzu) |
+| Backend | Go 1.26, chi/v5, pgx/v5 |
 | Veritabanı | PostgreSQL 16+ (RLS ile çok kiracılı), ClickHouse (analytics) |
 | Kuyruk/Önbellek | Redis 7+ (Streams + tüketici grupları) |
-| Depolama | S3-uyumlu arayüz |
+| Depolama | S3-uyumlu (MinIO) |
 | Arama | Elasticsearch |
-| Frontend | React + TypeScript SPA |
+| Frontend | React 18 + TypeScript + Vite + Recharts |
 | Gözlemlenebilirlik | OpenTelemetry + Prometheus/Grafana |
+| Sır Yönetimi | SOPS + Age |
 
 ---
 
 ## Proje Durumu
 
-Şu an **Faz 0 (Tasarım)** aşamasındayız:
+Şu an **Faz 2-3 (Geliştirme + Sertleştirme)** aşamasındayız:
 - ✅ GeoLens çift repo yapısı kuruldu
-- 🔄 Dokümanlar sıfırdan, yeni vizyonla yazılıyor
+- ✅ `platform/` — Go backend (3 entrypoint: api, worker, scheduler) + React SPA çalışıyor
+- ✅ Tüm dilimler (D1-D4) tamamlandı, pilot çıkış kapısı hazır
+- 🔄 `specification/` — GAVF standardı dokümanları yazılıyor
+- 🔄 Pilot onboarding ve saha doğrulaması bekliyor
 
 ---
 

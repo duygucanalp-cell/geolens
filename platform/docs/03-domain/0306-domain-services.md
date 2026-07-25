@@ -276,7 +276,7 @@ AlertEvaluationService
 - 0305 Bounded Contexts — bağlam-paket eşlemesi
 - 0309 Scoring Engine — skorlama ve hesaplama detayı
 - 0204 PRD — FR/NFR bağları
-- archive/avip-v1/0309-measurement-scoring-engine.md — AVIP referansı
+- archive/avip-v1/README.md — AVIP arşiv indeksi
 
 ## Changelog
 

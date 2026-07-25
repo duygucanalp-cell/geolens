@@ -1,14 +1,14 @@
-# Git Akışı (Git Flow)
+# 1003 · Git Akışı (Git Flow)
 
 | Alan | Değer |
-|---|---|
-| Doküman ID | 10-engineering/git-flow |
+|---|---|---|
+| Doküman ID | 1003 |
 | Proje | GeoLens Platform |
 | Versiyon | 1.1 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
-| İlişkili | 10-engineering/branching, 10-engineering/code-review, 0403 |
+| İlişkili | 1006, 1004, 0403 |
 
 ---
 
@@ -110,9 +110,9 @@ feature ────●──●───────●──●─────
 
 ## Kaynaklar
 
-- 10-engineering/branching — branch adlandırma kuralları
-- 10-engineering/code-review — PR ve review süreci
-- 09-devops/ci-cd — CI/CD entegrasyonu
+- 1006 — branch adlandırma kuralları
+- 1004 — PR ve review süreci
+- 0901 — CI/CD entegrasyonu
 - 0403 CI/CD — AVIP release referansı
 
 ## Changelog

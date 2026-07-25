@@ -1,14 +1,14 @@
-# Kubernetes (Rezerve)
+# 0903 · Kubernetes (Rezerve)
 
 | Alan | Değer |
-|---|---|
-| Doküman ID | 09-devops/kubernetes |
+|---|---|---|
+| Doküman ID | 0903 |
 | Proje | GeoLens Platform |
 | Versiyon | 1.1 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
-| İlişkili | 09-devops/*, 0509, 0510, 0206 |
+| İlişkili | 0900–0905, 0509, 0510, 0206 |
 
 ---
 
@@ -106,8 +106,8 @@ MVP'de K8s yerine Docker Compose kullanılır:
 
 ## Kaynaklar
 
-- 09-devops/docker — Docker Compose yapısı
-- 09-devops/ci-cd — CI/CD pipeline
+- 0902 — Docker Compose yapısı
+- 0901 — CI/CD pipeline
 - 0509 Scalability — ölçeklenebilirlik
 - 0510 Deployment — dağıtım mimarisi
 - 0206 Roadmap — HT1/HT2 pencereleri

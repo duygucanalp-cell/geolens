@@ -5,7 +5,7 @@
 | Doküman ID | 0106 |
 | Proje | GeoLens Specification |
 | Versiyon | 1.0.0 |
-| Durum | Draft |
+| Durum | Review |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
 | İlişkili | 0101 (S1), 0201, platform/docs/0402 |

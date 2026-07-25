@@ -1,14 +1,14 @@
-# Test Stratejisi (Testing)
+# 1002 · Test Stratejisi (Testing)
 
 | Alan | Değer |
-|---|---|
-| Doküman ID | 10-engineering/testing |
+|---|---|---|
+| Doküman ID | 1002 |
 | Proje | GeoLens Platform |
 | Versiyon | 1.2 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
-| İlişkili | 10-engineering/*, 09-devops/ci-cd, 0404, 0204 |
+| İlişkili | 1000–1006, 0901, 0404, 0204 |
 
 ---
 
@@ -116,7 +116,7 @@ Bu doküman GeoLens Platform test stratejisini tanımlar. Test piramidi yaklaş�
 
 ## Kaynaklar
 
-- 09-devops/ci-cd — CI pipeline
+- 0901 — CI pipeline
 - 0404 Test Stratejisi — AVIP test referansı
 - 0204 PRD — FR/NFR doğrulama gereksinimleri
 - archive/avip-v1/0404-test-strategy.md

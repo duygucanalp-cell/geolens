@@ -1,14 +1,14 @@
-# REST API
+# 0701 · REST API
 
 | Alan | Değer |
-|---|---|
-| Doküman ID | 07-api/rest-api |
+|---|---|---|
+| Doküman ID | 0701 |
 | Proje | GeoLens Platform |
 | Versiyon | 1.1 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
-| İlişkili | 0504, 0306, 0204, 07-api/* |
+| İlişkili | 0504, 0306, 0204, 0700–0705 |
 
 ---
 
@@ -153,7 +153,7 @@ Durumlar: `queued`, `running`, `completed`, `partial`, `failed`
 - 0504 API Architecture — API tasarım standartları
 - 0306 API Design — detaylı API sözleşmeleri
 - 0204 PRD — FR gereksinimleri
-- 07-api/authentication — auth detayı
+- 0702 — auth detayı
 - archive/avip-v1/0306-api-design.md
 
 ## Changelog

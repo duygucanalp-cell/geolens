@@ -1,14 +1,14 @@
-# Pano (Dashboard)
+# 0802 · Pano (Dashboard)
 
 | Alan | Değer |
-|---|---|
-| Doküman ID | 08-ui/dashboard |
+|---|---|---|
+| Doküman ID | 0802 |
 | Proje | GeoLens Platform |
 | Versiyon | 1.1 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
-| İlişkili | 08-ui/*, 0202, 0204, 0409, 0414 |
+| İlişkili | 0800–0805, 0202, 0204, 0409, 0414 |
 
 ---
 
@@ -91,8 +91,8 @@ Bu doküman GeoLens Platform ana pano (dashboard) tasarımını tanımlar. Pano,
 
 ## Kaynaklar
 
-- 08-ui/design-system — renk, tipografi, bileşenler
-- 08-ui/navigation — pano navigasyonu
+- 0801 — renk, tipografi, bileşenler
+- 0803 — pano navigasyonu
 - 0202 User Journeys — pano etkileşimleri
 - 0204 PRD — FR-C1, FR-D1, FR-D4, FR-F3
 - 0409 Visibility Score — skor modeli

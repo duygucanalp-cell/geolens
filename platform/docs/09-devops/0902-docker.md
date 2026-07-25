@@ -1,14 +1,14 @@
-# Docker
+# 0902 · Docker
 
 | Alan | Değer |
-|---|---|
-| Doküman ID | 09-devops/docker |
+|---|---|---|
+| Doküman ID | 0902 |
 | Proje | GeoLens Platform |
 | Versiyon | 1.1 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
-| İlişkili | 0510, 09-devops/*, 0402 |
+| İlişkili | 0510, 0900–0905, 0402 |
 
 ---
 
@@ -135,7 +135,7 @@ volumes:
 ## Kaynaklar
 
 - 0510 Deployment — dağıtım mimarisi
-- 09-devops/ci-cd — CI/CD entegrasyonu
+- 0901 — CI/CD entegrasyonu
 - 0402 Environments — ortam yönetimi
 - archive/avip-v1/0402-environments-docker.md
 

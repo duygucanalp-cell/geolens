@@ -1,20 +1,20 @@
-# Branching Stratejisi
+# 1006 · Branching Stratejisi
 
 | Alan | Değer |
-|---|---|
-| Doküman ID | 10-engineering/branching |
+|---|---|---|
+| Doküman ID | 1006 |
 | Proje | GeoLens Platform |
 | Versiyon | 1.1 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
-| İlişkili | 10-engineering/git-flow, 10-engineering/code-review, 09-devops/ci-cd |
+| İlişkili | 1003, 1004, 0901 |
 
 ---
 
 ## 1. Amaç
 
-Bu doküman GeoLens Platform branch adlandırma kurallarını ve branch yönetimini tanımlar. 10-engineering/git-flow ile birlikte okunur.
+Bu doküman GeoLens Platform branch adlandırma kurallarını ve branch yönetimini tanımlar. 1003 ile birlikte okunur.
 
 ---
 
@@ -83,9 +83,9 @@ Bu doküman GeoLens Platform branch adlandırma kurallarını ve branch yönetim
 
 ## Kaynaklar
 
-- 10-engineering/git-flow — git akışı detayı
-- 10-engineering/code-review — PR süreci
-- 09-devops/ci-cd — CI kapıları
+- 1003 — git akışı detayı
+- 1004 — PR süreci
+- 0901 — CI kapıları
 - archive/avip-v1/0406-release-versioning.md
 
 ## Changelog

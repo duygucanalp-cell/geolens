@@ -1,14 +1,14 @@
-# İzleme ve Gözlem (Monitoring & Observability)
+# 0904 · İzleme ve Gözlem (Monitoring & Observability)
 
 | Alan | Değer |
-|---|---|
-| Doküman ID | 09-devops/monitoring |
+|---|---|---|
+| Doküman ID | 0904 |
 | Proje | GeoLens Platform |
 | Versiyon | 1.0 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
-| İlişkili | 09-devops/*, 0311, 0509, 0204, 0004 |
+| İlişkili | 0900–0905, 0311, 0509, 0204, 0004 |
 
 ---
 
@@ -83,7 +83,7 @@ Bu doküman GeoLens Platform izleme ve gözlem altyapısını tanımlar. OpenTel
 
 ## Kaynaklar
 
-- 09-devops/backup — yedekleme stratejisi
+- 0905 — yedekleme stratejisi
 - 0311 Observability — AVIP gözlem metrikleri
 - 0509 Scalability — kapasite planlaması
 - 0204 PRD — NFR-9 (performans hedefleri)

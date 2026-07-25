@@ -1,14 +1,14 @@
-# Code Review (Kod İnceleme)
+# 1004 · Code Review (Kod İnceleme)
 
 | Alan | Değer |
-|---|---|
-| Doküman ID | 10-engineering/code-review |
+|---|---|---|
+| Doküman ID | 1004 |
 | Proje | GeoLens Platform |
 | Versiyon | 1.0 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
-| İlişkili | 10-engineering/*, 09-devops/ci-cd, 0403 |
+| İlişkili | 1000–1006, 0901, 0403 |
 
 ---
 
@@ -93,10 +93,10 @@ Her bağlamın birincil sahibi, değişiklikler için otomatik reviewer olarak a
 
 ## Kaynaklar
 
-- 10-engineering/git-flow — PR süreci
-- 10-engineering/definition-of-done — DoD listesi
-- 0502 Service Architecture — CODEOWNERS eşlemesi
-- 09-devops/ci-cd — CI kapıları
+- 1003 — PR süreci
+- 1005 — DoD listesi
+- 0502 — CODEOWNERS eşlemesi
+- 0901 — CI kapıları
 
 ## Changelog
 

@@ -3,7 +3,7 @@
 | Alan | Değer |
 |------|-------|
 | ADR ID | ADR-012 |
-| Durum | Draft |
+| Durum | Approved |
 | Tarih | 24.07.2026 |
 | Karar veren | TL |
 | İlişkili | project-plan §7, 0205-mvp §8, ADR-009, ADR-010, ADR-011 |
@@ -239,13 +239,16 @@ H16 çıkış kapısı için **aşağıdaki kriterlerin yeşil olması yeterlidi
 | 8 | Sample count yapılandırılabilir | ✅ | TL |
 | 9 | Prometheus metrikleri akıyor | ✅ | TL |
 | 10 | Grafana ayakta | ✅ | TL |
-| 11 | SOPS+Age sır yönetimi | ⏳ | TL |
-| 12 | KVKK veri silme endpoint'i | ⏳ | TL |
-| 13 | RBAC testleri | ⏳ | TL |
-| 14 | İzolasyon negatif testleri | ⏳ | TL |
-| 15 | Maliyet modeli dokümanı | ⏳ | TL |
-| 16 | Pilot onboarding dokümanı | ⏳ | TL |
-| 17 | PO onayı | ⏳ | PO |
+| 11 | SOPS+Age sır yönetimi | ✅ | TL |
+| 12 | KVKK veri silme endpoint'i | ✅ | TL |
+| 13 | RBAC testleri | ✅ | TL |
+| 14 | İzolasyon negatif testleri | ✅ | TL |
+| 15 | Maliyet modeli dokümanı | ✅ | TL |
+| 16 | Pilot onboarding dokümanı | ✅ | TL |
+| 17 | Kripto-silme altyapısı (S3 AES-256-GCM) | ✅ | TL |
+| 18 | API benchmark script'i | ✅ | TL |
+| 19 | CI/CD pipeline (GitHub Actions) | ✅ | TL |
+| 20 | PO onayı | ⏳ | PO |
 
 ---
 
@@ -264,3 +267,4 @@ H16 çıkış kapısı için **aşağıdaki kriterlerin yeşil olması yeterlidi
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 24.07.2026 | İlk yayın: H16 pilot çıkış kapısı planı — 7 kriter analizi, eksik değerlendirmesi, kapatma takvimi |
+| 2.0 | 24.07.2026 | H16 tüm eksikler kapatıldı: KVKK veri silme, maliyet modeli, API benchmark, kripto-silme (AES-256-GCM), pilot onboarding, CI/CD (GitHub Actions), RBAC+izolasyon negatif testleri, SOPS+Age. Pilot çıkış kapısına hazır. |

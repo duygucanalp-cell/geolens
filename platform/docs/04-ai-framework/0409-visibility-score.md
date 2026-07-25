@@ -8,7 +8,7 @@
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
-| İlişkili | 0404, 0407, 0410, 0411, 0309, 0204 |
+| İlişkili | 0404, 0407, 0410, 0411, 0309, 0310, 0204 |
 
 ---
 

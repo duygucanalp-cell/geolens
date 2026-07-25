@@ -6,7 +6,7 @@
 | Durum | Kabul |
 | Tarih | 23.07.2026 |
 | Karar veren | TL |
-| İlişkili | 0001, 0002, 0003, 0004, 0005, project-plan |
+| İlişkili | ADR-001, ADR-002, ADR-003, ADR-004, ADR-005, project-plan |
 
 ---
 

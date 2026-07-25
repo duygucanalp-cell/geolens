@@ -1,14 +1,14 @@
-# Kimlik Doğrulama (Authentication)
+# 0702 · Kimlik Doğrulama (Authentication)
 
 | Alan | Değer |
-|---|---|
-| Doküman ID | 07-api/authentication |
+|---|---|---|
+| Doküman ID | 0702 |
 | Proje | GeoLens Platform |
 | Versiyon | 1.1 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
-| İlişkili | 07-api/rest-api, 0508, 0310, 0204 |
+| İlişkili | 0701, 0508, 0310, 0204 |
 
 ---
 
@@ -101,7 +101,7 @@ Dış okuma API'si (FR-F6) için kiracı başına API anahtarları:
 
 ## Kaynaklar
 
-- 07-api/rest-api — auth uçları
+- 0701 — auth uçları
 - 0508 Security — güvenlik mimarisi
 - 0310 Security — tehdit modeli, RBAC, sır yönetimi
 - 0204 PRD — FR-A1, FR-A3, FR-A4

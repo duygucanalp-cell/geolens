@@ -1,0 +1,185 @@
+# 0309 · Hesap Motoru (Scoring Engine)
+
+| Alan | Değer |
+|---|---|
+| Doküman ID | 0309 |
+| Proje | GeoLens Platform |
+| Versiyon | 1.0 |
+| Durum | Review |
+| Sahip | U2 AI Studio · Engineering |
+| Tarih | 25 Temmuz 2026 |
+| İlişkili | 0306, 0409, 0410, 0411, 0302, 0606, 0204 |
+
+---
+
+## 1. Amaç
+
+Bu doküman, GeoLens Hesap Motoru'nun (Scoring Engine) algoritmik tasarımını tanımlar. `scoringService.CalculateScore` ve `fidelityService.ComputeFidelity` fonksiyonlarının detaylı hesaplama kurallarını, güven aralığı metodolojisini, determinizm garantilerini ve kalibrasyon sürecini kapsar.
+
+---
+
+## 2. Skor Hesaplama
+
+### 2.1 Dört Bileşenli Skor
+
+```
+Görünürlük Skoru = presence_share × 0.35 + position_weight × 0.25 + source_share × 0.20 + competitor_context × 0.20
+```
+
+Her bileşen 0-100 aralığına normalize edilir:
+
+| Bileşen | Normalizasyon | Açıklama |
+|---------|:-------------:|----------|
+| presence_share | (geçme_sayısı / toplam_yanıt) × 100 | 0407'den gelen ham varlık verisi |
+| position_weight | max(0, 100 - sıralama × 10) | İlk 10'da lineer düşüş |
+| source_share | (marka_kaynağı / toplam_kaynak) × 100 | 0405 citation verisi |
+| competitor_context | 50 + (marka_farkı / max_fark) × 50 | Rakip ortalamasına göre normalize |
+
+### 2.2 Kısmi Yayın Kuralı
+
+Bir motor başarısız olursa (timeout/parse hatası), diğer motorların verisiyle kısmi skor hesaplanır:
+
+```
+kısmi_skor_ağırlığı = başarılı_motor_sayısı / toplam_motor_sayısı
+```
+
+Kısmi skor, etikette `partial: {n_success}/{n_total}` olarak işaretlenir. Tüm motorlar başarısız olursa skor yayınlanmaz.
+
+### 2.3 Örnekleme Birleştirme
+
+Her motor için n=3 paralel istek gönderilir. Sonuçlar birleştirilir:
+
+| Durum | Aksiyon |
+|-------|---------|
+| 3/3 başarılı | Tümü kullanılır, ortalama alınır |
+| 2/3 başarılı | Başarısız örnek atlanır |
+| 1/3 başarılı | Tek örnekle devam edilir, düşük güven uyarısı |
+| 0/3 başarılı | Motor başarısız sayılır |
+
+---
+
+## 3. Güven Aralığı (GA)
+
+### 3.1 Hesaplama
+
+GA, örneklem standart sapması üzerinden hesaplanır:
+
+```
+GA = z × (σ / √n)
+```
+
+| Değişken | Değer |
+|----------|-------|
+| z (%%95) | 1.96 |
+| n | başarılı örnek sayısı (max 3) |
+| σ | örneklem standart sapması |
+
+### 3.2 Anlamlılık Eşiği
+
+| Kural | Eşik | Referans |
+|-------|:----:|----------|
+| Mutlak fark anlamlılığı | ≥5 puan | D-31 |
+| GA daraltma hedefi (p95) | ≤10 puan | Pilotda kalibre edilecek |
+| Trend dönüş sinyali | 2 ardışık hafta zıt yön | 0414 |
+
+---
+
+## 4. Fidelite Hesabı
+
+### 4.1 Fidelite Kademeleri
+
+| Kademe | Koşul | Etiket |
+|:------:|-------|--------|
+| Tier 1 | Direct API + web arama + temperature=0 | `T1:direct` |
+| Tier 2 | Official proxy + search grounding | `T2:official` |
+| Tier 3 | Directional / third-party | `T3:directional` |
+
+### 4.2 Güven Düzeyi
+
+```
+güven = min(1.0, başarılı_örnek / 3) × 0.7 + min(1.0, veri_tazeliği_gün / 7) × 0.3
+```
+
+Yakın zamanda ölçülen veri daha yüksek güven alır. 7 günden eski veri güven katsayısını düşürür.
+
+---
+
+## 5. Determinizm Garantisi (NFR-7)
+
+Aynı girdi seti aynı skoru üretmelidir:
+
+| Gereksinim | Mekanizma |
+|------------|-----------|
+| Temperature=0 | Tüm adapter'larda sabit |
+| AlgorithmVersion | `calculation_run.algorithm_version` ile sürümlenir |
+| PanelVersion | Aynı panel versiyonu aynı faktörleri kullanır |
+| Partial yayın | Aynı başarısızlık durumunda aynı kısmi skor |
+
+Determinizm doğrulaması: Aynı `calculation_run` ID ile yeniden hesaplama birebir aynı sonucu vermelidir.
+
+---
+
+## 6. Motor Kırılımı (Engine Breakdown)
+
+### 6.1 Hesaplama
+
+Her motorun skora katkısı ayrı ayrı hesaplanır:
+
+```json
+{
+  "perplexity": 72.3,
+  "chatgpt": 68.1,
+  "gemini": 74.5,
+  "weighted_average": 71.6
+}
+```
+
+### 6.2 Ağırlıklandırma
+
+| Motor | Varsayılan Ağırlık | Gerekçe |
+|-------|:------------------:|---------|
+| Perplexity | 0.34 | Tier 1, web arama |
+| ChatGPT | 0.33 | Tier 2, search grounding |
+| Gemini | 0.33 | Tier 1, Google Search grounding |
+
+---
+
+## 7. Kalibrasyon
+
+### 7.1 Pilot Kalibrasyonu
+
+Pilot sırasında aşağıdaki parametreler kalibre edilir:
+
+| Parametre | Başlangıç Değeri | Kalibrasyon Yöntemi |
+|-----------|:----------------:|---------------------|
+| Bileşen ağırlıkları | Varsayılan (0409) | Anket + korelasyon analizi |
+| Anlamlılık eşiği | ≥5 puan | Pilot verisiyle doğrulama |
+| GA hedefi | ≤10 puan (p95) | Pilot verisiyle daraltma |
+| n değeri | 3 | Pilot verisiyle optimize |
+
+### 7.2 A/B Karşılaştırma
+
+Yeni algoritma versiyonu eskiyle karşılaştırılır:
+1. Aynı girdiyle iki versiyon çalıştırılır
+2. Fark anlamlılık eşiğinin altındaysa yeni versiyon kabul edilir
+3. `AlgorithmVersion` alanı artırılır
+
+---
+
+## 8. Hata Kodları
+
+| Kod | Açıklama | HTTP |
+|:---:|----------|:----:|
+| SCORE_001 | Tüm motorlar başarısız | 502 |
+| SCORE_002 | Faktör konfigürasyonu eksik | 400 |
+| SCORE_003 | Panel versiyonu bulunamadı | 404 |
+| SCORE_004 | Determinizm doğrulaması başarısız | 500 |
+| SCORE_005 | GA hedef dışı (>15 puan) | Uyarı |
+
+---
+
+## Changelog
+
+| Versiyon | Tarih | Değişiklik |
+|----------|-------|------------|
+| 1.0 | 25.07.2026 | İlk yayın: skor hesaplama, GA, fidelite, determinizm, motor kırılımı, kalibrasyon |

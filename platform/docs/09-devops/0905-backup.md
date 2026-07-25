@@ -1,14 +1,14 @@
-# Yedekleme ve Felaket Kurtarma (Backup & DR)
+# 0905 · Yedekleme ve Felaket Kurtarma (Backup & DR)
 
 | Alan | Değer |
-|---|---|
-| Doküman ID | 09-devops/backup |
+|---|---|---|
+| Doküman ID | 0905 |
 | Proje | GeoLens Platform |
 | Versiyon | 1.0 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
-| İlişkili | 09-devops/*, 0605, 0507, 0204 |
+| İlişkili | 0900–0905, 0605, 0507, 0204 |
 
 ---
 
@@ -83,7 +83,7 @@ graph TD
 ## Kaynaklar
 
 - 0605 Data Retention — saklama süreleri
-- 09-devops/monitoring — kesinti tespiti
+- 0904 — kesinti tespiti
 - 0507 Multi-Tenancy — veri izolasyonu
 - 0204 PRD — NFR-12 (veri koruma)
 - archive/avip-v1/0311-observability-operations.md

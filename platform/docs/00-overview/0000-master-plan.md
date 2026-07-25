@@ -8,7 +8,7 @@
 | Durum | Approved |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 22 Temmuz 2026 |
-| İlişkili | 0001–0007, 0101–0108, 0201–0207, 0301–0306, 0401–0415, 0501–0510, specification/docs/00-overview/0000-master-plan, specification/docs/00-overview/0005-version-sync-plan |
+| İlişkili | 0001–0007, 0101–0109, 0201–0208, 0301–0311, 0401–0415, 0501–0510, 0700–0705, 0800–0805, 0900–0905, 1000–1006, archive/avip-v1/README, specification/docs/00-overview/0000-master-plan, specification/docs/00-overview/0005-version-sync-plan |
 
 ---
 

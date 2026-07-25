@@ -1,14 +1,14 @@
-# Kodlama Standartları (Coding Standards)
+# 1001 · Kodlama Standartları (Coding Standards)
 
 | Alan | Değer |
-|---|---|
-| Doküman ID | 10-engineering/coding-standards |
+|---|---|---|
+| Doküman ID | 1001 |
 | Proje | GeoLens Platform |
 | Versiyon | 1.0 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
-| İlişkili | 10-engineering/*, 0502, 0403 |
+| İlişkili | 1000–1006, 0502, 0403 |
 
 ---
 
@@ -75,7 +75,7 @@ internal/{context}/
 ## Kaynaklar
 
 - 0502 Service Architecture — bağımlılık kuralları (D1-D7)
-- 09-devops/ci-cd — lint CI kapısı
+- 0901 — lint CI kapısı
 - archive/avip-v1/0401-development-process.md
 
 ## Changelog
