@@ -43,18 +43,25 @@ func RequestTimeout(timeout time.Duration) func(http.Handler) http.Handler {
 
 // ---- Request Validation Middleware ----
 
-// ValidateContentType ensures the request has the expected Content-Type for POST/PUT/PATCH.
+// ValidateContentType ensures the request has the expected Content-Type for POST/PUT/PATCH
+// when the request has a body. Requests without a body (no Content-Length, no Transfer-Encoding) are allowed.
 func ValidateContentType(allowedTypes ...string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == http.MethodPost || r.Method == http.MethodPut || r.Method == http.MethodPatch {
+				cl := r.Header.Get("Content-Length")
+				te := r.Header.Get("Transfer-Encoding")
+				if cl == "" && te == "" {
+					next.ServeHTTP(w, r)
+					return
+				}
+
 				contentType := r.Header.Get("Content-Type")
 				if contentType == "" {
 					http.Error(w, `{"error":"content_type_required"}`, http.StatusUnsupportedMediaType)
 					return
 				}
 
-				// En az bir allowed type ile eşleşmeli
 				for _, allowed := range allowedTypes {
 					if len(contentType) >= len(allowed) && contentType[:len(allowed)] == allowed {
 						next.ServeHTTP(w, r)

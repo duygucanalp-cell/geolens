@@ -113,7 +113,7 @@ func main() {
 	})
 	privacyHandler := privacy.NewHandler(pool)
 	recommendationHandler := recommendation.NewHandler(pool)
-	pdfHandler := pdf.NewHandler()
+	pdfHandler := pdf.NewHandler(pool)
 
 	// Router
 	r := chi.NewRouter()

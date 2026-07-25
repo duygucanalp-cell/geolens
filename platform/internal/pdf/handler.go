@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/httputil"
 )
@@ -15,9 +16,9 @@ type Handler struct {
 }
 
 // NewHandler creates a new PDF handler.
-func NewHandler() *Handler {
+func NewHandler(pool *db.Pool) *Handler {
 	return &Handler{
-		svc: NewService(),
+		svc: NewService(pool),
 	}
 }
 

@@ -13,6 +13,7 @@ require (
 	github.com/oklog/ulid/v2 v2.1.2
 	github.com/prometheus/client_golang v1.20.5
 	github.com/redis/go-redis/v9 v9.7.0
+	github.com/robfig/cron/v3 v3.0.1
 	github.com/sendgrid/sendgrid-go v3.16.1+incompatible
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.34.0
@@ -60,6 +61,7 @@ require (
 	github.com/johnfercher/go-tree v1.1.0 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.8 // indirect
+	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-runewidth v0.0.21 // indirect

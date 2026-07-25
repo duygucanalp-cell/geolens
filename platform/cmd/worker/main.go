@@ -91,7 +91,9 @@ func main() {
 	// Redis Stream consumer group'u oluştur (yoksa)
 	for _, s := range []string{queue.StreamMeasure} {
 		if err := rdb.XGroupCreateMkStream(ctx, s, cfg.ConsumerGroup, "0").Err(); err != nil {
-			slog.Warn("redis stream grubu oluşturma", "stream", s, "error", err)
+			if !isGroupAlreadyExists(err) {
+				slog.Warn("redis stream grubu oluşturma", "stream", s, "error", err)
+			}
 		} else {
 			slog.Info("redis stream grubu oluşturuldu", "stream", s, "group", cfg.ConsumerGroup)
 		}

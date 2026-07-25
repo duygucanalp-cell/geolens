@@ -19,6 +19,7 @@ type ReportRequest struct {
 	WorkspaceID string     `json:"workspace_id"`
 	TenantID    string     `json:"tenant_id"`
 	BrandID     string     `json:"brand_id,omitempty"`
+	BrandName   string     `json:"brand_name,omitempty"`
 	DateFrom    time.Time  `json:"date_from,omitempty"`
 	DateTo      time.Time  `json:"date_to,omitempty"`
 }
@@ -41,6 +42,14 @@ type ScoreRow struct {
 	PreviousScore float64 `json:"previous_score,omitempty"`
 	Change        float64 `json:"change"`
 	FidelityLabel string  `json:"fidelity_label"`
+}
+
+// AuditRow represents audit data for PDF reports.
+type AuditRow struct {
+	Category       string  `json:"category"`
+	Status         string  `json:"status"`
+	Score          float64 `json:"score"`
+	Recommendation string  `json:"recommendation,omitempty"`
 }
 
 // ---- Service Interface ----

@@ -28,13 +28,17 @@ type BucketConfig struct {
 
 // Default bucket configurations.
 var defaultBuckets = []BucketConfig{
-	{BucketName: "engine_calls_per_min", MaxTokens: 30},   // Dakikada 30 engine çağrısı
-	{BucketName: "engine_calls_per_hour", MaxTokens: 500}, // Saatte 500 engine çağrısı
+	{BucketName: "engine_calls_per_min", MaxTokens: 30},    // Dakikada 30 engine çağrısı
+	{BucketName: "engine_calls_per_hour", MaxTokens: 500},  // Saatte 500 engine çağrısı
 	{BucketName: "api_requests_per_hour", MaxTokens: 1000}, // Saatte 1000 API isteği
 }
 
 // EnsureBuckets creates default buckets for a tenant if they don't exist.
 func (q *QuotaChecker) EnsureBuckets(ctx context.Context, tenantID string) error {
+	if q.pool == nil {
+		return nil
+	}
+
 	now := time.Now().UTC()
 	windowStart := now.Truncate(time.Minute)
 
@@ -54,6 +58,10 @@ func (q *QuotaChecker) EnsureBuckets(ctx context.Context, tenantID string) error
 
 // CheckAndConsume checks if a tenant has available tokens and consumes one if so.
 func (q *QuotaChecker) CheckAndConsume(ctx context.Context, tenantID, bucketName string) (bool, error) {
+	if q.pool == nil {
+		return true, nil
+	}
+
 	// Mevcut zaman penceresini al
 	var tokensUsed, maxTokens int64
 	err := q.pool.QueryRow(ctx, `

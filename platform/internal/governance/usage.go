@@ -20,14 +20,18 @@ func NewUsageRecorder(pool *db.Pool) *UsageRecorder {
 
 // Metric names
 const (
-	MetricEngineCalls  = "engine_calls"
-	MetricAPIRequests  = "api_requests"
-	MetricStorageBytes = "storage_bytes"
+	MetricEngineCalls    = "engine_calls"
+	MetricAPIRequests    = "api_requests"
+	MetricStorageBytes   = "storage_bytes"
 	MetricScoresComputed = "scores_computed"
 )
 
 // RecordUsage records a usage metric for a tenant.
 func (u *UsageRecorder) RecordUsage(ctx context.Context, tenantID, metricName string, value int64, resourceType, resourceID string) error {
+	if u.pool == nil {
+		return fmt.Errorf("usage: veritabanı bağlantısı yok")
+	}
+
 	id := fmt.Sprintf("%s-%s-%d", tenantID, metricName, time.Now().UnixMicro())
 	_, err := u.pool.Exec(ctx, `
 		INSERT INTO governance.usage_records (id, tenant_id, metric_name, metric_value, resource_type, resource_id, recorded_at)
@@ -43,6 +47,10 @@ func (u *UsageRecorder) IncrementUsage(ctx context.Context, tenantID, metricName
 
 // GetUsageSummary returns total usage for a tenant within a time range.
 func (u *UsageRecorder) GetUsageSummary(ctx context.Context, tenantID string, since time.Time) (map[string]int64, error) {
+	if u.pool == nil {
+		return nil, fmt.Errorf("usage: veritabanı bağlantısı yok")
+	}
+
 	rows, err := u.pool.Query(ctx, `
 		SELECT metric_name, SUM(metric_value)
 		FROM governance.usage_records

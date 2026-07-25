@@ -3,8 +3,9 @@ package governance
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
+
+	"github.com/oklog/ulid/v2"
 
 	"github.com/geolens/platform/internal/errors"
 	"github.com/geolens/platform/platform/db"
@@ -37,7 +38,11 @@ func NewAuditLogger(pool *db.Pool) *AuditLogger {
 
 // Record saves an audit entry to the database.
 func (a *AuditLogger) Record(ctx context.Context, entry AuditEntry) error {
-	id := fmt.Sprintf("%d-%s", time.Now().UnixMicro(), randomSuffix(6))
+	if a.pool == nil {
+		return errors.Internal("audit: veritabanı bağlantısı yok", nil)
+	}
+
+	id := ulid.Make().String()
 
 	metaJSON, err := json.Marshal(entry.Metadata)
 	if err != nil {
@@ -67,14 +72,4 @@ func (a *AuditLogger) RecordEvent(ctx context.Context, tenantID, eventType, reso
 		Action:       action,
 		Metadata:     map[string]interface{}{},
 	})
-}
-
-// randomSuffix generates a short random string for ID generation.
-func randomSuffix(n int) string {
-	const letters = "abcdefghijklmnopqrstuvwxyz0123456789"
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = letters[(time.Now().UnixNano()+int64(i*13))%int64(len(letters))]
-	}
-	return string(b)
 }

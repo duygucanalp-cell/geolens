@@ -13,6 +13,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	"github.com/robfig/cron/v3"
 
 	"github.com/geolens/platform/engine"
 	"github.com/geolens/platform/engine/chatgpt"
@@ -249,8 +250,17 @@ func parseIntervalOrDefault(s string, defaultVal time.Duration) time.Duration {
 }
 
 // isDue checks if a panel is due for measurement based on its cron schedule.
-// TODO(H3): Gerçek cron ayrıştırma (robfig/cron)
 func isDue(cronExpr string, lastMeasuredAt time.Time) bool {
-	// Basit yaklaşım: son ölçümden bu yana 1 saat geçmişse due
-	return time.Since(lastMeasuredAt) > time.Hour
+	if cronExpr == "" {
+		return true
+	}
+
+	schedule, err := cron.ParseStandard(cronExpr)
+	if err != nil {
+		slog.Warn("geçersiz cron ifadesi, varsayılan 1 saat kullanılıyor", "cron", cronExpr, "error", err)
+		return time.Since(lastMeasuredAt) > time.Hour
+	}
+
+	next := schedule.Next(lastMeasuredAt)
+	return time.Now().After(next)
 }
