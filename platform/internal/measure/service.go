@@ -282,7 +282,9 @@ func (s *service) GetScoreByID(ctx context.Context, scoreID string) (*Score, err
 
 	// Engine breakdown JSON'ı parse et
 	if engineBreakdownJSON != "" && engineBreakdownJSON != "{}" {
-		_ = json.Unmarshal([]byte(engineBreakdownJSON), &score.EngineBreakdown)
+		if err := json.Unmarshal([]byte(engineBreakdownJSON), &score.EngineBreakdown); err != nil {
+			slog.Warn("engine breakdown çözümleme hatası", "score_id", score.ID, "error", err)
+		}
 	}
 
 	return &score, nil

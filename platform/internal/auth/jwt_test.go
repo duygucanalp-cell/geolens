@@ -117,7 +117,7 @@ func TestInjectContext_Values(t *testing.T) {
 
 func TestTokenValidator(t *testing.T) {
 	svc := NewJWTService("test-secret")
-	validator := svc.TokenValidator()
+	validator := svc.TokenValidator(nil)
 
 	tokenStr, _, err := svc.GenerateToken("user-1", "tenant-1", "editor")
 	if err != nil {
@@ -141,7 +141,7 @@ func TestTokenValidator(t *testing.T) {
 
 func TestTokenValidator_Invalid(t *testing.T) {
 	svc := NewJWTService("test-secret")
-	validator := svc.TokenValidator()
+	validator := svc.TokenValidator(nil)
 
 	_, _, _, err := validator("invalid-token")
 	if err == nil {

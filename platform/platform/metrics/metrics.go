@@ -145,14 +145,14 @@ var (
 	}, []string{LabelTenant})
 
 	// RecommendationsGenerated tracks generated recommendations per tenant.
-	// TODO: henüz DB'den populate edilmiyor — recommendations tablosu yok.
+	// Worker'daki collectAccountMetrics tarafından periyodik populate edilir (recommendation.results).
 	RecommendationsGenerated = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "geolens_recommendations_generated",
 		Help: "Oluşturulan öneri sayısı (tenant ayrımıyla)",
 	}, []string{LabelTenant})
 
 	// EmailsSent tracks sent emails per tenant.
-	// TODO: henüz DB'den populate edilmiyor — emails tablosu yok.
+	// Delivery handler'daki başarılı SendEmail çağrıları tarafından increment edilir.
 	EmailsSent = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "geolens_emails_sent",
 		Help: "Gönderilen e-posta sayısı (tenant ayrımıyla)",

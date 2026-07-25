@@ -14,6 +14,7 @@ export function RecommendationsPanel({ workspaceId, brands }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [filterBrand, setFilterBrand] = useState<string>('all')
   const [actionInProgress, setActionInProgress] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
 
   useEffect(() => {
     loadRecommendations()
@@ -40,7 +41,7 @@ export function RecommendationsPanel({ workspaceId, brands }: Props) {
         prev.map((r) => (r.id === recId ? { ...r, applied: true } : r))
       )
     } catch (err) {
-      console.error('Öneri uygulama hatası:', err)
+      setActionError(err instanceof Error ? err.message : 'Öneri uygulanamadı')
     } finally {
       setActionInProgress(null)
     }
@@ -54,7 +55,7 @@ export function RecommendationsPanel({ workspaceId, brands }: Props) {
         prev.map((r) => (r.id === recId ? { ...r, dismissed: true } : r))
       )
     } catch (err) {
-      console.error('Öneri gizleme hatası:', err)
+      setActionError(err instanceof Error ? err.message : 'Öneri gizlenemedi')
     } finally {
       setActionInProgress(null)
     }
@@ -85,6 +86,13 @@ export function RecommendationsPanel({ workspaceId, brands }: Props) {
     return result
   }, [recommendations, filterBrand])
 
+  // Auto-clear action errors after 5 seconds
+  useEffect(() => {
+    if (!actionError) return
+    const timer = setTimeout(() => setActionError(null), 5000)
+    return () => clearTimeout(timer)
+  }, [actionError])
+
   if (loading) {
     return <div className="rec-loading">Öneriler yükleniyor...</div>
   }
@@ -106,6 +114,14 @@ export function RecommendationsPanel({ workspaceId, brands }: Props) {
           Markalarınızın AI görünürlük performansına göre oluşturulmuş eyleme dönüştürülebilir öneriler.
         </p>
       </div>
+
+      {/* Action error banner */}
+      {actionError && (
+        <div className="rec-action-error">
+          <span>{actionError}</span>
+          <button onClick={() => setActionError(null)} className="rec-action-error-close">✕</button>
+        </div>
+      )}
 
       {/* Summary cards */}
       {summary.total > 0 && (

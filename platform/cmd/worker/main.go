@@ -20,7 +20,9 @@ import (
 	"github.com/geolens/platform/engine/gemini"
 	"github.com/geolens/platform/engine/perplexity"
 	"github.com/geolens/platform/internal/config"
+	"github.com/geolens/platform/internal/delivery"
 	"github.com/geolens/platform/internal/measure"
+	"github.com/geolens/platform/internal/recommendation"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/metrics"
 	"github.com/geolens/platform/platform/queue"
@@ -85,6 +87,20 @@ func main() {
 
 	slog.Info("motor kayıt defteri hazır", "engine_count", engines.Count(), "engines", engines.List())
 
+	// Delivery servisi (bildirim gönderimi)
+	emailCfg := delivery.EmailConfig{
+		FromName:    cfg.SendGridFromName,
+		FromEmail:   cfg.SendGridFromEmail,
+		SendGridKey: cfg.SendGridAPIKey,
+	}
+	deliverySvc := delivery.NewService(emailCfg, pool)
+
+	// Ölçüm servisi (skor hesaplama)
+	measureSvc := measure.NewService(pool, engines, &cfg)
+
+	// Tavsiye servisi (kural değerlendirme)
+	recommendationSvc := recommendation.NewService(pool)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -105,7 +121,7 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		runWorker(ctx, pool.Pool, rdb, engines, saver, cfg.ConsumerGroup, cfg.ConsumerGroup)
+		runWorker(ctx, pool.Pool, rdb, engines, saver, cfg.ConsumerGroup, cfg.ConsumerGroup, measureSvc, recommendationSvc, deliverySvc)
 	}()
 
 	// Queue depth collector (periyodik XLEN ile kuyruk derinliği metrikleri)
@@ -143,7 +159,7 @@ type streamMessage struct {
 }
 
 // runWorker continuously reads from Redis Stream and processes measurement jobs.
-func runWorker(ctx context.Context, pool *pgxpool.Pool, rdb *redis.Client, engines *engine.Registry, s3Client engine.RawSaver, consumerGroup, ackGroup string) {
+func runWorker(ctx context.Context, pool *pgxpool.Pool, rdb *redis.Client, engines *engine.Registry, s3Client engine.RawSaver, consumerGroup, ackGroup string, measureSvc measure.Service, recSvc recommendation.Service, deliverySvc delivery.Service) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -178,7 +194,7 @@ func runWorker(ctx context.Context, pool *pgxpool.Pool, rdb *redis.Client, engin
 
 			for _, stream := range results {
 				for _, msg := range stream.Messages {
-					processMessage(ctx, pool, rdb, engines, s3Client, stream.Stream, msg.ID, msg.Values, ackGroup)
+					processMessage(ctx, pool, rdb, engines, s3Client, stream.Stream, msg.ID, msg.Values, ackGroup, measureSvc, recSvc, deliverySvc)
 				}
 			}
 		}
@@ -195,6 +211,9 @@ func processMessage(
 	stream, msgID string,
 	values map[string]interface{},
 	consumerGroup string,
+	measureSvc measure.Service,
+	recSvc recommendation.Service,
+	deliverySvc delivery.Service,
 ) {
 	logger := slog.With("msg_id", msgID, "stream", stream)
 
@@ -335,7 +354,137 @@ func processMessage(
 
 	// Redis Stream'den ACK'le
 	ackMessage(rdb, stream, msgID, consumerGroup)
+
+	// Skor hesaplama + tavsiye üretimi (arka planda, hata worker'ı durdurmaz)
+	computeAndEvaluate(ctx, pool, job.TenantID, job.WorkspaceID, job.PanelID, job.BrandID, measureSvc, recSvc, deliverySvc)
+
 	logger.Info("worker: iş tamamlandı")
+}
+
+// computeAndEvaluate loads raw responses, computes a score, evaluates rules, and sends notifications.
+func computeAndEvaluate(
+	ctx context.Context,
+	pool *pgxpool.Pool,
+	tenantID, workspaceID, panelID, brandID string,
+	measureSvc measure.Service,
+	recSvc recommendation.Service,
+	deliverySvc delivery.Service,
+) {
+	logger := slog.With("brand", brandID, "tenant", tenantID, "workspace", workspaceID)
+
+	// 1. Ham yanıtları yükle
+	rows, err := pool.Query(ctx, `
+		SELECT engine_name, content_text, COALESCE(raw_body, content_text)
+		FROM measure.raw_responses
+		WHERE tenant_id = $1 AND workspace_id = $2 AND brand_id = $3
+		AND created_at > now() - interval '1 hour'
+		ORDER BY engine_name, created_at
+	`, tenantID, workspaceID, brandID)
+	if err != nil {
+		logger.Warn("compute: raw_response sorgu hatası", "error", err)
+		return
+	}
+	defer rows.Close()
+
+	type engineResponse struct {
+		engine string
+		raw    engine.RawResponse
+	}
+	var engineResponses []engineResponse
+	for rows.Next() {
+		var engineName, contentText, rawBody string
+		if err := rows.Scan(&engineName, &contentText, &rawBody); err != nil {
+			logger.Warn("compute: satır okuma hatası", "error", err)
+			continue
+		}
+		engineResponses = append(engineResponses, engineResponse{
+			engine: engineName,
+			raw: engine.RawResponse{
+				Content: contentText,
+			},
+		})
+	}
+	if err := rows.Err(); err != nil {
+		logger.Warn("compute: satır okuma hatası", "error", err)
+		return
+	}
+
+	if len(engineResponses) == 0 {
+		return
+	}
+
+	// 2. Motor bazında grupla -> MeasurementResult
+	engineMap := make(map[string][]engine.RawResponse)
+	for _, er := range engineResponses {
+		engineMap[er.engine] = append(engineMap[er.engine], er.raw)
+	}
+
+	var results []measure.MeasurementResult
+	for eng, raws := range engineMap {
+		results = append(results, measure.MeasurementResult{
+			RawResponses: raws,
+			BrandID:      brandID,
+			PanelID:      panelID,
+			WorkspaceID:  workspaceID,
+			TenantID:     tenantID,
+			EngineMeta:   engine.EngineMeta{EngineName: eng},
+		})
+	}
+
+	// 3. Skor hesapla
+	score, err := measureSvc.CalculateScore(ctx, panelID, results, measure.ComponentWeights{})
+	if err != nil {
+		logger.Warn("compute: skor hesaplama hatası", "error", err)
+		return
+	}
+	metrics.MeasurementsCompleted.WithLabelValues(tenantID).Inc()
+	logger.Info("compute: skor hesaplandı", "value", score.Value)
+
+	// 4. Tavsiyeleri değerlendir
+	recs, err := recSvc.Evaluate(brandID, workspaceID, tenantID)
+	if err != nil {
+		logger.Warn("compute: tavsiye değerlendirme hatası", "error", err)
+		return
+	}
+	logger.Info("compute: tavsiyeler değerlendirildi", "count", len(recs))
+
+	// 5. Kritik bildirimleri kontrol et
+	var criticalRecs []recommendation.Recommendation
+	for _, r := range recs {
+		if r.Severity == "critical" || r.Severity == "high" {
+			criticalRecs = append(criticalRecs, r)
+		}
+	}
+	if len(criticalRecs) == 0 {
+		return
+	}
+
+	// Bildirim ayarlarını kontrol et
+	settings, err := deliverySvc.GetSettings(workspaceID, tenantID)
+	if err != nil || settings == nil || !settings.NotifyOnDrop {
+		return
+	}
+
+	for _, r := range criticalRecs {
+		notif := delivery.Notification{
+			TenantID:    tenantID,
+			WorkspaceID: workspaceID,
+			Type:        delivery.NotificationScoreDrop,
+			Channel:     delivery.ChannelEmail,
+			Title:       r.Title,
+			Body:        r.Detail,
+			Data: map[string]interface{}{
+				"brand_id":  brandID,
+				"severity":  r.Severity,
+				"score":     score.Value,
+				"threshold": settings.DropThreshold,
+			},
+			Status: delivery.DeliveryPending,
+		}
+		if err := deliverySvc.SendNotification(notif); err != nil {
+			logger.Warn("compute: bildirim gönderme hatası", "error", err)
+		}
+	}
 }
 
 // isGroupAlreadyExists checks if a Redis error is BUSYGROUP (group already exists).
@@ -488,6 +637,27 @@ func collectAccountMetrics(ctx context.Context, pool *pgxpool.Pool) {
 				continue
 			}
 			metrics.AuditsCompleted.WithLabelValues(tenantID).Set(float64(count))
+		}
+		rows.Close()
+	}
+
+	// RecommendationsGenerated: her tenant için toplam öneri sayısı
+	rows, err = pool.Query(ctx, `
+		SELECT tenant_id, COUNT(*) AS count
+		FROM recommendation.results
+		GROUP BY tenant_id
+	`)
+	if err != nil {
+		slog.Warn("account metric: recommendations_generated sorgu hatası", "error", err)
+	} else {
+		for rows.Next() {
+			var tenantID string
+			var count int
+			if err := rows.Scan(&tenantID, &count); err != nil {
+				slog.Warn("account metric: recommendations_generated satır okuma hatası", "error", err)
+				continue
+			}
+			metrics.RecommendationsGenerated.WithLabelValues(tenantID).Set(float64(count))
 		}
 		rows.Close()
 	}

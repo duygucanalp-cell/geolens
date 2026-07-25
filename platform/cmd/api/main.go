@@ -101,7 +101,7 @@ func main() {
 	}
 
 	// Handler'lar
-	authHandler := auth.NewHandler(pool, jwtService)
+	authHandler := auth.NewHandler(pool, jwtService, redisClient)
 	configHandler := config.NewHandler(pool)
 	panelHandler := config.NewPanelHandler(pool)
 	measureHandler := measure.NewHandler(pool, engines)
@@ -150,7 +150,7 @@ func main() {
 
 		// Protected routes (JWT gerekli)
 		r.Group(func(r chi.Router) {
-			r.Use(httpmw.Authenticate(jwtService.TokenValidator()))
+			r.Use(httpmw.Authenticate(jwtService.TokenValidator(redisClient)))
 			r.Use(httpmw.TenantContext(pool))
 
 			// Auth-protected utilities
@@ -188,23 +188,18 @@ func main() {
 					r.Post("/brands", configHandler.CreateBrand)
 				})
 
-				// Member+ routes
-				r.Get("/brands", configHandler.ListBrands)
-				r.Get("/panels", panelHandler.ListPanels)
+				// Member+ routes (POST/PUT only — GET routes are in the CacheMiddleware group above)
 				r.Post("/panels", panelHandler.CreatePanel)
-				r.Get("/panels/{panelID}", panelHandler.GetPanel)
-				r.Get("/prompt-sets", panelHandler.ListPromptSets)
 				r.Post("/prompt-sets", panelHandler.CreatePromptSet)
 				r.Post("/measurements", measureHandler.TriggerMeasurement)
-				r.Get("/scores", measureHandler.ListScores)
 				r.Post("/audit", auditHandler.RunAudit)
-				r.Get("/notifications/settings", deliveryHandler.GetSettings)
 				r.Put("/notifications/settings", deliveryHandler.UpdateSettings)
 				r.Post("/notifications/test", deliveryHandler.SendTestEmail)
-				r.Get("/recommendations", recommendationHandler.ListRecommendations)
 				r.Post("/recommendations/{recId}/apply", recommendationHandler.MarkApplied)
 				r.Post("/recommendations/{recId}/dismiss", recommendationHandler.MarkDismissed)
 				r.Post("/reports/digest", pdfHandler.GenerateWeeklyDigest)
+				r.Post("/reports/score-card", pdfHandler.GenerateScoreCard)
+				r.Post("/reports/audit", pdfHandler.GenerateAuditReport)
 			})
 		})
 	})

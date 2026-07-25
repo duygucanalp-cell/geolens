@@ -51,7 +51,7 @@ func ValidateContentType(allowedTypes ...string) func(http.Handler) http.Handler
 			if r.Method == http.MethodPost || r.Method == http.MethodPut || r.Method == http.MethodPatch {
 				cl := r.Header.Get("Content-Length")
 				te := r.Header.Get("Transfer-Encoding")
-				if cl == "" && te == "" {
+				if (cl == "" || cl == "0") && te == "" {
 					next.ServeHTTP(w, r)
 					return
 				}

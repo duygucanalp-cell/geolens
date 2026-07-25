@@ -195,7 +195,9 @@ func (h *Handler) ListScores(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		if engBreakdown != "" && engBreakdown != "{}" {
-			_ = json.Unmarshal([]byte(engBreakdown), &s.EngineBreakdown)
+			if err := json.Unmarshal([]byte(engBreakdown), &s.EngineBreakdown); err != nil {
+				slog.Warn("engine breakdown çözümleme hatası", "score_id", s.ID, "error", err)
+			}
 		}
 		scores = append(scores, s)
 	}

@@ -25,7 +25,6 @@ const (
 type geminiRequest struct {
 	Contents         []content         `json:"contents"`
 	Tools            []tool            `json:"tools,omitempty"`
-	GroundingConfig  *groundingConfig  `json:"groundingConfig,omitempty"`
 	GenerationConfig *generationConfig `json:"generationConfig,omitempty"` // H15: temp=0
 }
 
@@ -42,10 +41,6 @@ type tool struct {
 }
 
 type googleSearch struct{}
-
-type groundingConfig struct {
-	Threshold string `json:"threshold,omitempty"` // e.g. "BLOCK_MEDIUM_AND_ABOVE"
-}
 
 type generationConfig struct {
 	Temperature float64 `json:"temperature"`

@@ -5,9 +5,11 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/geolens/platform/platform/db"
@@ -40,11 +42,12 @@ type authResponse struct {
 type Handler struct {
 	pool *db.Pool
 	jwt  *JWTService
+	rdb  *redis.Client
 }
 
 // NewHandler creates a new auth handler.
-func NewHandler(pool *db.Pool, jwt *JWTService) *Handler {
-	return &Handler{pool: pool, jwt: jwt}
+func NewHandler(pool *db.Pool, jwt *JWTService, rdb *redis.Client) *Handler {
+	return &Handler{pool: pool, jwt: jwt, rdb: rdb}
 }
 
 // Register handles POST /v1/auth/register
@@ -219,8 +222,17 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 // Logout handles POST /v1/auth/logout
-// İleride Redis blacklist ile desteklenebilir (HT1).
+// Token'ı Redis blacklist'e ekler, böylece logout sonrası kullanılamaz.
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
-	// TODO(HT1): Token blacklist / Redis
+	authHeader := r.Header.Get("Authorization")
+	if authHeader != "" && strings.HasPrefix(authHeader, "Bearer ") {
+		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+		if tokenStr != "" {
+			if err := h.jwt.BlacklistToken(tokenStr, h.rdb); err != nil {
+				slog.Warn("token blacklist ekleme hatası", "error", err)
+			}
+		}
+	}
+
 	httputil.WriteJSON(w, http.StatusOK, map[string]string{"status": "logged_out"})
 }

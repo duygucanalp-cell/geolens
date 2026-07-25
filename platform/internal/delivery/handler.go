@@ -8,6 +8,7 @@ import (
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/httputil"
+	"github.com/geolens/platform/platform/metrics"
 )
 
 // Handler holds dependencies for delivery HTTP handlers.
@@ -93,6 +94,11 @@ func (h *Handler) SendTestEmail(w http.ResponseWriter, r *http.Request) {
 		slog.Error("test email gönderme hatası", "error", err)
 		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
+	}
+
+	tenantID := httpmw.GetTenantID(r.Context())
+	if tenantID != "" {
+		metrics.EmailsSent.WithLabelValues(tenantID).Inc()
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, map[string]string{"status": "sent", "to": req.Email})

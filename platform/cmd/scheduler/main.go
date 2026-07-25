@@ -20,6 +20,7 @@ import (
 	"github.com/geolens/platform/engine/gemini"
 	"github.com/geolens/platform/engine/perplexity"
 	"github.com/geolens/platform/internal/config"
+	"github.com/geolens/platform/internal/delivery"
 	"github.com/geolens/platform/internal/measure"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/queue"
@@ -77,8 +78,16 @@ func main() {
 	// Outbox dağıtıcıyı başlat
 	dispatcher := queue.NewDispatcher(pool.Pool, rdb, cfg.PollInterval, cfg.ConsumerGroup)
 
+	// Haftalık digest e-posta gönderimi için delivery servisi
+	emailCfg := delivery.EmailConfig{
+		FromName:    cfg.SendGridFromName,
+		FromEmail:   cfg.SendGridFromEmail,
+		SendGridKey: cfg.SendGridAPIKey,
+	}
+	deliverySvc := delivery.NewService(emailCfg, pool)
+
 	var wg sync.WaitGroup
-	wg.Add(2)
+	wg.Add(3)
 	go func() {
 		defer wg.Done()
 		dispatcher.Start(ctx)
@@ -86,6 +95,10 @@ func main() {
 	go func() {
 		defer wg.Done()
 		runScheduler(ctx, pool.Pool, engines, cfg.PollInterval)
+	}()
+	go func() {
+		defer wg.Done()
+		runDigestScheduler(ctx, pool.Pool, deliverySvc)
 	}()
 
 	quit := make(chan os.Signal, 1)
@@ -247,6 +260,58 @@ func parseIntervalOrDefault(s string, defaultVal time.Duration) time.Duration {
 		return defaultVal
 	}
 	return d
+}
+
+// runDigestScheduler runs weekly digest jobs on a cron schedule.
+func runDigestScheduler(ctx context.Context, pool *pgxpool.Pool, svc delivery.Service) {
+	c := cron.New(cron.WithLocation(time.UTC))
+	// Her Pazartesi 09:00 UTC
+	_, err := c.AddFunc("0 9 * * 1", func() {
+		slog.Info("haftalık digest gönderimi başlıyor")
+		if err := processDigests(ctx, pool, svc); err != nil {
+			slog.Error("digest işleme hatası", "error", err)
+		}
+	})
+	if err != nil {
+		slog.Error("digest cron kurulum hatası", "error", err)
+		return
+	}
+	c.Start()
+	<-ctx.Done()
+	c.Stop()
+}
+
+// processDigests queries workspaces with digest enabled and sends weekly digests.
+func processDigests(ctx context.Context, pool *pgxpool.Pool, svc delivery.Service) error {
+	rows, err := pool.Query(ctx, `
+		SELECT workspace_id, tenant_id
+		FROM delivery.notification_settings
+		WHERE digest_enabled = true
+	`)
+	if err != nil {
+		return fmt.Errorf("digest sorgu: %w", err)
+	}
+	defer rows.Close()
+
+	var sent int
+	for rows.Next() {
+		var workspaceID, tenantID string
+		if err := rows.Scan(&workspaceID, &tenantID); err != nil {
+			slog.Error("digest satır okuma hatası", "error", err)
+			continue
+		}
+		if err := svc.SendWeeklyDigest(workspaceID, tenantID); err != nil {
+			slog.Error("digest gönderme hatası",
+				"workspace", workspaceID, "error", err)
+			continue
+		}
+		sent++
+	}
+
+	if sent > 0 {
+		slog.Info("haftalık digest'ler gönderildi", "count", sent)
+	}
+	return rows.Err()
 }
 
 // isDue checks if a panel is due for measurement based on its cron schedule.

@@ -51,7 +51,7 @@ var defaultNG10Rules = []NG10Rule{
 	{
 		ID:          "ng10-unsubstantiated",
 		Category:    ClaimN,
-		Keywords:    []string{"en iyi", "en büyük", "lider", "bir numara", "number one"},
+		Keywords:    []string{"en iyi", "en büyük", "lider", "bir numara", "number one", "üstün"},
 		Description: "Kanıtlanamaz üstünlük ifadeleri",
 	},
 	{
@@ -165,7 +165,11 @@ func (f *NG10Filter) IsAllowed(text string) bool {
 
 // FilterRecommendations filters out recommendations that don't pass NG10.
 // Sadece NG (nötr) ve P (pozitif) kategorisindeki öneriler döndürülür.
+// Nil girdi durumunda boş (non-nil) slice döndürür.
 func (f *NG10Filter) FilterRecommendations(recs []Recommendation) []Recommendation {
+	if recs == nil {
+		return []Recommendation{}
+	}
 	if len(recs) == 0 {
 		return recs
 	}
@@ -239,8 +243,6 @@ func toLowerTurkish(s string) string {
 	runes := []rune(s)
 	for i, r := range runes {
 		switch {
-		case r >= 'A' && r <= 'Z':
-			runes[i] = r + 32
 		case r == 'İ':
 			runes[i] = 'i'
 		case r == 'I':
@@ -255,6 +257,8 @@ func toLowerTurkish(s string) string {
 			runes[i] = 'ö'
 		case r == 'Ğ':
 			runes[i] = 'ğ'
+		case r >= 'A' && r <= 'Z':
+			runes[i] = r + 32
 		}
 	}
 	return string(runes)

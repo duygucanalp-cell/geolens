@@ -7,9 +7,12 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/geolens/platform/platform/httpmw"
 )
+
+const blacklistPrefix = "token:blacklist:"
 
 // Claims represents the JWT claims for GeoLens platform tokens.
 type Claims struct {
@@ -21,8 +24,8 @@ type Claims struct {
 
 // JWTService handles JWT token operations.
 type JWTService struct {
-	secret     []byte
-	tokenTTL   time.Duration
+	secret   []byte
+	tokenTTL time.Duration
 }
 
 // NewJWTService creates a new JWT service.
@@ -87,14 +90,42 @@ func InjectContext(ctx context.Context, claims *Claims) context.Context {
 	return ctx
 }
 
-// TokenValidator returns an httpmw.TokenValidator function that wraps JWTService.ValidateToken.
-// Bu, httpmw'nin auth paketine import bağımlılığı olmadan JWT doğrulaması yapmasını sağlar.
-func (s *JWTService) TokenValidator() func(string) (string, string, string, error) {
+// TokenValidator returns an httpmw.TokenValidator function that wraps JWTService.ValidateToken
+// with Redis blacklist checking. If rdb is nil, blacklist check is skipped.
+func (s *JWTService) TokenValidator(rdb *redis.Client) func(string) (string, string, string, error) {
 	return func(tokenStr string) (string, string, string, error) {
 		claims, err := s.ValidateToken(tokenStr)
 		if err != nil {
 			return "", "", "", err
 		}
+
+		if rdb != nil && claims.ID != "" {
+			exists, err := rdb.Exists(context.Background(), blacklistPrefix+claims.ID).Result()
+			if err == nil && exists > 0 {
+				return "", "", "", fmt.Errorf("token iptal edilmiş")
+			}
+		}
+
 		return claims.UserID, claims.TenantID, claims.Role, nil
 	}
+}
+
+// BlacklistToken adds the given JWT token to the Redis blacklist for its remaining lifetime.
+// The blacklist key is token:blacklist:{jti} and auto-expires when the token would have expired.
+func (s *JWTService) BlacklistToken(tokenStr string, rdb *redis.Client) error {
+	if rdb == nil {
+		return nil
+	}
+
+	claims, err := s.ValidateToken(tokenStr)
+	if err != nil {
+		return fmt.Errorf("blacklist için token doğrulama: %w", err)
+	}
+
+	remaining := time.Until(claims.ExpiresAt.Time)
+	if remaining <= 0 {
+		return nil
+	}
+
+	return rdb.Set(context.Background(), blacklistPrefix+claims.ID, "1", remaining).Err()
 }

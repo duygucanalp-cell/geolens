@@ -43,22 +43,11 @@ export function getPanels(ws: string): Promise<Panel[]> {
   return fetchJSON(`${BASE}/workspaces/${ws}/panels`)
 }
 
-export function triggerMeasurement(ws: string, brandId: string, panelId?: string) {
-  return fetchJSON(`${BASE}/workspaces/${ws}/measurements`, {
-    method: 'POST',
-    body: JSON.stringify({ brand_id: brandId, panel_id: panelId }),
-  })
-}
-
 export function triggerAudit(ws: string, brandId: string, brandName: string, websiteUrl: string): Promise<AuditResult> {
   return fetchJSON(`${BASE}/workspaces/${ws}/audit`, {
     method: 'POST',
     body: JSON.stringify({ brand_id: brandId, brand_name: brandName, website_url: websiteUrl }),
   })
-}
-
-export function getScoreHistory(ws: string, brandId: string): Promise<Score[]> {
-  return fetchJSON(`${BASE}/workspaces/${ws}/brands/${brandId}/scores`)
 }
 
 export function getNotificationSettings(ws: string) {

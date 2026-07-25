@@ -392,7 +392,7 @@ func TestToLowerTurkish(t *testing.T) {
 		{"ŞİŞLİ", "şişli"},
 		{"ÇANKAYA", "çankaya"},
 		{"ÜSKÜDAR", "üsküdar"},
-		{"ÖDEMİŞ", "ödeniş"},
+		{"ÖDEMİŞ", "ödemiş"},
 		{"Ğ", "ğ"},
 		{"Merhaba Dünya", "merhaba dünya"},
 		{"", ""},

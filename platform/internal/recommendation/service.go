@@ -335,7 +335,11 @@ func (s *service) evaluateBrand(ctx *EvaluationContext) []Recommendation {
 }
 
 // saveRecommendation persists a recommendation to the database.
+// Pool nil ise (test) atlama yapılır.
 func (s *service) saveRecommendation(rec Recommendation) {
+	if s.pool == nil {
+		return
+	}
 	ctx := context.Background()
 	_, err := s.pool.Exec(ctx, `
 		INSERT INTO recommendation.results
