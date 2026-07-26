@@ -53,7 +53,6 @@ func processPendingReports(pool *db.Pool, svc Service) {
 		`, id); err != nil {
 			slog.Warn("rapor durum güncelleme hatası", "id", id, "error", err)
 		}
-
 	}
 
 	if rows.Err() != nil {
