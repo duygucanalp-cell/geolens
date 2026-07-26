@@ -5,17 +5,23 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/geolens/platform/internal/testutil"
 )
 
+func newTestHandler() *Handler {
+	return &Handler{pool: &testutil.MockPool{}, config: EmailConfig{}}
+}
+
 func TestDeliveryNewHandler(t *testing.T) {
-	h := NewHandler(nil, EmailConfig{})
+	h := newTestHandler()
 	if h == nil {
-		t.Fatal("NewHandler should not return nil")
+		t.Fatal("Handler should not return nil")
 	}
 }
 
 func TestUpdateSettings_InvalidJSON(t *testing.T) {
-	h := NewHandler(nil, EmailConfig{})
+	h := newTestHandler()
 
 	req := httptest.NewRequest(http.MethodPut, "/v1/workspaces/ws/notifications/settings", bytes.NewReader([]byte("not json")))
 	req.Header.Set("Content-Type", "application/json")
@@ -30,7 +36,7 @@ func TestUpdateSettings_InvalidJSON(t *testing.T) {
 }
 
 func TestSendTestEmail_InvalidJSON(t *testing.T) {
-	h := NewHandler(nil, EmailConfig{})
+	h := newTestHandler()
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/workspaces/ws/notifications/test", bytes.NewReader([]byte("not json")))
 	req.Header.Set("Content-Type", "application/json")

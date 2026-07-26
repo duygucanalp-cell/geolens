@@ -8,17 +8,18 @@ import (
 	"testing"
 
 	"github.com/geolens/platform/engine"
+	"github.com/geolens/platform/internal/testutil"
 )
 
 func TestMeasureNewHandler(t *testing.T) {
-	h := NewHandler(nil, engine.NewRegistry())
+	h := NewHandler(&testutil.MockPool{}, engine.NewRegistry())
 	if h == nil {
 		t.Fatal("NewHandler should not return nil")
 	}
 }
 
 func TestTriggerMeasurement_InvalidJSON(t *testing.T) {
-	h := NewHandler(nil, engine.NewRegistry())
+	h := NewHandler(&testutil.MockPool{}, engine.NewRegistry())
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/workspaces/ws/measurements", bytes.NewReader([]byte("not json")))
 	req.Header.Set("Content-Type", "application/json")

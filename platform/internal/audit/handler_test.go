@@ -6,20 +6,19 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/geolens/platform/internal/testutil"
 )
 
 func TestAuditNewHandler(t *testing.T) {
-	h := NewHandler(nil)
+	h := NewHandler(&testutil.MockPool{})
 	if h == nil {
 		t.Fatal("NewHandler should not return nil")
-	}
-	if h.pool != nil {
-		t.Fatal("expected nil pool")
 	}
 }
 
 func TestRunAudit_InvalidJSON(t *testing.T) {
-	h := NewHandler(nil)
+	h := NewHandler(&testutil.MockPool{})
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/workspaces/ws/audit", bytes.NewReader([]byte("not json")))
 	req.Header.Set("Content-Type", "application/json")

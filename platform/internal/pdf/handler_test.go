@@ -6,10 +6,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/geolens/platform/internal/testutil"
 )
 
 func newTestHandler() *Handler {
-	return &Handler{pool: nil, svc: nil}
+	return &Handler{pool: &testutil.MockPool{}, svc: nil}
 }
 
 func TestRequestReport_InvalidJSON(t *testing.T) {
