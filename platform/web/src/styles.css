@@ -1,7 +1,7 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f1f5f9; color: #1e293b; }
 
-.app-header { background: #1e293b; color: #fff; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+.app-header { background: #1e293b; color: #fff; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 .app-header h1 { font-size: 1.25rem; font-weight: 600; }
 .logout-btn { background: none; border: 1px solid #475569; color: #fff; padding: 0.4rem 1rem; border-radius: 6px; cursor: pointer; }
 .logout-btn:hover { background: #334155; }
@@ -23,9 +23,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .link-btn:hover { text-decoration: underline; }
 
 .dashboard { padding: 2rem; max-width: 1200px; margin: 0 auto; }
-.dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+.dashboard-header { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
 .dashboard-header h2 { font-size: 1.25rem; }
-.refresh-btn { background: #6366f1; color: #fff; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; }
+.refresh-btn { background: #6366f1; color: #fff; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
 .scores-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1rem; }
 .dashboard-loading, .dashboard-error, .dashboard-empty { text-align: center; padding: 3rem; color: #64748b; }
 .dashboard-error button { margin-top: 1rem; background: #6366f1; color: #fff; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; }
@@ -58,7 +58,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 
 /* Dashboard Tabs */
 .dashboard-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
-.tab-btn { padding: 0.5rem 1.25rem; border: 1px solid #e2e8f0; background: #fff; border-radius: 8px; cursor: pointer; font-size: 0.85rem; color: #64748b; transition: all 0.2s; }
+.tab-btn { padding: 0.5rem 1rem; border: 1px solid #e2e8f0; background: #fff; border-radius: 8px; cursor: pointer; font-size: 0.85rem; color: #64748b; transition: all 0.2s; white-space: nowrap; flex-shrink: 0; }
 .tab-btn:hover { background: #f8fafc; }
 .tab-btn.active { background: #6366f1; color: #fff; border-color: #6366f1; }
 
@@ -78,7 +78,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .audit-controls { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
 .audit-select { flex: 1; min-width: 200px; padding: 0.6rem 0.75rem; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem; background: #fff; }
 .audit-select:focus { outline: none; border-color: #6366f1; }
-.audit-btn { padding: 0.6rem 1.5rem; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.9rem; cursor: pointer; }
+.audit-btn { padding: 0.6rem 1.5rem; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.9rem; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
 .audit-btn:hover { background: #4f46e5; }
 .audit-btn:disabled { background: #cbd5e1; cursor: not-allowed; }
 .audit-error { color: #ef4444; font-size: 0.85rem; margin-bottom: 1rem; }
@@ -166,7 +166,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .rec-header h3 { font-size: 1.1rem; margin-bottom: 0.25rem; }
 .rec-desc { font-size: 0.85rem; color: #64748b; }
 .rec-summary { display: flex; gap: 0.75rem; margin-bottom: 1.25rem; }
-.rec-summary-card { flex: 1; padding: 0.75rem; border-radius: 8px; text-align: center; background: #f8fafc; }
+.rec-summary-card { flex: 1; min-width: 80px; padding: 0.75rem; border-radius: 8px; text-align: center; background: #f8fafc; }
 .rec-summary-card.critical { background: #fef2f2; }
 .rec-summary-card.high { background: #fff7ed; }
 .rec-summary-card.total { background: #eef2ff; }
@@ -187,7 +187,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .rec-card-left { width: 4px; flex-shrink: 0; }
 .rec-severity-bar { width: 100%; height: 100%; }
 .rec-card-content { flex: 1; padding: 1rem; }
-.rec-card-header { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.5rem; align-items: center; }
+.rec-card-header { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.5rem; align-items: center; word-break: break-word; }
 .rec-severity-badge { font-size: 0.7rem; font-weight: 700; border: 1px solid; padding: 0.1rem 0.4rem; border-radius: 4px; letter-spacing: 0.3px; }
 .rec-category-badge { font-size: 0.7rem; color: #64748b; background: #e2e8f0; padding: 0.1rem 0.4rem; border-radius: 4px; }
 .rec-brand-badge { font-size: 0.7rem; padding: 0.1rem 0.4rem; border-radius: 4px; font-weight: 600; }
@@ -195,7 +195,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .rec-title { font-size: 0.9rem; font-weight: 600; margin-bottom: 0.3rem; color: #1e293b; }
 .rec-detail { font-size: 0.8rem; color: #64748b; line-height: 1.4; }
 .rec-meta { display: flex; align-items: center; gap: 1rem; margin-top: 0.75rem; }
-.rec-confidence { display: flex; align-items: center; gap: 0.5rem; flex: 1; max-width: 200px; }
+.rec-confidence { display: flex; align-items: center; gap: 0.5rem; flex: 1; min-width: 0; max-width: 200px; }
 .rec-confidence-bar { flex: 1; height: 4px; background: #e2e8f0; border-radius: 2px; }
 .rec-confidence-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
 .rec-confidence-label { font-size: 0.7rem; color: #94a3b8; white-space: nowrap; }
@@ -211,7 +211,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .monitoring-header { margin-bottom: 1.5rem; }
 .monitoring-header h3 { font-size: 1.1rem; margin-bottom: 0.25rem; }
 .monitoring-desc { font-size: 0.85rem; color: #64748b; }
-.monitoring-services { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
+.monitoring-services { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
 .monitoring-card { display: flex; align-items: center; gap: 0.75rem; padding: 1rem; background: #f8fafc; border-radius: 10px; text-decoration: none; border-top: 3px solid #6366f1; transition: all 0.2s; }
 .monitoring-card:hover { background: #f1f5f9; transform: translateY(-1px); }
 .monitoring-card-icon { font-size: 1.5rem; width: 40px; text-align: center; }
