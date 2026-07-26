@@ -18,9 +18,14 @@ type Handler struct {
 	pool dbiface.DB
 }
 
-// NewHandler creates a new public API Handler.
-func NewHandler(pool *db.Pool) *Handler {
-	return &Handler{pool: dbiface.NewAdapter(pool)}
+// NewHandler creates a new public API Handler with the given DB interface.
+func NewHandler(pool dbiface.DB) *Handler {
+	return &Handler{pool: pool}
+}
+
+// NewProductionHandler creates a new public API Handler with a *db.Pool for production use.
+func NewProductionHandler(pool *db.Pool) *Handler {
+	return NewHandler(dbiface.NewAdapter(pool))
 }
 
 // GetScore handles GET /public/v1/scores/{brandID}

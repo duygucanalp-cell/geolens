@@ -22,8 +22,13 @@ type Handler struct {
 	rawPool *db.Pool
 }
 
-// NewHandler creates a new PDF handler.
-func NewHandler(pool *db.Pool) *Handler {
+// NewHandler creates a new PDF handler with the given DB interface.
+func NewHandler(pool dbiface.DB) *Handler {
+	return &Handler{pool: pool}
+}
+
+// NewProductionHandler creates a new PDF handler with a *db.Pool for production use.
+func NewProductionHandler(pool *db.Pool) *Handler {
 	return &Handler{
 		svc:     NewService(pool),
 		pool:    dbiface.NewAdapter(pool),

@@ -1,7 +1,6 @@
 package prompt
 
 import (
-	"context"
 	"encoding/json"
 	"log/slog"
 	"math/rand"

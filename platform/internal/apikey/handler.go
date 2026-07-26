@@ -22,9 +22,14 @@ type Handler struct {
 	pool dbiface.DB
 }
 
-// NewHandler creates a new API key Handler.
-func NewHandler(pool *db.Pool) *Handler {
-	return &Handler{pool: dbiface.NewAdapter(pool)}
+// NewHandler creates a new API key Handler with the given DB interface.
+func NewHandler(pool dbiface.DB) *Handler {
+	return &Handler{pool: pool}
+}
+
+// NewProductionHandler creates a new API key Handler with a *db.Pool for production use.
+func NewProductionHandler(pool *db.Pool) *Handler {
+	return NewHandler(dbiface.NewAdapter(pool))
 }
 
 // List handles GET /v1/api-keys

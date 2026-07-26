@@ -19,9 +19,14 @@ type Handler struct {
 	pool dbiface.DB
 }
 
-// NewHandler creates a new alert Handler.
-func NewHandler(pool *db.Pool) *Handler {
-	return &Handler{pool: dbiface.NewAdapter(pool)}
+// NewHandler creates a new alert Handler with the given DB interface.
+func NewHandler(pool dbiface.DB) *Handler {
+	return &Handler{pool: pool}
+}
+
+// NewProductionHandler creates a new alert Handler with a *db.Pool for production use.
+func NewProductionHandler(pool *db.Pool) *Handler {
+	return NewHandler(dbiface.NewAdapter(pool))
 }
 
 // List handles GET /v1/workspaces/{ws}/alert-rules

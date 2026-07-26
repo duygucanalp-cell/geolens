@@ -4,17 +4,19 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/geolens/platform/internal/testutil"
 )
 
 func TestRecommendationNewHandler(t *testing.T) {
-	h := NewHandler(nil)
+	h := NewHandler(&testutil.MockPool{})
 	if h == nil {
 		t.Fatal("NewHandler should not return nil")
 	}
 }
 
 func TestMarkApplied_EmptyRecID(t *testing.T) {
-	h := NewHandler(nil)
+	h := NewHandler(&testutil.MockPool{})
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/workspaces/ws/recommendations//apply", nil)
 	w := httptest.NewRecorder()

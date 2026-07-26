@@ -20,8 +20,13 @@ type Handler struct {
 	svc     Service
 }
 
-// NewHandler creates a new recommendation handler.
-func NewHandler(pool *db.Pool) *Handler {
+// NewHandler creates a new recommendation handler with the given DB interface.
+func NewHandler(pool dbiface.DB) *Handler {
+	return &Handler{pool: pool}
+}
+
+// NewProductionHandler creates a new recommendation handler with a *db.Pool for production use.
+func NewProductionHandler(pool *db.Pool) *Handler {
 	return &Handler{
 		pool:    dbiface.NewAdapter(pool),
 		rawPool: pool,

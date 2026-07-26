@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/jackc/pgx/v5"
 
 	"github.com/geolens/platform/engine"
 	"github.com/geolens/platform/internal/dbiface"
@@ -27,8 +26,13 @@ type Handler struct {
 	engines *engine.Registry
 }
 
-// NewHandler creates a new measure handler.
-func NewHandler(pool *db.Pool, engines *engine.Registry) *Handler {
+// NewHandler creates a new measure handler with the given DB interface.
+func NewHandler(pool dbiface.DB, engines *engine.Registry) *Handler {
+	return &Handler{pool: pool, engines: engines}
+}
+
+// NewProductionHandler creates a new measure handler with a *db.Pool for production use.
+func NewProductionHandler(pool *db.Pool, engines *engine.Registry) *Handler {
 	return &Handler{
 		pool:    dbiface.NewAdapter(pool),
 		rawPool: pool,
@@ -40,7 +44,7 @@ func NewHandler(pool *db.Pool, engines *engine.Registry) *Handler {
 // This is a demo convenience: the async worker pipeline handles the full flow,
 // but immediate scoring lets the UI show results right away.
 func (h *Handler) immediateMeasureAndScore(ctx context.Context, brandName, brandID, websiteURL, panelID, workspaceID, tenantID, promptText string) {
-	svc := NewService(h.pool, h.engines, nil)
+	svc := NewService(h.rawPool, h.engines, nil)
 
 	// n=3 Measurement (tek engine — mock engine hızlı yanıt verir)
 	result, err := svc.Measure(ctx, MeasurementRequest{
@@ -138,7 +142,7 @@ func (h *Handler) TriggerMeasurement(w http.ResponseWriter, r *http.Request) {
 				PromptText:  promptText,
 				SampleIndex: i,
 			}
-			if err := EnqueueMeasurement(r.Context(), h.pool, job, idempotencyKey); err != nil {
+			if err := EnqueueMeasurement(r.Context(), h.rawPool, job, idempotencyKey); err != nil {
 				slog.Error("outbox job ekleme hatası", "error", err, "engine", engineName, "sample", i)
 			}
 		}
@@ -407,7 +411,7 @@ func (h *Handler) ListCitations(w http.ResponseWriter, r *http.Request) {
 
 	// Önce raw_responses'dan citation'ları çek
 	var err error
-	var pgRows pgx.Rows
+	var pgRows dbiface.RowsIter
 	if jobID != "" {
 		pgRows, err = h.pool.Query(r.Context(), `
 			SELECT r.id, r.job_id, r.engine_name, r.content_text

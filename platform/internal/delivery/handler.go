@@ -20,8 +20,13 @@ type Handler struct {
 	config  EmailConfig
 }
 
-// NewHandler creates a new delivery handler.
-func NewHandler(pool *db.Pool, cfg EmailConfig) *Handler {
+// NewHandler creates a new delivery handler with the given DB interface.
+func NewHandler(pool dbiface.DB) *Handler {
+	return &Handler{pool: pool}
+}
+
+// NewProductionHandler creates a new delivery handler with a *db.Pool for production use.
+func NewProductionHandler(pool *db.Pool, cfg EmailConfig) *Handler {
 	return &Handler{
 		svc:     NewService(cfg, pool),
 		pool:    dbiface.NewAdapter(pool),

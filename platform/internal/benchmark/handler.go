@@ -1,7 +1,6 @@
 package benchmark
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"

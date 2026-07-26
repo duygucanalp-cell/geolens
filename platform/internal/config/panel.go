@@ -41,9 +41,14 @@ type PanelHandler struct {
 	pool dbiface.DB
 }
 
-// NewPanelHandler creates a new panel handler.
-func NewPanelHandler(pool *db.Pool) *PanelHandler {
-	return &PanelHandler{pool: dbiface.NewAdapter(pool)}
+// NewPanelHandler creates a new panel handler with the given DB interface.
+func NewPanelHandler(pool dbiface.DB) *PanelHandler {
+	return &PanelHandler{pool: pool}
+}
+
+// NewProductionPanelHandler creates a new panel handler with a *db.Pool for production use.
+func NewProductionPanelHandler(pool *db.Pool) *PanelHandler {
+	return NewPanelHandler(dbiface.NewAdapter(pool))
 }
 
 // ListPanels handles GET /v1/workspaces/{ws}/panels

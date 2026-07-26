@@ -64,8 +64,13 @@ type Handler struct {
 	rdb     *redis.Client
 }
 
-// NewHandler creates a new auth handler.
-func NewHandler(pool *db.Pool, jwt *JWTService, rdb *redis.Client) *Handler {
+// NewHandler creates a new auth handler with the given DB interface.
+func NewHandler(pool dbiface.DB, jwt *JWTService, rdb *redis.Client) *Handler {
+	return &Handler{pool: pool, jwt: jwt, rdb: rdb}
+}
+
+// NewProductionHandler creates a new auth handler with a *db.Pool for production use.
+func NewProductionHandler(pool *db.Pool, jwt *JWTService, rdb *redis.Client) *Handler {
 	return &Handler{
 		pool:    dbiface.NewAdapter(pool),
 		rawPool: pool,

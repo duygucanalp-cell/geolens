@@ -141,20 +141,20 @@ func main() {
 	}
 
 	// Handler'lar
-	authHandler := auth.NewHandler(pool, jwtService, redisClient)
-	configHandler := config.NewHandler(pool)
-	panelHandler := config.NewPanelHandler(pool)
-	measureHandler := measure.NewHandler(pool, engines)
-	auditHandler := audit.NewHandler(pool)
-	deliveryHandler := delivery.NewHandler(pool, delivery.EmailConfig{
+	authHandler := auth.NewProductionHandler(pool, jwtService, redisClient)
+	configHandler := config.NewProductionHandler(pool)
+	panelHandler := config.NewProductionPanelHandler(pool)
+	measureHandler := measure.NewProductionHandler(pool, engines)
+	auditHandler := audit.NewProductionHandler(pool)
+	deliveryHandler := delivery.NewProductionHandler(pool, delivery.EmailConfig{
 		FromName: cfg.SendGridFromName, FromEmail: cfg.SendGridFromEmail, SendGridKey: cfg.SendGridAPIKey,
 	})
-	privacyHandler := privacy.NewHandler(pool)
-	recommendationHandler := recommendation.NewHandler(pool)
-	pdfHandler := pdf.NewHandler(pool)
-	alertHandler := alert.NewHandler(pool)
-	apiKeyHandler := apikey.NewHandler(pool)
-	publicHandler := public.NewHandler(pool)
+	privacyHandler := privacy.NewProductionHandler(pool)
+	recommendationHandler := recommendation.NewProductionHandler(pool)
+	pdfHandler := pdf.NewProductionHandler(pool)
+	alertHandler := alert.NewProductionHandler(pool)
+	apiKeyHandler := apikey.NewProductionHandler(pool)
+	publicHandler := public.NewProductionHandler(pool)
 	billingHandler := billing.NewHandler(pool, cfg.StripeAPIKey, cfg.StripeWebhookSecret)
 	complianceHandler := compliance.NewHandler(pool)
 	retentionHandler := retention.NewHandler(pool)

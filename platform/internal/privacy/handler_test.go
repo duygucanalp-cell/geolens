@@ -6,17 +6,19 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/geolens/platform/internal/testutil"
 )
 
 func TestNewHandler(t *testing.T) {
-	h := NewHandler(nil)
+	h := NewHandler(&testutil.MockPool{})
 	if h == nil {
 		t.Fatal("NewHandler should not return nil")
 	}
 }
 
 func TestRequestDeletion_NoUserID(t *testing.T) {
-	h := NewHandler(nil)
+	h := NewHandler(&testutil.MockPool{})
 
 	body, _ := json.Marshal(deletionRequest{Reason: "test"})
 	req := httptest.NewRequest(http.MethodPost, "/v1/account/deletion", bytes.NewReader(body))

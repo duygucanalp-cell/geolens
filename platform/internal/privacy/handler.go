@@ -37,8 +37,13 @@ type Handler struct {
 	rawPool *db.Pool
 }
 
-// NewHandler creates a new privacy handler.
-func NewHandler(pool *db.Pool) *Handler {
+// NewHandler creates a new privacy handler with the given DB interface.
+func NewHandler(pool dbiface.DB) *Handler {
+	return &Handler{pool: pool}
+}
+
+// NewProductionHandler creates a new privacy handler with a *db.Pool for production use.
+func NewProductionHandler(pool *db.Pool) *Handler {
 	return &Handler{
 		pool:    dbiface.NewAdapter(pool),
 		rawPool: pool,
