@@ -125,10 +125,10 @@ type Service interface {
 	GetRulesBySector(sector string) []Rule
 
 	// MarkApplied marks a recommendation as applied.
-	MarkApplied(id string) error
+	MarkApplied(id, tenantID, workspaceID string) error
 
 	// MarkDismissed marks a recommendation as dismissed.
-	MarkDismissed(id string) error
+	MarkDismissed(id, tenantID, workspaceID string) error
 
 	// GetPool returns the database pool for external queries.
 	GetPool() *db.Pool

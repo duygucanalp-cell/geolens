@@ -576,32 +576,39 @@ func (s *service) GetRulesBySector(sector string) []Rule {
 }
 
 // MarkApplied marks a recommendation as applied in the database.
-func (s *service) MarkApplied(id string) error {
+func (s *service) MarkApplied(id, tenantID, workspaceID string) error {
 	now := time.Now().UTC()
-	_, err := s.pool.Exec(context.Background(), `
+	result, err := s.pool.Exec(context.Background(), `
 		UPDATE recommendation.results
 		SET applied = true, applied_at = $2, updated_at = $2
-		WHERE id = $1
-	`, id, now)
+		WHERE id = $1 AND tenant_id = $3 AND workspace_id = $4
+	`, id, now, tenantID, workspaceID)
 	if err != nil {
 		slog.Error("recommendation: uygulama hatası", "id", id, "error", err)
 		return fmt.Errorf("recommendation: uygulama hatası: %w", err)
+	}
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("recommendation: kayıt bulunamadı veya bu çalışma alanına ait değil")
 	}
 	slog.Info("recommendation marked as applied", "id", id)
 	return nil
 }
 
 // MarkDismissed marks a recommendation as dismissed in the database.
-func (s *service) MarkDismissed(id string) error {
+func (s *service) MarkDismissed(id, tenantID, workspaceID string) error {
 	now := time.Now().UTC()
-	_, err := s.pool.Exec(context.Background(), `
+	result, err := s.pool.Exec(context.Background(), `
 		UPDATE recommendation.results
 		SET dismissed = true, dismissed_at = $2, updated_at = $2
-		WHERE id = $1
-	`, id, now)
+		WHERE id = $1 AND tenant_id = $3 AND workspace_id = $4
+	`, id, now, tenantID, workspaceID)
 	if err != nil {
 		slog.Error("recommendation: gizleme hatası", "id", id, "error", err)
 		return fmt.Errorf("recommendation: gizleme hatası: %w", err)
+
+	}
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("recommendation: kayıt bulunamadı veya bu çalışma alanına ait değil")
 	}
 	slog.Info("recommendation marked as dismissed", "id", id)
 	return nil

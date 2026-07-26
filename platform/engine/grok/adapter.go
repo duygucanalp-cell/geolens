@@ -1,4 +1,4 @@
-tpackage grok
+package grok
 
 import (
 	"bytes"
@@ -31,11 +31,18 @@ type message struct {
 }
 
 type chatResponse struct {
-	ID      string   `json:"id"`
-	Object  string   `json:"object"`
-	Model   string   `json:"model"`
-	Choices []choice `json:"choices"`
-	Usage   *usage   `json:"usage,omitempty"`
+	ID          string       `json:"id"`
+	Object      string       `json:"object"`
+	Model       string       `json:"model"`
+	Choices     []choice     `json:"choices"`
+	Usage       *usage       `json:"usage,omitempty"`
+	Annotations []annotation `json:"annotations,omitempty"`
+}
+
+type annotation struct {
+	Type  string `json:"type"`
+	URL   string `json:"url_citation,omitempty"`
+	Title string `json:"title,omitempty"`
 }
 
 type choice struct {
@@ -142,6 +149,11 @@ func mockResponse(prompt string) *engine.RawResponse {
 		HasSearch:     true,
 		Tier:          engine.TierOfficialProxy,
 		FidelityLabel: "Kademe 2 · grok · " + modelName + " (mock)",
+		Citations: []engine.Citation{
+			{URL: "https://x.ai/blog/grok-3", Title: "xAI Grok-3 Release"},
+			{URL: "https://docs.x.ai/api", Title: "xAI API Documentation"},
+			{URL: "https:://x.ai/blog/safety", Title: "xAI Safety Approach"},
+		},
 	}
 }
 
@@ -156,6 +168,16 @@ func (a *Adapter) parseResponse(raw []byte, durationMs int64) (*engine.RawRespon
 
 	content := cr.Choices[0].Message.Content
 
+	var citations []engine.Citation
+	for _, ann := range cr.Annotations {
+		if ann.Type == "url_citation" && ann.URL != "" {
+			citations = append(citations, engine.Citation{
+				URL:   ann.URL,
+				Title: ann.Title,
+			})
+		}
+	}
+
 	resp := &engine.RawResponse{
 		EngineName:    "grok",
 		RequestID:     cr.ID,
@@ -163,6 +185,7 @@ func (a *Adapter) parseResponse(raw []byte, durationMs int64) (*engine.RawRespon
 		HasSearch:     false,
 		Tier:          tier,
 		FidelityLabel: fmt.Sprintf("Kademe 2 · grok · %s", cr.Model),
+		Citations:     citations,
 	}
 
 	if a.storage != nil && a.tenantID != "" {

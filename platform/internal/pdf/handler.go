@@ -253,8 +253,19 @@ func (h *Handler) DownloadReport(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/pdf")
 	w.Header().Set("Content-Disposition", "attachment; filename=\""+fileName+"\"")
-	// Jin: redirect to S3 veya direkt PDF döner
 	w.Header().Set("X-Report-ID", reportID)
+
+	if s3URL := r.URL.Query().Get("s3_url"); s3URL != "" {
+		http.Redirect(w, r, s3URL, http.StatusFound)
+		return
+	}
+
+	reportData, err := h.svc.GetReportData(r.Context(), reportID)
+	if err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, "rapor verisi alınamadı")
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("PDF hazır — depolama entegrasyonu tamamlandığında direkt PDF dönecek"))
+	w.Write(reportData)
 }

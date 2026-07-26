@@ -48,12 +48,14 @@ func (h *Handler) ListRecommendations(w http.ResponseWriter, r *http.Request) {
 // MarkApplied handles POST /v1/workspaces/{ws}/recommendations/{recId}/apply
 func (h *Handler) MarkApplied(w http.ResponseWriter, r *http.Request) {
 	recID := chi.URLParam(r, "recId")
+	tenantID := httpmw.GetTenantID(r.Context())
+	workspaceID := httpmw.GetWorkspaceID(r.Context())
 	if recID == "" {
 		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "recommendation_id gerekli"})
 		return
 	}
 
-	if err := h.svc.MarkApplied(recID); err != nil {
+	if err := h.svc.MarkApplied(recID, tenantID, workspaceID); err != nil {
 		slog.Error("öneri uygulama hatası", "error", err)
 		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "öneri uygulanamadı"})
 		return
@@ -65,12 +67,14 @@ func (h *Handler) MarkApplied(w http.ResponseWriter, r *http.Request) {
 // MarkDismissed handles POST /v1/workspaces/{ws}/recommendations/{recId}/dismiss
 func (h *Handler) MarkDismissed(w http.ResponseWriter, r *http.Request) {
 	recID := chi.URLParam(r, "recId")
+	tenantID := httpmw.GetTenantID(r.Context())
+	workspaceID := httpmw.GetWorkspaceID(r.Context())
 	if recID == "" {
 		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "recommendation_id gerekli"})
 		return
 	}
 
-	if err := h.svc.MarkDismissed(recID); err != nil {
+	if err := h.svc.MarkDismissed(recID, tenantID, workspaceID); err != nil {
 		slog.Error("öneri gizleme hatası", "error", err)
 		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "öneri gizlenemedi"})
 		return
