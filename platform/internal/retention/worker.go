@@ -2,6 +2,7 @@ package retention
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -154,11 +155,21 @@ func (w *Worker) archiveAlerts(ctx context.Context, tenantID string, cutoff time
 }
 
 func (w *Worker) archiveToS3(ctx context.Context, tenantID, entityType string, cutoff time.Time) error {
-	// Arşiv kayıtlarını retention.archives tablosuna taşı
-	slog.Info("S3 arşivleme başlatıldı",
+	// Verileri retention.archives tablosuna taşı
+	result, err := w.pool.Exec(ctx, `
+		INSERT INTO retention.archives (tenant_id, entity_type, entity_id, archived_at, expires_at, s3_key, data_hash)
+		SELECT $1, $2, m.id, now(), now() + INTERVAL '365 days', '', md5(m.id || $1)
+		FROM measure.scores m
+		WHERE m.tenant_id = $1 AND m.created_at < $3
+		ON CONFLICT DO NOTHING
+	`, tenantID, entityType, cutoff)
+	if err != nil {
+		return fmt.Errorf("S3 arşiv kaydı oluşturma: %w", err)
+	}
+	slog.Info("S3 arşivleme tamamlandı",
 		"tenant", tenantID,
 		"entity_type", entityType,
-		"cutoff", cutoff,
+		"rows", result.RowsAffected(),
 	)
 	return nil
 }

@@ -1,6 +1,9 @@
 package pdf
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 // ---- Domain Types ----
 
@@ -61,4 +64,7 @@ type Service interface {
 
 	// GenerateWeeklyDigest creates a weekly digest PDF with scores, trends, and recommendations.
 	GenerateWeeklyDigest(workspaceID, tenantID string) (*ReportResult, error)
+
+	// GetReportData retrieves generated report data by ID.
+	GetReportData(ctx context.Context, reportID string) ([]byte, error)
 }

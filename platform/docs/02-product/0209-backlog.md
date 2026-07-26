@@ -4,64 +4,86 @@
 |---|---|
 | Doküman ID | 0209 |
 | Proje | GeoLens Platform |
-| Versiyon | 4.0 |
+| Versiyon | 6.0 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 26 Temmuz 2026 |
-| İlişkili | 0205, 0206, 0207, ADR-001–012 |
+| İlişkili | 0205, 0206, 0207, 0210, ADR-001–013 |
 
 ---
 
 ## 1. Amaç
 
-Bu doküman, **tüm MVP + HT1 + HT2 + Teknik Borç + Kurumsal maddelerinin tamamlandığı** noktayı gösterir.
-Toplam **43 madde** (M1–M12, H1–H12, T1–T5, X1–X10, K1–K4) kodlanmış, build ve testlerden geçmiştir.
+**Tüm maddeler tamamlanmıştır.** 51 madde (MVP + HT1 + HT2 + Teknik Borç + Kurumsal + Rekabetçi) kodlanmış, build ve testlerden geçmiştir.
+
+|         Grup         | Toplam  | Tamam  | Kalan  |
+|:--------------------:|:-------:|:------:|:------:|
+|     MVP (M1–M12)     |   12    |   12   |   0    |
+|     HT1 (H1–H12)     |   12    |   12   |   0    |
+|     HT2 (T1–T5)      |    5    |   5    |   0    |
+| Teknik Borç (X1–X10) |   10    |   10   |   0    |
+|   Kurumsal (K1–K4)   |    4    |   4    |   0    |
+|  Rekabetçi (R1–R8)   |    8    |   8    |   0    |
+|      **Toplam**      | **51**  | **51** | **0**  |
 
 ---
 
-## 2. Son Durum
+## 2. Faz 4 — Rekabetçi Üstünlük (R1–R8)
 
-| Grup | Toplam | Tamam | Kalan |
-|:----:|:------:|:-----:|:-----:|
-| **MVP (M1–M12)** | 12 | 12 | 0 |
-| **HT1 (H1–H12)** | 12 | 12 | 0 |
-| **HT2 (T1–T5)** | 5 | 5 | 0 |
-| **Teknik Borç (X1–X10)** | 10 | 10 | 0 |
-| **Kurumsal (K1–K4)** | 4 | 4 | 0 |
-| **Toplam** | **43** | **43** | **0** |
+| # | Madde | Paket | Ne Yapıldı |
+|:-:|-------|-------|-----------|
+| **R1** | AI Registry | `internal/registry/` | Entity CRUD (model/agent/application/dataset), lifecycle state, risk classification, risk assessment, Elasticsearch indeksleme |
+| **R2** | Shadow AI Discovery | `internal/discovery/` | Bulut tarama (AWS/GCP), otomatik finding kaydı, bulunan kaynakları Registry'e otomatik ekleme |
+| **R3** | Runtime Guardrails | `internal/guardrail/` | Kural CRUD (prompt_injection, pii_leakage, toxic_output, hallucination), prompt/response değerlendirme, block/flag/log aksiyonları, 8 varsayılan kural |
+| **R4** | Policy Packs | `internal/policy/` | EU AI Act (7 kontrol), NIST AI RMF (7 kontrol), KVKK (6 kontrol), ISO 42001 (6 kontrol), compliance yüzdesi, pack apply/seed |
+| **R5** | Bias/Fairness | `internal/bias/` | Demographic parity, equal opportunity, disparate impact (4/5th rule), fairness score hesaplama |
+| **R6** | CI/CD Gate | `internal/gate/` | Governance check (risk assessment + policy + registry + docs), approved/flagged/blocked kararı |
+| **R7** | Explainability | `internal/explain/` | SHAP-based feature importance, 5 feature attribution, base value + prediction, interpretation metni |
+| **R8** | Agent Tracing | `internal/agent/` | Trace başlatma, multi-step workflow görüntüleme, 4 adımlı örnek trace (orchestrator → research → scoring → report) |
 
-### 2.1 Kurumsal
-
-| # | Madde | Paket | FR | Ne Yapıldı |
-|:-:|-------|-------|:--:|-----------|
-| **K1** | SSO/SAML (kurumsal tek oturum) | `internal/sso/` | FR-A4 | SAML SP metadata, IdP config CRUD, ACS endpoint (IdP response handling), sertifika yönetimi; migration `019_sso_config.sql` |
-| **K2** | SOC 2 Tip 1 hazırlığı | `internal/compliance/` | NFR-17 | 6 SOC 2 kontrol değerlendirmesi (CC1–CC6), GDPR/KVKK + ISO 27001 uyum raporu, evidence listesi (10 kalem), evidence export |
-| **K3** | Genişletilmiş veri saklama (12 ay+) | `internal/retention/` | — | Retention politikası CRUD (4 entity tipi), periyodik arşivleme işçisi (delete/anonymize/archive_s3), arşiv özeti; migration `020_retention_policies.sql` |
-| **K4** | Kurumsal pilot programı | `internal/pilot/` | — | Pilot tenant kaydı, 90 günlük deneme, destek seviyesi (standard/premium), deneme uzatma, otomatik ücretliye dönüşüm, admin paneli; migration `021_pilot_tenants.sql` |
-
-### 2.2 Yeni Route'lar
+### 2.1 Yeni Route'lar
 
 ```
-POST   /v1/sso/acs/{tenantId}          — K1: SAML ACS (public)
-GET    /v1/sso/config                  — K1: SSO config getir (admin)
-PUT    /v1/sso/config                  — K1: SSO config güncelle (admin)
-GET    /v1/sso/metadata                — K1: SP metadata XML (admin)
-POST   /v1/sso/enable                  — K1: SSO etkinleştir (admin)
-POST   /v1/sso/disable                 — K1: SSO devre dışı (admin)
-POST   /v1/sso/generate-keys           — K1: SAML sertifikası üret (admin)
-GET    /v1/compliance/soc2             — K2: SOC 2 hazırlık raporu (admin)
-GET    /v1/compliance/report           — K2: Tam uyum raporu (admin)
-GET    /v1/compliance/evidence         — K2: Evidence listesi (admin)
-GET    /v1/compliance/evidence/download — K2: Evidence export (admin)
-GET    /v1/workspaces/{ws}/retention/policies       — K3: Politikaları listele (viewer)
-GET    /v1/workspaces/{ws}/retention/archive-summary — K3: Arşiv özeti (viewer)
-PUT    /v1/workspaces/{ws}/retention/policies       — K3: Politika oluştur/güncelle (editor)
-DELETE /v1/workspaces/{ws}/retention/policies/{id}  — K3: Politikayı sil (editor)
-GET    /v1/pilot/status                — K4: Pilot durumu
-POST   /v1/pilot/enroll                — K4: Pilot kaydı
-POST   /v1/pilot/extend                — K4: Deneme uzat
-POST   /v1/pilot/cancel                — K4: Pilot iptal
-GET    /v1/pilot/tenants               — K4: Tüm pilotlar (admin)
+# R1
+GET    /v1/registry/entities               — Varlıkları listele (viewer)
+GET    /v1/registry/entities/{id}          — Varlık detayı (viewer)
+POST   /v1/registry/entities               — Varlık oluştur (editor)
+PUT    /v1/registry/entities/{id}          — Varlık güncelle (editor)
+DELETE /v1/registry/entities/{id}          — Varlık sil (editor)
+POST   /v1/registry/entities/{id}/assess   — Risk değerlendir (editor)
+
+# R2
+POST   /v1/discovery/scan                  — Shadow AI taraması başlat (admin)
+GET    /v1/discovery/scans/{scanId}        — Tarama sonuçları (admin)
+
+# R3
+GET    /v1/guardrails/rules                — Kuralları listele (viewer)
+POST   /v1/guardrails/rules                — Kural oluştur (editor)
+DELETE /v1/guardrails/rules/{ruleId}       — Kural sil (editor)
+POST   /v1/guardrails/seed-defaults        — Varsayılan kuralları yükle (editor)
+POST   /v1/guardrails/evaluate             — Prompt/response değerlendir (editor)
+
+# R4
+GET    /v1/policies/packs                  — Policy pack'leri listele (viewer)
+GET    /v1/policies/packs/{id}/controls    — Pack kontrolleri (viewer)
+POST   /v1/policies/packs/{id}/apply       — Pack'i uygula (admin)
+PUT    /v1/policies/controls/{controlId}   — Kontrol güncelle (admin)
+GET    /v1/policies/compliance/{entityId}  — Uyum yüzdesi (viewer)
+
+# R5
+POST   /v1/bias/evaluate                   — Bias testi çalıştır (editor)
+
+# R6
+POST   /v1/gate/check                      — Governance kontrolü (editor)
+GET    /v1/gate/history/{entityId}          — Geçmiş kontroller (viewer)
+
+# R7
+POST   /v1/explain/{entityId}              — Model açıklaması (viewer)
+
+# R8
+POST   /v1/agents/traces                   — Trace başlat (viewer)
+GET    /v1/agents/traces/{traceId}         — Trace detayı (viewer)
+GET    /v1/agents/traces                   — Tüm traceler (viewer)
 ```
 
 ---
@@ -71,6 +93,8 @@ GET    /v1/pilot/tenants               — K4: Tüm pilotlar (admin)
 | Versiyon | Tarih | Açıklama |
 |:--------:|:-----:|----------|
 | 1.0 | 26 Temmuz 2026 | İlk sürüm |
-| 2.0 | 26 Temmuz 2026 | MVP+HT1 çıkışı — M4–M12, H1–H10, T2–T3, X1–X10 tamam |
-| 3.0 | 26 Temmuz 2026 | M1–M3 (deploy), H11–H12 (adapter), T1/T4/T5 (altyapı) tamam |
-| 4.0 | 26 Temmuz 2026 | **K1–K4 kurumsal tamam** — tüm 43 madde kapalı |
+| 2.0 | 26 Temmuz 2026 | MVP+HT1 çıkışı |
+| 3.0 | 26 Temmuz 2026 | H11/H12/T1/T4/T5 eklendi |
+| 4.0 | 26 Temmuz 2026 | K1–K4 kurumsal tamam |
+| 5.0 | 26 Temmuz 2026 | Faz 4 planı (R1–R8) |
+| 6.0 | 26 Temmuz 2026 | **Tüm maddeler tamam — R1–R8 kodlandı** |

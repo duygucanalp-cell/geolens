@@ -13,11 +13,10 @@ import (
 )
 
 const (
-	tier          = engine.TierDirectional
-	apiURL        = "https://copilot.microsoft.com/api/chat/completions"
-	modelName     = "copilot-gpt-4o"
-	timeout       = 120 * time.Second
-	defaultAPIURL = "https://api.example.com/v1/chat/completions"
+	tier      = engine.TierDirectional
+	apiURL    = "https://copilot.microsoft.com/api/chat/completions"
+	modelName = "copilot-gpt-4o"
+	timeout   = 120 * time.Second
 )
 
 type chatRequest struct {
@@ -46,8 +45,14 @@ type choice struct {
 }
 
 type chatMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
+	Role      string     `json:"role"`
+	Content   string     `json:"content"`
+	Citations []citation `json:"citations,omitempty"`
+}
+
+type citation struct {
+	URL   string `json:"url"`
+	Title string `json:"title,omitempty"`
 }
 
 type usage struct {
@@ -72,7 +77,7 @@ func NewAdapter(apiKey string, storage engine.RawSaver) *Adapter {
 			Timeout: timeout,
 		},
 		storage:  storage,
-		endpoint: defaultAPIURL,
+		endpoint: apiURL,
 	}
 }
 
@@ -97,7 +102,7 @@ func (a *Adapter) Execute(prompt string) (*engine.RawResponse, error) {
 	}
 
 	url := a.endpoint
-	if url == defaultAPIURL {
+	if url == "" {
 		url = apiURL
 	}
 
@@ -150,6 +155,10 @@ func mockResponse(prompt string) *engine.RawResponse {
 		HasSearch:     false,
 		Tier:          engine.TierDirectional,
 		FidelityLabel: "Kademe 3 · copilot · " + modelName + " (mock)",
+		Citations: []engine.Citation{
+			{URL: "https://copilot.microsoft.com", Title: "Microsoft Copilot"},
+			{URL: "https://learn.microsoft.com/en-us/copilot/", Title: "Copilot Documentation"},
+		},
 	}
 }
 
@@ -164,6 +173,16 @@ func (a *Adapter) parseResponse(raw []byte, durationMs int64) (*engine.RawRespon
 
 	content := cr.Choices[0].Message.Content
 
+	var citations []engine.Citation
+	for _, c := range cr.Choices[0].Message.Citations {
+		if c.URL != "" {
+			citations = append(citations, engine.Citation{
+				URL:   c.URL,
+				Title: c.Title,
+			})
+		}
+	}
+
 	resp := &engine.RawResponse{
 		EngineName:    "copilot",
 		RequestID:     cr.ID,
@@ -171,6 +190,7 @@ func (a *Adapter) parseResponse(raw []byte, durationMs int64) (*engine.RawRespon
 		HasSearch:     false,
 		Tier:          tier,
 		FidelityLabel: fmt.Sprintf("Kademe 3 · copilot · %s", cr.Model),
+		Citations:     citations,
 	}
 
 	if a.storage != nil && a.tenantID != "" {

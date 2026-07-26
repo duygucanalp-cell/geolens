@@ -21,21 +21,29 @@ import (
 	"github.com/geolens/platform/engine/gemini"
 	"github.com/geolens/platform/engine/grok"
 	"github.com/geolens/platform/engine/perplexity"
+	"github.com/geolens/platform/internal/agent"
 	"github.com/geolens/platform/internal/alert"
 	"github.com/geolens/platform/internal/apikey"
 	"github.com/geolens/platform/internal/audit"
 	"github.com/geolens/platform/internal/auth"
+	"github.com/geolens/platform/internal/bias"
 	"github.com/geolens/platform/internal/billing"
 	"github.com/geolens/platform/internal/compliance"
 	"github.com/geolens/platform/internal/config"
 	"github.com/geolens/platform/internal/delivery"
+	"github.com/geolens/platform/internal/discovery"
+	"github.com/geolens/platform/internal/explain"
+	"github.com/geolens/platform/internal/gate"
 	"github.com/geolens/platform/internal/governance"
+	"github.com/geolens/platform/internal/guardrail"
 	"github.com/geolens/platform/internal/measure"
 	"github.com/geolens/platform/internal/pdf"
 	"github.com/geolens/platform/internal/pilot"
+	"github.com/geolens/platform/internal/policy"
 	"github.com/geolens/platform/internal/privacy"
 	"github.com/geolens/platform/internal/public"
 	"github.com/geolens/platform/internal/recommendation"
+	"github.com/geolens/platform/internal/registry"
 	"github.com/geolens/platform/internal/retention"
 	"github.com/geolens/platform/internal/sso"
 	"github.com/geolens/platform/platform/db"
@@ -161,6 +169,14 @@ func main() {
 	retentionHandler := retention.NewHandler(pool)
 	pilotHandler := pilot.NewHandler(pool)
 	ssoHandler := sso.NewHandler(pool)
+	registryHandler := registry.NewHandler(pool)
+	policyHandler := policy.NewHandler(pool)
+	guardrailHandler := guardrail.NewHandler(pool)
+	discoveryHandler := discovery.NewHandler(pool)
+	biasHandler := bias.NewHandler(pool)
+	gateHandler := gate.NewHandler(pool)
+	explainHandler := explain.NewHandler(pool)
+	agentHandler := agent.NewHandler(pool)
 
 	// Async rapor işleyiciyi başlat (10 saniyede bir poll)
 	pdf.StartReportProcessor(pool, pdfHandler.Svc(), 10*time.Second)
@@ -275,6 +291,62 @@ func main() {
 				r.Post("/enable", ssoHandler.Enable)
 				r.Post("/disable", ssoHandler.Disable)
 				r.Post("/generate-keys", ssoHandler.GenerateKeyPair)
+			})
+
+			// R1: AI Registry (authenticated)
+			r.Route("/registry", func(r chi.Router) {
+				r.Use(httpmw.RequireRole(httpmw.RoleViewer))
+				r.Get("/entities", registryHandler.List)
+				r.Get("/entities/{entityId}", registryHandler.Get)
+				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/entities", registryHandler.Create)
+				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Put("/entities/{entityId}", registryHandler.Update)
+				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Delete("/entities/{entityId}", registryHandler.Delete)
+				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/entities/{entityId}/assess", registryHandler.AssessRisk)
+			})
+
+			// R4: Policy Packs (authenticated)
+			r.Route("/policies", func(r chi.Router) {
+				r.Use(httpmw.RequireRole(httpmw.RoleViewer))
+				r.Get("/packs", policyHandler.ListPacks)
+				r.Get("/packs/{packId}/controls", policyHandler.ListControls)
+				r.With(httpmw.RequireRole(httpmw.RoleAdmin)).Post("/packs/{packId}/apply", policyHandler.ApplyPack)
+				r.With(httpmw.RequireRole(httpmw.RoleAdmin)).Put("/controls/{controlId}", policyHandler.UpdateControl)
+				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/compliance/{entityId}", policyHandler.GetCompliance)
+			})
+
+			// R3: Runtime Guardrails (authenticated)
+			r.Route("/guardrails", func(r chi.Router) {
+				r.Use(httpmw.RequireRole(httpmw.RoleViewer))
+				r.Get("/rules", guardrailHandler.ListRules)
+				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/rules", guardrailHandler.CreateRule)
+				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Delete("/rules/{ruleId}", guardrailHandler.DeleteRule)
+				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/seed-defaults", guardrailHandler.SeedDefaults)
+				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/evaluate", guardrailHandler.Evaluate)
+			})
+
+			// R2: Shadow AI Discovery (authenticated)
+			r.Route("/discovery", func(r chi.Router) {
+				r.Use(httpmw.RequireRole(httpmw.RoleAdmin))
+				r.Post("/scan", discoveryHandler.StartScan)
+				r.Get("/scans/{scanId}", discoveryHandler.GetScanResults)
+			})
+
+			// R5: Bias/Fairness (authenticated)
+			r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/bias/evaluate", biasHandler.Evaluate)
+
+			// R6: CI/CD Governance Gate (authenticated)
+			r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/gate/check", gateHandler.Check)
+			r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/gate/history/{entityId}", gateHandler.History)
+
+			// R7: Explainability (authenticated)
+			r.With(httpmw.RequireRole(httpmw.RoleViewer)).Post("/explain/{entityId}", explainHandler.Explain)
+
+			// R8: Agent Tracing (authenticated)
+			r.Route("/agents", func(r chi.Router) {
+				r.Use(httpmw.RequireRole(httpmw.RoleViewer))
+				r.Post("/traces", agentHandler.StartTrace)
+				r.Get("/traces/{traceId}", agentHandler.GetTrace)
+				r.Get("/traces", agentHandler.ListTraces)
 			})
 
 			// Workspace-scoped routes (auth + workspace membership gerekli)

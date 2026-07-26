@@ -2,6 +2,8 @@ package pdf
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"time"
@@ -416,6 +418,42 @@ func (s *service) generateAuditReport(req ReportRequest) (*ReportResult, error) 
 
 	slog.Info("pdf audit report generated", "brand", brandName)
 	return result, nil
+}
+
+// GetReportData retrieves generated report data from storage or database.
+func (s *service) GetReportData(ctx context.Context, reportID string) ([]byte, error) {
+	var paramsJSON string
+	err := s.pool.QueryRow(ctx, `
+		SELECT params FROM governance.reports WHERE id = $1
+	`, reportID).Scan(&paramsJSON)
+	if err != nil {
+		return nil, fmt.Errorf("rapor bulunamadı: %w", err)
+	}
+
+	var params struct {
+		FileData []byte `json:"file_data"`
+		S3URL    string `json:"s3_url"`
+		PDFB64   string `json:"pdf_b64"`
+	}
+	if err := json.Unmarshal([]byte(paramsJSON), &params); err != nil {
+		return nil, fmt.Errorf("rapor parametre ayrıştırma: %w", err)
+	}
+
+	if params.FileData != nil {
+		return params.FileData, nil
+	}
+	if params.PDFB64 != "" {
+		decoded, err := base64.StdEncoding.DecodeString(params.PDFB64)
+		if err != nil {
+			return nil, fmt.Errorf("pdf base64 çözme: %w", err)
+		}
+		return decoded, nil
+	}
+	if params.S3URL != "" {
+		return nil, fmt.Errorf("S3 depolama entegrasyonu gerekli — rapor S3'te: %s", params.S3URL)
+	}
+
+	return nil, fmt.Errorf("rapor verisi bulunamadı: %s", reportID)
 }
 
 func generateULID() string {
