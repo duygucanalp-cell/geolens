@@ -159,6 +159,27 @@ services:
     depends_on:
       - api
 
+  elasticsearch:
+    image: elasticsearch:8.17.0
+    ports:
+      - "9200:9200"
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    profiles:
+      - analytics
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.12-alpine
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    environment:
+      - CLICKHOUSE_DB=geolens
+    profiles:
+      - analytics
+
 volumes:
   pgdata:
   miniodata:

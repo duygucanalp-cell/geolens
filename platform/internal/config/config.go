@@ -26,6 +26,16 @@ type Config struct {
 	ChatGPTAPIKey         string
 	GeminiAPIKey          string
 	ClaudeAPIKey          string
+	GrokAPIKey            string
+	CopilotAPIKey         string
+	StripeAPIKey          string
+	StripeWebhookSecret   string
+	ElasticsearchURL      string
+	ElasticsearchAPIKey   string
+	ClickHouseURL         string
+	ClickHouseUser        string
+	ClickHousePassword    string
+	ClickHouseDatabase    string
 	SendGridAPIKey        string
 	SendGridFromEmail     string
 	SendGridFromName      string
@@ -38,6 +48,9 @@ type Config struct {
 	MaxBrandsPerWorkspace int
 	DefaultPageSize       int
 	MaxRequestBodyMB      int
+	SAMLCertPath          string
+	SAMLKeyPath           string
+	RetentionInterval     time.Duration
 }
 
 // LoadFromEnv reads configuration from environment variables with sensible defaults.
@@ -60,6 +73,16 @@ func LoadFromEnv() Config {
 		ChatGPTAPIKey:         getEnv("CHATGPT_API_KEY", ""),
 		GeminiAPIKey:          getEnv("GEMINI_API_KEY", ""),
 		ClaudeAPIKey:          getEnv("CLAUDE_API_KEY", ""),
+		GrokAPIKey:            getEnv("GROK_API_KEY", ""),
+		CopilotAPIKey:         getEnv("COPILOT_API_KEY", ""),
+		StripeAPIKey:          getEnv("STRIPE_API_KEY", ""),
+		StripeWebhookSecret:   getEnv("STRIPE_WEBHOOK_SECRET", ""),
+		ElasticsearchURL:      getEnv("ELASTICSEARCH_URL", ""),
+		ElasticsearchAPIKey:   getEnv("ELASTICSEARCH_API_KEY", ""),
+		ClickHouseURL:         getEnv("CLICKHOUSE_URL", ""),
+		ClickHouseUser:        getEnv("CLICKHOUSE_USER", "default"),
+		ClickHousePassword:    getEnv("CLICKHOUSE_PASSWORD", ""),
+		ClickHouseDatabase:    getEnv("CLICKHOUSE_DATABASE", "geolens"),
 		SendGridAPIKey:        getEnv("SENDGRID_API_KEY", ""),
 		SendGridFromEmail:     getEnv("SENDGRID_FROM_EMAIL", "geolens@example.com"),
 		SendGridFromName:      getEnv("SENDGRID_FROM_NAME", "GeoLens"),
@@ -72,6 +95,9 @@ func LoadFromEnv() Config {
 		MaxBrandsPerWorkspace: GetEnvInt("MAX_BRANDS_PER_WORKSPACE", 20),
 		DefaultPageSize:       GetEnvInt("DEFAULT_PAGE_SIZE", 50),
 		MaxRequestBodyMB:      GetEnvInt("MAX_REQUEST_BODY_MB", 1),
+		SAMLCertPath:          getEnv("SAML_CERT_PATH", ""),
+		SAMLKeyPath:           getEnv("SAML_KEY_PATH", ""),
+		RetentionInterval:     parseDuration(getEnv("RETENTION_INTERVAL", "24h")),
 	}
 }
 

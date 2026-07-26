@@ -185,8 +185,33 @@ services:
     depends_on:
       - prometheus
 
+  elasticsearch:
+    image: elasticsearch:8.17.0
+    ports:
+      - "9200:9200"
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.12-alpine
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    environment:
+      - CLICKHOUSE_DB=geolens
+      - CLICKHOUSE_USER=default
+      - CLICKHOUSE_PASSWORD=
+    volumes:
+      - chdata:/var/lib/clickhouse
+
 volumes:
   pgdata:
   miniodata:
   promdata:
   grafanadata:
+  esdata:
+  chdata:

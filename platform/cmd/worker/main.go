@@ -18,7 +18,9 @@ import (
 	"github.com/geolens/platform/engine"
 	"github.com/geolens/platform/engine/chatgpt"
 	"github.com/geolens/platform/engine/claude"
+	"github.com/geolens/platform/engine/copilot"
 	"github.com/geolens/platform/engine/gemini"
+	"github.com/geolens/platform/engine/grok"
 	"github.com/geolens/platform/engine/perplexity"
 	"github.com/geolens/platform/internal/config"
 	"github.com/geolens/platform/internal/delivery"
@@ -102,6 +104,14 @@ func main() {
 	// Claude / Anthropic (Kademe 2)
 	claudeAdapter := claude.NewAdapter(cfg.ClaudeAPIKey, saver)
 	engines.Register(claudeAdapter)
+
+	// Grok / xAI (Kademe 2)
+	grokAdapter := grok.NewAdapter(cfg.GrokAPIKey, saver)
+	engines.Register(grokAdapter)
+
+	// Copilot / Microsoft (Kademe 3)
+	copilotAdapter := copilot.NewAdapter(cfg.CopilotAPIKey, saver)
+	engines.Register(copilotAdapter)
 
 	slog.Info("motor kayıt defteri hazır", "engine_count", engines.Count(), "engines", engines.List())
 

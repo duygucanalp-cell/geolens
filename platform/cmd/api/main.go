@@ -17,20 +17,27 @@ import (
 	"github.com/geolens/platform/engine"
 	"github.com/geolens/platform/engine/chatgpt"
 	"github.com/geolens/platform/engine/claude"
+	"github.com/geolens/platform/engine/copilot"
 	"github.com/geolens/platform/engine/gemini"
+	"github.com/geolens/platform/engine/grok"
 	"github.com/geolens/platform/engine/perplexity"
 	"github.com/geolens/platform/internal/alert"
 	"github.com/geolens/platform/internal/apikey"
 	"github.com/geolens/platform/internal/audit"
 	"github.com/geolens/platform/internal/auth"
+	"github.com/geolens/platform/internal/billing"
+	"github.com/geolens/platform/internal/compliance"
 	"github.com/geolens/platform/internal/config"
 	"github.com/geolens/platform/internal/delivery"
 	"github.com/geolens/platform/internal/governance"
 	"github.com/geolens/platform/internal/measure"
 	"github.com/geolens/platform/internal/pdf"
+	"github.com/geolens/platform/internal/pilot"
 	"github.com/geolens/platform/internal/privacy"
 	"github.com/geolens/platform/internal/public"
 	"github.com/geolens/platform/internal/recommendation"
+	"github.com/geolens/platform/internal/retention"
+	"github.com/geolens/platform/internal/sso"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/queue"
@@ -110,6 +117,14 @@ func main() {
 	claudeAdapter := claude.NewAdapter(cfg.ClaudeAPIKey, saver)
 	engines.Register(claudeAdapter)
 
+	// Grok / xAI (Kademe 2)
+	grokAdapter := grok.NewAdapter(cfg.GrokAPIKey, saver)
+	engines.Register(grokAdapter)
+
+	// Copilot / Microsoft (Kademe 3)
+	copilotAdapter := copilot.NewAdapter(cfg.CopilotAPIKey, saver)
+	engines.Register(copilotAdapter)
+
 	slog.Info("motor kayıt defteri hazır", "engine_count", engines.Count(), "engines", engines.List())
 
 	// Rate limit quota checker
@@ -141,9 +156,18 @@ func main() {
 	alertHandler := alert.NewHandler(pool)
 	apiKeyHandler := apikey.NewHandler(pool)
 	publicHandler := public.NewHandler(pool)
+	billingHandler := billing.NewHandler(pool, cfg.StripeAPIKey, cfg.StripeWebhookSecret)
+	complianceHandler := compliance.NewHandler(pool)
+	retentionHandler := retention.NewHandler(pool)
+	pilotHandler := pilot.NewHandler(pool)
+	ssoHandler := sso.NewHandler(pool)
 
 	// Async rapor işleyiciyi başlat (10 saniyede bir poll)
 	pdf.StartReportProcessor(pool, pdfHandler.Svc(), 10*time.Second)
+
+	// K3: Veri saklama işçisi (24 saatte bir)
+	retentionWorker := retention.NewWorker(pool, cfg.RetentionInterval)
+	go retentionWorker.Start(context.Background())
 
 	// Router
 	r := chi.NewRouter()
@@ -186,6 +210,9 @@ func main() {
 		r.Post("/auth/login", authHandler.Login)
 		r.Post("/auth/accept-invitation", authHandler.AcceptInvitation)
 
+		// K1: SSO ACS endpoint — IdP'den gelen SAML yanıtını kabul eder (JWT gerekmez)
+		r.Post("/sso/acs/{tenantId}", ssoHandler.HandleACS)
+
 		// Protected routes (JWT gerekli)
 		r.Group(func(r chi.Router) {
 			r.Use(httpmw.Authenticate(jwtService.TokenValidator(redisClient)))
@@ -220,6 +247,35 @@ func main() {
 			// T3: Audit trail (admin)
 			r.With(httpmw.RequireRole(httpmw.RoleAdmin)).Get("/admin/audit-trail", auditHandler.ListAuditTrail)
 			r.With(httpmw.RequireRole(httpmw.RoleAdmin)).Get("/admin/audit-trail/export", auditHandler.ExportAuditTrail)
+
+			// T1: Billing / self-serve upgrade (authenticated)
+			r.Post("/billing/checkout", billingHandler.CreateCheckoutSession)
+			r.Post("/billing/webhook", billingHandler.HandleWebhook)
+			r.Get("/billing/subscription", billingHandler.GetSubscription)
+
+			// K2: SOC 2 compliance / evidence (authenticated)
+			r.With(httpmw.RequireRole(httpmw.RoleAdmin)).Get("/compliance/soc2", complianceHandler.SOC2Readiness)
+			r.With(httpmw.RequireRole(httpmw.RoleAdmin)).Get("/compliance/report", complianceHandler.ComplianceReport)
+			r.With(httpmw.RequireRole(httpmw.RoleAdmin)).Get("/compliance/evidence", complianceHandler.ListEvidence)
+			r.With(httpmw.RequireRole(httpmw.RoleAdmin)).Get("/compliance/evidence/download", complianceHandler.DownloadEvidence)
+
+			// K4: Pilot program (authenticated)
+			r.Get("/pilot/status", pilotHandler.GetStatus)
+			r.Post("/pilot/enroll", pilotHandler.Enroll)
+			r.Post("/pilot/extend", pilotHandler.ExtendTrial)
+			r.Post("/pilot/cancel", pilotHandler.Cancel)
+			r.With(httpmw.RequireRole(httpmw.RoleAdmin)).Get("/pilot/tenants", pilotHandler.ListAll)
+
+			// K1: SSO/SAML (authenticated)
+			r.Route("/sso", func(r chi.Router) {
+				r.Use(httpmw.RequireRole(httpmw.RoleAdmin))
+				r.Get("/config", ssoHandler.GetConfig)
+				r.Put("/config", ssoHandler.UpdateConfig)
+				r.Get("/metadata", ssoHandler.GetSPMetadata)
+				r.Post("/enable", ssoHandler.Enable)
+				r.Post("/disable", ssoHandler.Disable)
+				r.Post("/generate-keys", ssoHandler.GenerateKeyPair)
+			})
 
 			// Workspace-scoped routes (auth + workspace membership gerekli)
 			r.Route("/workspaces/{ws}", func(r chi.Router) {
@@ -272,6 +328,12 @@ func main() {
 				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/benchmark/context", measureHandler.GetBenchmarkContext)
 				// X9: Measurement status
 				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/measurements/{runId}/status", measureHandler.GetMeasurementStatus)
+
+				// K3: Data retention (viewer — okuma, editor — yazma)
+				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/retention/policies", retentionHandler.ListPolicies)
+				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/retention/archive-summary", retentionHandler.GetArchiveSummary)
+				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Put("/retention/policies", retentionHandler.UpsertPolicy)
+				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Delete("/retention/policies/{policyId}", retentionHandler.DeletePolicy)
 
 				// Editor+ routes (yazma/aksiyon işlemleri)
 				r.Group(func(r chi.Router) {
