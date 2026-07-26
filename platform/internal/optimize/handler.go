@@ -115,7 +115,7 @@ func (h *Handler) GenerateRecommendations(w http.ResponseWriter, r *http.Request
 		BrandID  string `json:"brand_id"`
 		AutoSave bool   `json:"auto_save"`
 	}{}
-	json.NewDecoder(r.Body).Decode(&input)
+	_ = json.NewDecoder(r.Body).Decode(&input)
 
 	// Analiz için mevcut skorları kontrol et
 	var scoreCount int

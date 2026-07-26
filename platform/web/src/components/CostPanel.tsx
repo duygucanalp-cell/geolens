@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useEffect, useMemo, useState } from 'react'
 import { getCostEntries, getCostSummary } from '../api/client'
 import type { CostEntry, CostSummary } from '../types'
@@ -10,6 +11,8 @@ interface Props {
 type Period = '1d' | '7d' | '30d' | '90d'
 
 export function CostPanel({ workspaceId: _ws }: Props) {
+  const { t, i18n } = useTranslation()
+  const dateLocale = i18n.language?.startsWith('en') ? 'en-US' : 'tr-TR'
   const [entries, setEntries] = useState<CostEntry[]>([])
   const [summary, setSummary] = useState<CostSummary | null>(null)
   const [loading, setLoading] = useState(true)
@@ -32,7 +35,7 @@ export function CostPanel({ workspaceId: _ws }: Props) {
       setEntries(entriesData)
       setSummary(summaryData)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Maliyet verileri yüklenemedi')
+      setError(err instanceof Error ? err.message : t('cost.load_error'))
     } finally {
       setLoading(false)
     }
@@ -69,7 +72,7 @@ export function CostPanel({ workspaceId: _ws }: Props) {
         <select value={filterEngine} onChange={(e) => setFilterEngine(e.target.value)} className="filter-select">
           <option value="all">Tüm Motorlar</option>
           {engines.map((e) => (
-            <option key={e} value={e}>{ENGINE_NAMES[e] || e}</option>
+            <option key={e} value={e}>{t(ENGINE_NAMES[e]) || e}</option>
           ))}
         </select>
         <button className="refresh-btn" onClick={loadData}>Yenile</button>
@@ -87,7 +90,7 @@ export function CostPanel({ workspaceId: _ws }: Props) {
           <div className="quick-stat">
             <span className="quick-stat-label">Toplam Token</span>
             <span style={{ fontSize: '1.5rem', fontWeight: 700, color: '#6366f1' }}>
-              {summary.total_tokens.toLocaleString('tr-TR')}
+              {summary.total_tokens.toLocaleString(dateLocale)}
             </span>
           </div>
           {summary.engine_breakdown.length > 0 && (
@@ -96,7 +99,7 @@ export function CostPanel({ workspaceId: _ws }: Props) {
               <ul className="quick-stat-list">
                 {summary.engine_breakdown.map((eb) => (
                   <li key={eb.engine}>
-                    {ENGINE_NAMES[eb.engine] || eb.engine}: <strong>${eb.cost.toFixed(4)}</strong> ({eb.tokens.toLocaleString('tr-TR')} token)
+                    {t(ENGINE_NAMES[eb.engine]) || eb.engine}: <strong>${eb.cost.toFixed(4)}</strong> ({eb.tokens.toLocaleString(dateLocale)} token)
                   </li>
                 ))}
               </ul>
@@ -121,13 +124,13 @@ export function CostPanel({ workspaceId: _ws }: Props) {
           <tbody>
             {filteredEntries.map((e) => (
               <tr key={e.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                <td style={{ padding: '0.5rem', fontWeight: 600 }}>{ENGINE_NAMES[e.engine_name] || e.engine_name}</td>
+                <td style={{ padding: '0.5rem', fontWeight: 600 }}>{t(ENGINE_NAMES[e.engine_name]) || e.engine_name}</td>
                 <td style={{ padding: '0.5rem', color: '#64748b' }}>{e.model_name || '-'}</td>
                 <td style={{ padding: '0.5rem' }}>{e.operation}</td>
-                <td style={{ padding: '0.5rem', textAlign: 'right' }}>{e.token_count.toLocaleString('tr-TR')}</td>
+                <td style={{ padding: '0.5rem', textAlign: 'right' }}>{e.token_count.toLocaleString(dateLocale)}</td>
                 <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 600 }}>${e.cost_usd.toFixed(4)}</td>
                 <td style={{ padding: '0.5rem', color: '#94a3b8', fontSize: '0.8rem' }}>
-                  {new Date(e.recorded_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                  {new Date(e.recorded_at).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                 </td>
               </tr>
             ))}

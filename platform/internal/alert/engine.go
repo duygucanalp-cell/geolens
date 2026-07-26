@@ -1,4 +1,4 @@
-// Package internal/alert provides internal/alert functionality.
+// Package alert provides alert functionality.
 package alert
 
 import (

@@ -1,4 +1,4 @@
-// Package internal/recommendation provides internal/recommendation functionality.
+// Package recommendation provides recommendation functionality.
 package recommendation
 
 import (

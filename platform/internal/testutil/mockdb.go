@@ -1,4 +1,4 @@
-// Package internal/testutil provides internal/testutil functionality.
+// Package testutil provides testutil functionality.
 //
 //nolint:cyclop
 package testutil

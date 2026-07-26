@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import {
   BarChart,
   Bar,
@@ -17,6 +18,7 @@ interface EngineComparisonProps {
 }
 
 export function EngineComparison({ scores, brandName }: EngineComparisonProps) {
+  const { t } = useTranslation()
   // En son skorun engine breakdown'ını kullan
   const latest = scores.length > 0
     ? [...scores].sort((a, b) => new Date(b.freshness_at).getTime() - new Date(a.freshness_at).getTime())[0]
@@ -32,7 +34,7 @@ export function EngineComparison({ scores, brandName }: EngineComparisonProps) {
   }
 
   const data = Object.entries(latest.engine_breakdown).map(([engine, val]) => ({
-    name: ENGINE_NAMES[engine] || engine,
+    name: t(ENGINE_NAMES[engine]) || engine,
     value: Math.round(val),
     color: ENGINE_COLORS[engine] || '#94a3b8',
   }))
@@ -63,7 +65,7 @@ export function EngineComparison({ scores, brandName }: EngineComparisonProps) {
               fontSize: '12px',
               color: '#f8fafc',
             }}
-            formatter={(value: number) => [`${value}`, 'Skor']}
+            formatter={(value: number) => [`${value}`, t('score.trend_tooltip_score')]}
           />
           <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={60}>
             {data.map((entry, i) => (

@@ -12,7 +12,7 @@ async function fetchJSON<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, { ...init, headers })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }))
-    throw new Error(err.error || 'API hatası')
+    throw new Error(err.error || 'API error')
   }
   return res.json()
 }
@@ -315,7 +315,7 @@ export async function triggerDigest(ws: string): Promise<Blob> {
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }))
-    throw new Error(err.error || 'Rapor oluşturulamadı')
+    throw new Error(err.error || 'Failed to generate report')
   }
   return res.blob()
 }

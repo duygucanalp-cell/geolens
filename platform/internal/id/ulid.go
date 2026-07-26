@@ -1,4 +1,4 @@
-// Package internal/id provides internal/id functionality.
+// Package id provides id functionality.
 package id
 
 import (

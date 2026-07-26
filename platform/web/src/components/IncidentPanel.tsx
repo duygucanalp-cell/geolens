@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { getIncidents, createIncident, updateIncident } from '../api/client'
 import type { IncidentListResponse } from '../types'
@@ -5,14 +6,6 @@ import { SEVERITY_COLORS, SEVERITY_LABELS } from '../types'
 
 interface Props {
   workspaceId: string
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  open: 'Açık',
-  investigating: 'İnceleniyor',
-  mitigated: 'Hafifletildi',
-  resolved: 'Çözüldü',
-  closed: 'Kapatıldı',
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -24,6 +17,15 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 export function IncidentPanel({ workspaceId: _ws }: Props) {
+  const { t, i18n } = useTranslation()
+  const dateLocale = i18n.language?.startsWith('en') ? 'en-US' : 'tr-TR'
+  const STATUS_LABELS: Record<string, string> = {
+    open: t('incident.status_open'),
+    investigating: t('incident.status_investigating'),
+    mitigated: t('incident.status_mitigated'),
+    resolved: t('incident.status_resolved'),
+    closed: t('incident.status_closed'),
+  }
   const [data, setData] = useState<IncidentListResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -73,7 +75,7 @@ export function IncidentPanel({ workspaceId: _ws }: Props) {
       await updateIncident(incidentId, { status: 'resolved' })
       loadData()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Durum güncellenemedi')
+      setError(err instanceof Error ? err.message : t('optimization.status_update_error'))
     }
   }
 
@@ -108,7 +110,7 @@ export function IncidentPanel({ workspaceId: _ws }: Props) {
 
       <div className="dashboard-filters">
         <button className="refresh-btn" onClick={() => setShowCreate(!showCreate)}>
-          {showCreate ? 'İptal' : 'Yeni Incident'}
+          {showCreate ? t('guardrails.cancel') : 'Yeni Incident'}
         </button>
       </div>
 
@@ -116,8 +118,8 @@ export function IncidentPanel({ workspaceId: _ws }: Props) {
         <form onSubmit={handleCreate} style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '10px', marginBottom: '1.5rem' }}>
           <h4 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '1rem' }}>Yeni Incident Oluştur</h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <input className="notif-input" placeholder="Başlık" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} required />
-            <textarea className="notif-input" placeholder="Açıklama (opsiyonel)" value={newDesc} onChange={(e) => setNewDesc(e.target.value)} rows={3} />
+            <input className="notif-input" placeholder={t('incident.create_form_title')} value={newTitle} onChange={(e) => setNewTitle(e.target.value)} required />
+            <textarea className="notif-input" placeholder={t('incident.create_form_desc')} value={newDesc} onChange={(e) => setNewDesc(e.target.value)} rows={3} />
             <div style={{ display: 'flex', gap: '0.75rem' }}>
               <select value={newSeverity} onChange={(e) => setNewSeverity(e.target.value)} className="filter-select">
                 <option value="critical">Kritik</option>
@@ -160,7 +162,7 @@ export function IncidentPanel({ workspaceId: _ws }: Props) {
                     color: SEVERITY_COLORS[inc.severity] || '#94a3b8',
                     borderColor: SEVERITY_COLORS[inc.severity] || '#94a3b8',
                   }}>
-                    {SEVERITY_LABELS[inc.severity] || inc.severity}
+                    {t(SEVERITY_LABELS[inc.severity]) || inc.severity}
                   </span>
                   <span className="rec-category-badge">{inc.category}</span>
                   <span className="rec-status-badge" style={{
@@ -175,7 +177,7 @@ export function IncidentPanel({ workspaceId: _ws }: Props) {
                 {inc.assigned_to && <p className="rec-detail">Atanan: {inc.assigned_to}</p>}
                 <div className="rec-meta">
                   <span className="rec-date">
-                    {new Date(inc.occurred_at).toLocaleDateString('tr-TR', {
+                    {new Date(inc.occurred_at).toLocaleDateString(dateLocale, {
                       day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
                     })}
                   </span>
@@ -186,7 +188,7 @@ export function IncidentPanel({ workspaceId: _ws }: Props) {
               </div>
               {(inc.status === 'open' || inc.status === 'investigating') && (
                 <div className="rec-card-actions">
-                  <button className="rec-apply-btn" onClick={() => handleResolve(inc.id)} title="Çözüldü olarak işaretle">✓</button>
+                  <button className="rec-apply-btn" onClick={() => handleResolve(inc.id)} title={t('incident.mark_resolved')}>✓</button>
                 </div>
               )}
             </div>

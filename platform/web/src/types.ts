@@ -121,17 +121,17 @@ export interface Recommendation {
 }
 
 export const SEVERITY_LABELS: Record<string, string> = {
-  critical: 'Kritik',
-  high: 'Yüksek',
-  medium: 'Orta',
-  low: 'Düşük',
+  critical: 'severity.critical',
+  high: 'severity.high',
+  medium: 'severity.medium',
+  low: 'severity.low',
 }
 
 export const CATEGORY_LABELS: Record<string, string> = {
-  visibility: 'Görünürlük',
-  content: 'İçerik',
-  technical: 'Teknik',
-  competitor: 'Rakip',
+  visibility: 'category.visibility',
+  content: 'category.content',
+  technical: 'category.technical',
+  competitor: 'category.competitor',
 }
 
 export const SEVERITY_COLORS: Record<string, string> = {
@@ -399,10 +399,10 @@ export const ENGINE_COLORS: Record<string, string> = {
 }
 
 export const ENGINE_NAMES: Record<string, string> = {
-  perplexity: 'Perplexity',
-  chatgpt: 'ChatGPT',
-  gemini: 'Gemini',
-  claude: 'Claude',
-  grok: 'Grok',
-  copilot: 'Copilot',
+  perplexity: 'engine.perplexity',
+  chatgpt: 'engine.chatgpt',
+  gemini: 'engine.gemini',
+  claude: 'engine.claude',
+  grok: 'engine.grok',
+  copilot: 'engine.copilot',
 }

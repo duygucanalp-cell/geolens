@@ -294,7 +294,7 @@ func (h *Handler) ExportAuditTrail(w http.ResponseWriter, r *http.Request) {
 			slog.Warn("audit export satır okuma hatası", "error", err)
 			continue
 		}
-		fmt.Fprintf(w, "%s,%s,%s,%s,%s,%s,%s\n",
+		_, _ = fmt.Fprintf(w, "%s,%s,%s,%s,%s,%s,%s\n",
 			userID, eventType, resourceType, resourceID, action, ipAddr, createdAt.Format(time.RFC3339))
 	}
 

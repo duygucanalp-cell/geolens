@@ -1,28 +1,29 @@
+import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { getNotificationSettings, updateNotificationSettings, sendTestEmail } from '../api/client'
 import type { NotificationSettings as Settings } from '../types'
-
-const DAYS = [
-  { value: 'monday', label: 'Pazartesi' },
-  { value: 'tuesday', label: 'Salı' },
-  { value: 'wednesday', label: 'Çarşamba' },
-  { value: 'thursday', label: 'Perşembe' },
-  { value: 'friday', label: 'Cuma' },
-  { value: 'saturday', label: 'Cumartesi' },
-  { value: 'sunday', label: 'Pazar' },
-]
-
-const FORMATS = [
-  { value: 'email', label: 'E-posta' },
-  { value: 'pdf', label: 'PDF' },
-  { value: 'both', label: 'E-posta + PDF' },
-]
 
 interface Props {
   workspaceId: string
 }
 
 export function NotificationSettings({ workspaceId }: Props) {
+  const { t } = useTranslation()
+  const DAYS = [
+    { value: 'monday', label: t('day.monday') },
+    { value: 'tuesday', label: t('day.tuesday') },
+    { value: 'wednesday', label: t('day.wednesday') },
+    { value: 'thursday', label: t('day.thursday') },
+    { value: 'friday', label: t('day.friday') },
+    { value: 'saturday', label: t('day.saturday') },
+    { value: 'sunday', label: t('day.sunday') },
+  ]
+
+  const FORMATS = [
+    { value: 'email', label: t('format.email') },
+    { value: 'pdf', label: t('format.pdf') },
+    { value: 'both', label: t('format.both') },
+  ]
   const [settings, setSettings] = useState<Settings | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -41,7 +42,7 @@ export function NotificationSettings({ workspaceId }: Props) {
       const data = await getNotificationSettings(workspaceId)
       setSettings(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ayarlar yüklenemedi')
+      setError(err instanceof Error ? err.message : t('notif.load_error'))
     } finally {
       setLoading(false)
     }
@@ -55,10 +56,10 @@ export function NotificationSettings({ workspaceId }: Props) {
       setSuccess(null)
       const updated = await updateNotificationSettings(workspaceId, settings)
       setSettings(updated)
-      setSuccess('Ayarlar kaydedildi')
+      setSuccess(t('notif.saved'))
       setTimeout(() => setSuccess(null), 3000)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Kaydedilemedi')
+      setError(err instanceof Error ? err.message : t('notif.save_error'))
     } finally {
       setSaving(false)
     }
@@ -66,16 +67,16 @@ export function NotificationSettings({ workspaceId }: Props) {
 
   async function handleTestEmail() {
     if (!settings?.email_address) {
-      setTestEmailStatus('Lütfen önce bir e-posta adresi girin')
+      setTestEmailStatus(t('notif.test_first'))
       return
     }
     try {
-      setTestEmailStatus('Gönderiliyor...')
+      setTestEmailStatus(t('notif.test_sending'))
       const result = await sendTestEmail(workspaceId, settings.email_address)
       setTestEmailStatus(`✅ Test e-postası gönderildi: ${result.to}`)
       setTimeout(() => setTestEmailStatus(null), 5000)
     } catch (err) {
-      setTestEmailStatus(`❌ ${err instanceof Error ? err.message : 'Gönderilemedi'}`)
+      setTestEmailStatus(`❌ ${err instanceof Error ? err.message : t('notif.send_failed')}`)
     }
   }
 
@@ -227,7 +228,7 @@ export function NotificationSettings({ workspaceId }: Props) {
           onClick={handleSave}
           disabled={saving}
         >
-          {saving ? 'Kaydediliyor...' : 'Ayarları Kaydet'}
+          {saving ? t('notif.saving') : t('notif.save')}
         </button>
       </div>
     </div>

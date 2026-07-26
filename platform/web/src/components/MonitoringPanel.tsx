@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 
 interface MetricService {
@@ -9,32 +10,34 @@ interface MetricService {
   url?: string
 }
 
-const METRICS: MetricService[] = [
-  { title: 'Prometheus', value: '9090', desc: 'Metrik toplama ve sorgulama', icon: '📊', color: '#e6522c', url: 'http://localhost:9090' },
-  { title: 'Grafana', value: '4000', desc: 'Metrik görselleştirme ve alarm panosu', icon: '📈', color: '#f46800', url: 'http://localhost:4000' },
-  { title: 'API Metrikleri', value: '/metrics', desc: 'Ham Prometheus metrik endpoint\'i', icon: '🔢', color: '#6366f1' },
-  { title: 'Health Check', value: '/health', desc: 'API sağlık kontrolü', icon: '💚', color: '#22c55e' },
-]
-
-const ALARM_LIST = [
-  { name: 'Motor Hatası Alarmı', severity: 'critical', desc: 'Son 5 dakikada >3 engine çağrısı başarısız olursa tetiklenir', rule: 'rate(geolens_engine_calls_failed_total[5m]) > 3' },
-  { name: 'DLQ Büyüme Alarmı', severity: 'high', desc: 'Dead letter queue\'da mesaj birikirse tetiklenir', rule: 'geolens_queue_dead_letter_size > 10' },
-  { name: 'Kuyruk Tıkanıklığı', severity: 'high', desc: 'Kuyruk derinliği 100\'ü aşarsa tetiklenir', rule: 'geolens_queue_depth > 100' },
-  { name: 'Yüksek Hata Oranı', severity: 'medium', desc: 'HTTP 5xx oranı %5\'i aşarsa tetiklenir', rule: 'rate(geolens_http_requests_total{status=~"5.."}[5m]) / rate(geolens_http_requests_total[5m]) > 0.05' },
-  { name: 'Yavaş Motor Yanıtı', severity: 'medium', desc: 'Ortalama motor yanıt süresi 30sn\'yi aşarsa tetiklenir', rule: 'histogram_quantile(0.95, rate(geolens_engine_call_duration_seconds_bucket[5m])) > 30' },
-]
-
 interface MonitoringPanelProps {
   workspaceId?: string
 }
 
 export function MonitoringPanel({ workspaceId: _workspaceId }: MonitoringPanelProps = {}) {
+  const { t } = useTranslation()
+
+  const METRICS: MetricService[] = [
+    { title: 'Prometheus', value: '9090', desc: t('monitoring.metrics_desc'), icon: '📊', color: '#e6522c', url: 'http://localhost:9090' },
+    { title: 'Grafana', value: '4000', desc: t('monitoring.grafana_desc'), icon: '📈', color: '#f46800', url: 'http://localhost:4000' },
+    { title: 'API Metrics', value: '/metrics', desc: t('monitoring.metrics_endpoint_desc'), icon: '🔢', color: '#6366f1' },
+    { title: 'Health Check', value: '/health', desc: t('monitoring.health_desc'), icon: '💚', color: '#22c55e' },
+  ]
+
+  const ALARM_LIST = [
+    { name: t('monitoring.alarm_engine_error'), severity: 'critical', desc: t('monitoring.alarm_engine_error_desc'), rule: 'rate(geolens_engine_calls_failed_total[5m]) > 3' },
+    { name: t('monitoring.alarm_dlq_growth'), severity: 'high', desc: t('monitoring.alarm_dlq_desc'), rule: 'geolens_queue_dead_letter_size > 10' },
+    { name: t('monitoring.alarm_queue_blocked'), severity: 'high', desc: t('monitoring.alarm_queue_blocked_desc'), rule: 'geolens_queue_depth > 100' },
+    { name: t('monitoring.alarm_high_error_rate'), severity: 'medium', desc: t('monitoring.alarm_high_error_rate_desc'), rule: 'rate(geolens_http_requests_total{status=~"5.."}[5m]) / rate(geolens_http_requests_total[5m]) > 0.05' },
+    { name: t('monitoring.alarm_slow_engine'), severity: 'medium', desc: t('monitoring.alarm_slow_engine_desc'), rule: 'histogram_quantile(0.95, rate(geolens_engine_call_duration_seconds_bucket[5m])) > 30' },
+  ]
+
   const [showAlarms, setShowAlarms] = useState(false)
 
   return (
     <div className="monitoring-panel">
       <div className="monitoring-header">
-        <h3>📡 İzleme ve Metrikler</h3>
+        <h3>{t('monitoring.title')}</h3>
         <p className="monitoring-desc">Prometheus metrik altyapısı ile API, kuyruk ve motor performansını izleyin.</p>
       </div>
 
@@ -100,7 +103,7 @@ export function MonitoringPanel({ workspaceId: _workspaceId }: MonitoringPanelPr
           className="monitoring-collapse-btn"
           onClick={() => setShowAlarms(!showAlarms)}
         >
-          {showAlarms ? '🔽' : '🔼'} Alarm Seti ({ALARM_LIST.length} tanım)
+          {showAlarms ? '🔽' : '🔼'} {t('monitoring.alarm_set', { show: showAlarms ? '🔽' : '🔼', count: ALARM_LIST.length })}
         </button>
         {showAlarms && (
           <div className="alarm-list">

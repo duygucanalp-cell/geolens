@@ -1,14 +1,16 @@
+import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { getGuardrailRules, createGuardrailRule, toggleGuardrailRule, deleteGuardrailRule, evaluateGuardrail } from '../api/client'
 import type { GuardrailRule } from '../types'
 
 interface Props { workspaceId: string }
 
-const CATEGORY_LABELS: Record<string, string> = { prompt_injection: 'Prompt Injection', pii_leakage: 'PII Sızıntısı', toxic_output: 'Toksik Çıktı', hallucination: 'Halüsinasyon', custom: 'Özel' }
-const ACTION_LABELS: Record<string, string> = { block: 'Engelle', flag: 'İşaretle', log: 'Günlükle' }
 const SEVERITY_COLORS: Record<string, string> = { critical: '#ef4444', high: '#f97316', medium: '#eab308', low: '#22c55e' }
 
 export function GuardrailsPanel({ workspaceId: _ws }: Props) {
+  const { t } = useTranslation()
+  const CATEGORY_LABELS: Record<string, string> = { prompt_injection: 'Prompt Injection', pii_leakage: t('guardrails.pii_leakage'), toxic_output: t('guardrails.toxic_output'), hallucination: t('guardrails.hallucination'), custom: t('policy.framework_custom') }
+  const ACTION_LABELS: Record<string, string> = { block: t('guardrails.action_block'), flag: t('guardrails.action_flag'), log: t('guardrails.action_log') }
   const [rules, setRules] = useState<GuardrailRule[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -23,7 +25,7 @@ export function GuardrailsPanel({ workspaceId: _ws }: Props) {
 
   async function loadRules() {
     try { setLoading(true); const d = await getGuardrailRules(); setRules(d.rules) }
-    catch (e) { setError(e instanceof Error ? e.message : 'Yüklenemedi') }
+    catch (e) { setError(e instanceof Error ? e.message : t('registry.load_error')) }
     finally { setLoading(false) }
   }
 
@@ -32,23 +34,23 @@ export function GuardrailsPanel({ workspaceId: _ws }: Props) {
     try {
       await createGuardrailRule({ name: newName, category: newCategory, pattern: newPattern })
       setShowCreate(false); setNewName(''); setNewPattern(''); loadRules()
-    } catch (e) { setError(e instanceof Error ? e.message : 'Oluşturulamadı') }
+    } catch (e) { setError(e instanceof Error ? e.message : t('registry.create_error')) }
   }
 
   async function handleToggle(id: string, enabled: boolean) {
     try { await toggleGuardrailRule(id, !enabled); loadRules() }
-    catch (e) { setError(e instanceof Error ? e.message : 'Güncellenemedi') }
+    catch (e) { setError(e instanceof Error ? e.message : t('policy.update_error')) }
   }
 
   async function handleDelete(id: string) {
     try { await deleteGuardrailRule(id); loadRules() }
-    catch (e) { setError(e instanceof Error ? e.message : 'Silinemedi') }
+    catch (e) { setError(e instanceof Error ? e.message : t('registry.delete_error')) }
   }
 
   async function handleEvaluate() {
     if (!evalPrompt.trim()) return
     try { setEvalResult(await evaluateGuardrail(evalPrompt)) }
-    catch (e) { setError(e instanceof Error ? e.message : 'Değerlendirme hatası') }
+    catch (e) { setError(e instanceof Error ? e.message : t('bias.eval_error')) }
   }
 
   if (loading) return <div className="dashboard-loading">Guardrail kuralları yükleniyor...</div>
@@ -62,14 +64,14 @@ export function GuardrailsPanel({ workspaceId: _ws }: Props) {
       {error && <div className="audit-error">{error}</div>}
 
       <div className="dashboard-filters">
-        <button className="refresh-btn" onClick={() => setShowCreate(!showCreate)}>{showCreate ? 'İptal' : 'Kural Ekle'}</button>
+        <button className="refresh-btn" onClick={() => setShowCreate(!showCreate)}>{showCreate ? t('guardrails.cancel') : t('guardrails.add_rule')}</button>
         <button className="refresh-btn" onClick={loadRules}>Yenile</button>
       </div>
 
       {showCreate && (
         <form onSubmit={handleCreate} style={{ background: '#f8fafc', padding: '1rem', borderRadius: '10px', marginBottom: '1rem' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <input className="notif-input" placeholder="Kural adı" value={newName} onChange={e => setNewName(e.target.value)} required />
+            <input className="notif-input" placeholder={t('guardrails.rule_name_placeholder')} value={newName} onChange={e => setNewName(e.target.value)} required />
             <input className="notif-input" placeholder="Pattern (regex veya /keyword/)" value={newPattern} onChange={e => setNewPattern(e.target.value)} required />
             <select value={newCategory} onChange={e => setNewCategory(e.target.value)} className="filter-select">
               {Object.entries(CATEGORY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
@@ -86,7 +88,7 @@ export function GuardrailsPanel({ workspaceId: _ws }: Props) {
       </div>
       {evalResult && (
         <div style={{ background: evalResult.blocked ? '#fef2f2' : '#f0fdf4', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.85rem' }}>
-          <strong>{evalResult.blocked ? '🔴 Engellendi' : '✅ İzin Verildi'}</strong>
+          <strong>{evalResult.blocked ? t('guardrails.blocked') : t('guardrails.allowed')}</strong>
           <ul style={{ marginTop: '0.5rem', listStyle: 'none', padding: 0 }}>
             {evalResult.results.filter((r: any) => r.matched).map((r: any) => (
               <li key={r.rule_id} style={{ padding: '0.2rem 0', color: '#64748b' }}>{r.rule_name} → {r.action_taken}</li>
@@ -106,7 +108,7 @@ export function GuardrailsPanel({ workspaceId: _ws }: Props) {
                 <div className="rec-card-header">
                   <span className="rec-category-badge">{CATEGORY_LABELS[r.category] || r.category}</span>
                   <span className="rec-severity-badge" style={{ color: SEVERITY_COLORS[r.severity], borderColor: SEVERITY_COLORS[r.severity] }}>{r.severity}</span>
-                  <span className="rec-status-badge" style={{ background: r.enabled ? '#dcfce7' : '#fef2f2', color: r.enabled ? '#22c55e' : '#ef4444' }}>{r.enabled ? 'Aktif' : 'Pasif'}</span>
+                  <span className="rec-status-badge" style={{ background: r.enabled ? '#dcfce7' : '#fef2f2', color: r.enabled ? '#22c55e' : '#ef4444' }}>{r.enabled ? t('guardrails.enabled') : t('guardrails.disabled')}</span>
                 </div>
                 <h4 className="rec-title">{r.name}</h4>
                 <p className="rec-detail">Pattern: <code style={{ background: '#e2e8f0', padding: '0.1rem 0.3rem', borderRadius: '3px' }}>{r.pattern}</code></p>
@@ -115,7 +117,7 @@ export function GuardrailsPanel({ workspaceId: _ws }: Props) {
                 </div>
               </div>
               <div className="rec-card-actions">
-                <button className="rec-apply-btn" onClick={() => handleToggle(r.id, r.enabled)} title={r.enabled ? 'Devre dışı bırak' : 'Etkinleştir'}>
+                <button className="rec-apply-btn" onClick={() => handleToggle(r.id, r.enabled)} title={r.enabled ? 'Disable rule' : 'Enable rule'}>
                   {r.enabled ? '⏸' : '▶'}
                 </button>
                 <button className="rec-dismiss-btn" onClick={() => handleDelete(r.id)} title="Sil">✕</button>

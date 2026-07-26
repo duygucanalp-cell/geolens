@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import { triggerDigest } from '../api/client'
 
@@ -6,13 +7,14 @@ interface Props {
 }
 
 export function ReportsPanel({ workspaceId }: Props) {
+  const { t } = useTranslation()
   const [generating, setGenerating] = useState(false)
   const [status, setStatus] = useState<string | null>(null)
 
   async function handleGenerateDigest() {
     try {
       setGenerating(true)
-      setStatus('Rapor oluşturuluyor...')
+      setStatus(t('reports.generating_status'))
 
       const blob = await triggerDigest(workspaceId)
 
@@ -29,7 +31,7 @@ export function ReportsPanel({ workspaceId }: Props) {
       setStatus('✅ Rapor indiriliyor...')
       setTimeout(() => setStatus(null), 3000)
     } catch (err) {
-      setStatus(`❌ ${err instanceof Error ? err.message : 'Rapor oluşturulamadı'}`)
+      setStatus(`❌ ${err instanceof Error ? err.message : t('reports.generate_failed')}`)
       setTimeout(() => setStatus(null), 5000)
     } finally {
       setGenerating(false)
@@ -58,7 +60,7 @@ export function ReportsPanel({ workspaceId }: Props) {
             onClick={handleGenerateDigest}
             disabled={generating}
           >
-            {generating ? 'Oluşturuluyor...' : 'Oluştur & İndir'}
+            {generating ? t('optimization.generating') : 'Oluştur & İndir'}
           </button>
         </div>
 

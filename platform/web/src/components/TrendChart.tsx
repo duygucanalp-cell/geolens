@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useMemo } from 'react'
 import {
   Line,
@@ -25,6 +26,8 @@ interface ChartPoint {
 }
 
 export function TrendChart({ scores, brandName }: TrendChartProps) {
+  const { t, i18n } = useTranslation()
+  const dateLocale = i18n.language?.startsWith('en') ? 'en-US' : 'tr-TR'
   const chartData = useMemo<ChartPoint[]>(() => {
     if (scores.length === 0) return []
 
@@ -33,7 +36,7 @@ export function TrendChart({ scores, brandName }: TrendChartProps) {
     )
     return sorted.map((s) => ({
       date: s.freshness_at,
-      dateLabel: new Date(s.freshness_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }),
+      dateLabel: new Date(s.freshness_at).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short' }),
       value: Math.round(s.value * 10) / 10,
       ciLow: s.ci_low ?? Math.max(0, s.value - 5),
       ciHigh: s.ci_high ?? Math.min(100, s.value + 5),
@@ -78,7 +81,7 @@ export function TrendChart({ scores, brandName }: TrendChartProps) {
               color: '#f8fafc',
             }}
             labelFormatter={(label) => `Tarih: ${label}`}
-            formatter={(value: number) => [`${value.toFixed(1)}`, 'Skor']}
+            formatter={(value: number) => [`${value.toFixed(1)}`, t('score.trend_tooltip_score')]}
           />
           {/* CI band area */}
           <Area

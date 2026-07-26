@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { Score } from '../types'
 
 interface ScoreCardProps {
@@ -11,6 +12,8 @@ const engineColors: Record<string, string> = {
 }
 
 export function ScoreCard({ score }: ScoreCardProps) {
+  const { t, i18n } = useTranslation()
+  const dateLocale = i18n.language?.startsWith('en') ? 'en-US' : 'tr-TR'
   const ci = score.ci_high - score.ci_low
   const ciPercent = Math.min((ci / Math.max(score.value, 1)) * 100, 100)
 
@@ -43,7 +46,7 @@ export function ScoreCard({ score }: ScoreCardProps) {
 
       {score.engine_breakdown && (
         <div className="engine-breakdown">
-          <h4>Motor Kırılımı</h4>
+          <h4>{t('dashboard.engine_breakdown')}</h4>
           <div className="engine-bars">
             {Object.entries(score.engine_breakdown).map(([engine, val]) => (
               <div key={engine} className="engine-row">
@@ -65,7 +68,7 @@ export function ScoreCard({ score }: ScoreCardProps) {
       )}
 
       <div className="score-meta">
-        <span>Son güncelleme: {new Date(score.freshness_at).toLocaleDateString('tr-TR')}</span>
+        <span>{t('score.last_updated', { date: new Date(score.freshness_at).toLocaleDateString(dateLocale) })}</span>
       </div>
     </div>
   )

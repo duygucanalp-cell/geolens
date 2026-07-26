@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import { runGateCheck, getGateHistory } from '../api/client'
 import type { GateCheckResult, GateHistoryEntry } from '../types'
@@ -5,8 +6,10 @@ import type { GateCheckResult, GateHistoryEntry } from '../types'
 interface Props { workspaceId: string }
 
 const DECISION_COLORS: Record<string, string> = { approved: '#22c55e', flagged: '#f59e0b', blocked: '#ef4444' }
-const DECISION_LABELS: Record<string, string> = { approved: '✅ Onaylandı', flagged: '⚠️ İşaretlendi', blocked: '🔴 Engellendi' }
 export function GatePanel({ workspaceId: _ws }: Props) {
+  const { t, i18n } = useTranslation()
+  const dateLocale = i18n.language?.startsWith('en') ? 'en-US' : 'tr-TR'
+  const DECISION_LABELS: Record<string, string> = { approved: t('gate.decision_approved'), flagged: t('gate.decision_flagged'), blocked: t('gate.decision_blocked') }
   const [entityId, setEntityId] = useState('')
   const [entityType, setEntityType] = useState('model')
   const [targetEnv, setTargetEnv] = useState('production')
@@ -27,7 +30,7 @@ export function GatePanel({ workspaceId: _ws }: Props) {
       setCheckResult(result)
       // Also load history
       try { setHistory(await getGateHistory(entityId)) } catch {}
-    } catch (err) { setError(err instanceof Error ? err.message : 'Gate check hatası') }
+    } catch (err) { setError(err instanceof Error ? err.message : t('gate.check_error')) }
     finally { setLoading(false) }
   }
 
@@ -36,7 +39,7 @@ export function GatePanel({ workspaceId: _ws }: Props) {
     try {
       setHistory(await getGateHistory(entityId))
       setShowHistory(!showHistory)
-    } catch (err) { setError(err instanceof Error ? err.message : 'Geçmiş yüklenemedi') }
+    } catch (err) { setError(err instanceof Error ? err.message : t('gate.history_error')) }
   }
 
   const historyItems = history
@@ -62,10 +65,10 @@ export function GatePanel({ workspaceId: _ws }: Props) {
           </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button type="submit" className="audit-btn" disabled={loading}>
-              {loading ? 'Kontrol Ediliyor...' : 'Gate Check'}
+              {loading ? t('gate.checking') : 'Gate Check'}
             </button>
             <button type="button" className="refresh-btn" onClick={loadHistory} disabled={!entityId.trim()}>
-              {showHistory ? 'Geçmişi Gizle' : 'Geçmiş'}
+              {showHistory ? t('gate.hide_history') : 'Geçmiş'}
             </button>
           </div>
         </div>
@@ -141,7 +144,7 @@ export function GatePanel({ workspaceId: _ws }: Props) {
                       <span className="rec-date">{item.target_env}</span>
                       <span className="rec-date">{item.passed_checks}/{item.total_checks} geçti</span>
                       {item.checked_at && (
-                        <span className="rec-date">{new Date(item.checked_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                        <span className="rec-date">{new Date(item.checked_at).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                       )}
                     </div>
                   </div>

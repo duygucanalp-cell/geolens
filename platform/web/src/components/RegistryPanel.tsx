@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { listRegistryEntities, createRegistryEntity, deleteRegistryEntity } from '../api/client'
 import type { RegistryEntity } from '../types'
@@ -7,6 +8,8 @@ interface Props { workspaceId: string }
 const TYPE_COLORS: Record<string, string> = { model: '#6366f1', agent: '#22c55e', application: '#f59e0b', dataset: '#ef4444' }
 
 export function RegistryPanel({ workspaceId: _ws }: Props) {
+  const { t, i18n } = useTranslation()
+  const dateLocale = i18n.language?.startsWith('en') ? 'en-US' : 'tr-TR'
   const [entities, setEntities] = useState<RegistryEntity[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -14,15 +17,15 @@ export function RegistryPanel({ workspaceId: _ws }: Props) {
   const [newEntity, setNewEntity] = useState({ entity_type: 'model', name: '', description: '', version: '1.0.0', provider: '', risk_class: 'medium' })
 
   useEffect(() => { loadEntities() }, [])
-  async function loadEntities() { try { setLoading(true); setError(null); const d = await listRegistryEntities(); setEntities(d.entities) } catch (e) { setError(e instanceof Error ? e.message : 'Yüklenemedi') } finally { setLoading(false) } }
+  async function loadEntities() { try { setLoading(true); setError(null); const d = await listRegistryEntities(); setEntities(d.entities) } catch (e) { setError(e instanceof Error ? e.message : t('registry.load_error')) } finally { setLoading(false) } }
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     try { await createRegistryEntity(newEntity); setShowCreate(false); setNewEntity({ entity_type: 'model', name: '', description: '', version: '1.0.0', provider: '', risk_class: 'medium' }); loadEntities() }
-    catch (e) { setError(e instanceof Error ? e.message : 'Oluşturulamadı') }
+    catch (e) { setError(e instanceof Error ? e.message : t('registry.create_error')) }
   }
 
-  async function handleDelete(id: string) { try { await deleteRegistryEntity(id); loadEntities() } catch (e) { setError(e instanceof Error ? e.message : 'Silinemedi') } }
+  async function handleDelete(id: string) { try { await deleteRegistryEntity(id); loadEntities() } catch (e) { setError(e instanceof Error ? e.message : t('registry.delete_error')) } }
 
   if (loading) return <div className="dashboard-loading">Registry yükleniyor...</div>
 
@@ -31,7 +34,7 @@ export function RegistryPanel({ workspaceId: _ws }: Props) {
       <div className="rec-header"><h3>📋 AI Registry</h3><p className="rec-desc">AI varlık envanteri ve risk sınıflandırması.</p></div>
       {error && <div className="audit-error">{error}</div>}
       <div className="dashboard-filters">
-        <button className="refresh-btn" onClick={() => setShowCreate(!showCreate)}>{showCreate ? 'İptal' : 'Varlık Ekle'}</button>
+        <button className="refresh-btn" onClick={() => setShowCreate(!showCreate)}>{showCreate ? t('guardrails.cancel') : t('registry.add')}</button>
         <button className="refresh-btn" onClick={loadEntities}>Yenile</button>
       </div>
 
@@ -70,7 +73,7 @@ export function RegistryPanel({ workspaceId: _ws }: Props) {
                 <h4 className="rec-title">{e.name}{e.version ? ` v${e.version}` : ''}</h4>
                 <p className="rec-detail">{e.description || '-'}</p>
                 <div className="rec-meta">
-                  <span className="rec-date">{e.provider ? `${e.provider} · ` : ''}{e.owner ? `${e.owner} · ` : ''}{new Date(e.created_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}</span>
+                  <span className="rec-date">{e.provider ? `${e.provider} · ` : ''}{e.owner ? `${e.owner} · ` : ''}{new Date(e.created_at).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short' })}</span>
                 </div>
               </div>
               <div className="rec-card-actions">

@@ -207,7 +207,7 @@ func (s *service) checkBotAccess(websiteURL string) *BotAccessCheck {
 	if _, err := io.Copy(io.Discard, resp.Body); err != nil {
 		slog.Debug("bot access yanıt gövdesi okuma", "error", err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	check.ResponseTimeMs = time.Since(start).Milliseconds()
 	check.StatusCode = resp.StatusCode

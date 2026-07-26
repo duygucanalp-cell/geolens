@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { getOptimizationRecommendations, generateOptimizationRecommendations, updateOptimizationStatus } from '../api/client'
 import type { OptimizationRec } from '../types'
@@ -12,19 +13,19 @@ const IMPACT_COLORS: Record<string, string> = {
   low: '#22c55e',
 }
 
-const IMPACT_LABELS: Record<string, string> = {
-  high: 'Yüksek',
-  medium: 'Orta',
-  low: 'Düşük',
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  pending: 'Bekliyor',
-  implemented: 'Uygulandı',
-  dismissed: 'Reddedildi',
-}
-
 export function OptimizationPanel({ workspaceId: _ws }: Props) {
+  const { t, i18n } = useTranslation()
+  const dateLocale = i18n.language?.startsWith('en') ? 'en-US' : 'tr-TR'
+  const IMPACT_LABELS: Record<string, string> = {
+    high: t('impact.high'),
+    medium: t('impact.medium'),
+    low: t('impact.low'),
+  }
+  const STATUS_LABELS: Record<string, string> = {
+    pending: t('optimization.status_pending'),
+    implemented: t('optimization.status_implemented'),
+    dismissed: t('optimization.status_dismissed'),
+  }
   const [recs, setRecs] = useState<OptimizationRec[]>([])
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
@@ -40,7 +41,7 @@ export function OptimizationPanel({ workspaceId: _ws }: Props) {
       const data = await getOptimizationRecommendations()
       setRecs(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Öneriler yüklenemedi')
+      setError(err instanceof Error ? err.message : t('optimization.load_error'))
     } finally {
       setLoading(false)
     }
@@ -55,7 +56,7 @@ export function OptimizationPanel({ workspaceId: _ws }: Props) {
       setSuccessMsg(`${result.count} yeni optimizasyon önerisi oluşturuldu.`)
       setTimeout(() => setSuccessMsg(null), 5000)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Öneriler oluşturulamadı')
+      setError(err instanceof Error ? err.message : t('optimization.generate_error'))
     } finally {
       setGenerating(false)
     }
@@ -68,7 +69,7 @@ export function OptimizationPanel({ workspaceId: _ws }: Props) {
       setSuccessMsg(`Öneri ${STATUS_LABELS[status] || status} olarak işaretlendi.`)
       setTimeout(() => setSuccessMsg(null), 3000)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Durum güncellenemedi')
+      setError(err instanceof Error ? err.message : t('optimization.status_update_error'))
     }
   }
 
@@ -86,7 +87,7 @@ export function OptimizationPanel({ workspaceId: _ws }: Props) {
 
       <div className="dashboard-filters">
         <button className="refresh-btn" onClick={handleGenerate} disabled={generating}>
-          {generating ? 'Oluşturuluyor...' : 'Öneri Oluştur'}
+          {generating ? t('optimization.generating') : t('optimization.generate')}
         </button>
       </div>
 
@@ -132,7 +133,7 @@ export function OptimizationPanel({ workspaceId: _ws }: Props) {
                     <span className="rec-confidence-label">+{rec.score_potential} puan potansiyeli</span>
                   </div>
                   <span className="rec-date">
-                    {new Date(rec.created_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}
+                    {new Date(rec.created_at).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short' })}
                   </span>
                 </div>
               </div>

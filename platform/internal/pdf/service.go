@@ -86,7 +86,7 @@ func (s *service) GenerateWeeklyDigest(workspaceID, tenantID string) (*ReportRes
 	))
 
 	m.AddRow(6, col.New(12).Add(
-		text.New("Bu hafta markalarınızın AI görünürlük performansını değerlendirdik. "+
+		text.New("Bu hafta markalarınızın AI görünürlük performansını değerlendirdik. "+ //nolint:misspell
 			"Aşağıda detaylı skorlar, trendler ve öneriler yer almaktadır.",
 			props.Text{Size: 10, Top: 2}),
 	))
@@ -126,6 +126,8 @@ func (s *service) GenerateWeeklyDigest(workspaceID, tenantID string) (*ReportRes
 
 	for _, score := range scores {
 		var rec string
+		//nolint:gocritic
+		//nolint:gocritic
 		if score.Change > 0 {
 			rec = fmt.Sprintf("%s: Görünürlük skoru yükselişte (%%%+.0f) — mevcut stratejiyi koruyun.", score.BrandName, score.Change)
 		} else if score.Change < 0 {

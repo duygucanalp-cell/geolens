@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { getUsageMetrics, getUsageSummary } from '../api/client'
 import type { UsageMetric, UsageSummary } from '../types'
@@ -9,6 +10,8 @@ interface Props {
 type Period = '1d' | '7d' | '30d' | '90d'
 
 export function UsagePanel({ workspaceId: _ws }: Props) {
+  const { t, i18n } = useTranslation()
+  const dateLocale = i18n.language?.startsWith('en') ? 'en-US' : 'tr-TR'
   const [metrics, setMetrics] = useState<UsageMetric[]>([])
   const [summary, setSummary] = useState<UsageSummary | null>(null)
   const [loading, setLoading] = useState(true)
@@ -25,7 +28,7 @@ export function UsagePanel({ workspaceId: _ws }: Props) {
       setMetrics(m)
       setSummary(s)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Kullanım verileri yüklenemedi')
+      setError(err instanceof Error ? err.message : t('usage.load_error'))
     } finally {
       setLoading(false)
     }
@@ -132,7 +135,7 @@ export function UsagePanel({ workspaceId: _ws }: Props) {
                   </td>
                   <td style={{ padding: '0.5rem', textAlign: 'right' }}>{m.latency_ms}ms</td>
                   <td style={{ padding: '0.5rem', color: '#94a3b8', fontSize: '0.8rem' }}>
-                    {new Date(m.recorded_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    {new Date(m.recorded_at).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                   </td>
                 </tr>
               ))}

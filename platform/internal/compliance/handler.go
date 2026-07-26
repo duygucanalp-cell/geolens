@@ -286,5 +286,5 @@ func (h *Handler) DownloadEvidence(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Content-Disposition", "attachment; filename=soc2-evidence.json")
-	json.NewEncoder(w).Encode(pack)
+	_ = json.NewEncoder(w).Encode(pack)
 }

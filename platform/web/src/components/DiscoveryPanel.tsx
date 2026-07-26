@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import { startDiscoveryScan, getScanResults } from '../api/client'
 import type { ScanResult } from '../types'
@@ -5,10 +6,11 @@ import type { ScanResult } from '../types'
 interface Props { workspaceId: string }
 
 const RISK_COLORS: Record<string, string> = { critical: '#ef4444', high: '#f97316', medium: '#eab308', low: '#22c55e' }
-const RISK_LABELS: Record<string, string> = { critical: 'Kritik', high: 'Yüksek', medium: 'Orta', low: 'Düşük' }
 const RESOURCE_ICONS: Record<string, string> = { lambda: '⚡', sagemaker: '🤖', vertex_ai: '🧠', endpoint: '🔗', storage: '💾', api: '🔌' }
 
 export function DiscoveryPanel({ workspaceId: _ws }: Props) {
+  const { t } = useTranslation()
+  const RISK_LABELS: Record<string, string> = { critical: t('severity.critical'), high: t('severity.high'), medium: t('severity.medium'), low: t('severity.low') }
   const [scanResult, setScanResult] = useState<ScanResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -32,14 +34,14 @@ export function DiscoveryPanel({ workspaceId: _ws }: Props) {
               const result = await getScanResults(scan_id)
               setScanResult(result)
             } catch (e) {
-              setError(e instanceof Error ? e.message : 'Sonuç alınamadı')
+              setError(e instanceof Error ? e.message : t('discovery.load_error'))
             }
           }, 5000)
         }
         setLoading(false)
       }, 3000)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Tarama başlatılamadı')
+      setError(err instanceof Error ? err.message : t('discovery.start_error'))
       setLoading(false)
     }
   }
@@ -63,7 +65,7 @@ export function DiscoveryPanel({ workspaceId: _ws }: Props) {
           <option value="cloud">Cloud Kaynakları</option>
         </select>
         <button className="audit-btn" onClick={handleStartScan} disabled={loading}>
-          {loading ? 'Taranıyor...' : 'Tarama Başlat'}
+          {loading ? t('discovery.scanning') : t('discovery.start')}
         </button>
       </div>
 

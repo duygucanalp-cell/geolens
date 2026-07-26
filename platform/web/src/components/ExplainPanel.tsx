@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { explainEntity, listExplainResults } from '../api/client'
 import type { ExplainResult } from '../types'
@@ -7,6 +8,7 @@ interface Props { workspaceId: string }
 const IMPACT_COLORS: Record<string, string> = { positive: '#22c55e', negative: '#ef4444', neutral: '#94a3b8' }
 
 export function ExplainPanel({ workspaceId: _ws }: Props) {
+  const { t } = useTranslation()
   const [analyses, setAnalyses] = useState<ExplainResult[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -18,7 +20,7 @@ export function ExplainPanel({ workspaceId: _ws }: Props) {
 
   async function loadAnalyses() {
     try { setLoading(true); setError(null); setAnalyses(await listExplainResults()) }
-    catch (e) { setError(e instanceof Error ? e.message : 'Yüklenemedi') }
+    catch (e) { setError(e instanceof Error ? e.message : t('registry.load_error')) }
     finally { setLoading(false) }
   }
 
@@ -31,7 +33,7 @@ export function ExplainPanel({ workspaceId: _ws }: Props) {
       const result = await explainEntity(entityId)
       setExplainResult(result)
       loadAnalyses()
-    } catch (err) { setError(err instanceof Error ? err.message : 'Açıklama hatası') }
+    } catch (err) { setError(err instanceof Error ? err.message : t('explain.error')) }
     finally { setExplainLoading(false) }
   }
 
@@ -49,7 +51,7 @@ export function ExplainPanel({ workspaceId: _ws }: Props) {
       <form onSubmit={handleExplain} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
         <input className="notif-input" style={{ flex: 1 }} placeholder="Varlık ID (Registry'den)" value={entityId} onChange={e => setEntityId(e.target.value)} required />
         <button type="submit" className="audit-btn" disabled={explainLoading}>
-          {explainLoading ? 'Analiz Ediliyor...' : 'Açıkla'}
+          {explainLoading ? t('explain.analyzing') : t('explain.analyze')}
         </button>
       </form>
 

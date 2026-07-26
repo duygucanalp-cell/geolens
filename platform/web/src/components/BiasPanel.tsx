@@ -1,22 +1,24 @@
+import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { evaluateBias, listBiasTests } from '../api/client'
 import type { BiasTest } from '../types'
 
 interface Props { workspaceId: string }
 
-const METRIC_LABELS: Record<string, string> = {
-  demographic_parity: 'Demografik Parite',
-  equal_opportunity: 'Eşit Fırsat',
-  disparate_impact: 'Farklı Etki',
-}
-
-const METRIC_DESCS: Record<string, string> = {
-  demographic_parity: 'Gruplar arası pozitif oran farkını ölçer',
-  equal_opportunity: 'True Positive Rate eşitliğini kontrol eder',
-  disparate_impact: 'EEOC 4/5 kuralına göre farklı etkiyi hesaplar',
-}
-
 export function BiasPanel({ workspaceId: _ws }: Props) {
+  const { t, i18n } = useTranslation()
+  const dateLocale = i18n.language?.startsWith('en') ? 'en-US' : 'tr-TR'
+  const METRIC_LABELS: Record<string, string> = {
+    demographic_parity: t('bias.metric_demographic_parity'),
+    equal_opportunity: t('bias.metric_equal_opportunity'),
+    disparate_impact: t('bias.metric_disparate_impact'),
+  }
+
+  const METRIC_DESCS: Record<string, string> = {
+    demographic_parity: t('bias.metric_dp_desc'),
+    equal_opportunity: t('bias.metric_eo_desc'),
+    disparate_impact: t('bias.metric_di_desc'),
+  }
   const [tests, setTests] = useState<BiasTest[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -33,7 +35,7 @@ export function BiasPanel({ workspaceId: _ws }: Props) {
 
   async function loadTests() {
     try { setLoading(true); setError(null); setTests(await listBiasTests()) }
-    catch (e) { setError(e instanceof Error ? e.message : 'Yüklenemedi') }
+    catch (e) { setError(e instanceof Error ? e.message : t('registry.load_error')) }
     finally { setLoading(false) }
   }
 
@@ -44,16 +46,16 @@ export function BiasPanel({ workspaceId: _ws }: Props) {
     setEvalResult(null)
     try {
       let parsed: Record<string, number> = {}
-      try { parsed = JSON.parse(groupData) } catch { setError('Geçersiz JSON verisi'); setEvalLoading(false); return }
+      try { parsed = JSON.parse(groupData) } catch { setError(t('bias.invalid_json')); setEvalLoading(false); return }
       const result = await evaluateBias({ model_id: modelId, metric_type: metricType, data: parsed })
       setEvalResult(result)
       loadTests()
-    } catch (err) { setError(err instanceof Error ? err.message : 'Değerlendirme hatası') }
+    } catch (err) { setError(err instanceof Error ? err.message : t('bias.eval_error')) }
     finally { setEvalLoading(false) }
   }
 
-  const avgFairness = tests.length > 0 ? tests.reduce((s, t) => s + t.fairness_score, 0) / tests.length : 0
-  const biasCount = tests.filter(t => t.has_bias).length
+  const avgFairness = tests.length > 0 ?tests.reduce((s, item) => s + item.fairness_score, 0) / tests.length : 0
+const biasCount = tests.filter(item => item.has_bias).length
 
   if (loading) return <div className="dashboard-loading">Bias testleri yükleniyor...</div>
 
@@ -87,7 +89,7 @@ export function BiasPanel({ workspaceId: _ws }: Props) {
 
       <div className="dashboard-filters">
         <button className="refresh-btn" onClick={() => setShowEvaluate(!showEvaluate)}>
-          {showEvaluate ? 'İptal' : 'Yeni Değerlendirme'}
+          {showEvaluate ? t('guardrails.cancel') : t('bias.new_eval')}
         </button>
         <button className="refresh-btn" onClick={loadTests}>Yenile</button>
       </div>
@@ -111,7 +113,7 @@ export function BiasPanel({ workspaceId: _ws }: Props) {
               style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}
             />
             <button type="submit" className="audit-btn" disabled={evalLoading}>
-              {evalLoading ? 'Değerlendiriliyor...' : 'Değerlendir'}
+              {evalLoading ? t('bias.evaluating') : t('bias.evaluate')}
             </button>
           </div>
         </form>
@@ -122,7 +124,7 @@ export function BiasPanel({ workspaceId: _ws }: Props) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
             <span style={{ fontSize: '1.5rem' }}>{evalResult.has_bias ? '🔴' : '✅'}</span>
             <div>
-              <strong>{evalResult.has_bias ? 'Bias Tespit Edildi' : 'Bias Tespit Edilmedi'}</strong>
+              <strong>{evalResult.has_bias ? t('bias.result_bias_detected') : t('bias.result_no_bias')}</strong>
               <p style={{ fontSize: '0.85rem', color: '#64748b' }}>Fairness Skoru: {(evalResult.fairness_score * 100).toFixed(1)}/100</p>
             </div>
           </div>
@@ -137,26 +139,25 @@ export function BiasPanel({ workspaceId: _ws }: Props) {
       {tests.length === 0 ? (
         <div className="rec-empty"><div className="rec-empty-icon">⚖️</div><h4>Henüz test yok</h4></div>
       ) : (
-        <div className="rec-list">
-          {tests.map(t => (
-            <div key={t.id} className="rec-card">
-              <div className="rec-card-left"><div className="rec-severity-bar" style={{ backgroundColor: t.has_bias ? '#ef4444' : '#22c55e' }} /></div>
+        <div className="rec-list">            {tests.map((test) => (
+            <div key={test.id} className="rec-card">
+              <div className="rec-card-left"><div className="rec-severity-bar" style={{ backgroundColor: test.has_bias ? '#ef4444' : '#22c55e' }} /></div>
               <div className="rec-card-content">
                 <div className="rec-card-header">
-                  <span className="rec-category-badge">{METRIC_LABELS[t.metric_type] || t.metric_type}</span>
-                  <span className="rec-status-badge" style={{ background: t.has_bias ? '#fef2f2' : '#f0fdf4', color: t.has_bias ? '#ef4444' : '#22c55e' }}>
-                    {t.has_bias ? 'Bias Var' : 'Adil'}
+                  <span className="rec-category-badge">{METRIC_LABELS[test.metric_type] || test.metric_type}</span>
+                  <span className="rec-status-badge" style={{ background: test.has_bias ? '#fef2f2' : '#f0fdf4', color: test.has_bias ? '#ef4444' : '#22c55e' }}>
+                    {test.has_bias ? t('bias.tag_bias') : t('bias.tag_fair')}
                   </span>
                 </div>
-                <h4 className="rec-title">Model: {t.model_id}</h4>
+                <h4 className="rec-title">Model: {test.model_id}</h4>
                 <div className="rec-meta">
-                  <span className="rec-confidence-label">Fairness: {(t.fairness_score * 100).toFixed(1)}%</span>
-                  <span className="rec-date">Max Gap: {(t.max_gap * 100).toFixed(1)}%</span>
-                  <span className="rec-date">{new Date(t.created_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}</span>
+                  <span className="rec-confidence-label">Fairness: {(test.fairness_score * 100).toFixed(1)}%</span>
+                  <span className="rec-date">Max Gap: {(test.max_gap * 100).toFixed(1)}%</span>
+                  <span className="rec-date">{new Date(test.created_at).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short' })}</span>
                 </div>
-                {t.recommendations?.length > 0 && (
+                {test.recommendations?.length > 0 && (
                   <p className="rec-detail" style={{ marginTop: '0.3rem' }}>
-                    {t.recommendations.slice(0, 2).map((r, i) => <span key={i}>• {r}<br /></span>)}
+                    {test.recommendations.slice(0, 2).map((r, i) => <span key={i}>• {r}<br /></span>)}
                   </p>
                 )}
               </div>

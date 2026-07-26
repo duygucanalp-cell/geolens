@@ -1,14 +1,17 @@
+import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { listPolicyPacks, listPolicyControls, updatePolicyControl } from '../api/client'
 import type { PolicyPack, PolicyControl } from '../types'
 
 interface Props { workspaceId: string }
 
-const FRAMEWORK_LABELS: Record<string, string> = { eu_ai_act: 'EU AI Act', nist_ai_rmf: 'NIST AI RMF', kvkk: 'KVKK', iso_42001: 'ISO 42001', custom: 'Özel' }
-const STATUS_LABELS: Record<string, string> = { pending: 'Bekliyor', passed: 'Geçti', failed: 'Başarısız', not_applicable: 'Uygun Değil' }
 const STATUS_COLORS: Record<string, string> = { pending: '#eab308', passed: '#22c55e', failed: '#ef4444', not_applicable: '#94a3b8' }
 
 export function PolicyPacksPanel({ workspaceId: _ws }: Props) {
+  const { t, i18n } = useTranslation()
+  const dateLocale = i18n.language?.startsWith('en') ? 'en-US' : 'tr-TR'
+  const FRAMEWORK_LABELS: Record<string, string> = { eu_ai_act: t('policy.framework_eu_ai_act'), nist_ai_rmf: t('policy.framework_nist_ai_rmf'), kvkk: t('policy.framework_kvkk'), iso_42001: t('policy.framework_iso_42001'), custom: t('policy.framework_custom') }
+  const STATUS_LABELS: Record<string, string> = { pending: t('policy.status_pending'), passed: t('policy.status_passed'), failed: t('policy.status_failed'), not_applicable: t('policy.status_not_applicable') }
   const [packs, setPacks] = useState<PolicyPack[]>([])
   const [controls, setControls] = useState<PolicyControl[]>([])
   const [loading, setLoading] = useState(true)
@@ -16,16 +19,16 @@ export function PolicyPacksPanel({ workspaceId: _ws }: Props) {
   const [selectedPack, setSelectedPack] = useState<PolicyPack | null>(null)
 
   useEffect(() => { loadPacks() }, [])
-  async function loadPacks() { try { setLoading(true); setError(null); const d = await listPolicyPacks(); setPacks(d.packs) } catch (e) { setError(e instanceof Error ? e.message : 'Yüklenemedi') } finally { setLoading(false) } }
+  async function loadPacks() { try { setLoading(true); setError(null); const d = await listPolicyPacks(); setPacks(d.packs) } catch (e) { setError(e instanceof Error ? e.message : t('registry.load_error')) } finally { setLoading(false) } }
 
   async function handleSelectPack(pack: PolicyPack) {
     setSelectedPack(pack)
-    try { const d = await listPolicyControls(pack.id); setControls(d.controls) } catch (e) { setError(e instanceof Error ? e.message : 'Kontroller yüklenemedi') }
+    try { const d = await listPolicyControls(pack.id); setControls(d.controls) } catch (e) { setError(e instanceof Error ? e.message : t('policy.controls_error')) }
   }
 
   async function handleUpdateStatus(controlId: string, status: string) {
     try { await updatePolicyControl(controlId, { status }); if (selectedPack) { const d = await listPolicyControls(selectedPack.id); setControls(d.controls) } }
-    catch (e) { setError(e instanceof Error ? e.message : 'Güncellenemedi') }
+    catch (e) { setError(e instanceof Error ? e.message : t('policy.update_error')) }
   }
 
   if (loading) return <div className="dashboard-loading">Policy paketleri yükleniyor...</div>
@@ -80,13 +83,13 @@ export function PolicyPacksPanel({ workspaceId: _ws }: Props) {
                   <div className="rec-card-content">
                     <div className="rec-card-header">
                       <span className="rec-category-badge" style={{ fontWeight: 600 }}>{FRAMEWORK_LABELS[p.framework] || p.framework}</span>
-                      <span className="rec-status-badge" style={{ background: p.enabled ? '#dcfce7' : '#f1f5f9', color: p.enabled ? '#22c55e' : '#94a3b8' }}>{p.enabled ? 'Aktif' : 'Pasif'}</span>
+                      <span className="rec-status-badge" style={{ background: p.enabled ? '#dcfce7' : '#f1f5f9', color: p.enabled ? '#22c55e' : '#94a3b8' }}>{p.enabled ? t('guardrails.enabled') : t('guardrails.disabled')}</span>
                     </div>
                     <h4 className="rec-title">{p.name}</h4>
                     <p className="rec-detail">{p.description}</p>
                     <div className="rec-meta">
                       <span className="rec-date">v{p.version}</span>
-                      {p.applied_at && <span className="rec-date">{new Date(p.applied_at).toLocaleDateString('tr-TR')}</span>}
+                      {p.applied_at && <span className="rec-date">{new Date(p.applied_at).toLocaleDateString(dateLocale)}</span>}
                     </div>
                   </div>
                 </div>

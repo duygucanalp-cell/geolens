@@ -225,6 +225,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 	} else {
 		for _, b := range brands {
 			changeHTML := ""
+			//nolint:gocritic
+			//nolint:gocritic
 			if b.Change > 0 {
 				changeHTML = fmt.Sprintf(`<span class="change-up">↑%.0f</span>`, b.Change)
 			} else if b.Change < 0 {

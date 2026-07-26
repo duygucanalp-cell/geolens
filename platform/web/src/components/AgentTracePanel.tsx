@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { listTraces, getTrace, startTrace } from '../api/client'
 import type { Trace, TraceDetail } from '../types'
@@ -5,9 +6,11 @@ import type { Trace, TraceDetail } from '../types'
 interface Props { workspaceId: string }
 
 const STATUS_COLORS: Record<string, string> = { running: '#6366f1', completed: '#22c55e', failed: '#ef4444', cancelled: '#94a3b8' }
-const STATUS_LABELS: Record<string, string> = { running: 'Çalışıyor', completed: 'Tamamlandı', failed: 'Başarısız', cancelled: 'İptal' }
 
 export function AgentTracePanel({ workspaceId: _ws }: Props) {
+  const { t, i18n } = useTranslation()
+  const dateLocale = i18n.language?.startsWith('en') ? 'en-US' : 'tr-TR'
+  const STATUS_LABELS: Record<string, string> = { running: t('agenttrace.status_running'), completed: t('agenttrace.status_completed'), failed: t('agenttrace.status_failed'), cancelled: t('guardrails.cancel') }
   const [traces, setTraces] = useState<Trace[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -22,19 +25,19 @@ export function AgentTracePanel({ workspaceId: _ws }: Props) {
 
   async function loadTraces() {
     try { setLoading(true); setError(null); const d = await listTraces(statusFilter || undefined); setTraces(d.traces); setTotal(d.total) }
-    catch (e) { setError(e instanceof Error ? e.message : 'Yüklenemedi') }
+    catch (e) { setError(e instanceof Error ? e.message : t('registry.load_error')) }
     finally { setLoading(false) }
   }
 
   async function handleSelect(traceId: string) {
     try { setSelectedTrace(await getTrace(traceId)) }
-    catch (e) { setError(e instanceof Error ? e.message : 'Trace yüklenemedi') }
+    catch (e) { setError(e instanceof Error ? e.message : t('agenttrace.load_error')) }
   }
 
   async function handleStart(e: React.FormEvent) {
     e.preventDefault(); if (!agentName.trim()) return
     try { await startTrace(agentName, workflowName); setShowStart(false); setAgentName(''); setWorkflowName(''); loadTraces() }
-    catch (e) { setError(e instanceof Error ? e.message : 'Başlatılamadı') }
+    catch (e) { setError(e instanceof Error ? e.message : t('agenttrace.start_error')) }
   }
 
   if (loading) return <div className="dashboard-loading">Trace'ler yükleniyor...</div>
@@ -110,7 +113,7 @@ export function AgentTracePanel({ workspaceId: _ws }: Props) {
                     <div className="rec-meta">
                       <span className="rec-date">{t.completed_steps}/{t.total_steps} adım</span>
                       <span className="rec-date">{t.total_duration_ms}ms</span>
-                      <span className="rec-date">{new Date(t.started_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}</span>
+                      <span className="rec-date">{new Date(t.started_at).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short' })}</span>
                     </div>
                   </div>
                 </div>

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { ScoreCard } from './ScoreCard'
 import { TrendChart } from './TrendChart'
@@ -35,6 +36,7 @@ type Tab = 'scores' | 'audit' | 'notifications' | 'reports' | 'recommendations' 
   | 'guardrails' | 'agenttracing' | 'registry' | 'policy' | 'bias' | 'explain' | 'discovery' | 'gate'
 
 export function ScoreDashboard({ workspaceId }: ScoreDashboardProps) {
+  const { t } = useTranslation()
   const [scores, setScores] = useState<Score[]>([])
   const [brands, setBrands] = useState<Brand[]>([])
   const [panels, setPanels] = useState<Panel[]>([])
@@ -61,7 +63,7 @@ export function ScoreDashboard({ workspaceId }: ScoreDashboardProps) {
       setBrands(brandsData)
       setPanels(panelsData)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Veriler yüklenemedi')
+      setError(err instanceof Error ? err.message : t('dashboard.error_load'))
     } finally {
       setLoading(false)
     }
@@ -101,25 +103,25 @@ export function ScoreDashboard({ workspaceId }: ScoreDashboardProps) {
   }, [filteredScores])
 
   if (loading) {
-    return <div className="dashboard-loading">Yükleniyor...</div>
+    return <div className="dashboard-loading">{t('dashboard.loading')}</div>
   }
 
   if (error) {
     return (
       <div className="dashboard-error">
         <p>{error}</p>
-        <button onClick={loadAll}>Tekrar Dene</button>
+        <button onClick={loadAll}>{t('dashboard.retry')}</button>
       </div>
     )
   }
 
   const tabs: { key: Tab; label: string }[] = [
-    { key: 'scores', label: 'Skorlar' },
-    { key: 'audit', label: 'Site Denetim' },
-    { key: 'reports', label: 'Raporlar' },
-    { key: 'notifications', label: 'Bildirimler' },
-    { key: 'recommendations', label: 'Öneriler' },
-    { key: 'monitoring', label: 'İzleme' },
+    { key: 'scores', label: t('tab.scores') },
+    { key: 'audit', label: t('tab.audit') },
+    { key: 'reports', label: t('tab.reports') },
+    { key: 'notifications', label: t('tab.notifications') },
+    { key: 'recommendations', label: t('tab.recommendations') },
+    { key: 'monitoring', label: t('tab.monitoring') },
     { key: 'guardrails', label: '🛡️ Guardrails' },
     { key: 'agenttracing', label: '🔍 Agent Trace' },
     { key: 'registry', label: '📋 Registry' },
@@ -128,19 +130,19 @@ export function ScoreDashboard({ workspaceId }: ScoreDashboardProps) {
     { key: 'explain', label: '🔎 Explain' },
     { key: 'discovery', label: '🕵️ Discovery' },
     { key: 'gate', label: '🚧 Gate' },
-    { key: 'cost', label: 'Maliyet' },
-    { key: 'usage', label: 'Kullanım' },
-    { key: 'optimization', label: 'Optimizasyon' },
-    { key: 'version', label: 'Versiyon' },
+    { key: 'cost', label: t('cost.table_cost') },
+    { key: 'usage', label: t('tab.usage') },
+    { key: 'optimization', label: t('tab.optimization') },
+    { key: 'version', label: t('tab.version') },
     { key: 'incident', label: 'Incident' },
   ]
 
   return (
     <div className="dashboard">
       <div className="dashboard-header">
-        <h2>Görünürlük Panosu</h2>
+        <h2>{t('dashboard.title')}</h2>
         <button className="refresh-btn" onClick={loadAll}>
-          Yenile
+          {t('dashboard.refresh')}
         </button>
       </div>
 
@@ -157,7 +159,7 @@ export function ScoreDashboard({ workspaceId }: ScoreDashboardProps) {
         ))}
       </div>
 
-      <Suspense fallback={<div className="dashboard-loading">Bileşen yükleniyor...</div>}>
+      <Suspense fallback={<div className="dashboard-loading">{t('dashboard.component_loading')}</div>}>
         {activeTab === 'audit' ? (
           <AuditPanel workspaceId={workspaceId} brands={brands} />
         ) : activeTab === 'reports' ? (
@@ -204,7 +206,7 @@ export function ScoreDashboard({ workspaceId }: ScoreDashboardProps) {
                   onChange={(e) => setSelectedPanel(e.target.value)}
                   className="filter-select"
                 >
-                  <option value="all">Tüm Paneller</option>
+                  <option value="all">{t('dashboard.filter_all_panels')}</option>
                   {panels.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
@@ -217,10 +219,10 @@ export function ScoreDashboard({ workspaceId }: ScoreDashboardProps) {
                 onChange={(e) => setFilterEngine(e.target.value)}
                 className="filter-select"
               >
-                <option value="all">Tüm Motorlar</option>
+                <option value="all">{t('dashboard.filter_all_engines')}</option>
                 {availableEngines.map((e) => (
                   <option key={e} value={e}>
-                    {ENGINE_NAMES[e] || e}
+                    {t(ENGINE_NAMES[e]) || e}
                   </option>
                 ))}
               </select>
@@ -228,8 +230,8 @@ export function ScoreDashboard({ workspaceId }: ScoreDashboardProps) {
 
             {filteredScores.length === 0 ? (
               <div className="dashboard-empty">
-                <h2>Henüz skor yok</h2>
-                <p>Bir marka ekleyip ölçüm başlatarak görünürlük skorunuzu görebilirsiniz.</p>
+                <h2>{t('dashboard.empty_title')}</h2>
+                <p>{t('dashboard.empty_desc')}</p>
               </div>
             ) : (
               <>

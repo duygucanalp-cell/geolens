@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useEffect, useMemo, useState } from 'react'
 import { getVersionEntries } from '../api/client'
 import type { VersionEntry } from '../types'
@@ -7,6 +8,8 @@ interface Props {
 }
 
 export function VersionPanel({ workspaceId: _ws }: Props) {
+  const { t, i18n } = useTranslation()
+  const dateLocale = i18n.language?.startsWith('en') ? 'en-US' : 'tr-TR'
   const [entries, setEntries] = useState<VersionEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -22,7 +25,7 @@ export function VersionPanel({ workspaceId: _ws }: Props) {
       const data = await getVersionEntries()
       setEntries(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Versiyon verileri yüklenemedi')
+      setError(err instanceof Error ? err.message : t('version.load_error'))
     } finally {
       setLoading(false)
     }
@@ -79,7 +82,7 @@ export function VersionPanel({ workspaceId: _ws }: Props) {
               <span style={{ color: '#64748b', fontWeight: 600 }}>Değiştiren:</span>
               <span>{selectedEntry.changed_by || '-'}</span>
               <span style={{ color: '#64748b', fontWeight: 600 }}>Tarih:</span>
-              <span>{new Date(selectedEntry.created_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+              <span>{new Date(selectedEntry.created_at).toLocaleDateString(dateLocale, { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
             </div>
             {selectedEntry.old_version !== selectedEntry.new_version && (
               <div style={{ marginTop: '1rem', padding: '0.75rem', background: '#eef2ff', borderRadius: '8px', fontSize: '0.85rem', color: '#4338ca' }}>
@@ -117,7 +120,7 @@ export function VersionPanel({ workspaceId: _ws }: Props) {
                     <td style={{ padding: '0.5rem', fontFamily: 'monospace', fontSize: '0.8rem', color: '#ef4444' }}>{e.old_version || '-'}</td>
                     <td style={{ padding: '0.5rem', fontFamily: 'monospace', fontSize: '0.8rem', color: '#22c55e' }}>{e.new_version || '-'}</td>
                     <td style={{ padding: '0.5rem', color: '#94a3b8', fontSize: '0.8rem' }}>
-                      {new Date(e.created_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                      {new Date(e.created_at).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                     </td>
                     <td style={{ padding: '0.5rem', color: '#6366f1', fontSize: '0.8rem' }}>Detay →</td>
                   </tr>

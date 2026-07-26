@@ -43,7 +43,7 @@ var defaultRules = []Rule{
 	},
 	{
 		ID:          "rule-engine-gap",
-		Name:        "Motor Bazında Performans Farkı",
+		Name:        "Motor Bazında Performans Farkı", //nolint:misspell
 		Description: "Bir motorda düşük, diğerinde yüksek skor varsa uyar",
 		Category:    CategoryVisibility,
 		Severity:    SeverityMedium,
@@ -51,7 +51,7 @@ var defaultRules = []Rule{
 		Conditions: []Condition{
 			{Field: "score.engine_gap", Operator: "gt", Value: 30.0},
 		},
-		Title:  "Motorlar arasında büyük performans farkı var",
+		Title:  "Motorlar arasında büyük performans farkı var", //nolint:misspell
 		Detail: "Markanız bazı AI motorlarında yüksek görünürlüğe sahipken bazılarında düşük. Farkın nedenini araştırmanız önerilir.",
 		Active: true,
 	},

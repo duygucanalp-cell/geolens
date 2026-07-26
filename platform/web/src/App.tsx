@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ScoreDashboard } from './components/ScoreDashboard'
 import { login, register } from './api/client'
 
 type Page = 'login' | 'dashboard'
 
 export default function App() {
+  const { t, i18n } = useTranslation()
   const [page, setPage] = useState<Page>('login')
   const [workspaceId, setWorkspaceId] = useState('')
   const [email, setEmail] = useState('')
@@ -12,6 +14,13 @@ export default function App() {
   const [name, setName] = useState('')
   const [isRegister, setIsRegister] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
+
+  const currentLang = i18n.language?.startsWith('en') ? 'en' : 'tr'
+
+  function toggleLang() {
+    const newLang = currentLang === 'tr' ? 'en' : 'tr'
+    i18n.changeLanguage(newLang)
+  }
 
   async function handleAuth(e: React.FormEvent) {
     e.preventDefault()
@@ -26,7 +35,7 @@ export default function App() {
       setWorkspaceId(res.workspace_id)
       setPage('dashboard')
     } catch (err) {
-      setAuthError(err instanceof Error ? err.message : 'İşlem başarısız')
+      setAuthError(err instanceof Error ? err.message : t('auth.failed'))
     }
   }
 
@@ -41,8 +50,13 @@ export default function App() {
     return (
       <div className="app">
         <header className="app-header">
-          <h1>GeoLens</h1>
-          <button className="logout-btn" onClick={handleLogout}>Çıkış</button>
+          <h1>{t('app.title')}</h1>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <button className="lang-btn" onClick={toggleLang}>
+              {currentLang === 'tr' ? '🇬🇧 EN' : '🇹🇷 TR'}
+            </button>
+            <button className="logout-btn" onClick={handleLogout}>{t('app.logout')}</button>
+          </div>
         </header>
         <main>
           <ScoreDashboard workspaceId={workspaceId} />
@@ -54,19 +68,26 @@ export default function App() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <h1>GeoLens Platform</h1>
-        <h2>{isRegister ? 'Kayıt Ol' : 'Giriş Yap'}</h2>
+        <button
+          onClick={toggleLang}
+          className="lang-btn"
+          style={{ float: 'right', marginBottom: '0.5rem' }}
+        >
+          {currentLang === 'tr' ? '🇬🇧 EN' : '🇹🇷 TR'}
+        </button>
+        <h1>{t('app.platform')}</h1>
+        <h2>{isRegister ? t('auth.register') : t('auth.login')}</h2>
         <form onSubmit={handleAuth}>
           <input
             type="email"
-            placeholder="E-posta"
+            placeholder={t('auth.email_placeholder')}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
           />
           <input
             type="password"
-            placeholder="Şifre"
+            placeholder={t('auth.password_placeholder')}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -75,21 +96,21 @@ export default function App() {
           {isRegister && (
             <input
               type="text"
-              placeholder="Ad Soyad"
+              placeholder={t('auth.name_placeholder')}
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
             />
           )}
           {authError && <p className="auth-error">{authError}</p>}
-          <button type="submit">{isRegister ? 'Kayıt Ol' : 'Giriş Yap'}</button>
+          <button type="submit">{isRegister ? t('auth.register') : t('auth.login')}</button>
         </form>
         <p className="auth-toggle">
           <button
             className="link-btn"
             onClick={() => { setIsRegister(!isRegister); setAuthError(null) }}
           >
-            {isRegister ? 'Zaten hesabın var mı? Giriş yap' : 'Hesabın yok mu? Kayıt ol'}
+            {isRegister ? t('auth.already_have_account') : t('auth.no_account')}
           </button>
         </p>
       </div>

@@ -62,7 +62,7 @@ func (c *Client) Index(ctx context.Context, doc IndexDoc) error {
 	if err != nil {
 		return fmt.Errorf("es çağrı: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode >= 400 {
 		raw, _ := io.ReadAll(resp.Body)
@@ -96,7 +96,7 @@ func (c *Client) Search(ctx context.Context, index string, query map[string]inte
 	if err != nil {
 		return nil, fmt.Errorf("es arama çağrı: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	raw, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode >= 400 {

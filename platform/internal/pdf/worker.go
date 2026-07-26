@@ -22,7 +22,6 @@ func StartReportProcessor(pool *db.Pool, svc Service, interval time.Duration) {
 		}
 	}()
 }
-
 func processPendingReports(pool *db.Pool, svc Service) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -129,7 +128,6 @@ func processPendingReports(pool *db.Pool, svc Service) {
 		slog.Info("rapor hazır", "id", id, "type", reportType, "size", len(result.Data))
 	}
 }
-
 func markFailed(pool *db.Pool, id, errMsg string) {
 	_, err := pool.Exec(context.Background(), `
 		UPDATE measure.reports

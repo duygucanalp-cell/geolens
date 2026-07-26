@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import type { AuditResult, Brand } from '../types'
 import { triggerAudit } from '../api/client'
@@ -16,6 +17,7 @@ const severityColors: Record<string, string> = {
 }
 
 export function AuditPanel({ workspaceId, brands }: AuditPanelProps) {
+  const { t } = useTranslation()
   const [selectedBrand, setSelectedBrand] = useState('')
   const [result, setResult] = useState<AuditResult | null>(null)
   const [loading, setLoading] = useState(false)
@@ -33,7 +35,7 @@ export function AuditPanel({ workspaceId, brands }: AuditPanelProps) {
       const data = await triggerAudit(workspaceId, brand.id, brand.name, brand.website_url)
       setResult(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Denetim başarısız')
+      setError(err instanceof Error ? err.message : t('audit.failed'))
     } finally {
       setLoading(false)
     }
@@ -41,7 +43,7 @@ export function AuditPanel({ workspaceId, brands }: AuditPanelProps) {
 
   return (
     <div className="audit-panel">
-      <h3>Site Denetimi</h3>
+      <h3>{t('audit.title')}</h3>
       <div className="audit-controls">
         <select
           value={selectedBrand}
@@ -60,7 +62,7 @@ export function AuditPanel({ workspaceId, brands }: AuditPanelProps) {
           disabled={!selectedBrand || loading}
           className="audit-btn"
         >
-          {loading ? 'Denetleniyor...' : 'Denetim Başlat'}
+          {loading ? t('audit.running') : t('audit.start')}
         </button>
       </div>
 
@@ -70,7 +72,7 @@ export function AuditPanel({ workspaceId, brands }: AuditPanelProps) {
         <div className="audit-result">
           <div className="audit-score">
             <span className="audit-score-value">{Math.round(result.overall_score)}</span>
-            <span className="audit-score-label">/100 — Denetim Skoru</span>
+            <span className="audit-score-label">{t('audit.score')}</span>
           </div>
 
           <div className="audit-checks">
@@ -79,13 +81,13 @@ export function AuditPanel({ workspaceId, brands }: AuditPanelProps) {
                 {result.robots_txt?.allows_ai_bots ? '✅' : '❌'}
               </span>
               <div>
-                <strong>robots.txt</strong>
+                <strong>{t('audit.robots_txt')}</strong>
                 <p>
                   {result.robots_txt?.exists
                     ? result.robots_txt.disallowed_all
-                      ? 'Tüm botlar engellenmiş'
-                      : 'AI botlarına izin veriyor'
-                    : 'robots.txt bulunamadı'}
+                      ? t('audit.robots_blocked')
+                      : t('audit.robots_ai_allowed')
+                    : t('audit.robots_not_found')}
                 </p>
               </div>
             </div>
@@ -95,11 +97,11 @@ export function AuditPanel({ workspaceId, brands }: AuditPanelProps) {
                 {result.bot_access?.accessible ? '✅' : '❌'}
               </span>
               <div>
-                <strong>Bot Erişimi</strong>
+                <strong>{t('audit.bot_access')}</strong>
                 <p>
                   {result.bot_access?.accessible
-                    ? `Erişilebilir (HTTP ${result.bot_access.status_code}, ${result.bot_access.response_time_ms}ms)`
-                    : 'Erişilemez'}
+                    ? t('audit.bot_accessible', { code: result.bot_access.status_code, time: result.bot_access.response_time_ms })
+                    : t('audit.bot_inaccessible')}
                 </p>
               </div>
             </div>
@@ -109,7 +111,7 @@ export function AuditPanel({ workspaceId, brands }: AuditPanelProps) {
                 {result.ssr?.has_meta_tags || result.ssr?.has_structured_data ? '✅' : '⚠️'}
               </span>
               <div>
-                <strong>SSR Sinyalleri</strong>
+                <strong>{t('audit.ssr_signals')}</strong>
                 <p>
                   {[
                     result.ssr?.has_meta_tags ? 'Meta' : null,
@@ -117,7 +119,7 @@ export function AuditPanel({ workspaceId, brands }: AuditPanelProps) {
                     result.ssr?.has_structured_data ? 'LD+JSON' : null,
                   ]
                     .filter(Boolean)
-                    .join(', ') || 'Sinyal yok'}
+                    .join(', ') || t('audit.ssr_none')}
                 </p>
               </div>
             </div>
@@ -127,7 +129,7 @@ export function AuditPanel({ workspaceId, brands }: AuditPanelProps) {
                 {result.ssrf?.has_cloudflare || result.ssrf?.csp_present ? '✅' : '⚠️'}
               </span>
               <div>
-                <strong>Güvenlik</strong>
+                <strong>{t('audit.security')}</strong>
                 <p>
                   {[
                     result.ssrf?.has_cloudflare ? 'Cloudflare' : null,
@@ -135,7 +137,7 @@ export function AuditPanel({ workspaceId, brands }: AuditPanelProps) {
                     result.ssrf?.has_aws_security_headers ? 'AWS' : null,
                   ]
                     .filter(Boolean)
-                    .join(', ') || 'Koruma yok'}
+                    .join(', ') || t('audit.security_none')}
                 </p>
               </div>
             </div>
@@ -143,7 +145,7 @@ export function AuditPanel({ workspaceId, brands }: AuditPanelProps) {
 
           {result.issues.length > 0 && (
             <div className="audit-issues">
-              <h4>Bulgular ({result.issues.length})</h4>
+              <h4>{t('audit.findings', { count: result.issues.length })}</h4>
               {result.issues.map((issue, i) => (
                 <div key={i} className="audit-issue" style={{ borderLeftColor: severityColors[issue.severity] || '#94a3b8' }}>
                   <div className="issue-header">

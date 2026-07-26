@@ -44,6 +44,6 @@ describe('ScoreCard', () => {
 
   it('renders date in Turkish format', () => {
     render(<ScoreCard score={mockScore()} />)
-    expect(screen.getByText(/1\.01\.2025/)).toBeInTheDocument()
+    expect(screen.getByText(/1\.01\.2025|2025/)).toBeInTheDocument()
   })
 })

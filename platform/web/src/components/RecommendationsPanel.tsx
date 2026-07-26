@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useEffect, useMemo, useState } from 'react'
 import { getRecommendations, markRecommendationApplied, markRecommendationDismissed } from '../api/client'
 import type { Recommendation, Brand } from '../types'
@@ -9,6 +10,8 @@ interface Props {
 }
 
 export function RecommendationsPanel({ workspaceId, brands }: Props) {
+  const { t, i18n } = useTranslation()
+  const dateLocale = i18n.language?.startsWith('en') ? 'en-US' : 'tr-TR'
   const [recommendations, setRecommendations] = useState<Recommendation[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -27,7 +30,7 @@ export function RecommendationsPanel({ workspaceId, brands }: Props) {
       const data = await getRecommendations(workspaceId)
       setRecommendations(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Öneriler yüklenemedi')
+      setError(err instanceof Error ? err.message : t('optimization.load_error'))
     } finally {
       setLoading(false)
     }
@@ -41,7 +44,7 @@ export function RecommendationsPanel({ workspaceId, brands }: Props) {
         prev.map((r) => (r.id === recId ? { ...r, applied: true } : r))
       )
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Öneri uygulanamadı')
+      setActionError(err instanceof Error ? err.message : t('rec.apply_error'))
     } finally {
       setActionInProgress(null)
     }
@@ -55,7 +58,7 @@ export function RecommendationsPanel({ workspaceId, brands }: Props) {
         prev.map((r) => (r.id === recId ? { ...r, dismissed: true } : r))
       )
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Öneri gizlenemedi')
+      setActionError(err instanceof Error ? err.message : t('rec.dismiss_error'))
     } finally {
       setActionInProgress(null)
     }
@@ -194,10 +197,10 @@ export function RecommendationsPanel({ workspaceId, brands }: Props) {
                     borderColor: SEVERITY_COLORS[rec.severity] || '#94a3b8',
                   }}
                 >
-                  {SEVERITY_LABELS[rec.severity] || rec.severity}
+                  {t(SEVERITY_LABELS[rec.severity]) || rec.severity}
                 </span>
                 <span className="rec-category-badge">
-                  {CATEGORY_LABELS[rec.category] || rec.category}
+                  {t(CATEGORY_LABELS[rec.category]) || rec.category}
                 </span>
                 {rec.brand_id && brandMap.has(rec.brand_id) && (
                   <span className="rec-brand-badge" style={{ backgroundColor: '#eef2ff', color: '#6366f1' }}>
@@ -222,7 +225,7 @@ export function RecommendationsPanel({ workspaceId, brands }: Props) {
                   <span className="rec-confidence-label">%{Math.round(rec.score)} güven</span>
                 </div>
                 <span className="rec-date">
-                  {new Date(rec.created_at).toLocaleDateString('tr-TR', {
+                  {new Date(rec.created_at).toLocaleDateString(dateLocale, {
                     day: 'numeric',
                     month: 'short',
                     hour: '2-digit',
