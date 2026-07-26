@@ -92,8 +92,9 @@ type envelopeData struct {
 	CreatedAt    string `json:"created_at"`
 }
 
-// SaveEncryptedRawResponse encrypts data with tenant key and saves to S3.
-func (ec *EncryptedClient) SaveEncryptedRawResponse(ctx context.Context, tenantID, workspaceID, engineName string, data []byte) (string, error) {
+// SaveRawResponse encrypts data with tenant key and saves to S3.
+// Implements engine.RawSaver interface with encryption.
+func (ec *EncryptedClient) SaveRawResponse(ctx context.Context, tenantID, workspaceID, engineName string, data []byte) (string, error) {
 	// Tenant anahtarını al (yoksa oluştur)
 	tenantKey, err := ec.getOrCreateTenantKey(ctx, tenantID)
 	if err != nil {

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/geolens/platform/engine"
+	"github.com/geolens/platform/internal/id"
 )
 
 func TestComputePresenceShare_BrandMentioned(t *testing.T) {
@@ -241,7 +242,7 @@ func TestPartialPublication_MixedEngines(t *testing.T) {
 func TestGenerateULID_Unique(t *testing.T) {
 	ids := make(map[string]bool)
 	for i := 0; i < 100; i++ {
-		id := generateULID()
+		id := id.New()
 		if ids[id] {
 			t.Errorf("yinelenen ULID üretildi: %s", id)
 		}

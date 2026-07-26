@@ -7,8 +7,8 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/geolens/platform/internal/id"
 	"github.com/geolens/platform/platform/db"
-	"github.com/oklog/ulid/v2"
 )
 
 // Default rules for the recommendation engine.
@@ -19,6 +19,7 @@ var defaultRules = []Rule{
 		Description: "Görünürlük skoru 10 puandan fazla düştüğünde uyar",
 		Category:    CategoryVisibility,
 		Severity:    SeverityHigh,
+		Evidence:    EvidenceCorrelational,
 		Conditions: []Condition{
 			{Field: "score.drop", Operator: "gt", Value: 10.0},
 		},
@@ -32,6 +33,7 @@ var defaultRules = []Rule{
 		Description: "Son iki ölçüm arasında sürekli düşüş varsa uyar",
 		Category:    CategoryVisibility,
 		Severity:    SeverityMedium,
+		Evidence:    EvidenceCorrelational,
 		Conditions: []Condition{
 			{Field: "score.trend", Operator: "eq", Value: "declining"},
 		},
@@ -45,6 +47,7 @@ var defaultRules = []Rule{
 		Description: "Bir motorda düşük, diğerinde yüksek skor varsa uyar",
 		Category:    CategoryVisibility,
 		Severity:    SeverityMedium,
+		Evidence:    EvidenceExperimental,
 		Conditions: []Condition{
 			{Field: "score.engine_gap", Operator: "gt", Value: 30.0},
 		},
@@ -58,6 +61,7 @@ var defaultRules = []Rule{
 		Description: "Engine breakdown'da tek motor baskınsa uyar",
 		Category:    CategoryContent,
 		Severity:    SeverityLow,
+		Evidence:    EvidenceExperimental,
 		Conditions: []Condition{
 			{Field: "score.engine_gap", Operator: "lt", Value: 5.0},
 		},
@@ -71,6 +75,7 @@ var defaultRules = []Rule{
 		Description: "Skor düşüş trendi varsa ve önceki skor varsa uyar",
 		Category:    CategoryCompetitor,
 		Severity:    SeverityHigh,
+		Evidence:    EvidenceCorrelational,
 		Conditions: []Condition{
 			{Field: "score.trend", Operator: "eq", Value: "declining"},
 		},
@@ -84,6 +89,7 @@ var defaultRules = []Rule{
 		Description: "robots.txt AI botlarını engelliyorsa uyar",
 		Category:    CategoryTechnical,
 		Severity:    SeverityCritical,
+		Evidence:    EvidenceTestable,
 		Conditions: []Condition{
 			{Field: "audit.robots_txt.disallowed_all", Operator: "eq", Value: true},
 		},
@@ -98,6 +104,7 @@ var defaultRules = []Rule{
 		Description: "Sitede JSON-LD veya Schema.org yoksa öner",
 		Category:    CategoryContent,
 		Severity:    SeverityMedium,
+		Evidence:    EvidenceTestable,
 		Conditions: []Condition{
 			{Field: "audit.ssr.has_structured_data", Operator: "eq", Value: false},
 		},
@@ -112,6 +119,7 @@ var defaultRules = []Rule{
 		Description: "AI botları sitenize erişemiyorsa uyar",
 		Category:    CategoryTechnical,
 		Severity:    SeverityCritical,
+		Evidence:    EvidenceTestable,
 		Conditions: []Condition{
 			{Field: "audit.bot_access.accessible", Operator: "eq", Value: false},
 		},
@@ -122,18 +130,94 @@ var defaultRules = []Rule{
 	},
 }
 
+// sectorRules defines sector-specific rule packages keyed by sector name.
+var sectorRules = map[string][]Rule{
+	"e-ticaret": {
+		{
+			ID:          "rule-ecom-product-visibility",
+			Name:        "Ürün Görünürlüğü",
+			Description: "E-ticaret sitelerinde ürün sayfalarının AI görünürlüğü",
+			Category:    CategoryVisibility,
+			Severity:    SeverityHigh,
+			Evidence:    EvidenceCorrelational,
+			Conditions: []Condition{
+				{Field: "score.value", Operator: "lt", Value: 60.0},
+			},
+			Title:     "Ürün sayfalarınız AI motorlarında düşük görünürlüğe sahip",
+			Detail:    "E-ticaret sitenizin ürün sayfaları AI motorları tarafından yeterince taranmıyor. Yapılandırılmış veri (Product schema) ekleyerek ürünlerinizin AI yanıtlarında yer almasını sağlayabilirsiniz.",
+			ActionURL: "/audit",
+			Active:    true,
+		},
+		{
+			ID:          "rule-ecom-review-data",
+			Name:        "Müşteri Yorumu Eksikliği",
+			Description: "AI motorları müşteri yorumlarını kaynak olarak kullanır",
+			Category:    CategoryContent,
+			Severity:    SeverityMedium,
+			Evidence:    EvidenceExperimental,
+			Conditions: []Condition{
+				{Field: "score.value", Operator: "lt", Value: 70.0},
+			},
+			Title:  "Müşteri yorumlarınız AI kaynaklarında yer almıyor",
+			Detail: "Yapılandırılmış yorum verisi (Review schema) ekleyerek müşteri deneyimlerinizin AI yanıtlarına kaynak olmasını sağlayabilirsiniz.",
+			Active: true,
+		},
+	},
+	"saglik": {
+		{
+			ID:          "rule-health-authority",
+			Name:        "Otorite Sinyali Eksik",
+			Description: "Sağlık sektöründe otorite sinyalleri kritiktir",
+			Category:    CategoryContent,
+			Severity:    SeverityHigh,
+			Evidence:    EvidenceCorrelational,
+			Conditions: []Condition{
+				{Field: "score.value", Operator: "lt", Value: 65.0},
+			},
+			Title:  "Tıbbi otorite sinyalleriniz zayıf",
+			Detail: "Sağlık sektöründe AI motorları, akademik atıflar ve resmi sağlık kuruluşu bağlantılarına öncelik verir. Sektörel otorite bağlantılarınızı artırmanız önerilir.",
+			Active: true,
+		},
+	},
+	"finans": {
+		{
+			ID:          "rule-finance-trust",
+			Name:        "Güven Sinyali Eksik",
+			Description: "Finans sektöründe güven sinyalleri (SSL, lisans, güvenlik) önemlidir",
+			Category:    CategoryTechnical,
+			Severity:    SeverityHigh,
+			Evidence:    EvidenceCorrelational,
+			Conditions: []Condition{
+				{Field: "score.value", Operator: "lt", Value: 70.0},
+			},
+			Title:     "Güven sinyalleriniz AI motorları için yetersiz",
+			Detail:    "Finans sektöründe faaliyet gösteren siteler için SSL sertifikası, lisans bilgileri ve güvenlik sertifikaları AI güvenilirlik değerlendirmesinde kritik rol oynar.",
+			ActionURL: "/audit",
+			Active:    true,
+		},
+	},
+}
+
 // service implements the Service interface for recommendations.
 type service struct {
-	rules []Rule
-	pool  *db.Pool
-	ng10  *NG10Filter
+	rules     []Rule
+	sectorPkg map[string][]Rule // sektör bazında ekstra kurallar
+	pool      *db.Pool
+	ng10      *NG10Filter
 }
 
 // NewService creates a new recommendation service with database access.
 func NewService(pool *db.Pool) Service {
 	rules := make([]Rule, len(defaultRules))
 	copy(rules, defaultRules)
-	return &service{rules: rules, pool: pool, ng10: NewNG10Filter()}
+	// Sektör paketlerini kopyala
+	sectorCopy := make(map[string][]Rule)
+	for sector, pk := range sectorRules {
+		pkgCopy := make([]Rule, len(pk))
+		copy(pkgCopy, pk)
+		sectorCopy[sector] = pkgCopy
+	}
+	return &service{rules: rules, sectorPkg: sectorCopy, pool: pool, ng10: NewNG10Filter()}
 }
 
 // Evaluate evaluates all rules against real data for a single brand.
@@ -319,6 +403,7 @@ func (s *service) evaluateBrand(ctx *EvaluationContext) []Recommendation {
 				BrandID:     ctx.BrandID,
 				Category:    rule.Category,
 				Severity:    rule.Severity,
+				Evidence:    rule.Evidence,
 				Title:       rule.Title,
 				Detail:      rule.Detail,
 				ActionURL:   rule.ActionURL,
@@ -343,12 +428,12 @@ func (s *service) saveRecommendation(rec Recommendation) {
 	ctx := context.Background()
 	_, err := s.pool.Exec(ctx, `
 		INSERT INTO recommendation.results
-			(id, brand_id, workspace_id, tenant_id, category, severity,
+			(id, brand_id, workspace_id, tenant_id, category, severity, evidence,
 			 title, detail, action_url, confidence, applied, dismissed, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 		ON CONFLICT (id) DO NOTHING
 	`, rec.ID, rec.BrandID, rec.WorkspaceID, rec.TenantID,
-		string(rec.Category), string(rec.Severity),
+		string(rec.Category), string(rec.Severity), string(rec.Evidence),
 		rec.Title, rec.Detail, rec.ActionURL, rec.Score,
 		rec.Applied, rec.Dismissed, rec.CreatedAt)
 	if err != nil {
@@ -472,9 +557,22 @@ func (s *service) computeConfidence(ctx *EvaluationContext, rule Rule) float64 {
 	return score
 }
 
-// GetRules returns all registered rules.
+// GetRules returns all registered rules (base + sektör).
 func (s *service) GetRules() []Rule {
-	return s.rules
+	all := make([]Rule, len(s.rules))
+	copy(all, s.rules)
+	for _, pkg := range s.sectorPkg {
+		all = append(all, pkg...)
+	}
+	return all
+}
+
+// GetRulesBySector returns rules for a specific sector.
+func (s *service) GetRulesBySector(sector string) []Rule {
+	if pkg, ok := s.sectorPkg[sector]; ok {
+		return pkg
+	}
+	return nil
 }
 
 // MarkApplied marks a recommendation as applied in the database.
@@ -509,6 +607,11 @@ func (s *service) MarkDismissed(id string) error {
 	return nil
 }
 
+// GetPool returns the database pool.
+func (s *service) GetPool() *db.Pool {
+	return s.pool
+}
+
 // RegisterCustomRule adds a user-defined rule to the registry.
 func (s *service) RegisterCustomRule(rule Rule) error {
 	if rule.ID == "" {
@@ -522,7 +625,7 @@ func (s *service) RegisterCustomRule(rule Rule) error {
 // ---- Yardımcı Fonksiyonlar ----
 
 func generateULID() string {
-	return ulid.Make().String()
+	return id.New()
 }
 
 func toBool(v interface{}) bool {

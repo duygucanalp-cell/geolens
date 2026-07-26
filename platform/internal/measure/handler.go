@@ -6,9 +6,14 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5"
+
 	"github.com/geolens/platform/engine"
+	"github.com/geolens/platform/internal/id"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/httputil"
@@ -112,10 +117,10 @@ func (h *Handler) TriggerMeasurement(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// n=3 örneklemeli job'ları outbox'a yaz (asenkron)
-	attemptID := fmt.Sprintf("%d", time.Now().UnixNano())
+	runID := id.New()
 	for _, engineName := range engineNames {
 		for i := 0; i < 3; i++ {
-			idempotencyKey := fmt.Sprintf("measure:%s:%s:%d:%s", req.BrandID, engineName, i, attemptID)
+			idempotencyKey := fmt.Sprintf("measure:%s:%s:%d:%s", req.BrandID, engineName, i, runID)
 			job := JobPayload{
 				BrandID:     req.BrandID,
 				BrandName:   brandName,
@@ -145,10 +150,47 @@ func (h *Handler) TriggerMeasurement(w http.ResponseWriter, r *http.Request) {
 	// context.Background() kullanılır çünkü HTTP request context'i goroutine çalışana kadar iptal olabilir
 	go h.immediateMeasureAndScore(context.Background(), brandName, req.BrandID, websiteURL, panelID, workspaceID, tenantID, promptText)
 
+	location := fmt.Sprintf("/v1/workspaces/%s/measurements/%s/status", workspaceID, runID)
+	w.Header().Set("Location", location)
 	httputil.WriteJSON(w, http.StatusAccepted, map[string]interface{}{
 		"status":  "queued",
+		"run_id":  runID,
 		"brand":   brandName,
 		"engines": engineNames,
+	})
+}
+
+// GetMeasurementStatus handles GET /v1/workspaces/{ws}/measurements/{runId}/status
+// Bir ölçüm run'ının durumunu döndürür.
+func (h *Handler) GetMeasurementStatus(w http.ResponseWriter, r *http.Request) {
+	workspaceID := httpmw.GetWorkspaceID(r.Context())
+	tenantID := httpmw.GetTenantID(r.Context())
+	runID := chi.URLParam(r, "runId")
+
+	var totalJobs, completedJobs int
+	err := h.pool.QueryRow(r.Context(), `
+		SELECT COUNT(*) FILTER (WHERE status = 'completed') AS completed,
+		       COUNT(*) AS total
+		FROM measure.measurement_jobs
+		WHERE workspace_id = $1 AND tenant_id = $2 AND created_at > now() - interval '1 hour'
+	`, workspaceID, tenantID).Scan(&completedJobs, &totalJobs)
+	if err != nil {
+		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "durum sorgulanamadı"})
+		return
+	}
+
+	status := "running"
+	if totalJobs > 0 && completedJobs == totalJobs {
+		status = "completed"
+	} else if totalJobs == 0 {
+		status = "pending"
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"run_id":         runID,
+		"status":         status,
+		"total_jobs":     totalJobs,
+		"completed_jobs": completedJobs,
 	})
 }
 
@@ -203,4 +245,472 @@ func (h *Handler) ListScores(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, scores)
+}
+
+// ListTrends handles GET /v1/workspaces/{ws}/trends
+// Trend verisini döndürür (isteğe bağlı brand_id filtresi ile).
+func (h *Handler) ListTrends(w http.ResponseWriter, r *http.Request) {
+	workspaceID := httpmw.GetWorkspaceID(r.Context())
+	tenantID := httpmw.GetTenantID(r.Context())
+	brandID := r.URL.Query().Get("brand_id")
+
+	rows, err := h.pool.Query(r.Context(), `
+		SELECT s.id, b.name, s.value, s.ci_low, s.ci_high, s.fidelity_label, COALESCE(s.engine_breakdown::text, '{}'), s.freshness_at, b.id
+		FROM measure.scores s
+		JOIN config.brands b ON b.id = s.brand_id
+		WHERE s.workspace_id = $1 AND s.tenant_id = $2 AND ($3 = '' OR s.brand_id = $3)
+		ORDER BY s.freshness_at ASC
+	`, workspaceID, tenantID, brandID)
+	if err != nil {
+		slog.Debug("trend sorgu hatası", "error", err)
+		httputil.WriteJSON(w, http.StatusOK, []interface{}{})
+		return
+	}
+	defer rows.Close()
+
+	type trendRow struct {
+		ID              string             `json:"id"`
+		BrandName       string             `json:"brand_name"`
+		Value           float64            `json:"value"`
+		CILow           float64            `json:"ci_low"`
+		CIHigh          float64            `json:"ci_high"`
+		FidelityLabel   string             `json:"fidelity_label"`
+		EngineBreakdown map[string]float64 `json:"engine_breakdown,omitempty"`
+		FreshnessAt     time.Time          `json:"freshness_at"`
+		BrandID         string             `json:"brand_id"`
+	}
+
+	trends := make([]trendRow, 0)
+	for rows.Next() {
+		var t trendRow
+		var engBreakdown string
+		if err := rows.Scan(&t.ID, &t.BrandName, &t.Value, &t.CILow, &t.CIHigh, &t.FidelityLabel, &engBreakdown, &t.FreshnessAt, &t.BrandID); err != nil {
+			slog.Error("trend satır okuma hatası", "error", err)
+			continue
+		}
+		if engBreakdown != "" && engBreakdown != "{}" {
+			if err := json.Unmarshal([]byte(engBreakdown), &t.EngineBreakdown); err != nil {
+				slog.Warn("engine breakdown çözümleme hatası", "score_id", t.ID, "error", err)
+			}
+		}
+		trends = append(trends, t)
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, trends)
+}
+
+// ListBrandScores handles GET /v1/workspaces/{ws}/brands/{brandID}/scores
+// Bir markanın skor geçmişini döndürür.
+func (h *Handler) ListBrandScores(w http.ResponseWriter, r *http.Request) {
+	workspaceID := httpmw.GetWorkspaceID(r.Context())
+	tenantID := httpmw.GetTenantID(r.Context())
+	brandID := chi.URLParam(r, "brandID")
+
+	if brandID == "" {
+		httputil.WriteError(w, http.StatusBadRequest, "marka ID gerekli")
+		return
+	}
+
+	var brandName string
+	err := h.pool.QueryRow(r.Context(), `
+		SELECT name FROM config.brands WHERE id = $1 AND workspace_id = $2 AND tenant_id = $3
+	`, brandID, workspaceID, tenantID).Scan(&brandName)
+	if err != nil {
+		httputil.WriteError(w, http.StatusNotFound, "marka bulunamadı")
+		return
+	}
+
+	rows, err := h.pool.Query(r.Context(), `
+		SELECT s.id, s.value, s.ci_low, s.ci_high, s.fidelity_label, COALESCE(s.engine_breakdown::text, '{}'), s.freshness_at
+		FROM measure.scores s
+		WHERE s.brand_id = $1 AND s.workspace_id = $2 AND s.tenant_id = $3
+		ORDER BY s.freshness_at DESC
+	`, brandID, workspaceID, tenantID)
+	if err != nil {
+		slog.Debug("marka skor sorgu hatası", "error", err)
+		httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{"brand_name": brandName, "brand_id": brandID, "scores": []interface{}{}})
+		return
+	}
+	defer rows.Close()
+
+	type brandScoreRow struct {
+		ID              string             `json:"id"`
+		Value           float64            `json:"value"`
+		CILow           float64            `json:"ci_low"`
+		CIHigh          float64            `json:"ci_high"`
+		FidelityLabel   string             `json:"fidelity_label"`
+		EngineBreakdown map[string]float64 `json:"engine_breakdown,omitempty"`
+		FreshnessAt     time.Time          `json:"freshness_at"`
+	}
+
+	scores := make([]brandScoreRow, 0)
+	for rows.Next() {
+		var s brandScoreRow
+		var engBreakdown string
+		if err := rows.Scan(&s.ID, &s.Value, &s.CILow, &s.CIHigh, &s.FidelityLabel, &engBreakdown, &s.FreshnessAt); err != nil {
+			slog.Error("marka skor satır okuma hatası", "error", err)
+			continue
+		}
+		if engBreakdown != "" && engBreakdown != "{}" {
+			if err := json.Unmarshal([]byte(engBreakdown), &s.EngineBreakdown); err != nil {
+				slog.Warn("engine breakdown çözümleme hatası", "score_id", s.ID, "error", err)
+			}
+		}
+		scores = append(scores, s)
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"brand_name": brandName,
+		"brand_id":   brandID,
+		"scores":     scores,
+	})
+}
+
+// ListCitations handles GET /v1/workspaces/{ws}/citations
+// FR-D2: Bir marka veya job için alıntı/kaynak analizi döndürür.
+func (h *Handler) ListCitations(w http.ResponseWriter, r *http.Request) {
+	workspaceID := httpmw.GetWorkspaceID(r.Context())
+	tenantID := httpmw.GetTenantID(r.Context())
+
+	brandID := r.URL.Query().Get("brand_id")
+	jobID := r.URL.Query().Get("job_id")
+
+	if brandID == "" && jobID == "" {
+		httputil.WriteError(w, http.StatusBadRequest, "brand_id veya job_id parametresi gerekli")
+		return
+	}
+
+	// Önce raw_responses'dan citation'ları çek
+	var err error
+	var pgRows pgx.Rows
+	if jobID != "" {
+		pgRows, err = h.pool.Query(r.Context(), `
+			SELECT r.id, r.job_id, r.engine_name, r.content_text
+			FROM measure.raw_responses r
+			WHERE r.job_id = $1 AND r.tenant_id = $2
+			ORDER BY r.created_at
+		`, jobID, tenantID)
+	} else {
+		pgRows, err = h.pool.Query(r.Context(), `
+			SELECT r.id, r.job_id, r.engine_name, r.content_text
+			FROM measure.raw_responses r
+			JOIN measure.measurement_jobs j ON j.id = r.job_id
+			WHERE j.brand_id = $1 AND j.workspace_id = $2 AND r.tenant_id = $3
+			ORDER BY r.created_at DESC
+			LIMIT 100
+		`, brandID, workspaceID, tenantID)
+	}
+	if err != nil {
+		slog.Error("citation sorgu hatası", "error", err)
+		httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{"citations": []interface{}{}})
+		return
+	}
+	defer pgRows.Close()
+
+	type citationRow struct {
+		RawResponseID string `json:"raw_response_id"`
+		JobID         string `json:"job_id"`
+		EngineName    string `json:"engine_name"`
+		SourceURL     string `json:"source_url"`
+		SourceDomain  string `json:"source_domain"`
+		Content       string `json:"content,omitempty"`
+	}
+
+	citations := make([]citationRow, 0)
+	seen := make(map[string]bool)
+	for pgRows.Next() {
+		var cr citationRow
+		var contentText *string
+		if err := pgRows.Scan(&cr.RawResponseID, &cr.JobID, &cr.EngineName, &contentText); err != nil {
+			slog.Warn("raw_response satır okuma hatası", "error", err)
+			continue
+		}
+		if contentText != nil {
+			cr.Content = *contentText
+			if len(cr.Content) > 200 {
+				cr.Content = cr.Content[:200]
+			}
+		}
+		// content_text içinden URL'leri tara (basit regex)
+		if contentText != nil {
+			urls := extractURLs(*contentText)
+			for _, u := range urls {
+				if seen[u] {
+					continue
+				}
+				seen[u] = true
+				cr2 := cr
+				cr2.SourceURL = u
+				cr2.SourceDomain = extractDomain(u)
+				citations = append(citations, cr2)
+			}
+		}
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"citations": citations,
+		"count":     len(citations),
+	})
+}
+
+// ListBenchmark handles GET /v1/workspaces/{ws}/benchmark?brand_id=xxx
+// FR-D3: Bir markanın skorunu aynı çalışma alanındaki diğer markalarla karşılaştırır.
+func (h *Handler) ListBenchmark(w http.ResponseWriter, r *http.Request) {
+	workspaceID := httpmw.GetWorkspaceID(r.Context())
+	tenantID := httpmw.GetTenantID(r.Context())
+	brandID := r.URL.Query().Get("brand_id")
+
+	rows, err := h.pool.Query(r.Context(), `
+		WITH latest AS (
+			SELECT DISTINCT ON (b.id)
+				b.id AS brand_id,
+				b.name AS brand_name,
+				s.value AS score_value,
+				s.fidelity_label,
+				s.freshness_at,
+				s.engine_breakdown AS engine_breakdown
+			FROM config.brands b
+			LEFT JOIN measure.scores s ON s.brand_id = b.id AND s.workspace_id = b.workspace_id
+			WHERE b.workspace_id = $1 AND b.tenant_id = $2 AND b.is_active = true
+			ORDER BY b.id, s.freshness_at DESC
+		)
+		SELECT brand_id, brand_name,
+			COALESCE(score_value, 0) AS score_value,
+			COALESCE(fidelity_label, 'yok') AS fidelity_label,
+			freshness_at,
+			engine_breakdown
+		FROM latest
+		ORDER BY score_value DESC
+	`, workspaceID, tenantID)
+	if err != nil {
+		slog.Error("benchmark sorgu hatası", "error", err)
+		httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{"benchmark": []interface{}{}})
+		return
+	}
+	defer rows.Close()
+
+	type benchmarkRow struct {
+		BrandID         string             `json:"brand_id"`
+		BrandName       string             `json:"brand_name"`
+		ScoreValue      float64            `json:"score_value"`
+		FidelityLabel   string             `json:"fidelity_label"`
+		FreshnessAt     *time.Time         `json:"freshness_at,omitempty"`
+		EngineBreakdown map[string]float64 `json:"engine_breakdown,omitempty"`
+		IsTarget        bool               `json:"is_target"`
+	}
+
+	benchmarks := make([]benchmarkRow, 0)
+	for rows.Next() {
+		var b benchmarkRow
+		var freshnessAt *time.Time
+		var engBreakdown []byte
+		if err := rows.Scan(&b.BrandID, &b.BrandName, &b.ScoreValue, &b.FidelityLabel, &freshnessAt, &engBreakdown); err != nil {
+			slog.Warn("benchmark satır okuma hatası", "error", err)
+			continue
+		}
+		b.FreshnessAt = freshnessAt
+		if len(engBreakdown) > 0 && string(engBreakdown) != "{}" && string(engBreakdown) != "null" {
+			if err := json.Unmarshal(engBreakdown, &b.EngineBreakdown); err != nil {
+				slog.Warn("engine breakdown çözümleme hatası", "brand_id", b.BrandID, "error", err)
+			}
+		}
+		if brandID != "" && b.BrandID == brandID {
+			b.IsTarget = true
+		}
+		benchmarks = append(benchmarks, b)
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"benchmark": benchmarks,
+		"count":     len(benchmarks),
+	})
+}
+
+// ListRadarComparison handles GET /v1/workspaces/{ws}/radar?brand_id=xxx
+// H7: Motor bazında rakip karşılaştırması (radar grafiği için).
+func (h *Handler) ListRadarComparison(w http.ResponseWriter, r *http.Request) {
+	workspaceID := httpmw.GetWorkspaceID(r.Context())
+	tenantID := httpmw.GetTenantID(r.Context())
+	targetBrandID := r.URL.Query().Get("brand_id")
+
+	// Tüm aktif brand'lerin engine_breakdown'ını al
+	rows, err := h.pool.Query(r.Context(), `
+		WITH latest AS (
+			SELECT DISTINCT ON (b.id)
+				b.id AS brand_id,
+				b.name AS brand_name,
+				s.value AS score_value,
+				s.engine_breakdown AS engine_breakdown,
+				s.freshness_at
+			FROM config.brands b
+			LEFT JOIN measure.scores s ON s.brand_id = b.id AND s.workspace_id = b.workspace_id
+			WHERE b.workspace_id = $1 AND b.tenant_id = $2 AND b.is_active = true
+			ORDER BY b.id, s.freshness_at DESC
+		)
+		SELECT brand_id, brand_name, score_value, engine_breakdown
+		FROM latest
+		WHERE score_value IS NOT NULL
+		ORDER BY score_value DESC
+	`, workspaceID, tenantID)
+	if err != nil {
+		slog.Error("radar sorgu hatası", "error", err)
+		httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{"radar": []interface{}{}})
+		return
+	}
+	defer rows.Close()
+
+	type engineEntry struct {
+		Engine string  `json:"engine"`
+		Score  float64 `json:"score"`
+	}
+
+	type brandRadar struct {
+		BrandID    string        `json:"brand_id"`
+		BrandName  string        `json:"brand_name"`
+		TotalScore float64       `json:"total_score"`
+		Engines    []engineEntry `json:"engines"`
+		IsTarget   bool          `json:"is_target"`
+	}
+
+	// Tüm motor adlarını topla (radar eksenleri)
+	allEngines := make(map[string]bool)
+	radarData := make([]brandRadar, 0)
+
+	for rows.Next() {
+		var br brandRadar
+		var engJSON []byte
+		if err := rows.Scan(&br.BrandID, &br.BrandName, &br.TotalScore, &engJSON); err != nil {
+			slog.Warn("radar satır okuma hatası", "error", err)
+			continue
+		}
+
+		if targetBrandID != "" && br.BrandID == targetBrandID {
+			br.IsTarget = true
+		}
+
+		if len(engJSON) > 0 && string(engJSON) != "{}" && string(engJSON) != "null" {
+			var breakdown map[string]float64
+			if err := json.Unmarshal(engJSON, &breakdown); err == nil {
+				for eng, sc := range breakdown {
+					allEngines[eng] = true
+					br.Engines = append(br.Engines, engineEntry{Engine: eng, Score: sc})
+				}
+			}
+		}
+		radarData = append(radarData, br)
+	}
+
+	engineList := make([]string, 0, len(allEngines))
+	for e := range allEngines {
+		engineList = append(engineList, e)
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"radar":   radarData,
+		"engines": engineList,
+		"count":   len(radarData),
+	})
+}
+
+// GetBenchmarkContext handles GET /v1/workspaces/{ws}/benchmark/context
+// T2: Anonim sektör kıyası — kullanıcının skorunu tüm kiracıların ortalamasıyla karşılaştırır.
+// NFR-13: ≥5 kiracı eşiği altında sonuç döndürmez.
+func (h *Handler) GetBenchmarkContext(w http.ResponseWriter, r *http.Request) {
+	workspaceID := httpmw.GetWorkspaceID(r.Context())
+	tenantID := httpmw.GetTenantID(r.Context())
+
+	// Kullanıcının son skoru
+	var myScore float64
+	err := h.pool.QueryRow(r.Context(), `
+		SELECT COALESCE(value, 0) FROM measure.scores
+		WHERE workspace_id = $1 AND tenant_id = $2
+		ORDER BY freshness_at DESC LIMIT 1
+	`, workspaceID, tenantID).Scan(&myScore)
+	if err != nil {
+		myScore = 0
+	}
+
+	// Toplam kiracı sayısı (NFR-13 gizlilik eşiği)
+	var tenantCount int
+	h.pool.QueryRow(r.Context(), `
+		SELECT COUNT(DISTINCT tenant_id) FROM measure.scores
+	`).Scan(&tenantCount)
+
+	// Anonim sektör ortalaması (tüm kiracılar)
+	var sectorAvg float64
+	var sectorMin float64
+	var sectorMax float64
+	var sectorMedian float64
+
+	if tenantCount >= 5 {
+		h.pool.QueryRow(r.Context(), `
+			SELECT AVG(sub.latest)::numeric(10,2),
+				MIN(sub.latest)::numeric(10,2),
+				MAX(sub.latest)::numeric(10,2)
+			FROM (
+				SELECT DISTINCT ON (brand_id) value AS latest
+				FROM measure.scores
+				ORDER BY brand_id, freshness_at DESC
+			) sub
+		`).Scan(&sectorAvg, &sectorMin, &sectorMax)
+
+		// Medyan hesapla
+		h.pool.QueryRow(r.Context(), `
+			WITH ranked AS (
+				SELECT value, ROW_NUMBER() OVER (ORDER BY value) AS rn,
+					COUNT(*) OVER () AS cnt
+				FROM (
+					SELECT DISTINCT ON (brand_id) value
+					FROM measure.scores
+					ORDER BY brand_id, freshness_at DESC
+				) sub
+			)
+			SELECT AVG(value)::numeric(10,2)
+			FROM ranked
+			WHERE rn IN ((cnt + 1) / 2, (cnt + 2) / 2)
+		`).Scan(&sectorMedian)
+	}
+
+	response := map[string]interface{}{
+		"my_score":        myScore,
+		"tenant_count":    tenantCount,
+		"sufficient_data": tenantCount >= 5,
+	}
+	if tenantCount >= 5 {
+		response["sector_avg"] = sectorAvg
+		response["sector_median"] = sectorMedian
+		response["sector_min"] = sectorMin
+		response["sector_max"] = sectorMax
+		response["difference"] = myScore - sectorAvg
+	} else {
+		response["message"] = "yetersiz veri — anonim kıyas için en az 5 kiracı gerekli"
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, response)
+}
+
+// extractURLs verilen metindeki URL'leri basit regex ile bulur.
+func extractURLs(text string) []string {
+	urls := make([]string, 0)
+	remaining := text
+	for {
+		start := strings.Index(remaining, "http")
+		if start == -1 {
+			break
+		}
+		end := start
+		for end < len(remaining) {
+			ch := remaining[end]
+			if ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r' || ch == ')' || ch == ']' || ch == '}' || ch == '>' || ch == '"' || ch == '\'' {
+				break
+			}
+			end++
+		}
+		url := remaining[start:end]
+		if strings.HasPrefix(url, "http://") || strings.HasPrefix(url, "https://") {
+			urls = append(urls, url)
+		}
+		remaining = remaining[end:]
+	}
+	return urls
 }

@@ -36,7 +36,7 @@ Dilim 4 (H13–H16) kapsamında pilot çıkış kapısı için güvenlik sertle�
 
 | Öngörü | Gerçekleşen |
 |--------|-------------|
-| Kullanıcı verisi manuel silinir | `POST /v1/privacy/delete` — `internal/privacy/handler.go` |
+| Kullanıcı verisi manuel silinir | `POST /v1/account/deletion` (birincil) — `internal/privacy/handler.go`<br/>`POST /v1/privacy/delete` (ADR uyum alias) |
 
 **Gerekçe:** KVKK/GDPR uyumu için kiracının tüm verisini (identity, config, measure, governance, delivery tabloları) kaskad silen bir endpoint gerekliydi. Silme işlemi asynchronous çalışır, audit log'a kaydedilir.
 

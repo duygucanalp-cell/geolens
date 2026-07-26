@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/geolens/platform/internal/id"
 	"github.com/geolens/platform/platform/db"
-	"github.com/oklog/ulid/v2"
 )
 
 // List of known AI crawler user agents.
@@ -45,7 +45,7 @@ func NewService(pool *db.Pool) Service {
 // Audit performs a complete site audit for the given brand.
 func (s *service) Audit(brandID, brandName, websiteURL string) (*AuditResult, error) {
 	result := &AuditResult{
-		ID:         generateULID(),
+		ID:         id.New(),
 		BrandID:    brandID,
 		BrandName:  brandName,
 		WebsiteURL: websiteURL,
@@ -383,10 +383,6 @@ func parseRobotsTxtContent(body []byte, exists bool) *RobotsTxtCheck {
 }
 
 // ---- Yardımcı Fonksiyonlar ----
-
-func generateULID() string {
-	return ulid.Make().String()
-}
 
 func normalizeURL(url string) string {
 	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {

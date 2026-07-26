@@ -177,8 +177,11 @@ services:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_INSTALL_PLUGINS=
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD=geolens-overview
     volumes:
       - grafanadata:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/etc/grafana/dashboards
     depends_on:
       - prometheus
 

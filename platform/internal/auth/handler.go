@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"log/slog"
@@ -8,11 +10,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/geolens/platform/platform/db"
+	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/httputil"
 )
 
@@ -36,6 +40,19 @@ type authResponse struct {
 	TenantID    string `json:"tenant_id"`
 	WorkspaceID string `json:"workspace_id"`
 	Role        string `json:"role"`
+}
+
+type updateRoleRequest struct {
+	Role string `json:"role"`
+}
+
+type memberResponse struct {
+	UserID        string `json:"user_id"`
+	Email         string `json:"email"`
+	FullName      string `json:"full_name"`
+	WorkspaceRole string `json:"workspace_role"`
+	WorkspaceID   string `json:"workspace_id"`
+	CreatedAt     string `json:"created_at"`
 }
 
 // Handler holds dependencies for auth HTTP handlers.
@@ -235,4 +252,319 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, map[string]string{"status": "logged_out"})
+}
+
+// ListMembers handles GET /v1/tenant/members
+// Kiracıdaki tüm kullanıcıları ve üyeliklerini listeler.
+func (h *Handler) ListMembers(w http.ResponseWriter, r *http.Request) {
+	tenantID := httpmw.GetTenantID(r.Context())
+
+	rows, err := h.pool.Query(r.Context(), `
+		SELECT u.id, u.email, u.full_name, m.role, m.workspace_id, u.created_at
+		FROM identity.users u
+		JOIN config.memberships m ON m.user_id = u.id AND m.tenant_id = u.tenant_id
+		WHERE u.tenant_id = $1 AND u.is_active = true
+		ORDER BY u.created_at DESC
+	`, tenantID)
+	if err != nil {
+		slog.Error("üye listeleme hatası", "error", err)
+		httputil.WriteError(w, http.StatusInternalServerError, "üyeler listelenemedi")
+		return
+	}
+	defer rows.Close()
+
+	var members []memberResponse
+	for rows.Next() {
+		var m memberResponse
+		if err := rows.Scan(&m.UserID, &m.Email, &m.FullName, &m.WorkspaceRole, &m.WorkspaceID, &m.CreatedAt); err != nil {
+			slog.Warn("üye satır okuma hatası", "error", err)
+			continue
+		}
+		members = append(members, m)
+	}
+	if err := rows.Err(); err != nil {
+		slog.Error("üye satır okuma hatası", "error", err)
+		httputil.WriteError(w, http.StatusInternalServerError, "üyeler listelenemedi")
+		return
+	}
+
+	if members == nil {
+		members = []memberResponse{}
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{"members": members})
+}
+
+// UpdateMemberRole handles PATCH /v1/tenant/members/{userId}/role
+// Bir kullanıcının workspace üyelik rolünü günceller.
+func (h *Handler) UpdateMemberRole(w http.ResponseWriter, r *http.Request) {
+	userID := chi.URLParam(r, "userId")
+	if userID == "" {
+		httputil.WriteError(w, http.StatusBadRequest, "kullanıcı ID gerekli")
+		return
+	}
+
+	var req updateRoleRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httputil.WriteError(w, http.StatusBadRequest, "geçersiz istek")
+		return
+	}
+
+	validRoles := map[string]bool{"admin": true, "editor": true, "viewer": true}
+	if !validRoles[req.Role] {
+		httputil.WriteError(w, http.StatusBadRequest, "geçersiz rol (admin, editor, viewer)")
+		return
+	}
+
+	tenantID := httpmw.GetTenantID(r.Context())
+
+	result, err := h.pool.Exec(r.Context(), `
+		UPDATE config.memberships
+		SET role = $1
+		WHERE user_id = $2 AND tenant_id = $3
+	`, req.Role, userID, tenantID)
+	if err != nil {
+		slog.Error("rol güncelleme hatası", "error", err)
+		httputil.WriteError(w, http.StatusInternalServerError, "rol güncellenemedi")
+		return
+	}
+	if result.RowsAffected() == 0 {
+		httputil.WriteError(w, http.StatusNotFound, "kullanıcı bulunamadı")
+		return
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, map[string]string{"status": "updated", "role": req.Role})
+}
+
+// InviteMember handles POST /v1/tenant/invitations
+// Bir e-posta adresine davet gönderir (admin yetkisi gerekir).
+func (h *Handler) InviteMember(w http.ResponseWriter, r *http.Request) {
+	tenantID := httpmw.GetTenantID(r.Context())
+	userID := httpmw.GetUserID(r.Context())
+
+	var req struct {
+		Email       string `json:"email"`
+		WorkspaceID string `json:"workspace_id"`
+		Role        string `json:"role"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httputil.WriteError(w, http.StatusBadRequest, "geçersiz istek")
+		return
+	}
+	if req.Email == "" || req.WorkspaceID == "" || req.Role == "" {
+		httputil.WriteError(w, http.StatusBadRequest, "e-posta, çalışma alanı ve rol zorunludur")
+		return
+	}
+
+	validRoles := map[string]bool{"admin": true, "editor": true, "viewer": true}
+	if !validRoles[req.Role] {
+		httputil.WriteError(w, http.StatusBadRequest, "geçersiz rol (admin, editor, viewer)")
+		return
+	}
+
+	// Davet token'ı oluştur
+	tokenBytes := make([]byte, 32)
+	if _, err := rand.Read(tokenBytes); err != nil {
+		slog.Error("davet token oluşturma hatası", "error", err)
+		httputil.WriteError(w, http.StatusInternalServerError, "davet oluşturulamadı")
+		return
+	}
+	token := hex.EncodeToString(tokenBytes)
+
+	_, err := h.pool.Exec(r.Context(), `
+		INSERT INTO identity.invitations (id, tenant_id, workspace_id, invited_by, email, role, token, expires_at)
+		VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, $6, now() + interval '7 days')
+	`, tenantID, req.WorkspaceID, userID, req.Email, req.Role, token)
+	if err != nil {
+		slog.Error("davet kaydetme hatası", "error", err)
+		httputil.WriteError(w, http.StatusConflict, "bu e-posta zaten davet edilmiş")
+		return
+	}
+
+	httputil.WriteJSON(w, http.StatusCreated, map[string]string{
+		"status": "invited",
+		"email":  req.Email,
+		"token":  token,
+	})
+}
+
+// AcceptInvitation handles POST /v1/auth/accept-invitation
+// Davet token'ı ile üyeliği kabul eder (token + kayıt bilgileri).
+func (h *Handler) AcceptInvitation(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Token    string `json:"token"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
+		Name     string `json:"name"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httputil.WriteError(w, http.StatusBadRequest, "geçersiz istek")
+		return
+	}
+	if req.Token == "" || req.Email == "" || req.Password == "" || req.Name == "" {
+		httputil.WriteError(w, http.StatusBadRequest, "token, e-posta, şifre ve isim zorunludur")
+		return
+	}
+
+	// Daveti bul
+	var invitationID, tenantID, workspaceID, role string
+	var expiresAt time.Time
+	err := h.pool.QueryRow(r.Context(), `
+		SELECT id, tenant_id, workspace_id, role, expires_at
+		FROM identity.invitations
+		WHERE token = $1 AND accepted_at IS NULL
+	`, req.Token).Scan(&invitationID, &tenantID, &workspaceID, &role, &expiresAt)
+	if err != nil {
+		httputil.WriteError(w, http.StatusNotFound, "geçersiz veya süresi dolmuş davet")
+		return
+	}
+
+	if time.Now().After(expiresAt) {
+		httputil.WriteError(w, http.StatusGone, "davetin süresi dolmuş")
+		return
+	}
+
+	// Kullanıcı var mı kontrol et
+	var existingUserID string
+	err = h.pool.QueryRow(r.Context(), `
+		SELECT id FROM identity.users WHERE email = $1 AND tenant_id = $2
+	`, req.Email, tenantID).Scan(&existingUserID)
+	if err != nil && err != pgx.ErrNoRows {
+		slog.Error("kullanıcı sorgu hatası", "error", err)
+		httputil.WriteError(w, http.StatusInternalServerError, "davet kabul edilemedi")
+		return
+	}
+
+	var userID string
+	if existingUserID != "" {
+		userID = existingUserID
+	} else {
+		// Yeni kullanıcı oluştur
+		hashedPW, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+		if err != nil {
+			slog.Error("şifre hash hatası", "error", err)
+			httputil.WriteError(w, http.StatusInternalServerError, "davet kabul edilemedi")
+			return
+		}
+		err = h.pool.QueryRow(r.Context(), `
+			INSERT INTO identity.users (id, tenant_id, email, password_hash, role, full_name)
+			VALUES (gen_random_uuid()::text, $1, $2, $3, 'member', $4)
+			RETURNING id
+		`, tenantID, req.Email, string(hashedPW), req.Name).Scan(&userID)
+		if err != nil {
+			slog.Error("kullanıcı oluşturma hatası", "error", err)
+			httputil.WriteError(w, http.StatusConflict, "bu e-posta zaten kayıtlı")
+			return
+		}
+	}
+
+	// Üyelik oluştur
+	_, err = h.pool.Exec(r.Context(), `
+		INSERT INTO config.memberships (id, workspace_id, user_id, tenant_id, role)
+		VALUES (gen_random_uuid()::text, $1, $2, $3, $4)
+		ON CONFLICT (workspace_id, user_id) DO UPDATE SET role = $4
+	`, workspaceID, userID, tenantID, role)
+	if err != nil {
+		slog.Error("üyelik oluşturma hatası", "error", err)
+		httputil.WriteError(w, http.StatusInternalServerError, "davet kabul edilemedi")
+		return
+	}
+
+	// Daveti işaretle
+	_, _ = h.pool.Exec(r.Context(), `
+		UPDATE identity.invitations SET accepted_at = now() WHERE id = $1
+	`, invitationID)
+
+	// JWT üret
+	token, expiresAtJWT, err := h.jwt.GenerateToken(userID, tenantID, role)
+	if err != nil {
+		slog.Error("jwt oluşturma hatası", "error", err)
+		httputil.WriteError(w, http.StatusInternalServerError, "davet kabul edildi ama giriş yapılamadı")
+		return
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, authResponse{
+		Token:       token,
+		ExpiresAt:   expiresAtJWT.Format(time.RFC3339),
+		UserID:      userID,
+		TenantID:    tenantID,
+		WorkspaceID: workspaceID,
+		Role:        role,
+	})
+}
+
+// ListInvitations handles GET /v1/tenant/invitations
+// Kiracıdaki bekleyen davetleri listeler.
+func (h *Handler) ListInvitations(w http.ResponseWriter, r *http.Request) {
+	tenantID := httpmw.GetTenantID(r.Context())
+
+	rows, err := h.pool.Query(r.Context(), `
+		SELECT id, email, role, workspace_id, created_at, expires_at, accepted_at IS NOT NULL
+		FROM identity.invitations
+		WHERE tenant_id = $1
+		ORDER BY created_at DESC
+		LIMIT 50
+	`, tenantID)
+	if err != nil {
+		slog.Error("davet listeleme hatası", "error", err)
+		httputil.WriteError(w, http.StatusInternalServerError, "davetler listelenemedi")
+		return
+	}
+	defer rows.Close()
+
+	type invitationRow struct {
+		ID          string `json:"id"`
+		Email       string `json:"email"`
+		Role        string `json:"role"`
+		WorkspaceID string `json:"workspace_id"`
+		CreatedAt   string `json:"created_at"`
+		ExpiresAt   string `json:"expires_at"`
+		Accepted    bool   `json:"accepted"`
+	}
+
+	invitations := make([]invitationRow, 0)
+	for rows.Next() {
+		var inv invitationRow
+		var createdAt, expiresAt time.Time
+		var accepted bool
+		if err := rows.Scan(&inv.ID, &inv.Email, &inv.Role, &inv.WorkspaceID, &createdAt, &expiresAt, &accepted); err != nil {
+			slog.Warn("davet satır okuma hatası", "error", err)
+			continue
+		}
+		inv.CreatedAt = createdAt.Format(time.RFC3339)
+		inv.ExpiresAt = expiresAt.Format(time.RFC3339)
+		inv.Accepted = accepted
+		invitations = append(invitations, inv)
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{"invitations": invitations})
+}
+
+// GetTenant handles GET /v1/tenant
+// Oturum açmış kullanıcının kiracı bilgilerini döndürür.
+func (h *Handler) GetTenant(w http.ResponseWriter, r *http.Request) {
+	tenantID := httpmw.GetTenantID(r.Context())
+	if tenantID == "" {
+		httputil.WriteError(w, http.StatusUnauthorized, "kimlik doğrulama gerekli")
+		return
+	}
+
+	var name, slug, tier string
+	var createdAt time.Time
+	err := h.pool.QueryRow(r.Context(), `
+		SELECT name, slug, tier, created_at FROM identity.tenants WHERE id = $1
+	`, tenantID).Scan(&name, &slug, &tier, &createdAt)
+	if err != nil {
+		slog.Error("kiracı sorgu hatası", "error", err)
+		httputil.WriteError(w, http.StatusNotFound, "kiracı bulunamadı")
+		return
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"id":         tenantID,
+		"name":       name,
+		"slug":       slug,
+		"tier":       tier,
+		"created_at": createdAt.Format(time.RFC3339),
+	})
 }

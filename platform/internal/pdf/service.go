@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/geolens/platform/internal/id"
 	"github.com/johnfercher/maroto/v2"
 	"github.com/johnfercher/maroto/v2/pkg/components/col"
 	"github.com/johnfercher/maroto/v2/pkg/components/text"
@@ -13,7 +14,6 @@ import (
 	"github.com/johnfercher/maroto/v2/pkg/consts/align"
 	"github.com/johnfercher/maroto/v2/pkg/consts/fontstyle"
 	"github.com/johnfercher/maroto/v2/pkg/props"
-	"github.com/oklog/ulid/v2"
 
 	"github.com/geolens/platform/platform/db"
 )
@@ -419,5 +419,5 @@ func (s *service) generateAuditReport(req ReportRequest) (*ReportResult, error) 
 }
 
 func generateULID() string {
-	return ulid.Make().String()
+	return id.New()
 }

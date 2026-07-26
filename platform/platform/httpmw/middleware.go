@@ -6,9 +6,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/geolens/platform/platform/db"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
+
+	"github.com/geolens/platform/internal/governance"
+	"github.com/geolens/platform/platform/db"
+	"github.com/geolens/platform/platform/httputil"
 )
 
 type contextKey string
@@ -163,6 +167,89 @@ func RequireRole(minimumRole string) func(http.Handler) http.Handler {
 	}
 }
 
+// Tier constants — identity.tenants.tier ile uyumlu.
+const (
+	TierFree       = "free"
+	TierPro        = "pro"
+	TierBusiness   = "business"
+	TierEnterprise = "enterprise"
+)
+
+// tierWeights maps tiers to numeric weights for hierarchy comparison.
+var tierWeights = map[string]int{
+	TierFree:       0,
+	TierPro:        1,
+	TierBusiness:   2,
+	TierEnterprise: 3,
+}
+
+// hasSufficientTier checks if the given tier meets the minimum required tier.
+func hasSufficientTier(current, minimum string) bool {
+	return tierWeights[current] >= tierWeights[minimum]
+}
+
+// RequireTier checks that the tenant meets the minimum tier requirement.
+// Pool callback approach: the pool is lazily resolved at request time.
+func RequireTier(pool *db.Pool, minimumTier string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			tenantID := GetTenantID(r.Context())
+			if tenantID == "" {
+				http.Error(w, `{"error":"authentication_required"}`, http.StatusUnauthorized)
+				return
+			}
+
+			var currentTier string
+			err := pool.QueryRow(r.Context(), `
+				SELECT tier FROM identity.tenants WHERE id = $1
+			`, tenantID).Scan(&currentTier)
+			if err != nil {
+				http.Error(w, `{"error":"tenant_not_found"}`, http.StatusNotFound)
+				return
+			}
+
+			if !hasSufficientTier(currentTier, minimumTier) {
+				http.Error(w, `{"error":"plan_upgrade_required","message":"Bu özellik için paket yükseltmesi gerekli"}`, http.StatusPaymentRequired)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// RateLimit checks and consumes a token from the specified rate limit bucket.
+// Must be placed after Authenticate and TenantContext in the middleware chain.
+func RateLimit(checker *governance.QuotaChecker, bucketName string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			tenantID := GetTenantID(r.Context())
+			if tenantID == "" {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			allowed, err := checker.CheckAndConsume(r.Context(), tenantID, bucketName)
+			if err != nil {
+				slog.Warn("rate limit kontrol hatası, erişime izin veriliyor", "error", err)
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			if !allowed {
+				w.Header().Set("Retry-After", "60")
+				httputil.WriteJSON(w, http.StatusTooManyRequests, map[string]string{
+					"error":   "rate_limited",
+					"message": "Çok fazla istek. Lütfen bekleyin.",
+				})
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 // RequireWorkspaceAccess checks that the user has a membership in the requested workspace.
 func RequireWorkspaceAccess(pool *db.Pool) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -257,6 +344,63 @@ func GetRequestID(ctx context.Context) string {
 		return id
 	}
 	return ""
+}
+
+// AuthenticateAPIKey validates the X-API-Key header against identity.api_keys.
+// Sets tenant_id and user_id (key_id) in context for downstream use.
+func AuthenticateAPIKey(pool *db.Pool) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			apiKey := r.Header.Get("X-API-Key")
+			if apiKey == "" {
+				httputil.WriteError(w, http.StatusUnauthorized, "X-API-Key header gerekli")
+				return
+			}
+
+			// Key prefix'e göre sorgula (gls_abc... gibi)
+			prefix := apiKey
+			if len(apiKey) > 12 {
+				prefix = apiKey[:12]
+			}
+
+			var id, tenantID, keyHash, role string
+			var isActive bool
+			var expiresAt *time.Time
+			err := pool.QueryRow(r.Context(), `
+				SELECT id, tenant_id, key_hash, role, is_active, expires_at
+				FROM identity.api_keys
+				WHERE key_prefix = $1
+			`, prefix).Scan(&id, &tenantID, &keyHash, &role, &isActive, &expiresAt)
+			if err != nil {
+				httputil.WriteError(w, http.StatusUnauthorized, "geçersiz API anahtarı")
+				return
+			}
+			if !isActive {
+				httputil.WriteError(w, http.StatusForbidden, "API anahtarı pasif")
+				return
+			}
+			if expiresAt != nil && time.Now().After(*expiresAt) {
+				httputil.WriteError(w, http.StatusForbidden, "API anahtarının süresi dolmuş")
+				return
+			}
+
+			// bcrypt doğrulama
+			if err := bcrypt.CompareHashAndPassword([]byte(keyHash), []byte(apiKey)); err != nil {
+				httputil.WriteError(w, http.StatusUnauthorized, "geçersiz API anahtarı")
+				return
+			}
+
+			// Son kullanım güncelle (arka plan)
+			_, _ = pool.Exec(r.Context(), `
+				UPDATE identity.api_keys SET last_used_at = now() WHERE id = $1
+			`, id)
+
+			ctx := context.WithValue(r.Context(), CtxKeyTenantID, tenantID)
+			ctx = context.WithValue(ctx, CtxKeyUserID, id)
+			ctx = context.WithValue(ctx, ctxKeyUserRole, role)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
 }
 
 // responseWriter wraps http.ResponseWriter to capture the status code.

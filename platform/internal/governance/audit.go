@@ -5,9 +5,8 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/oklog/ulid/v2"
-
 	"github.com/geolens/platform/internal/errors"
+	"github.com/geolens/platform/internal/id"
 	"github.com/geolens/platform/platform/db"
 )
 
@@ -42,7 +41,7 @@ func (a *AuditLogger) Record(ctx context.Context, entry AuditEntry) error {
 		return errors.Internal("audit: veritabanı bağlantısı yok", nil)
 	}
 
-	id := ulid.Make().String()
+	entryID := id.New()
 
 	metaJSON, err := json.Marshal(entry.Metadata)
 	if err != nil {
@@ -52,7 +51,7 @@ func (a *AuditLogger) Record(ctx context.Context, entry AuditEntry) error {
 	_, err = a.pool.Exec(ctx, `
 		INSERT INTO governance.audit_log (id, tenant_id, user_id, event_type, resource_type, resource_id, action, metadata, ip_address, user_agent, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9, $10, now())
-	`, id, entry.TenantID, entry.UserID, entry.EventType, entry.ResourceType,
+	`, entryID, entry.TenantID, entry.UserID, entry.EventType, entry.ResourceType,
 		entry.ResourceID, entry.Action, string(metaJSON),
 		entry.IPAddress, entry.UserAgent)
 

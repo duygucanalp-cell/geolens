@@ -17,10 +17,12 @@ import (
 
 	"github.com/geolens/platform/engine"
 	"github.com/geolens/platform/engine/chatgpt"
+	"github.com/geolens/platform/engine/claude"
 	"github.com/geolens/platform/engine/gemini"
 	"github.com/geolens/platform/engine/perplexity"
 	"github.com/geolens/platform/internal/config"
 	"github.com/geolens/platform/internal/delivery"
+	"github.com/geolens/platform/internal/id"
 	"github.com/geolens/platform/internal/measure"
 	"github.com/geolens/platform/internal/recommendation"
 	"github.com/geolens/platform/platform/db"
@@ -59,19 +61,31 @@ func main() {
 	defer rdb.Close()
 
 	// S3 Storage
-	s3Storage, err := storage.NewClient(cfg.S3Endpoint, cfg.S3AccessKey, cfg.S3SecretKey, cfg.S3Bucket, cfg.S3Region, false)
+	s3Client, err := storage.NewClient(cfg.S3Endpoint, cfg.S3AccessKey, cfg.S3SecretKey, cfg.S3Bucket, cfg.S3Region, false)
 	if err != nil {
 		slog.Warn("S3 istemci oluşturulamadı, storage olmadan çalışılacak", "error", err)
 	}
 
-	// Engine registry
-	engines := engine.NewRegistry()
-
 	// Ortak RawSaver: nil-hatasız storage backend
+	// Crypto-shredding: STORAGE_MASTER_KEY varsa EncryptedClient, yoksa plain Client kullan
 	var saver engine.RawSaver
 	if err == nil {
-		saver = s3Storage
+		if cfg.StorageMasterKey != "" {
+			encClient, encryptErr := storage.NewEncryptedClient(s3Client, cfg.StorageMasterKey)
+			if encryptErr != nil {
+				slog.Warn("EncryptedClient oluşturulamadı, şifresiz storage kullanılacak", "error", encryptErr)
+				saver = s3Client
+			} else {
+				saver = encClient
+				slog.Info("kripto-silme etkin: S3 verileri AES-256-GCM şifreli")
+			}
+		} else {
+			saver = s3Client
+		}
 	}
+
+	// Engine registry
+	engines := engine.NewRegistry()
 
 	// Perplexity (Kademe 1)
 	perplexityAdapter := perplexity.NewAdapter(cfg.PerplexityAPIKey, saver)
@@ -84,6 +98,10 @@ func main() {
 	// Gemini / Google AI (Kademe 1)
 	geminiAdapter := gemini.NewAdapter(cfg.GeminiAPIKey, saver)
 	engines.Register(geminiAdapter)
+
+	// Claude / Anthropic (Kademe 2)
+	claudeAdapter := claude.NewAdapter(cfg.ClaudeAPIKey, saver)
+	engines.Register(claudeAdapter)
 
 	slog.Info("motor kayıt defteri hazır", "engine_count", engines.Count(), "engines", engines.List())
 
@@ -342,7 +360,7 @@ func processMessage(
 		_, err = pool.Exec(ctx, `
 			INSERT INTO measure.raw_responses (id, job_id, engine_name, raw_body, content_text, s3_ref, tenant_id, created_at)
 			VALUES ($1, $2, $3, $4, $5, $6, $7, now())
-		`, generateID(), jobID, job.EngineName, result.Content, result.Content, s3Ref, job.TenantID)
+		`, id.New(), jobID, job.EngineName, result.Content, result.Content, s3Ref, job.TenantID)
 		if err != nil {
 			logger.Error("worker: raw_response kaydetme hatası", "error", err)
 		}
@@ -703,10 +721,4 @@ func runQueueDepthCollector(ctx context.Context, rdb *redis.Client) {
 			}
 		}
 	}
-}
-
-// generateID creates a simple unique ID for DB records.
-func generateID() string {
-	now := time.Now().UnixMicro()
-	return fmt.Sprintf("%d-%d", now, time.Now().Nanosecond()%10000)
 }

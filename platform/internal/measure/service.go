@@ -12,8 +12,8 @@ import (
 
 	"github.com/geolens/platform/engine"
 	"github.com/geolens/platform/internal/config"
+	"github.com/geolens/platform/internal/id"
 	"github.com/geolens/platform/platform/db"
-	"github.com/oklog/ulid/v2"
 )
 
 // ---- Default Component Weights (0409 §2'den) ----
@@ -200,8 +200,8 @@ func (s *service) CalculateScore(ctx context.Context, panelID string, results []
 	totalScore = math.Min(totalScore, 100.0)
 	totalScore = math.Max(totalScore, 0.0)
 
-	scoreID := generateULID()
-	calcRunID := generateULID()
+	scoreID := id.New()
+	calcRunID := id.New()
 
 	// Component değerlerini JSON olarak hazırla
 	componentValues := map[string]float64{
@@ -469,11 +469,6 @@ func computeEngineBreakdown(responses []engine.RawResponse) map[string]float64 {
 }
 
 // ---- Yardımcı Fonksiyonlar ----
-
-// generateULID creates a new ULID using the oklog/ulid library.
-func generateULID() string {
-	return ulid.Make().String()
-}
 
 // extractDomain extracts a domain from a URL string.
 func extractDomain(url string) string {

@@ -17,6 +17,7 @@ type Config struct {
 	S3Bucket              string
 	S3AccessKey           string
 	S3SecretKey           string
+	StorageMasterKey      string
 	LogLevel              slog.Level
 	PollInterval          time.Duration
 	ConsumerGroup         string
@@ -24,6 +25,7 @@ type Config struct {
 	PerplexityAPIKey      string
 	ChatGPTAPIKey         string
 	GeminiAPIKey          string
+	ClaudeAPIKey          string
 	SendGridAPIKey        string
 	SendGridFromEmail     string
 	SendGridFromName      string
@@ -49,6 +51,7 @@ func LoadFromEnv() Config {
 		S3Bucket:              getEnv("S3_BUCKET", "geolens"),
 		S3AccessKey:           getEnv("S3_ACCESS_KEY", "minioadmin"),
 		S3SecretKey:           getEnv("S3_SECRET_KEY", "minioadmin"),
+		StorageMasterKey:      getEnv("STORAGE_MASTER_KEY", ""),
 		LogLevel:              parseLogLevel(getEnv("LOG_LEVEL", "info")),
 		PollInterval:          parseDuration(getEnv("POLL_INTERVAL", "30s")),
 		ConsumerGroup:         getEnv("CONSUMER_GROUP", "cg:measure"),
@@ -56,6 +59,7 @@ func LoadFromEnv() Config {
 		PerplexityAPIKey:      getEnv("PERPLEXITY_API_KEY", ""),
 		ChatGPTAPIKey:         getEnv("CHATGPT_API_KEY", ""),
 		GeminiAPIKey:          getEnv("GEMINI_API_KEY", ""),
+		ClaudeAPIKey:          getEnv("CLAUDE_API_KEY", ""),
 		SendGridAPIKey:        getEnv("SENDGRID_API_KEY", ""),
 		SendGridFromEmail:     getEnv("SENDGRID_FROM_EMAIL", "geolens@example.com"),
 		SendGridFromName:      getEnv("SENDGRID_FROM_NAME", "GeoLens"),

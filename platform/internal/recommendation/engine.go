@@ -1,6 +1,10 @@
 package recommendation
 
-import "time"
+import (
+	"time"
+
+	"github.com/geolens/platform/platform/db"
+)
 
 // ---- Data Sources for Condition Evaluation ----
 
@@ -61,36 +65,47 @@ type Condition struct {
 	Value    interface{} `json:"value"`
 }
 
+// EvidenceLabel represents the type of evidence behind a recommendation.
+type EvidenceLabel string
+
+const (
+	EvidenceExperimental  EvidenceLabel = "deneysel"     // Sınırlı veri, daha fazla doğrulama gerek
+	EvidenceCorrelational EvidenceLabel = "korelasyonel" // Korelasyon gözlemlendi, nedensellik kanıtlanmadı
+	EvidenceTestable      EvidenceLabel = "denenebilir"  // Spesifik, test edilebilir aksiyon
+)
+
 // Recommendation represents a single actionable suggestion.
 type Recommendation struct {
-	ID          string    `json:"id"`
-	TenantID    string    `json:"tenant_id"`
-	WorkspaceID string    `json:"workspace_id"`
-	BrandID     string    `json:"brand_id"`
-	Category    Category  `json:"category"`
-	Severity    Severity  `json:"severity"`
-	Title       string    `json:"title"`
-	Detail      string    `json:"detail"`
-	ActionURL   string    `json:"action_url,omitempty"`
-	Score       float64   `json:"score"` // confidence score 0-100
-	Applied     bool      `json:"applied"`
-	Dismissed   bool      `json:"dismissed"`
-	CreatedAt   time.Time `json:"created_at"`
+	ID          string        `json:"id"`
+	TenantID    string        `json:"tenant_id"`
+	WorkspaceID string        `json:"workspace_id"`
+	BrandID     string        `json:"brand_id"`
+	Category    Category      `json:"category"`
+	Severity    Severity      `json:"severity"`
+	Evidence    EvidenceLabel `json:"evidence,omitempty"`
+	Title       string        `json:"title"`
+	Detail      string        `json:"detail"`
+	ActionURL   string        `json:"action_url,omitempty"`
+	Score       float64       `json:"score"`
+	Applied     bool          `json:"applied"`
+	Dismissed   bool          `json:"dismissed"`
+	CreatedAt   time.Time     `json:"created_at"`
 }
 
 // Rule represents a recommendation rule (condition → suggestion).
 type Rule struct {
-	ID          string      `json:"id"`
-	Name        string      `json:"name"`
-	Description string      `json:"description"`
-	Category    Category    `json:"category"`
-	Severity    Severity    `json:"severity"`
-	Conditions  []Condition `json:"conditions"`
-	Title       string      `json:"title"`
-	Detail      string      `json:"detail"`
-	ActionURL   string      `json:"action_url,omitempty"`
-	Active      bool        `json:"active"`
-	ClaimLang   ClaimLang   `json:"claim_lang,omitempty"` // NG10: N=filtered, NG=allowed, P=allowed
+	ID          string        `json:"id"`
+	Name        string        `json:"name"`
+	Description string        `json:"description"`
+	Category    Category      `json:"category"`
+	Severity    Severity      `json:"severity"`
+	Evidence    EvidenceLabel `json:"evidence,omitempty"`
+	Conditions  []Condition   `json:"conditions"`
+	Title       string        `json:"title"`
+	Detail      string        `json:"detail"`
+	ActionURL   string        `json:"action_url,omitempty"`
+	Active      bool          `json:"active"`
+	ClaimLang   ClaimLang     `json:"claim_lang,omitempty"`
 }
 
 // ---- Service Interface ----
@@ -106,9 +121,15 @@ type Service interface {
 	// GetRules returns all registered rules.
 	GetRules() []Rule
 
+	// GetRulesBySector returns rules for a specific sector.
+	GetRulesBySector(sector string) []Rule
+
 	// MarkApplied marks a recommendation as applied.
 	MarkApplied(id string) error
 
 	// MarkDismissed marks a recommendation as dismissed.
 	MarkDismissed(id string) error
+
+	// GetPool returns the database pool for external queries.
+	GetPool() *db.Pool
 }

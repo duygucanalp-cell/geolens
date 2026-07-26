@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/geolens/platform/internal/id"
 	"github.com/geolens/platform/platform/db"
 )
 
@@ -32,7 +33,7 @@ func EnqueueMeasurement(ctx context.Context, pool *db.Pool, job JobPayload, idem
 		return fmt.Errorf("job payload serileştirme: %w", err)
 	}
 
-	id := generateULID()
+	id := id.New()
 	_, err = pool.Exec(ctx, `
 		INSERT INTO public.event_outbox (id, event_type, stream, payload, tenant_id, idempotency_key, created_at)
 		VALUES ($1, 'measurement.requested', 'q:measure', $2::jsonb, $3, $4, now())
@@ -73,11 +74,11 @@ func EnqueuePanelMeasurement(ctx context.Context, pool *db.Pool, brandID, brandN
 
 // CreateJobRecord creates a measurement_jobs record in the database.
 func CreateJobRecord(ctx context.Context, pool *db.Pool, job JobPayload) error {
-	id := generateULID()
+	jobID := id.New()
 	_, err := pool.Exec(ctx, `
 		INSERT INTO measure.measurement_jobs (id, brand_id, brand_name, panel_id, engine_name, sample_index, status, tenant_id, workspace_id, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6, 'pending', $7, $8, now())
-	`, id, job.BrandID, job.BrandName, job.PanelID, job.EngineName, job.SampleIndex, job.TenantID, job.WorkspaceID)
+	`, jobID, job.BrandID, job.BrandName, job.PanelID, job.EngineName, job.SampleIndex, job.TenantID, job.WorkspaceID)
 	return err
 }
 
