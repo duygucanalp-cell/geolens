@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ScoreDashboard } from './components/ScoreDashboard'
-import { login, register } from './api/client'
+import { OnboardingWizard } from './components/OnboardingWizard'
+import { login, register, getSetupStatus } from './api/client'
 
-type Page = 'login' | 'dashboard'
+type Page = 'login' | 'onboarding' | 'dashboard'
 
 export default function App() {
   const { t, i18n } = useTranslation()
@@ -33,7 +34,13 @@ export default function App() {
       localStorage.setItem('tenant_id', res.tenant_id)
       localStorage.setItem('workspace_id', res.workspace_id)
       setWorkspaceId(res.workspace_id)
-      setPage('dashboard')
+      // Check setup status to decide onboarding vs dashboard
+      try {
+        const status = await getSetupStatus(res.workspace_id)
+        setPage(status.setup_complete ? 'dashboard' : 'onboarding')
+      } catch {
+        setPage('dashboard')
+      }
     } catch (err) {
       setAuthError(err instanceof Error ? err.message : t('auth.failed'))
     }
@@ -44,6 +51,29 @@ export default function App() {
     localStorage.removeItem('tenant_id')
     localStorage.removeItem('workspace_id')
     setPage('login')
+  }
+
+  function handleSetupComplete() {
+    setPage('dashboard')
+  }
+
+  if (page === 'onboarding') {
+    return (
+      <div className="app">
+        <header className="app-header">
+          <h1>{t('app.title')}</h1>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <button className="lang-btn" onClick={toggleLang}>
+              {currentLang === 'tr' ? '🇬🇧 EN' : '🇹🇷 TR'}
+            </button>
+            <button className="logout-btn" onClick={handleLogout}>{t('app.logout')}</button>
+          </div>
+        </header>
+        <main>
+          <OnboardingWizard workspaceId={workspaceId} onComplete={handleSetupComplete} />
+        </main>
+      </div>
+    )
   }
 
   if (page === 'dashboard') {

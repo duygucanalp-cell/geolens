@@ -389,6 +389,18 @@ export interface IncidentListResponse {
   critical_count: number
 }
 
+// Onboarding Wizard
+export interface SetupStep {
+  key: string
+  label: string
+  done: boolean
+}
+
+export interface SetupStatus {
+  setup_complete: boolean
+  steps: SetupStep[]
+}
+
 export const ENGINE_COLORS: Record<string, string> = {
   perplexity: '#6366f1',
   chatgpt: '#10b981',

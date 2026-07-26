@@ -305,6 +305,27 @@ export function updateIncident(incidentId: string, data: { status?: string; reso
   return fetchJSON(`${BASE}/incidents/events/${incidentId}`, { method: 'PUT', body: JSON.stringify(data) })
 }
 
+// Onboarding Wizard API
+export function getSetupStatus(ws: string): Promise<import('../types').SetupStatus> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/setup-status`)
+}
+
+export function createBrand(ws: string, data: { name: string; website_url: string; competitors?: string[] }): Promise<import('../types').Brand> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/brands`, { method: 'POST', body: JSON.stringify(data) })
+}
+
+export function createPanel(ws: string, data: { name: string; description?: string; brand_ids?: string[] }): Promise<import('../types').Panel> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/panels`, { method: 'POST', body: JSON.stringify(data) })
+}
+
+export function createPromptSet(ws: string, data: { name: string; prompt_text: string; language?: string }): Promise<{ id: string; name: string }> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/prompt-sets`, { method: 'POST', body: JSON.stringify(data) })
+}
+
+export function triggerMeasurement(ws: string, data: { brand_id: string; panel_id?: string }): Promise<{ status: string; run_id: string; brand: string; engines: string[] }> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/measurements`, { method: 'POST', body: JSON.stringify(data) })
+}
+
 export async function triggerDigest(ws: string): Promise<Blob> {
   const token = localStorage.getItem('token')
   const res = await fetch(`${BASE}/workspaces/${ws}/reports/digest`, {
