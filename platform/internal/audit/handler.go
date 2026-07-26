@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/geolens/platform/internal/dbiface"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/httputil"
@@ -14,15 +15,17 @@ import (
 
 // Handler holds dependencies for audit HTTP handlers.
 type Handler struct {
-	pool *db.Pool
-	svc  Service
+	pool    dbiface.DB
+	rawPool *db.Pool
+	svc     Service
 }
 
 // NewHandler creates a new audit handler.
 func NewHandler(pool *db.Pool) *Handler {
 	return &Handler{
-		pool: pool,
-		svc:  NewService(pool),
+		pool:    dbiface.NewAdapter(pool),
+		rawPool: pool,
+		svc:     NewService(pool),
 	}
 }
 
@@ -194,6 +197,7 @@ func (h *Handler) ListAuditTrail(w http.ResponseWriter, r *http.Request) {
 	resourceType := r.URL.Query().Get("resource_type")
 	limit := 100
 
+	// LIMIT+1 pattern for has_more
 	rows, err := h.pool.Query(r.Context(), `
 		SELECT id, COALESCE(user_id, ''), event_type, resource_type,
 			COALESCE(resource_id, ''), action, COALESCE(metadata::text, '{}'),
@@ -204,10 +208,10 @@ func (h *Handler) ListAuditTrail(w http.ResponseWriter, r *http.Request) {
 			AND ($3 = '' OR resource_type = $3)
 		ORDER BY created_at DESC
 		LIMIT $4
-	`, tenantID, eventType, resourceType, limit)
+	`, tenantID, eventType, resourceType, limit+1)
 	if err != nil {
 		slog.Error("denetim kaydı sorgu hatası", "error", err)
-		httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{"entries": []interface{}{}})
+		httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{"entries": []interface{}{}, "has_more": false})
 		return
 	}
 	defer rows.Close()
@@ -236,9 +240,19 @@ func (h *Handler) ListAuditTrail(w http.ResponseWriter, r *http.Request) {
 		entries = append(entries, e)
 	}
 
+	hasMore := len(entries) > limit
+	if hasMore {
+		entries = entries[:limit]
+	}
+
+	if rows.Err() != nil {
+		slog.Warn("denetim kaydı rows iterasyon hatası", "error", rows.Err())
+	}
+
 	httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{
-		"entries": entries,
-		"count":   len(entries),
+		"entries":  entries,
+		"has_more": hasMore,
+		"count":    len(entries),
 	})
 }
 
@@ -270,9 +284,14 @@ func (h *Handler) ExportAuditTrail(w http.ResponseWriter, r *http.Request) {
 		var userID, eventType, resourceType, resourceID, action, ipAddr string
 		var createdAt time.Time
 		if err := rows.Scan(&userID, &eventType, &resourceType, &resourceID, &action, &ipAddr, &createdAt); err != nil {
+			slog.Warn("audit export satır okuma hatası", "error", err)
 			continue
 		}
 		fmt.Fprintf(w, "%s,%s,%s,%s,%s,%s,%s\n",
 			userID, eventType, resourceType, resourceID, action, ipAddr, createdAt.Format(time.RFC3339))
+	}
+
+	if rows.Err() != nil {
+		slog.Warn("audit export rows iterasyon hatası", "error", rows.Err())
 	}
 }

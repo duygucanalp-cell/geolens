@@ -82,10 +82,16 @@ func (e *RuleEngine) EvaluateAll(tenantID string) ([]EvaluateResult, error) {
 			})
 
 			// last_fired_at güncelle
-			_, _ = e.pool.Exec(ctx, `
+			if _, err := e.pool.Exec(ctx, `
 				UPDATE governance.alert_rules SET last_fired_at = now() WHERE id = $1
-			`, id)
+			`, id); err != nil {
+				slog.Warn("alert last_fired_at güncelleme hatası", "rule_id", id, "error", err)
+			}
 		}
+	}
+
+	if rows.Err() != nil {
+		slog.Warn("alert engine rows iterasyon hatası", "error", rows.Err())
 	}
 
 	return results, nil

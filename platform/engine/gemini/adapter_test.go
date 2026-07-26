@@ -1,6 +1,7 @@
 package gemini
 
 import (
+	"context"
 	"testing"
 
 	"github.com/geolens/platform/engine"
@@ -118,7 +119,7 @@ func TestMockResponse(t *testing.T) {
 
 func TestExecute_MockMode(t *testing.T) {
 	a := NewAdapter("", nil)
-	resp, err := a.Execute("test prompt")
+	resp, err := a.Execute(context.Background(), "test prompt")
 	if err != nil {
 		t.Fatalf("mock Execute hata: %v", err)
 	}
@@ -129,7 +130,7 @@ func TestExecute_MockMode(t *testing.T) {
 
 func TestExecute_MockKey(t *testing.T) {
 	a := NewAdapter("mock", nil)
-	resp, err := a.Execute("test prompt")
+	resp, err := a.Execute(context.Background(), "test prompt")
 	if err != nil {
 		t.Fatalf("mock Execute hata: %v", err)
 	}

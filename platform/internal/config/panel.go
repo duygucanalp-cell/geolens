@@ -6,10 +6,12 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-chi/chi/v5"
+
+	"github.com/geolens/platform/internal/dbiface"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/httputil"
-	"github.com/go-chi/chi/v5"
 )
 
 // ---- Domain Types ----
@@ -36,12 +38,12 @@ type PanelRequest struct {
 
 // PanelHandler holds dependencies for panel HTTP handlers.
 type PanelHandler struct {
-	pool *db.Pool
+	pool dbiface.DB
 }
 
 // NewPanelHandler creates a new panel handler.
 func NewPanelHandler(pool *db.Pool) *PanelHandler {
-	return &PanelHandler{pool: pool}
+	return &PanelHandler{pool: dbiface.NewAdapter(pool)}
 }
 
 // ListPanels handles GET /v1/workspaces/{ws}/panels
@@ -72,6 +74,10 @@ func (h *PanelHandler) ListPanels(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		panels = append(panels, p)
+	}
+
+	if rows.Err() != nil {
+		slog.Error("panel listesi rows iterasyon hatası", "error", rows.Err())
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, panels)
@@ -186,6 +192,10 @@ func (h *PanelHandler) ListPromptSets(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		sets = append(sets, ps)
+	}
+
+	if rows.Err() != nil {
+		slog.Error("prompt set listesi rows iterasyon hatası", "error", rows.Err())
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, sets)

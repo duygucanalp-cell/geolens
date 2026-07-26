@@ -3,6 +3,7 @@ package governance
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/geolens/platform/platform/db"
@@ -67,6 +68,7 @@ func (u *UsageRecorder) GetUsageSummary(ctx context.Context, tenantID string, si
 		var name string
 		var total int64
 		if err := rows.Scan(&name, &total); err != nil {
+			slog.Warn("governance usage satır okuma hatası", "error", err)
 			continue
 		}
 		summary[name] = total

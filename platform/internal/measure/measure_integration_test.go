@@ -120,7 +120,7 @@ type mockEngine struct {
 	name string
 }
 
-func (m *mockEngine) Execute(prompt string) (*engine.RawResponse, error) {
+func (m *mockEngine) Execute(_ context.Context, prompt string) (*engine.RawResponse, error) {
 	return &engine.RawResponse{
 		Content:       fmt.Sprintf("Mock response for prompt: %s", prompt),
 		EngineName:    m.name,
@@ -138,10 +138,10 @@ func (m *mockEngine) Name() string { return m.name }
 
 type mockRegistry struct{}
 
-func (r *mockRegistry) List() []string                                                 { return []string{"mock-engine"} }
-func (r *mockRegistry) Get(name string) engine.Adapter                                 { return &mockEngine{name: name} }
-func (r *mockRegistry) Register(name string, adapter engine.Adapter) error             { return nil }
-func (r *mockRegistry) Unregister(name string)                                         {}
+func (r *mockRegistry) List() []string                                     { return []string{"mock-engine"} }
+func (r *mockRegistry) Get(name string) engine.Adapter                     { return &mockEngine{name: name} }
+func (r *mockRegistry) Register(name string, adapter engine.Adapter) error { return nil }
+func (r *mockRegistry) Unregister(name string)                             {}
 
 func TestServiceIntegration_MeasureAndScore(t *testing.T) {
 	if testing.Short() {

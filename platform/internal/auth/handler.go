@@ -15,6 +15,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/geolens/platform/internal/dbiface"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/httputil"
@@ -57,14 +58,20 @@ type memberResponse struct {
 
 // Handler holds dependencies for auth HTTP handlers.
 type Handler struct {
-	pool *db.Pool
-	jwt  *JWTService
-	rdb  *redis.Client
+	pool    dbiface.DB
+	rawPool *db.Pool
+	jwt     *JWTService
+	rdb     *redis.Client
 }
 
 // NewHandler creates a new auth handler.
 func NewHandler(pool *db.Pool, jwt *JWTService, rdb *redis.Client) *Handler {
-	return &Handler{pool: pool, jwt: jwt, rdb: rdb}
+	return &Handler{
+		pool:    dbiface.NewAdapter(pool),
+		rawPool: pool,
+		jwt:     jwt,
+		rdb:     rdb,
+	}
 }
 
 // Register handles POST /v1/auth/register
@@ -471,9 +478,11 @@ func (h *Handler) AcceptInvitation(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Daveti işaretle
-	_, _ = h.pool.Exec(r.Context(), `
+	if _, err := h.pool.Exec(r.Context(), `
 		UPDATE identity.invitations SET accepted_at = now() WHERE id = $1
-	`, invitationID)
+	`, invitationID); err != nil {
+		slog.Warn("davet işaretleme hatası (non-fatal)", "invitation_id", invitationID, "error", err)
+	}
 
 	// JWT üret
 	token, expiresAtJWT, err := h.jwt.GenerateToken(userID, tenantID, role)

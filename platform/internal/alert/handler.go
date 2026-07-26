@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/geolens/platform/internal/dbiface"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/httputil"
@@ -15,12 +16,12 @@ import (
 
 // Handler holds dependencies for alert rule HTTP handlers.
 type Handler struct {
-	pool *db.Pool
+	pool dbiface.DB
 }
 
 // NewHandler creates a new alert Handler.
 func NewHandler(pool *db.Pool) *Handler {
-	return &Handler{pool: pool}
+	return &Handler{pool: dbiface.NewAdapter(pool)}
 }
 
 // List handles GET /v1/workspaces/{ws}/alert-rules
@@ -75,6 +76,10 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 			r.ChannelCfg = channelCfg
 		}
 		rules = append(rules, r)
+	}
+
+	if rows.Err() != nil {
+		slog.Warn("alert rules rows iterasyon hatası", "error", rows.Err())
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{"rules": rules})

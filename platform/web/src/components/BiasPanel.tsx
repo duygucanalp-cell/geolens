@@ -1,0 +1,169 @@
+import { useEffect, useState } from 'react'
+import { evaluateBias, listBiasTests } from '../api/client'
+import type { BiasTest } from '../types'
+
+interface Props { workspaceId: string }
+
+const METRIC_LABELS: Record<string, string> = {
+  demographic_parity: 'Demografik Parite',
+  equal_opportunity: 'Eşit Fırsat',
+  disparate_impact: 'Farklı Etki',
+}
+
+const METRIC_DESCS: Record<string, string> = {
+  demographic_parity: 'Gruplar arası pozitif oran farkını ölçer',
+  equal_opportunity: 'True Positive Rate eşitliğini kontrol eder',
+  disparate_impact: 'EEOC 4/5 kuralına göre farklı etkiyi hesaplar',
+}
+
+export function BiasPanel({ workspaceId: _ws }: Props) {
+  const [tests, setTests] = useState<BiasTest[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [showEvaluate, setShowEvaluate] = useState(false)
+
+  // Evaluate form
+  const [modelId, setModelId] = useState('')
+  const [metricType, setMetricType] = useState('demographic_parity')
+  const [groupData, setGroupData] = useState('{"group_a": 0.8, "group_b": 0.6}')
+  const [evalResult, setEvalResult] = useState<any>(null)
+  const [evalLoading, setEvalLoading] = useState(false)
+
+  useEffect(() => { loadTests() }, [])
+
+  async function loadTests() {
+    try { setLoading(true); setError(null); setTests(await listBiasTests()) }
+    catch (e) { setError(e instanceof Error ? e.message : 'Yüklenemedi') }
+    finally { setLoading(false) }
+  }
+
+  async function handleEvaluate(e: React.FormEvent) {
+    e.preventDefault()
+    if (!modelId.trim()) return
+    setEvalLoading(true)
+    setEvalResult(null)
+    try {
+      let parsed: Record<string, number> = {}
+      try { parsed = JSON.parse(groupData) } catch { setError('Geçersiz JSON verisi'); setEvalLoading(false); return }
+      const result = await evaluateBias({ model_id: modelId, metric_type: metricType, data: parsed })
+      setEvalResult(result)
+      loadTests()
+    } catch (err) { setError(err instanceof Error ? err.message : 'Değerlendirme hatası') }
+    finally { setEvalLoading(false) }
+  }
+
+  const avgFairness = tests.length > 0 ? tests.reduce((s, t) => s + t.fairness_score, 0) / tests.length : 0
+  const biasCount = tests.filter(t => t.has_bias).length
+
+  if (loading) return <div className="dashboard-loading">Bias testleri yükleniyor...</div>
+
+  return (
+    <div className="rec-panel">
+      <div className="rec-header">
+        <h3>⚖️ Bias/Fairness</h3>
+        <p className="rec-desc">AI model adaleti ve bias değerlendirmesi.</p>
+      </div>
+      {error && <div className="audit-error">{error}</div>}
+
+      {/* Summary */}
+      <div className="rec-summary">
+        <div className="rec-summary-card total">
+          <span className="rec-summary-value">{tests.length}</span>
+          <span className="rec-summary-label">Toplam Test</span>
+        </div>
+        <div className="rec-summary-card" style={{ background: avgFairness >= 0.8 ? '#f0fdf4' : '#fef2f2' }}>
+          <span className="rec-summary-value" style={{ color: avgFairness >= 0.8 ? '#22c55e' : '#ef4444' }}>
+            {(avgFairness * 100).toFixed(0)}
+          </span>
+          <span className="rec-summary-label">Ort. Fairness</span>
+        </div>
+        <div className="rec-summary-card" style={{ background: biasCount > 0 ? '#fef2f2' : '#f0fdf4' }}>
+          <span className="rec-summary-value" style={{ color: biasCount > 0 ? '#ef4444' : '#22c55e' }}>
+            {biasCount}
+          </span>
+          <span className="rec-summary-label">Bias Tespit</span>
+        </div>
+      </div>
+
+      <div className="dashboard-filters">
+        <button className="refresh-btn" onClick={() => setShowEvaluate(!showEvaluate)}>
+          {showEvaluate ? 'İptal' : 'Yeni Değerlendirme'}
+        </button>
+        <button className="refresh-btn" onClick={loadTests}>Yenile</button>
+      </div>
+
+      {showEvaluate && (
+        <form onSubmit={handleEvaluate} style={{ background: '#f8fafc', padding: '1rem', borderRadius: '10px', marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <input className="notif-input" style={{ flex: 1 }} placeholder="Model ID" value={modelId} onChange={e => setModelId(e.target.value)} required />
+              <select value={metricType} onChange={e => setMetricType(e.target.value)} className="filter-select">
+                {Object.entries(METRIC_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+            </div>
+            <p style={{ fontSize: '0.8rem', color: '#64748b' }}>{METRIC_DESCS[metricType]}</p>
+            <textarea
+              className="notif-input"
+              rows={3}
+              placeholder='JSON grup verisi: {"group_a": 0.8, "group_b": 0.6}'
+              value={groupData}
+              onChange={e => setGroupData(e.target.value)}
+              style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}
+            />
+            <button type="submit" className="audit-btn" disabled={evalLoading}>
+              {evalLoading ? 'Değerlendiriliyor...' : 'Değerlendir'}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {evalResult && (
+        <div style={{ background: evalResult.has_bias ? '#fef2f2' : '#f0fdf4', padding: '1rem', borderRadius: '10px', marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+            <span style={{ fontSize: '1.5rem' }}>{evalResult.has_bias ? '🔴' : '✅'}</span>
+            <div>
+              <strong>{evalResult.has_bias ? 'Bias Tespit Edildi' : 'Bias Tespit Edilmedi'}</strong>
+              <p style={{ fontSize: '0.85rem', color: '#64748b' }}>Fairness Skoru: {(evalResult.fairness_score * 100).toFixed(1)}/100</p>
+            </div>
+          </div>
+          {evalResult.results?.recommendations?.length > 0 && (
+            <ul style={{ marginTop: '0.5rem', padding: '0 0 0 1rem', fontSize: '0.85rem', color: '#475569' }}>
+              {evalResult.results.recommendations.map((r: string, i: number) => <li key={i}>{r}</li>)}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {tests.length === 0 ? (
+        <div className="rec-empty"><div className="rec-empty-icon">⚖️</div><h4>Henüz test yok</h4></div>
+      ) : (
+        <div className="rec-list">
+          {tests.map(t => (
+            <div key={t.id} className="rec-card">
+              <div className="rec-card-left"><div className="rec-severity-bar" style={{ backgroundColor: t.has_bias ? '#ef4444' : '#22c55e' }} /></div>
+              <div className="rec-card-content">
+                <div className="rec-card-header">
+                  <span className="rec-category-badge">{METRIC_LABELS[t.metric_type] || t.metric_type}</span>
+                  <span className="rec-status-badge" style={{ background: t.has_bias ? '#fef2f2' : '#f0fdf4', color: t.has_bias ? '#ef4444' : '#22c55e' }}>
+                    {t.has_bias ? 'Bias Var' : 'Adil'}
+                  </span>
+                </div>
+                <h4 className="rec-title">Model: {t.model_id}</h4>
+                <div className="rec-meta">
+                  <span className="rec-confidence-label">Fairness: {(t.fairness_score * 100).toFixed(1)}%</span>
+                  <span className="rec-date">Max Gap: {(t.max_gap * 100).toFixed(1)}%</span>
+                  <span className="rec-date">{new Date(t.created_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}</span>
+                </div>
+                {t.recommendations?.length > 0 && (
+                  <p className="rec-detail" style={{ marginTop: '0.3rem' }}>
+                    {t.recommendations.slice(0, 2).map((r, i) => <span key={i}>• {r}<br /></span>)}
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}

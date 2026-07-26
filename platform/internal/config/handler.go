@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/geolens/platform/internal/dbiface"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/httputil"
@@ -25,12 +26,12 @@ type brandResponse struct {
 
 // Handler holds dependencies for config HTTP handlers.
 type Handler struct {
-	pool *db.Pool
+	pool dbiface.DB
 }
 
 // NewHandler creates a new config handler.
 func NewHandler(pool *db.Pool) *Handler {
-	return &Handler{pool: pool}
+	return &Handler{pool: dbiface.NewAdapter(pool)}
 }
 
 // ListBrands handles GET /v1/workspaces/{ws}/brands
@@ -61,6 +62,10 @@ func (h *Handler) ListBrands(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		brands = append(brands, b)
+	}
+
+	if rows.Err() != nil {
+		slog.Error("marka listesi rows iterasyon hatası", "error", rows.Err())
 	}
 
 	// K5: Kısmi sonuç uyarısı (parseErrors > 0 ise response header'a eklenir)
@@ -199,6 +204,10 @@ func (h *Handler) ListWorkspacePanorama(w http.ResponseWriter, r *http.Request) 
 		}
 		ws.CreatedAt = createdAt.Format(time.RFC3339)
 		workspaces = append(workspaces, ws)
+	}
+
+	if rows.Err() != nil {
+		slog.Warn("panorama rows iterasyon hatası", "error", rows.Err())
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{"workspaces": workspaces})

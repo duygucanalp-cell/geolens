@@ -141,14 +141,268 @@ export const SEVERITY_COLORS: Record<string, string> = {
   low: '#22c55e',
 }
 
+// R3: Runtime Guardrails
+export interface GuardrailRule {
+  id: string
+  tenant_id: string
+  name: string
+  category: string
+  pattern: string
+  action: string
+  severity: string
+  enabled: boolean
+  created_at: string
+  updated_at: string
+}
+
+// R8: Agent Tracing
+export interface Trace {
+  trace_id: string
+  agent_name: string
+  workflow_name: string
+  status: string
+  total_steps: number
+  completed_steps: number
+  total_duration_ms: number
+  started_at: string
+  completed_at: string | null
+}
+
+export interface TraceDetail extends Trace {
+  steps: TraceStep[]
+}
+
+export interface TraceStep {
+  step_id: string
+  step_name: string
+  agent: string
+  input: string
+  output: string
+  status: string
+  duration_ms: number
+  error_message?: string
+  started_at?: string
+  completed_at?: string
+}
+
+// R1: AI Registry
+export interface RegistryEntity {
+  id: string
+  tenant_id: string
+  entity_type: string
+  name: string
+  description: string
+  version: string
+  provider: string
+  lifecycle_state: string
+  risk_class: string
+  owner: string
+  documentation_url: string
+  created_at: string
+  updated_at: string
+}
+
+// R4: Policy Packs
+export interface PolicyPack {
+  id: string
+  name: string
+  framework: string
+  description: string
+  version: string
+  enabled: boolean
+  applied_at: string | null
+  created_at: string
+}
+
+export interface PolicyControl {
+  id: string
+  pack_id: string
+  control_id: string
+  title: string
+  description: string
+  category: string
+  status: string
+  evidence: string
+  due_date: string | null
+}
+
+// R5: Bias/Fairness
+export interface BiasTest {
+  id: string
+  model_id: string
+  metric_type: string
+  fairness_score: number
+  has_bias: boolean
+  max_gap: number
+  details: Record<string, unknown>
+  recommendations: string[]
+  created_at: string
+}
+
+// R7: Explainability
+export interface ExplainResult {
+  analysis_id?: string
+  entity_id: string
+  entity_name: string
+  entity_type: string
+  method: string
+  base_value: number
+  prediction: number
+  feature_importance: Record<string, number>
+  shap_values: { feature: string; value: number; shap: number; impact: string }[]
+  interpretation: string
+}
+
+// R2: Shadow AI Discovery
+export interface ScanResult {
+  scan_id: string
+  scan_type: string
+  status: string
+  total_found: number
+  findings: DiscoveryFinding[]
+}
+
+export interface DiscoveryFinding {
+  id: string
+  resource_type: string
+  resource_name: string
+  resource_id: string
+  provider: string
+  region: string
+  risk_level: string
+  discovered_at: string
+}
+
+// R6: CI/CD Governance Gate
+export interface GateCheckResult {
+  check_id: string
+  entity_id: string
+  entity_type: string
+  target_env: string
+  decision: string
+  passed: number
+  total: number
+  checks: { name: string; passed: boolean; details: string }[]
+  checked_at: string
+}
+
+export interface GateHistoryEntry {
+  id: string
+  entity_id: string
+  entity_type: string
+  target_env: string
+  decision: string
+  passed_checks: number
+  total_checks: number
+  checked_at: string
+}
+
+// R11: Cost Analytics
+export interface CostEntry {
+  id: string
+  engine_name: string
+  model_name: string
+  operation: string
+  token_count: number
+  cost_usd: number
+  recorded_at: string
+}
+
+export interface CostSummary {
+  period: string
+  total_cost_usd: number
+  total_tokens: number
+  engine_breakdown: { engine: string; cost: number; tokens: number }[]
+}
+
+// R12: Usage Analytics
+export interface UsageMetric {
+  id: string
+  endpoint: string
+  method: string
+  status_code: number
+  latency_ms: number
+  recorded_at: string
+}
+
+export interface UsageSummary {
+  period: string
+  total_requests: number
+  error_rate_pct: number
+  avg_latency_ms: number
+  top_endpoints: { endpoint: string; hits: number; avg_latency_ms: number }[]
+}
+
+// R13: Optimization
+export interface OptimizationRec {
+  id: string
+  category: string
+  title: string
+  description: string
+  impact: string
+  effort: string
+  status: string
+  score_potential: number
+  created_at: string
+}
+
+// R14: Version Tracking
+export interface VersionEntry {
+  id: string
+  entity_type: string
+  entity_id: string
+  entity_name: string
+  old_version: string
+  new_version: string
+  change_notes: string
+  changed_by: string
+  created_at: string
+}
+
+// Generic paginated list response wrapper
+export interface ListResponse<T> {
+  data: T[]
+  has_more: boolean
+}
+
+// R15: Incident Management
+export interface Incident {
+  id: string
+  severity: string
+  category: string
+  title: string
+  status: string
+  source: string
+  entity_id: string
+  assigned_to: string
+  severity_score: number
+  occurred_at: string
+  resolved_at: string | null
+  created_at: string
+}
+
+export interface IncidentListResponse {
+  incidents: Incident[]
+  count: number
+  has_more: boolean
+  open_count: number
+  critical_count: number
+}
+
 export const ENGINE_COLORS: Record<string, string> = {
   perplexity: '#6366f1',
   chatgpt: '#10b981',
   gemini: '#f59e0b',
+  claude: '#ef4444',
+  grok: '#22c55e',
+  copilot: '#a855f7',
 }
 
 export const ENGINE_NAMES: Record<string, string> = {
   perplexity: 'Perplexity',
   chatgpt: 'ChatGPT',
   gemini: 'Gemini',
+  claude: 'Claude',
+  grok: 'Grok',
+  copilot: 'Copilot',
 }

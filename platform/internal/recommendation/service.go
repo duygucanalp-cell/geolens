@@ -287,6 +287,10 @@ func (s *service) EvaluateAll(ctx context.Context, workspaceID, tenantID string)
 		results = append(results, s.evaluateBrand(ctx, evalCtx)...)
 	}
 
+	if rows.Err() != nil {
+		slog.Error("recommendation: marka rows iterasyon hatası", "error", rows.Err())
+	}
+
 	// NG10 filtresi uygula
 	filtered := s.ng10.FilterRecommendations(results)
 	if len(filtered) != len(results) {

@@ -26,26 +26,33 @@ import (
 	"github.com/geolens/platform/internal/apikey"
 	"github.com/geolens/platform/internal/audit"
 	"github.com/geolens/platform/internal/auth"
+	"github.com/geolens/platform/internal/benchmark"
 	"github.com/geolens/platform/internal/bias"
 	"github.com/geolens/platform/internal/billing"
 	"github.com/geolens/platform/internal/compliance"
 	"github.com/geolens/platform/internal/config"
+	"github.com/geolens/platform/internal/cost"
 	"github.com/geolens/platform/internal/delivery"
 	"github.com/geolens/platform/internal/discovery"
 	"github.com/geolens/platform/internal/explain"
 	"github.com/geolens/platform/internal/gate"
 	"github.com/geolens/platform/internal/governance"
 	"github.com/geolens/platform/internal/guardrail"
+	"github.com/geolens/platform/internal/incident"
 	"github.com/geolens/platform/internal/measure"
+	"github.com/geolens/platform/internal/optimize"
 	"github.com/geolens/platform/internal/pdf"
 	"github.com/geolens/platform/internal/pilot"
 	"github.com/geolens/platform/internal/policy"
 	"github.com/geolens/platform/internal/privacy"
+	"github.com/geolens/platform/internal/prompt"
 	"github.com/geolens/platform/internal/public"
 	"github.com/geolens/platform/internal/recommendation"
 	"github.com/geolens/platform/internal/registry"
 	"github.com/geolens/platform/internal/retention"
 	"github.com/geolens/platform/internal/sso"
+	"github.com/geolens/platform/internal/usage"
+	"github.com/geolens/platform/internal/version"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/queue"
@@ -89,7 +96,6 @@ func main() {
 	}
 
 	// Ortak RawSaver: nil-hatasız storage backend
-	// Crypto-shredding: STORAGE_MASTER_KEY varsa EncryptedClient, yoksa plain Client kullan
 	var saver engine.RawSaver
 	if err == nil {
 		if cfg.StorageMasterKey != "" {
@@ -109,36 +115,23 @@ func main() {
 	// Engine registry
 	engines := engine.NewRegistry()
 
-	// Perplexity (Kademe 1)
 	perplexityAdapter := perplexity.NewAdapter(cfg.PerplexityAPIKey, saver)
 	engines.Register(perplexityAdapter)
-
-	// ChatGPT / OpenAI (Kademe 1)
 	chatgptAdapter := chatgpt.NewAdapter(cfg.ChatGPTAPIKey, saver)
 	engines.Register(chatgptAdapter)
-
-	// Gemini / Google AI (Kademe 1)
 	geminiAdapter := gemini.NewAdapter(cfg.GeminiAPIKey, saver)
 	engines.Register(geminiAdapter)
-
-	// Claude / Anthropic (Kademe 2)
 	claudeAdapter := claude.NewAdapter(cfg.ClaudeAPIKey, saver)
 	engines.Register(claudeAdapter)
-
-	// Grok / xAI (Kademe 2)
 	grokAdapter := grok.NewAdapter(cfg.GrokAPIKey, saver)
 	engines.Register(grokAdapter)
-
-	// Copilot / Microsoft (Kademe 3)
 	copilotAdapter := copilot.NewAdapter(cfg.CopilotAPIKey, saver)
 	engines.Register(copilotAdapter)
 
 	slog.Info("motor kayıt defteri hazır", "engine_count", engines.Count(), "engines", engines.List())
 
-	// Rate limit quota checker
 	quotaChecker := governance.NewQuotaChecker(pool)
 
-	// Redis client (queue ile aynı — mevcut bağlantıyı kullan)
 	redisClient, err := queue.NewRedisClient(cfg.RedisURL)
 	if err != nil {
 		slog.Warn("redis istemci oluşturulamadı, cache olmadan çalışılacak", "error", err)
@@ -154,9 +147,7 @@ func main() {
 	measureHandler := measure.NewHandler(pool, engines)
 	auditHandler := audit.NewHandler(pool)
 	deliveryHandler := delivery.NewHandler(pool, delivery.EmailConfig{
-		FromName:    cfg.SendGridFromName,
-		FromEmail:   cfg.SendGridFromEmail,
-		SendGridKey: cfg.SendGridAPIKey,
+		FromName: cfg.SendGridFromName, FromEmail: cfg.SendGridFromEmail, SendGridKey: cfg.SendGridAPIKey,
 	})
 	privacyHandler := privacy.NewHandler(pool)
 	recommendationHandler := recommendation.NewHandler(pool)
@@ -169,120 +160,100 @@ func main() {
 	retentionHandler := retention.NewHandler(pool)
 	pilotHandler := pilot.NewHandler(pool)
 	ssoHandler := sso.NewHandler(pool)
-	registryHandler := registry.NewHandler(pool)
-	policyHandler := policy.NewHandler(pool)
-	guardrailHandler := guardrail.NewHandler(pool)
-	discoveryHandler := discovery.NewHandler(pool)
-	biasHandler := bias.NewHandler(pool)
-	gateHandler := gate.NewHandler(pool)
-	explainHandler := explain.NewHandler(pool)
-	agentHandler := agent.NewHandler(pool)
+	registryHandler := registry.NewProductionHandler(pool)
+	policyHandler := policy.NewProductionHandler(pool)
+	guardrailHandler := guardrail.NewProductionHandler(pool)
+	discoveryHandler := discovery.NewProductionHandler(pool)
+	biasHandler := bias.NewProductionHandler(pool)
+	gateHandler := gate.NewProductionHandler(pool)
+	explainHandler := explain.NewProductionHandler(pool)
+	agentHandler := agent.NewProductionHandler(pool)
+	promptHandler := prompt.NewProductionHandler(pool)
+	benchmarkHandler := benchmark.NewProductionHandler(pool)
+	costHandler := cost.NewProductionHandler(pool)
+	usageHandler := usage.NewProductionHandler(pool)
+	optimizeHandler := optimize.NewProductionHandler(pool)
+	versionHandler := version.NewProductionHandler(pool)
+	incidentHandler := incident.NewProductionHandler(pool)
 
-	// Async rapor işleyiciyi başlat (10 saniyede bir poll)
 	pdf.StartReportProcessor(pool, pdfHandler.Svc(), 10*time.Second)
-
-	// K3: Veri saklama işçisi (24 saatte bir)
 	retentionWorker := retention.NewWorker(pool, cfg.RetentionInterval)
 	go retentionWorker.Start(context.Background())
 
 	// Router
 	r := chi.NewRouter()
 
-	// Global middleware zinciri (sabit sıra — 0501 §5)
 	r.Use(httpmw.PanicRecovery)
 	r.Use(httpmw.RequestID)
 	r.Use(httpmw.SecureHeaders)
 	r.Use(httpmw.RequestTimeout(30 * time.Second))
-	r.Use(httpmw.MaxBodySize(1 << 20)) // 1MB max body
+	r.Use(httpmw.MaxBodySize(1 << 20))
 	r.Use(middleware.RealIP)
-	r.Use(httpmw.MetricsMiddleware) // H14: Prometheus metrikleri
+	r.Use(httpmw.MetricsMiddleware)
 	r.Use(httpmw.Logger)
 	r.Use(httpmw.CORS)
 
-	// Health check (auth'suz)
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"status":"ok"}`))
 	})
-
-	// Prometheus metrics endpoint (auth'suz, herkes erişebilir)
 	r.Get("/metrics", promhttp.Handler().ServeHTTP)
 
-	// Public API v1 (API key auth, FR-F6)
 	r.Route("/public/v1", func(r chi.Router) {
 		r.Use(httpmw.AuthenticateAPIKey(pool))
 		r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/scores/{brandID}", publicHandler.GetScore)
 		r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/trends", publicHandler.ListTrends)
 	})
 
-	// API v1
 	r.Route("/v1", func(r chi.Router) {
-		// JSON body validation for all POST/PUT/PATCH routes
 		r.Use(httpmw.ValidateContentType("application/json"))
 
-		// Public auth routes (JWT gerekmez)
 		r.Post("/auth/register", authHandler.Register)
 		r.Post("/auth/login", authHandler.Login)
 		r.Post("/auth/accept-invitation", authHandler.AcceptInvitation)
-
-		// K1: SSO ACS endpoint — IdP'den gelen SAML yanıtını kabul eder (JWT gerekmez)
 		r.Post("/sso/acs/{tenantId}", ssoHandler.HandleACS)
 
-		// Protected routes (JWT gerekli)
 		r.Group(func(r chi.Router) {
 			r.Use(httpmw.Authenticate(jwtService.TokenValidator(redisClient)))
 			r.Use(httpmw.TenantContext(pool))
 			r.Use(httpmw.RateLimit(quotaChecker, "api_requests_per_hour"))
 
-			// Auth-protected utilities
 			r.Post("/auth/logout", authHandler.Logout)
-
-			// Tenant member management
 			r.Get("/tenant", authHandler.GetTenant)
 			r.Get("/tenant/members", authHandler.ListMembers)
 			r.Patch("/tenant/members/{userId}/role", authHandler.UpdateMemberRole)
 			r.Get("/tenant/invitations", authHandler.ListInvitations)
-			// Pro+ gated: invitation endpoint requires paid tier
 			r.With(httpmw.RequireTier(pool, httpmw.TierPro)).Post("/tenant/invitations", authHandler.InviteMember)
 
-			// KVKK/GDPR account deletion (tenant-level, workspace gerektirmez)
 			r.Post("/account/deletion", privacyHandler.RequestDeletion)
-			r.Post("/privacy/delete", privacyHandler.RequestDeletion) // ADR uyumu alias
+			r.Post("/privacy/delete", privacyHandler.RequestDeletion)
 			r.Get("/deletion-requests", privacyHandler.ListDeletionRequests)
 			r.Post("/deletion-requests/{id}/process", privacyHandler.ProcessDeletionRequest)
-
-			// H5: Multi-customer panorama (tenant-level)
 			r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/tenant/panorama", configHandler.ListWorkspacePanorama)
 
-			// H1: API key management
 			r.With(httpmw.RequireRole(httpmw.RoleAdmin)).Get("/api-keys", apiKeyHandler.List)
 			r.With(httpmw.RequireRole(httpmw.RoleAdmin)).Post("/api-keys", apiKeyHandler.Create)
 			r.With(httpmw.RequireRole(httpmw.RoleAdmin)).Delete("/api-keys/{keyId}", apiKeyHandler.Delete)
 
-			// T3: Audit trail (admin)
 			r.With(httpmw.RequireRole(httpmw.RoleAdmin)).Get("/admin/audit-trail", auditHandler.ListAuditTrail)
 			r.With(httpmw.RequireRole(httpmw.RoleAdmin)).Get("/admin/audit-trail/export", auditHandler.ExportAuditTrail)
 
-			// T1: Billing / self-serve upgrade (authenticated)
 			r.Post("/billing/checkout", billingHandler.CreateCheckoutSession)
 			r.Post("/billing/webhook", billingHandler.HandleWebhook)
 			r.Get("/billing/subscription", billingHandler.GetSubscription)
 
-			// K2: SOC 2 compliance / evidence (authenticated)
 			r.With(httpmw.RequireRole(httpmw.RoleAdmin)).Get("/compliance/soc2", complianceHandler.SOC2Readiness)
 			r.With(httpmw.RequireRole(httpmw.RoleAdmin)).Get("/compliance/report", complianceHandler.ComplianceReport)
 			r.With(httpmw.RequireRole(httpmw.RoleAdmin)).Get("/compliance/evidence", complianceHandler.ListEvidence)
 			r.With(httpmw.RequireRole(httpmw.RoleAdmin)).Get("/compliance/evidence/download", complianceHandler.DownloadEvidence)
 
-			// K4: Pilot program (authenticated)
 			r.Get("/pilot/status", pilotHandler.GetStatus)
 			r.Post("/pilot/enroll", pilotHandler.Enroll)
 			r.Post("/pilot/extend", pilotHandler.ExtendTrial)
 			r.Post("/pilot/cancel", pilotHandler.Cancel)
 			r.With(httpmw.RequireRole(httpmw.RoleAdmin)).Get("/pilot/tenants", pilotHandler.ListAll)
 
-			// K1: SSO/SAML (authenticated)
 			r.Route("/sso", func(r chi.Router) {
 				r.Use(httpmw.RequireRole(httpmw.RoleAdmin))
 				r.Get("/config", ssoHandler.GetConfig)
@@ -293,7 +264,7 @@ func main() {
 				r.Post("/generate-keys", ssoHandler.GenerateKeyPair)
 			})
 
-			// R1: AI Registry (authenticated)
+			// R1: AI Registry
 			r.Route("/registry", func(r chi.Router) {
 				r.Use(httpmw.RequireRole(httpmw.RoleViewer))
 				r.Get("/entities", registryHandler.List)
@@ -304,7 +275,7 @@ func main() {
 				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/entities/{entityId}/assess", registryHandler.AssessRisk)
 			})
 
-			// R4: Policy Packs (authenticated)
+			// R4: Policy Packs
 			r.Route("/policies", func(r chi.Router) {
 				r.Use(httpmw.RequireRole(httpmw.RoleViewer))
 				r.Get("/packs", policyHandler.ListPacks)
@@ -315,7 +286,7 @@ func main() {
 				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/compliance/{entityId}", policyHandler.GetCompliance)
 			})
 
-			// R3: Runtime Guardrails (authenticated)
+			// R3: Runtime Guardrails
 			r.Route("/guardrails", func(r chi.Router) {
 				r.Use(httpmw.RequireRole(httpmw.RoleViewer))
 				r.Get("/rules", guardrailHandler.ListRules)
@@ -326,30 +297,30 @@ func main() {
 				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/evaluate", guardrailHandler.Evaluate)
 			})
 
-			// R2: Shadow AI Discovery (authenticated)
+			// R2: Shadow AI Discovery
 			r.Route("/discovery", func(r chi.Router) {
 				r.Use(httpmw.RequireRole(httpmw.RoleAdmin))
 				r.Post("/scan", discoveryHandler.StartScan)
 				r.Get("/scans/{scanId}", discoveryHandler.GetScanResults)
 			})
 
-			// R5: Bias/Fairness (authenticated)
+			// R5: Bias/Fairness
 			r.Route("/bias", func(r chi.Router) {
 				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/evaluate", biasHandler.Evaluate)
 				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/tests", biasHandler.ListTests)
 			})
 
-			// R6: CI/CD Governance Gate (authenticated)
+			// R6: CI/CD Gate
 			r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/gate/check", gateHandler.Check)
 			r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/gate/history/{entityId}", gateHandler.History)
 
-			// R7: Explainability (authenticated)
+			// R7: Explainability
 			r.Route("/explain", func(r chi.Router) {
 				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Post("/{entityId}", explainHandler.Explain)
 				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/results", explainHandler.ListAnalyses)
 			})
 
-			// R8: Agent Tracing (authenticated)
+			// R8: Agent Tracing
 			r.Route("/agents", func(r chi.Router) {
 				r.Use(httpmw.RequireRole(httpmw.RoleViewer))
 				r.Post("/traces", agentHandler.StartTrace)
@@ -359,18 +330,65 @@ func main() {
 				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/traces/{traceId}/complete", agentHandler.CompleteTrace)
 			})
 
-			// Workspace-scoped routes (auth + workspace membership gerekli)
+			// R9: Prompt Audit
+			r.Route("/prompts", func(r chi.Router) {
+				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/audit", promptHandler.RunAudit)
+				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/audits", promptHandler.ListAudits)
+				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/audits/{auditId}", promptHandler.GetAudit)
+			})
+
+			// R10: Model Benchmark
+			r.Route("/benchmarks", func(r chi.Router) {
+				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/models", benchmarkHandler.RunBenchmark)
+				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/models", benchmarkHandler.ListBenchmarks)
+				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/compare", benchmarkHandler.CompareModels)
+			})
+
+			// R11: Cost Analytics
+			r.Route("/costs", func(r chi.Router) {
+				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/entries", costHandler.RecordCost)
+				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/entries", costHandler.ListCosts)
+				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/summary", costHandler.GetCostSummary)
+			})
+
+			// R12: Usage Analytics
+			r.Route("/usage", func(r chi.Router) {
+				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/metrics", usageHandler.RecordUsage)
+				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/metrics", usageHandler.ListUsage)
+				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/summary", usageHandler.GetUsageSummary)
+			})
+
+			// R13: Optimization Recommendations
+			r.Route("/optimizations", func(r chi.Router) {
+				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/recommendations", optimizeHandler.ListRecommendations)
+				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/recommendations/generate", optimizeHandler.GenerateRecommendations)
+				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Put("/recommendations/{recId}/status", optimizeHandler.UpdateStatus)
+			})
+
+			// R14: Version Tracking
+			r.Route("/versions", func(r chi.Router) {
+				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/entries", versionHandler.RecordVersion)
+				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/entries", versionHandler.ListVersions)
+				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/entries/{entryId}", versionHandler.GetVersionDiff)
+			})
+
+			// R15: Incident Management
+			r.Route("/incidents", func(r chi.Router) {
+				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/events", incidentHandler.ListIncidents)
+				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/events", incidentHandler.CreateIncident)
+				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Put("/events/{incidentId}", incidentHandler.UpdateIncident)
+			})
+
+			// Workspace-scoped routes
 			r.Route("/workspaces/{ws}", func(r chi.Router) {
 				r.Use(httpmw.RequireWorkspace)
 				r.Use(httpmw.RequireWorkspaceAccess(pool))
 
-				// Cache middleware (GET endpoint'leri için Redis önbellek)
 				var cacheCfg httpmw.CacheConfig
 				if redisClient != nil {
 					cacheCfg = httpmw.CacheConfig{RDB: redisClient, TTL: 30 * time.Second}
 				}
 
-				// Viewer+ (GET routes — okuma erişimi)
 				r.Group(func(r chi.Router) {
 					r.Use(httpmw.CacheMiddleware(cacheCfg))
 					r.Use(httpmw.RequireRole(httpmw.RoleViewer))
@@ -385,17 +403,14 @@ func main() {
 					r.Get("/recommendations", recommendationHandler.ListRecommendations)
 				})
 
-				// Admin-only routes
 				r.Group(func(r chi.Router) {
 					r.Use(httpmw.RequireRole(httpmw.RoleAdmin))
 					r.Post("/brands", configHandler.CreateBrand)
-					// H4: Archive/transfer
 					r.Post("/archive", configHandler.ArchiveWorkspace)
 					r.Post("/unarchive", configHandler.UnarchiveWorkspace)
 					r.Post("/transfer", configHandler.TransferWorkspace)
 				})
 
-				// Viewer+ routes (setup-status, citations, benchmark, alert-rules, report status, impact, radar, findings)
 				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/setup-status", configHandler.GetSetupStatus)
 				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/citations", measureHandler.ListCitations)
 				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/benchmark", measureHandler.ListBenchmark)
@@ -408,16 +423,13 @@ func main() {
 				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/recommendations/rules", recommendationHandler.ListRules)
 				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/recommendations/rules/{sector}", recommendationHandler.ListRulesBySector)
 				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/benchmark/context", measureHandler.GetBenchmarkContext)
-				// X9: Measurement status
 				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/measurements/{runId}/status", measureHandler.GetMeasurementStatus)
 
-				// K3: Data retention (viewer — okuma, editor — yazma)
 				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/retention/policies", retentionHandler.ListPolicies)
 				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/retention/archive-summary", retentionHandler.GetArchiveSummary)
 				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Put("/retention/policies", retentionHandler.UpsertPolicy)
 				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Delete("/retention/policies/{policyId}", retentionHandler.DeletePolicy)
 
-				// Editor+ routes (yazma/aksiyon işlemleri)
 				r.Group(func(r chi.Router) {
 					r.Use(httpmw.RequireRole(httpmw.RoleEditor))
 					r.Post("/panels", panelHandler.CreatePanel)
@@ -428,11 +440,8 @@ func main() {
 					r.Post("/notifications/test", deliveryHandler.SendTestEmail)
 					r.Post("/recommendations/{recId}/apply", recommendationHandler.MarkApplied)
 					r.Post("/recommendations/{recId}/dismiss", recommendationHandler.MarkDismissed)
-
-					// Async report request (FR-F5)
 					r.Post("/reports", pdfHandler.RequestReport)
 
-					// Pro+ features: sync reports
 					r.Group(func(r chi.Router) {
 						r.Use(httpmw.RequireTier(pool, httpmw.TierPro))
 						r.Post("/reports/digest", pdfHandler.GenerateWeeklyDigest)
@@ -440,17 +449,14 @@ func main() {
 						r.Post("/reports/audit", pdfHandler.GenerateAuditReport)
 					})
 
-					// Alert rules CRUD (editor, marka bazlı uyarı ayarları)
 					r.Post("/alert-rules", alertHandler.Create)
 					r.Put("/alert-rules/{ruleId}", alertHandler.Update)
 					r.Delete("/alert-rules/{ruleId}", alertHandler.Delete)
 				})
-
 			})
 		})
 	})
 
-	// HTTP sunucusu
 	srv := &http.Server{
 		Addr:         ":" + cfg.Port,
 		Handler:      r,
@@ -459,7 +465,6 @@ func main() {
 		IdleTimeout:  60 * time.Second,
 	}
 
-	// Graceful shutdown
 	go func() {
 		slog.Info("api sunucusu başlatılıyor", "port", cfg.Port)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {

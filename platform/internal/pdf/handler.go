@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/geolens/platform/internal/dbiface"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/httputil"
@@ -16,15 +17,17 @@ import (
 
 // Handler holds dependencies for PDF HTTP handlers.
 type Handler struct {
-	svc  Service
-	pool *db.Pool
+	svc     Service
+	pool    dbiface.DB
+	rawPool *db.Pool
 }
 
 // NewHandler creates a new PDF handler.
 func NewHandler(pool *db.Pool) *Handler {
 	return &Handler{
-		svc:  NewService(pool),
-		pool: pool,
+		svc:     NewService(pool),
+		pool:    dbiface.NewAdapter(pool),
+		rawPool: pool,
 	}
 }
 

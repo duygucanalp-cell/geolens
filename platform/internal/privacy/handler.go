@@ -6,10 +6,12 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
+
+	"github.com/geolens/platform/internal/dbiface"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/httputil"
-	"github.com/go-chi/chi/v5"
 )
 
 // ---- Request/Response Types ----
@@ -31,12 +33,16 @@ type processRequest struct {
 
 // Handler holds dependencies for privacy/KVKK HTTP handlers.
 type Handler struct {
-	pool *db.Pool
+	pool    dbiface.DB
+	rawPool *db.Pool
 }
 
 // NewHandler creates a new privacy handler.
 func NewHandler(pool *db.Pool) *Handler {
-	return &Handler{pool: pool}
+	return &Handler{
+		pool:    dbiface.NewAdapter(pool),
+		rawPool: pool,
+	}
 }
 
 // userRoleFromDB looks up the user's role from the membership table directly.
@@ -218,6 +224,10 @@ func (h *Handler) ListDeletionRequests(w http.ResponseWriter, r *http.Request) {
 		}
 
 		requests = append(requests, r)
+	}
+
+	if rows.Err() != nil {
+		slog.Warn("silme talepleri rows iterasyon hatası", "error", rows.Err())
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{

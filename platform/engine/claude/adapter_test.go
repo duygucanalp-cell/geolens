@@ -1,6 +1,7 @@
 package claude
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 )
@@ -21,7 +22,7 @@ func TestTier(t *testing.T) {
 
 func TestExecuteMock(t *testing.T) {
 	a := NewAdapter("mock", nil)
-	resp, err := a.Execute("test prompt")
+	resp, err := a.Execute(context.Background(), "test prompt")
 	if err != nil {
 		t.Fatalf("Execute() error = %v", err)
 	}
@@ -103,7 +104,7 @@ func TestParseResponseInvalidJSON(t *testing.T) {
 
 func TestMarshalRoundTrip(t *testing.T) {
 	a := NewAdapter("mock", nil)
-	resp, err := a.Execute("test")
+	resp, err := a.Execute(context.Background(), "test")
 	if err != nil {
 		t.Fatal(err)
 	}

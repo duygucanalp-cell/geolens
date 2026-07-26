@@ -94,7 +94,7 @@ func (a *Adapter) Name() string { return "grok" }
 
 func (a *Adapter) Tier() engine.Tier { return tier }
 
-func (a *Adapter) Execute(prompt string) (*engine.RawResponse, error) {
+func (a *Adapter) Execute(ctx context.Context, prompt string) (*engine.RawResponse, error) {
 	if a.apiKey == "" || a.apiKey == "mock" {
 		return mockResponse(prompt), nil
 	}
@@ -109,7 +109,7 @@ func (a *Adapter) Execute(prompt string) (*engine.RawResponse, error) {
 		return nil, fmt.Errorf("grok istek serileştirme: %w", err)
 	}
 
-	httpReq, err := http.NewRequest("POST", apiURL, bytes.NewReader(body))
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("grok http istek: %w", err)
 	}

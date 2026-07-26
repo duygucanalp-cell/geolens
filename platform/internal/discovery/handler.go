@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/geolens/platform/internal/dbiface"
 	"github.com/geolens/platform/internal/id"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
@@ -16,11 +17,15 @@ import (
 )
 
 type Handler struct {
-	pool *db.Pool
+	pool dbiface.DB
 }
 
-func NewHandler(pool *db.Pool) *Handler {
+func NewHandler(pool dbiface.DB) *Handler {
 	return &Handler{pool: pool}
+}
+
+func NewProductionHandler(pool *db.Pool) *Handler {
+	return NewHandler(dbiface.NewAdapter(pool))
 }
 
 func (h *Handler) StartScan(w http.ResponseWriter, r *http.Request) {
@@ -81,11 +86,10 @@ func (h *Handler) runScan(ctx context.Context, cancel context.CancelFunc, scanID
 		default:
 		}
 
-		_, err := h.pool.Exec(ctx, `
+		if _, err := h.pool.Exec(ctx, `
 			INSERT INTO discovery.findings (scan_id, tenant_id, resource_type, resource_name, resource_id, provider, region, risk_level, details)
 			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb)
-		`, scanID, tenantID, f.ResourceType, f.ResourceName, f.ResourceID, f.Provider, f.Region, f.RiskLevel, f.Details)
-		if err != nil {
+		`, scanID, tenantID, f.ResourceType, f.ResourceName, f.ResourceID, f.Provider, f.Region, f.RiskLevel, f.Details); err != nil {
 			slog.Error("finding kayıt hatası", "error", err)
 		}
 
@@ -218,9 +222,14 @@ func (h *Handler) GetScanResults(w http.ResponseWriter, r *http.Request) {
 		var f FindingRow
 		if err := rows.Scan(&f.ResourceType, &f.ResourceName, &f.ResourceID, &f.Provider,
 			&f.Region, &f.RiskLevel, &f.Details, &f.DiscoveredAt); err != nil {
+			slog.Warn("discovery finding satır okuma hatası", "scan_id", scanID, "error", err)
 			continue
 		}
 		findings = append(findings, f)
+	}
+
+	if rows.Err() != nil {
+		slog.Warn("discovery finding rows iterasyon hatası", "scan_id", scanID, "error", rows.Err())
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{

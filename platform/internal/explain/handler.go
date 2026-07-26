@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/geolens/platform/internal/dbiface"
 	"github.com/geolens/platform/internal/id"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
@@ -17,11 +18,15 @@ import (
 )
 
 type Handler struct {
-	pool *db.Pool
+	pool dbiface.DB
 }
 
-func NewHandler(pool *db.Pool) *Handler {
+func NewHandler(pool dbiface.DB) *Handler {
 	return &Handler{pool: pool}
+}
+
+func NewProductionHandler(pool *db.Pool) *Handler {
+	return NewHandler(dbiface.NewAdapter(pool))
 }
 
 func (h *Handler) Explain(w http.ResponseWriter, r *http.Request) {
@@ -114,6 +119,7 @@ func (h *Handler) ListAnalyses(w http.ResponseWriter, r *http.Request) {
 		limitInt = 20
 	}
 
+	// LIMIT+1 pattern for has_more
 	query := `SELECT id, entity_id, method, base_value, prediction, feature_importance, shap_values, interpretation, created_at
 		FROM explain.results WHERE tenant_id = $1`
 	args := []interface{}{tenantID}
@@ -122,10 +128,10 @@ func (h *Handler) ListAnalyses(w http.ResponseWriter, r *http.Request) {
 		query += ` AND entity_id = $2`
 		args = append(args, entityID)
 		query += ` ORDER BY created_at DESC LIMIT $3`
-		args = append(args, limitInt)
+		args = append(args, limitInt+1)
 	} else {
 		query += ` ORDER BY created_at DESC LIMIT $2`
-		args = append(args, limitInt)
+		args = append(args, limitInt+1)
 	}
 
 	rows, err := h.pool.Query(r.Context(), query, args...)
@@ -160,11 +166,23 @@ func (h *Handler) ListAnalyses(w http.ResponseWriter, r *http.Request) {
 		results = append(results, res)
 	}
 
+	hasMore := len(results) > limitInt
+	if hasMore {
+		results = results[:limitInt]
+	}
+
 	if results == nil {
 		results = []analysisResult{}
 	}
 
-	httputil.WriteJSON(w, http.StatusOK, results)
+	if rows.Err() != nil {
+		slog.Warn("açıklama listesi rows iterasyon hatası", "error", rows.Err())
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"data":     results,
+		"has_more": hasMore,
+	})
 }
 
 // computeFeatureImportance — risk_class ve confidence'a göre dinamik ağırlıklar üretir

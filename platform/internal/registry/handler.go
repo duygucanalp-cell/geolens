@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/geolens/platform/internal/dbiface"
 	"github.com/geolens/platform/internal/search"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
@@ -69,12 +70,19 @@ func (e *esIndexer) DeleteEntity(ctx context.Context, entityID string) error {
 }
 
 type Handler struct {
-	pool    *db.Pool
+	pool    dbiface.DB
 	indexer Indexer
 }
 
-func NewHandler(pool *db.Pool) *Handler {
+// NewHandler creates a registry handler with the given DB interface.
+// This allows injecting mock DB implementations in tests.
+func NewHandler(pool dbiface.DB) *Handler {
 	return &Handler{pool: pool, indexer: noopIndexer{}}
+}
+
+// NewProductionHandler creates a registry handler with a *db.Pool for production use.
+func NewProductionHandler(pool *db.Pool) *Handler {
+	return NewHandler(dbiface.NewAdapter(pool))
 }
 
 // WithIndexer sets the Elasticsearch indexer for registry entities.
@@ -148,6 +156,10 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		entities = append(entities, e)
+	}
+
+	if rows.Err() != nil {
+		slog.Error("registry rows iterasyon hatası", "error", rows.Err())
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{"entities": entities})

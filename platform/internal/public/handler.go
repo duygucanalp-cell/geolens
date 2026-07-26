@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/geolens/platform/internal/dbiface"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/httputil"
@@ -14,12 +15,12 @@ import (
 
 // Handler serves public API endpoints under /public/v1
 type Handler struct {
-	pool *db.Pool
+	pool dbiface.DB
 }
 
 // NewHandler creates a new public API Handler.
 func NewHandler(pool *db.Pool) *Handler {
-	return &Handler{pool: pool}
+	return &Handler{pool: dbiface.NewAdapter(pool)}
 }
 
 // GetScore handles GET /public/v1/scores/{brandID}
@@ -101,6 +102,10 @@ func (h *Handler) ListTrends(w http.ResponseWriter, r *http.Request) {
 		}
 		t.MeasuredAt = measuredAt.Format(time.RFC3339)
 		trends = append(trends, t)
+	}
+
+	if rows.Err() != nil {
+		slog.Warn("public trends rows iterasyon hatası", "error", rows.Err())
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{"trends": trends})

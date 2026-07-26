@@ -65,7 +65,8 @@ type Adapter interface {
 
 	// Execute sends a prompt to the AI engine and returns the normalized response.
 	// API çağrısı + yanıt ayrıştırma tek adımda yapılır.
-	Execute(prompt string) (*RawResponse, error)
+	// ctx: cancel/timeout desteği için context parametresi.
+	Execute(ctx context.Context, prompt string) (*RawResponse, error)
 }
 
 // ---- Engine Registry ----

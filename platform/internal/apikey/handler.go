@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/geolens/platform/internal/dbiface"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/httputil"
@@ -18,12 +19,12 @@ import (
 
 // Handler holds dependencies for API key management.
 type Handler struct {
-	pool *db.Pool
+	pool dbiface.DB
 }
 
 // NewHandler creates a new API key Handler.
 func NewHandler(pool *db.Pool) *Handler {
-	return &Handler{pool: pool}
+	return &Handler{pool: dbiface.NewAdapter(pool)}
 }
 
 // List handles GET /v1/api-keys
@@ -62,6 +63,10 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		keys = append(keys, k)
+	}
+
+	if rows.Err() != nil {
+		slog.Warn("api key rows iterasyon hatası", "error", rows.Err())
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{"keys": keys})

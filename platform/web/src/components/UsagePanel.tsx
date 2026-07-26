@@ -1,0 +1,151 @@
+import { useEffect, useState } from 'react'
+import { getUsageMetrics, getUsageSummary } from '../api/client'
+import type { UsageMetric, UsageSummary } from '../types'
+
+interface Props {
+  workspaceId: string
+}
+
+type Period = '1d' | '7d' | '30d' | '90d'
+
+export function UsagePanel({ workspaceId: _ws }: Props) {
+  const [metrics, setMetrics] = useState<UsageMetric[]>([])
+  const [summary, setSummary] = useState<UsageSummary | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [period, setPeriod] = useState<Period>('7d')
+
+  useEffect(() => { loadData() }, [period])
+
+  async function loadData() {
+    try {
+      setLoading(true)
+      setError(null)
+      const [m, s] = await Promise.all([getUsageMetrics(), getUsageSummary(period)])
+      setMetrics(m)
+      setSummary(s)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Kullanım verileri yüklenemedi')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) return <div className="dashboard-loading">Kullanım verileri yükleniyor...</div>
+  if (error) return <div className="dashboard-error"><p>{error}</p><button onClick={loadData}>Tekrar Dene</button></div>
+
+  return (
+    <div className="monitoring-panel">
+      <div className="monitoring-header">
+        <h3>📊 Kullanım Analitiği</h3>
+        <p className="monitoring-desc">API kullanım metrikleri, hata oranları ve performans.</p>
+      </div>
+
+      <div className="dashboard-filters">
+        <select value={period} onChange={(e) => setPeriod(e.target.value as Period)} className="filter-select">
+          <option value="1d">Son 24 Saat</option>
+          <option value="7d">Son 7 Gün</option>
+          <option value="30d">Son 30 Gün</option>
+          <option value="90d">Son 90 Gün</option>
+        </select>
+        <button className="refresh-btn" onClick={loadData}>Yenile</button>
+      </div>
+
+      {summary && (
+        <div className="monitoring-quick-stats" style={{ marginBottom: '1.5rem' }}>
+          <div className="quick-stat">
+            <span className="quick-stat-label">Toplam İstek</span>
+            <span style={{ fontSize: '1.5rem', fontWeight: 700, color: '#6366f1' }}>
+              {summary.total_requests}
+            </span>
+          </div>
+          <div className="quick-stat">
+            <span className="quick-stat-label">Hata Oranı</span>
+            <span style={{
+              fontSize: '1.5rem', fontWeight: 700,
+              color: summary.error_rate_pct > 5 ? '#ef4444' : summary.error_rate_pct > 1 ? '#eab308' : '#22c55e',
+            }}>
+              %{summary.error_rate_pct.toFixed(1)}
+            </span>
+          </div>
+          <div className="quick-stat">
+            <span className="quick-stat-label">Ortalama Gecikme</span>
+            <span style={{ fontSize: '1.5rem', fontWeight: 700, color: '#6366f1' }}>
+              {summary.avg_latency_ms.toFixed(0)}ms
+            </span>
+          </div>
+        </div>
+      )}
+
+      {summary && summary.top_endpoints.length > 0 && (
+        <div style={{ marginBottom: '1.5rem' }}>
+          <h4 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.75rem', color: '#334155' }}>
+            En Çok Kullanılan Endpoint'ler
+          </h4>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
+                <th style={{ padding: '0.5rem' }}>Endpoint</th>
+                <th style={{ padding: '0.5rem', textAlign: 'right' }}>İstek</th>
+                <th style={{ padding: '0.5rem', textAlign: 'right' }}>Ort. Gecikme</th>
+              </tr>
+            </thead>
+            <tbody>
+              {summary.top_endpoints.map((ep, i) => (
+                <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <td style={{ padding: '0.5rem', fontFamily: 'monospace', fontSize: '0.8rem' }}>{ep.endpoint}</td>
+                  <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 600 }}>{ep.hits}</td>
+                  <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ep.avg_latency_ms.toFixed(0)}ms</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {metrics.length > 0 ? (
+        <div>
+          <h4 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.75rem', color: '#334155' }}>
+            Son Metrikler
+          </h4>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
+                <th style={{ padding: '0.5rem' }}>Endpoint</th>
+                <th style={{ padding: '0.5rem' }}>Method</th>
+                <th style={{ padding: '0.5rem', textAlign: 'right' }}>Durum</th>
+                <th style={{ padding: '0.5rem', textAlign: 'right' }}>Gecikme</th>
+                <th style={{ padding: '0.5rem' }}>Tarih</th>
+              </tr>
+            </thead>
+            <tbody>
+              {metrics.map((m) => (
+                <tr key={m.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <td style={{ padding: '0.5rem', fontFamily: 'monospace', fontSize: '0.8rem' }}>{m.endpoint}</td>
+                  <td style={{ padding: '0.5rem', fontWeight: 600 }}>{m.method}</td>
+                  <td style={{
+                    padding: '0.5rem', textAlign: 'right',
+                    color: m.status_code >= 400 ? '#ef4444' : '#22c55e',
+                    fontWeight: 600,
+                  }}>
+                    {m.status_code}
+                  </td>
+                  <td style={{ padding: '0.5rem', textAlign: 'right' }}>{m.latency_ms}ms</td>
+                  <td style={{ padding: '0.5rem', color: '#94a3b8', fontSize: '0.8rem' }}>
+                    {new Date(m.recorded_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="rec-empty">
+          <div className="rec-empty-icon">📊</div>
+          <h4>Henüz kullanım verisi yok</h4>
+          <p>API kullanımı başladıkça metrikler burada görünecek.</p>
+        </div>
+      )}
+    </div>
+  )
+}

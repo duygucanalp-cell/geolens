@@ -28,10 +28,12 @@ func (h *Handler) ArchiveWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Tüm brand'leri de arşivle
-	_, _ = h.pool.Exec(r.Context(), `
+	if _, err := h.pool.Exec(r.Context(), `
 		UPDATE config.brands SET archived_at = $1, is_active = false, updated_at = $1
 		WHERE workspace_id = $2 AND tenant_id = $3
-	`, now, workspaceID, tenantID)
+	`, now, workspaceID, tenantID); err != nil {
+		slog.Warn("brand arşivleme hatası (non-fatal)", "error", err)
+	}
 
 	httputil.WriteJSON(w, http.StatusOK, map[string]string{
 		"status":      "archived",

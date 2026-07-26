@@ -67,6 +67,10 @@ func (w *Worker) processExpired(ctx context.Context) error {
 		policies = append(policies, p)
 	}
 
+	if rows.Err() != nil {
+		slog.Error("retention worker rows iterasyon hatası", "error", rows.Err())
+	}
+
 	for _, p := range policies {
 		if err := w.applyPolicy(ctx, p); err != nil {
 			slog.Error("politika uygulama hatası", "entity_type", p.entityType, "tenant", p.tenantID, "error", err)

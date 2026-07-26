@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/geolens/platform/internal/dbiface"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/httputil"
@@ -13,17 +14,19 @@ import (
 
 // Handler holds dependencies for delivery HTTP handlers.
 type Handler struct {
-	svc    Service
-	pool   *db.Pool
-	config EmailConfig
+	svc     Service
+	pool    dbiface.DB
+	rawPool *db.Pool
+	config  EmailConfig
 }
 
 // NewHandler creates a new delivery handler.
 func NewHandler(pool *db.Pool, cfg EmailConfig) *Handler {
 	return &Handler{
-		svc:    NewService(cfg, pool),
-		pool:   pool,
-		config: cfg,
+		svc:     NewService(cfg, pool),
+		pool:    dbiface.NewAdapter(pool),
+		rawPool: pool,
+		config:  cfg,
 	}
 }
 

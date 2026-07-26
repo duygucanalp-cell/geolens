@@ -55,6 +55,27 @@ func processPendingReports(pool *db.Pool, svc Service) {
 			slog.Warn("rapor durum güncelleme hatası", "id", id, "error", err)
 		}
 
+	}
+
+	if rows.Err() != nil {
+		slog.Warn("pdf worker rows iterasyon hatası", "error", rows.Err())
+	}
+
+	for rows.Next() {
+		var id, tenantID, workspaceID, reportType, brandID, paramsJSON string
+		if err := rows.Scan(&id, &tenantID, &workspaceID, &reportType, &brandID, &paramsJSON); err != nil {
+			slog.Warn("rapor satır okuma hatası", "error", err)
+			continue
+		}
+
+		// generating olarak işaretle
+		if _, err := pool.Exec(ctx, `
+			UPDATE measure.reports SET status = 'generating', updated_at = now()
+			WHERE id = $1 AND status = 'pending'
+		`, id); err != nil {
+			slog.Warn("rapor durum güncelleme hatası", "id", id, "error", err)
+		}
+
 		var params map[string]string
 		if err := json.Unmarshal([]byte(paramsJSON), &params); err != nil {
 			slog.Warn("rapor parametre çözümleme hatası", "id", id, "error", err)

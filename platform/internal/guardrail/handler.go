@@ -10,13 +10,14 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/geolens/platform/internal/dbiface"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/httputil"
 )
 
 type Handler struct {
-	pool *db.Pool
+	pool dbiface.DB
 }
 
 type guardRule struct {
@@ -28,8 +29,12 @@ type guardRule struct {
 	Severity string
 }
 
-func NewHandler(pool *db.Pool) *Handler {
+func NewHandler(pool dbiface.DB) *Handler {
 	return &Handler{pool: pool}
+}
+
+func NewProductionHandler(pool *db.Pool) *Handler {
+	return NewHandler(dbiface.NewAdapter(pool))
 }
 
 type Rule struct {
@@ -64,9 +69,14 @@ func (h *Handler) ListRules(w http.ResponseWriter, r *http.Request) {
 		var r Rule
 		if err := rows.Scan(&r.ID, &r.TenantID, &r.Name, &r.Category, &r.Pattern,
 			&r.Action, &r.Severity, &r.Enabled, &r.CreatedAt, &r.UpdatedAt); err != nil {
+			slog.Warn("guardrail rule satır okuma hatası", "error", err)
 			continue
 		}
 		rules = append(rules, r)
+	}
+
+	if rows.Err() != nil {
+		slog.Warn("guardrail rule rows iterasyon hatası", "error", rows.Err())
 	}
 
 	// R3: tenant hiç kural oluşturmamışsa varsayılanları yükle
@@ -84,9 +94,13 @@ func (h *Handler) ListRules(w http.ResponseWriter, r *http.Request) {
 				var r Rule
 				if err := rows2.Scan(&r.ID, &r.TenantID, &r.Name, &r.Category, &r.Pattern,
 					&r.Action, &r.Severity, &r.Enabled, &r.CreatedAt, &r.UpdatedAt); err != nil {
+					slog.Warn("guardrail rule (seed tekrar) satır okuma hatası", "error", err)
 					continue
 				}
 				rules = append(rules, r)
+			}
+			if rows2.Err() != nil {
+				slog.Warn("guardrail rule (seed tekrar) rows iterasyon hatası", "error", rows2.Err())
 			}
 		}
 	}
@@ -161,9 +175,14 @@ func (h *Handler) Evaluate(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var r guardRule
 		if err := rows.Scan(&r.ID, &r.Name, &r.Category, &r.Pattern, &r.Action, &r.Severity); err != nil {
+			slog.Warn("guardrail evaluation rule satır okuma hatası", "error", err)
 			continue
 		}
 		rules = append(rules, r)
+	}
+
+	if rows.Err() != nil {
+		slog.Warn("guardrail evaluation rows iterasyon hatası", "error", rows.Err())
 	}
 
 	type evalResult struct {

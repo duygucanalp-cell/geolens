@@ -1,6 +1,7 @@
 package gate
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/geolens/platform/internal/dbiface"
 	"github.com/geolens/platform/internal/id"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
@@ -16,11 +18,15 @@ import (
 )
 
 type Handler struct {
-	pool *db.Pool
+	pool dbiface.DB
 }
 
-func NewHandler(pool *db.Pool) *Handler {
+func NewHandler(pool dbiface.DB) *Handler {
 	return &Handler{pool: pool}
+}
+
+func NewProductionHandler(pool *db.Pool) *Handler {
+	return NewHandler(dbiface.NewAdapter(pool))
 }
 
 // CheckResult represents a single governance check within a gate evaluation.
@@ -163,16 +169,19 @@ func (h *Handler) History(w http.ResponseWriter, r *http.Request) {
 	tenantID := httpmw.GetTenantID(r.Context())
 	entityID := chi.URLParam(r, "entityId")
 
+	limit := 50
+
+	// LIMIT+1 pattern for has_more
 	rows, err := h.pool.Query(r.Context(), `
 		SELECT id, entity_id, entity_type, target_env, version, decision, passed_checks, total_checks, created_at
 		FROM gate.checks
 		WHERE tenant_id = $1 AND ($2 = '' OR entity_id = $2)
 		ORDER BY created_at DESC
-		LIMIT 50
-	`, tenantID, entityID)
+		LIMIT $3
+	`, tenantID, entityID, limit+1)
 	if err != nil {
 		slog.Warn("gate history sorgu hatası", "error", err)
-		httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{"history": []interface{}{}, "total": 0})
+		httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{"history": []interface{}{}, "has_more": false, "total": 0})
 		return
 	}
 	defer rows.Close()
@@ -201,10 +210,20 @@ func (h *Handler) History(w http.ResponseWriter, r *http.Request) {
 		history = append(history, e)
 	}
 
+	hasMore := len(history) > limit
+	if hasMore {
+		history = history[:limit]
+	}
+
+	if rows.Err() != nil {
+		slog.Warn("gate history rows iterasyon hatası", "error", rows.Err())
+	}
+
 	httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{
 		"entity_id": entityID,
 		"tenant_id": tenantID,
 		"history":   history,
+		"has_more":  hasMore,
 		"total":     len(history),
 	})
 }

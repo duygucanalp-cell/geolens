@@ -7,12 +7,12 @@ import (
 	"crypto/x509/pkix"
 	"encoding/json"
 	"encoding/pem"
+	"encoding/xml"
 	"log/slog"
 	"math/big"
 	"net/http"
 	"time"
 
-	"github.com/beevik/etree"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/httputil"
@@ -108,59 +108,40 @@ func (h *Handler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetSPMetadata(w http.ResponseWriter, r *http.Request) {
 	tenantID := httpmw.GetTenantID(r.Context())
 
-	var cfg SSOConfig
-	err := h.pool.QueryRow(r.Context(), `
-		SELECT id, tenant_id, idp_entity_id, idp_sso_url, idp_cert,
-			sp_entity_id, sp_acs_url, enabled, created_at, updated_at
-		FROM sso.configs WHERE tenant_id = $1
-	`, tenantID).Scan(
-		&cfg.ID, &cfg.TenantID, &cfg.IdpEntityID, &cfg.IdpSSOURL, &cfg.IdpCert,
-		&cfg.SpEntityID, &cfg.SpACSURL, &cfg.Enabled, &cfg.CreatedAt, &cfg.UpdatedAt,
-	)
+	cfg, err := h.loadConfig(r, tenantID)
 	if err != nil {
 		httputil.WriteJSON(w, http.StatusNotFound, map[string]string{"error": "SSO yapılandırması bulunamadı"})
 		return
 	}
 
-	spEntityID := cfg.SpEntityID
-	if spEntityID == "" {
-		spEntityID = "https://geolens.app/saml/" + tenantID
-	}
-	acsURL := cfg.SpACSURL
-	if acsURL == "" {
-		acsURL = "https://geolens.app/v1/sso/acs/" + tenantID
-	}
-
-	// Use etree for safe XML building (prevents XML injection)
-	doc := etree.NewDocument()
-	doc.WriteSettings = etree.WriteSettings{
-		CanonicalEndTags: false,
-	}
-	doc.CreateProcInst("xml", `version="1.0"`)
-
-	entityDesc := doc.CreateElement("md:EntityDescriptor")
-	entityDesc.CreateAttr("xmlns:md", "urn:oasis:names:tc:SAML:2.0:metadata")
-	entityDesc.CreateAttr("entityID", spEntityID)
-
-	spDescriptor := entityDesc.CreateElement("md:SPSSODescriptor")
-	spDescriptor.CreateAttr("AuthnRequestsSigned", "false")
-	spDescriptor.CreateAttr("WantAssertionsSigned", "true")
-	spDescriptor.CreateAttr("protocolSupportEnumeration", "urn:oasis:names:tc:SAML:2.0:protocol")
-
-	acs := spDescriptor.CreateElement("md:AssertionConsumerService")
-	acs.CreateAttr("Binding", "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST")
-	acs.CreateAttr("Location", acsURL)
-	acs.CreateAttr("index", "0")
-
-	metadata, err := doc.WriteToBytes()
+	// SP için ephemeral key pair oluştur (metadata'da cert gösterimi için)
+	spKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
-		slog.Error("SAML metadata XML oluşturma hatası", "error", err)
+		slog.Error("SP anahtar oluşturma hatası", "error", err)
+		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "metadata oluşturulamadı"})
+		return
+	}
+
+	// crewjam/saml kullanarak SP metadata'sı oluştur
+	sp, err := buildSPFromConfig(cfg, spKey, nil)
+	if err != nil {
+		slog.Error("SP oluşturma hatası", "error", err)
+		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "metadata oluşturulamadı"})
+		return
+	}
+
+	md := sp.Metadata()
+
+	// XML olarak serileştir
+	buf, err := xml.MarshalIndent(md, "", "  ")
+	if err != nil {
+		slog.Error("metadata XML serileştirme hatası", "error", err)
 		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "metadata oluşturulamadı"})
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/samlmetadata+xml")
-	w.Write(metadata)
+	w.Write(buf)
 }
 
 func (h *Handler) HandleACS(w http.ResponseWriter, r *http.Request) {
@@ -177,29 +158,29 @@ func (h *Handler) HandleACS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var idpCert string
-	err := h.pool.QueryRow(r.Context(), `
-		SELECT idp_cert FROM sso.configs WHERE tenant_id = $1 AND enabled = true
-	`, tenantID).Scan(&idpCert)
+	cfg, err := h.loadConfig(r, tenantID)
 	if err != nil {
 		httputil.WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "SSO etkin değil"})
 		return
 	}
 
-	result, err := parseAndVerifySAMLResponse(samlResp, idpCert)
+	// SP için ephemeral key pair (crewjam/saml için gerekli)
+	spKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		slog.Error("SP anahtar oluşturma hatası", "error", err)
+		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "SAML işleme hatası"})
+		return
+	}
+
+	// crewjam/saml ile SAML yanıtını ayrıştır ve doğrula
+	assertion, err := parseAndVerifySAMLResponse(r, cfg, spKey, nil)
 	if err != nil {
 		httputil.WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
 		return
 	}
 
-	email := result.GetAttribute("email")
-	name := result.GetAttribute("name")
-	if name == "" {
-		name = result.GetAttribute("displayName")
-	}
-	if email == "" {
-		email = result.NameID()
-	}
+	email := extractEmailFromAssertion(assertion)
+	name := extractNameFromAssertion(assertion)
 	if email == "" {
 		httputil.WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "SAML yanıtında email bulunamadı"})
 		return
@@ -226,6 +207,23 @@ func (h *Handler) HandleACS(w http.ResponseWriter, r *http.Request) {
 		"tenant_id":    tenantID,
 		"message":      "SSO giriş başarılı",
 	})
+}
+
+// loadConfig loads the SSO configuration for the given tenant.
+func (h *Handler) loadConfig(r *http.Request, tenantID string) (*SSOConfig, error) {
+	var cfg SSOConfig
+	err := h.pool.QueryRow(r.Context(), `
+		SELECT id, tenant_id, idp_entity_id, idp_sso_url, idp_cert,
+			sp_entity_id, sp_acs_url, enabled, created_at, updated_at
+		FROM sso.configs WHERE tenant_id = $1 AND enabled = true
+	`, tenantID).Scan(
+		&cfg.ID, &cfg.TenantID, &cfg.IdpEntityID, &cfg.IdpSSOURL, &cfg.IdpCert,
+		&cfg.SpEntityID, &cfg.SpACSURL, &cfg.Enabled, &cfg.CreatedAt, &cfg.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &cfg, nil
 }
 
 func (h *Handler) Enable(w http.ResponseWriter, r *http.Request) {

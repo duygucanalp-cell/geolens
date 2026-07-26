@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/geolens/platform/internal/dbiface"
 	"github.com/geolens/platform/internal/id"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
@@ -16,11 +18,15 @@ import (
 )
 
 type Handler struct {
-	pool *db.Pool
+	pool dbiface.DB
 }
 
-func NewHandler(pool *db.Pool) *Handler {
+func NewHandler(pool dbiface.DB) *Handler {
 	return &Handler{pool: pool}
+}
+
+func NewProductionHandler(pool *db.Pool) *Handler {
+	return NewHandler(dbiface.NewAdapter(pool))
 }
 
 // StartTrace yeni bir agent trace başlatır ve DB'ye kaydeder.
@@ -128,6 +134,11 @@ func (h *Handler) GetTrace(w http.ResponseWriter, r *http.Request) {
 		}
 		steps = append(steps, s)
 	}
+
+	if rows.Err() != nil {
+		slog.Warn("agent steps rows iterasyon hatası", "error", rows.Err())
+	}
+
 	if steps == nil {
 		steps = []stepResult{}
 	}
@@ -338,6 +349,11 @@ func (h *Handler) ListTraces(w http.ResponseWriter, r *http.Request) {
 		}
 		traces = append(traces, t)
 	}
+
+	if rows.Err() != nil {
+		slog.Warn("agent traces rows iterasyon hatası", "error", rows.Err())
+	}
+
 	if traces == nil {
 		traces = []traceResult{}
 	}

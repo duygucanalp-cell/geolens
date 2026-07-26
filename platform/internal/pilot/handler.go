@@ -236,5 +236,9 @@ func (h *Handler) ListAll(w http.ResponseWriter, r *http.Request) {
 		pilots = append(pilots, pr)
 	}
 
+	if rows.Err() != nil {
+		slog.Error("pilot rows iterasyon hatası", "error", rows.Err())
+	}
+
 	httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{"pilots": pilots})
 }

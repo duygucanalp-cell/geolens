@@ -315,7 +315,7 @@ func processMessage(
 
 	// Engine çağrısı yap
 	start := time.Now()
-	result, err := adapter.Execute(job.PromptText)
+	result, err := adapter.Execute(ctx, job.PromptText)
 	duration := time.Since(start)
 
 	// Engine metriklerini kaydet

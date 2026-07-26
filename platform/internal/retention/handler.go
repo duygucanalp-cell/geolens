@@ -56,6 +56,10 @@ func (h *Handler) ListPolicies(w http.ResponseWriter, r *http.Request) {
 		policies = append(policies, p)
 	}
 
+	if rows.Err() != nil {
+		slog.Error("retention policies rows iterasyon hatası", "error", rows.Err())
+	}
+
 	httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{"policies": policies})
 }
 

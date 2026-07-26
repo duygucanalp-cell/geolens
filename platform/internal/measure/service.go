@@ -90,7 +90,7 @@ func (s *service) Measure(ctx context.Context, req MeasurementRequest) (*Measure
 			wg.Add(1)
 			go func(idx int) {
 				defer wg.Done()
-				resp, err := adapter.Execute(req.PromptText)
+				resp, err := adapter.Execute(ctx, req.PromptText)
 				mu.Lock()
 				if err != nil {
 					sampleErr = err

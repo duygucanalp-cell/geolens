@@ -1,12 +1,14 @@
 package bias
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
 
+	"github.com/geolens/platform/internal/dbiface"
 	"github.com/geolens/platform/internal/id"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
@@ -14,11 +16,15 @@ import (
 )
 
 type Handler struct {
-	pool *db.Pool
+	pool dbiface.DB
 }
 
-func NewHandler(pool *db.Pool) *Handler {
+func NewHandler(pool dbiface.DB) *Handler {
 	return &Handler{pool: pool}
+}
+
+func NewProductionHandler(pool *db.Pool) *Handler {
+	return NewHandler(dbiface.NewAdapter(pool))
 }
 
 func (h *Handler) Evaluate(w http.ResponseWriter, r *http.Request) {
@@ -80,6 +86,7 @@ func (h *Handler) ListTests(w http.ResponseWriter, r *http.Request) {
 		limitInt = 20
 	}
 
+	// LIMIT+1 pattern for has_more
 	query := `SELECT id, model_id, metric_type, fairness_score, has_bias, max_gap, details, recommendations, created_at
 		FROM bias.tests WHERE tenant_id = $1`
 	args := []interface{}{tenantID}
@@ -88,10 +95,10 @@ func (h *Handler) ListTests(w http.ResponseWriter, r *http.Request) {
 		query += ` AND model_id = $2`
 		args = append(args, modelID)
 		query += ` ORDER BY created_at DESC LIMIT $3`
-		args = append(args, limitInt)
+		args = append(args, limitInt+1)
 	} else {
 		query += ` ORDER BY created_at DESC LIMIT $2`
-		args = append(args, limitInt)
+		args = append(args, limitInt+1)
 	}
 
 	rows, err := h.pool.Query(r.Context(), query, args...)
@@ -125,11 +132,23 @@ func (h *Handler) ListTests(w http.ResponseWriter, r *http.Request) {
 		tests = append(tests, t)
 	}
 
+	hasMore := len(tests) > limitInt
+	if hasMore {
+		tests = tests[:limitInt]
+	}
+
 	if tests == nil {
 		tests = []testResult{}
 	}
 
-	httputil.WriteJSON(w, http.StatusOK, tests)
+	if rows.Err() != nil {
+		slog.Warn("bias test rows iterasyon hatası", "error", rows.Err())
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"data":     tests,
+		"has_more": hasMore,
+	})
 }
 
 func (h *Handler) computeBias(metricType string, data map[string]interface{}) map[string]interface{} {

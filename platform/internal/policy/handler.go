@@ -8,17 +8,22 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/geolens/platform/internal/dbiface"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/httputil"
 )
 
 type Handler struct {
-	pool *db.Pool
+	pool dbiface.DB
 }
 
-func NewHandler(pool *db.Pool) *Handler {
+func NewHandler(pool dbiface.DB) *Handler {
 	return &Handler{pool: pool}
+}
+
+func NewProductionHandler(pool *db.Pool) *Handler {
+	return NewHandler(dbiface.NewAdapter(pool))
 }
 
 type Pack struct {
@@ -51,7 +56,7 @@ type Control struct {
 
 // SeedDefaultPacks creates default policy packs for a tenant if they don't exist.
 // EU AI Act, NIST AI RMF, KVKK, ISO 42001 otomatik oluşturulur.
-func SeedDefaultPacks(ctx context.Context, pool *db.Pool, tenantID string) {
+func SeedDefaultPacks(ctx context.Context, pool dbiface.DB, tenantID string) {
 	frameworks := []struct {
 		Name        string
 		Framework   string
@@ -133,9 +138,13 @@ func (h *Handler) ListPacks(w http.ResponseWriter, r *http.Request) {
 				var p Pack
 				if err := rows2.Scan(&p.ID, &p.TenantID, &p.Name, &p.Framework, &p.Description,
 					&p.Version, &p.Enabled, &p.AppliedAt, &p.CreatedAt, &p.UpdatedAt); err != nil {
+					slog.Warn("policy pack (seed tekrar) satır okuma hatası", "error", err)
 					continue
 				}
 				packs = append(packs, p)
+			}
+			if rows2.Err() != nil {
+				slog.Warn("policy pack (seed tekrar) rows iterasyon hatası", "error", rows2.Err())
 			}
 		}
 	}
@@ -295,6 +304,7 @@ func (h *Handler) ListControls(w http.ResponseWriter, r *http.Request) {
 		var c Control
 		if err := rows.Scan(&c.ID, &c.PackID, &c.TenantID, &c.ControlID, &c.Title,
 			&c.Description, &c.Category, &c.Status, &c.Evidence, &c.DueDate, &c.CreatedAt, &c.UpdatedAt); err != nil {
+			slog.Warn("policy control satır okuma hatası", "error", err)
 			continue
 		}
 		controls = append(controls, c)

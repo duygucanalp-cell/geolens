@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"context"
 	"testing"
 )
 
@@ -9,9 +10,9 @@ type mockAdapter struct {
 	tier Tier
 }
 
-func (m *mockAdapter) Name() string    { return m.name }
-func (m *mockAdapter) Tier() Tier      { return m.tier }
-func (m *mockAdapter) Execute(prompt string) (*RawResponse, error) {
+func (m *mockAdapter) Name() string { return m.name }
+func (m *mockAdapter) Tier() Tier   { return m.tier }
+func (m *mockAdapter) Execute(_ context.Context, prompt string) (*RawResponse, error) {
 	return &RawResponse{EngineName: m.name, Content: "mock"}, nil
 }
 

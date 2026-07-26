@@ -88,7 +88,8 @@ func (a *Adapter) Tier() engine.Tier {
 }
 
 // Execute sends a prompt to Perplexity Sonar API and returns the normalized response.
-func (a *Adapter) Execute(prompt string) (*engine.RawResponse, error) {
+// ctx: cancel/timeout desteği ile HTTP çağrısı yapar.
+func (a *Adapter) Execute(ctx context.Context, prompt string) (*engine.RawResponse, error) {
 	// Mock modu: API anahtarı yoksa sahte yanıt döndür
 	if a.apiKey == "" || a.apiKey == "mock" {
 		return mockResponse(prompt), nil
@@ -107,7 +108,7 @@ func (a *Adapter) Execute(prompt string) (*engine.RawResponse, error) {
 		return nil, fmt.Errorf("perplexity istek serileştirme: %w", err)
 	}
 
-	httpReq, err := http.NewRequest("POST", apiURL, bytes.NewReader(body))
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("perplexity http istek oluşturma: %w", err)
 	}

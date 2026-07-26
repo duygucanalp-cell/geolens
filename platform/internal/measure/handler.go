@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/geolens/platform/engine"
+	"github.com/geolens/platform/internal/dbiface"
 	"github.com/geolens/platform/internal/id"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
@@ -21,13 +22,18 @@ import (
 
 // Handler holds dependencies for measure HTTP handlers.
 type Handler struct {
-	pool    *db.Pool
+	pool    dbiface.DB
+	rawPool *db.Pool
 	engines *engine.Registry
 }
 
 // NewHandler creates a new measure handler.
 func NewHandler(pool *db.Pool, engines *engine.Registry) *Handler {
-	return &Handler{pool: pool, engines: engines}
+	return &Handler{
+		pool:    dbiface.NewAdapter(pool),
+		rawPool: pool,
+		engines: engines,
+	}
 }
 
 // immediateMeasureAndScore performs a synchronous measurement + scoring for the given brand.
@@ -246,6 +252,10 @@ func (h *Handler) ListScores(w http.ResponseWriter, r *http.Request) {
 		scores = append(scores, s)
 	}
 
+	if rows.Err() != nil {
+		slog.Error("skor listesi rows iterasyon hatası", "error", rows.Err())
+	}
+
 	// K5: Kısmi sonuç uyarısı (parseErrors > 0 ise response header'a eklenir)
 	if parseErrors > 0 {
 		w.Header().Set("X-Has-More", "true")
@@ -301,6 +311,10 @@ func (h *Handler) ListTrends(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		trends = append(trends, t)
+	}
+
+	if rows.Err() != nil {
+		slog.Error("trend listesi rows iterasyon hatası", "error", rows.Err())
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, trends)
@@ -364,6 +378,10 @@ func (h *Handler) ListBrandScores(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		scores = append(scores, s)
+	}
+
+	if rows.Err() != nil {
+		slog.Error("marka skor rows iterasyon hatası", "error", rows.Err())
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{
@@ -527,6 +545,10 @@ func (h *Handler) ListBenchmark(w http.ResponseWriter, r *http.Request) {
 		benchmarks = append(benchmarks, b)
 	}
 
+	if rows.Err() != nil {
+		slog.Warn("benchmark rows iterasyon hatası", "error", rows.Err())
+	}
+
 	httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{
 		"benchmark": benchmarks,
 		"count":     len(benchmarks),
@@ -605,6 +627,10 @@ func (h *Handler) ListRadarComparison(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		radarData = append(radarData, br)
+	}
+
+	if rows.Err() != nil {
+		slog.Warn("radar rows iterasyon hatası", "error", rows.Err())
 	}
 
 	engineList := make([]string, 0, len(allEngines))

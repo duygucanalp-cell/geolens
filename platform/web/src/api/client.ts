@@ -85,6 +85,226 @@ export function markRecommendationDismissed(ws: string, recId: string) {
   })
 }
 
+// R3: Runtime Guardrails
+export function getGuardrailRules(): Promise<{ rules: import('../types').GuardrailRule[] }> {
+  return fetchJSON(`${BASE}/guardrails/rules`)
+}
+
+export function createGuardrailRule(data: {
+  name: string
+  category: string
+  pattern: string
+  action?: string
+  severity?: string
+}): Promise<import('../types').GuardrailRule> {
+  return fetchJSON(`${BASE}/guardrails/rules`, { method: 'POST', body: JSON.stringify(data) })
+}
+
+export function toggleGuardrailRule(ruleId: string, enabled: boolean): Promise<{ status: string; enabled: string }> {
+  return fetchJSON(`${BASE}/guardrails/rules/${ruleId}/toggle`, {
+    method: 'PUT',
+    body: JSON.stringify({ enabled }),
+  })
+}
+
+export function deleteGuardrailRule(ruleId: string): Promise<{ status: string }> {
+  return fetchJSON(`${BASE}/guardrails/rules/${ruleId}`, { method: 'DELETE' })
+}
+
+export function evaluateGuardrail(prompt: string, response?: string): Promise<{
+  results: { rule_id: string; rule_name: string; category: string; matched: boolean; action_taken: string }[]
+  blocked: boolean
+  allowed: boolean
+}> {
+  return fetchJSON(`${BASE}/guardrails/evaluate`, {
+    method: 'POST',
+    body: JSON.stringify({ prompt, response: response || '' }),
+  })
+}
+
+// R8: Agent Tracing
+export function listTraces(status?: string): Promise<{ traces: import('../types').Trace[]; total: number }> {
+  const query = status ? `?status=${status}` : ''
+  return fetchJSON(`${BASE}/agents/traces${query}`)
+}
+
+export function getTrace(traceId: string): Promise<import('../types').TraceDetail> {
+  return fetchJSON(`${BASE}/agents/traces/${traceId}`)
+}
+
+export function startTrace(agentName: string, workflowName?: string): Promise<{ trace_id: string; status: string }> {
+  return fetchJSON(`${BASE}/agents/traces`, {
+    method: 'POST',
+    body: JSON.stringify({ agent_name: agentName, workflow_name: workflowName || '' }),
+  })
+}
+
+// R1: AI Registry
+export function listRegistryEntities(): Promise<{ entities: import('../types').RegistryEntity[] }> {
+  return fetchJSON(`${BASE}/registry/entities`)
+}
+
+export function getRegistryEntity(entityId: string): Promise<import('../types').RegistryEntity> {
+  return fetchJSON(`${BASE}/registry/entities/${entityId}`)
+}
+
+export function createRegistryEntity(data: {
+  entity_type: string
+  name: string
+  description?: string
+  version?: string
+  provider?: string
+  lifecycle_state?: string
+  risk_class?: string
+  owner?: string
+}): Promise<import('../types').RegistryEntity> {
+  return fetchJSON(`${BASE}/registry/entities`, { method: 'POST', body: JSON.stringify(data) })
+}
+
+export function deleteRegistryEntity(entityId: string): Promise<{ status: string }> {
+  return fetchJSON(`${BASE}/registry/entities/${entityId}`, { method: 'DELETE' })
+}
+
+// R4: Policy Packs
+export function listPolicyPacks(): Promise<{ packs: import('../types').PolicyPack[] }> {
+  return fetchJSON(`${BASE}/policies/packs`)
+}
+
+export function listPolicyControls(packId: string): Promise<{ controls: import('../types').PolicyControl[] }> {
+  return fetchJSON(`${BASE}/policies/packs/${packId}/controls`)
+}
+
+export function updatePolicyControl(controlId: string, data: { status: string; evidence?: string }): Promise<{ status: string }> {
+  return fetchJSON(`${BASE}/policies/controls/${controlId}`, { method: 'PUT', body: JSON.stringify(data) })
+}
+
+// R5: Bias/Fairness
+export function evaluateBias(data: { model_id: string; metric_type: string; data: Record<string, number> }): Promise<{
+  test_id: string; fairness_score: number; has_bias: boolean; results: Record<string, unknown>
+}> {
+  return fetchJSON(`${BASE}/bias/evaluate`, { method: 'POST', body: JSON.stringify(data) })
+}
+
+export async function listBiasTests(): Promise<import('../types').BiasTest[]> {
+  const res = await fetchJSON<import('../types').ListResponse<import('../types').BiasTest>>(`${BASE}/bias/tests`)
+  return res.data
+}
+
+// R7: Explainability
+export function explainEntity(entityId: string): Promise<import('../types').ExplainResult> {
+  return fetchJSON(`${BASE}/explain/${entityId}`, { method: 'POST' })
+}
+
+export async function listExplainResults(): Promise<import('../types').ExplainResult[]> {
+  const res = await fetchJSON<import('../types').ListResponse<import('../types').ExplainResult>>(`${BASE}/explain/results`)
+  return res.data
+}
+
+// R2: Shadow AI Discovery
+export function startDiscoveryScan(scanType?: string): Promise<{ scan_id: string; status: string }> {
+  return fetchJSON(`${BASE}/discovery/scan`, {
+    method: 'POST',
+    body: JSON.stringify({ scan_type: scanType || 'api' }),
+  })
+}
+
+export function getScanResults(scanId: string): Promise<import('../types').ScanResult> {
+  return fetchJSON(`${BASE}/discovery/scans/${scanId}`)
+}
+
+// R6: CI/CD Governance Gate
+export function runGateCheck(entityId: string): Promise<import('../types').GateCheckResult> {
+  return fetchJSON(`${BASE}/gate/check`, { method: 'POST', body: JSON.stringify({ entity_id: entityId }) })
+}
+
+export async function getGateHistory(entityId: string): Promise<import('../types').GateHistoryEntry[]> {
+  const res = await fetchJSON<{ history: import('../types').GateHistoryEntry[]; total: number }>(`${BASE}/gate/history/${entityId}`)
+  return res.history
+}
+
+// R11: Cost Analytics
+export async function getCostEntries(engineFilter?: string): Promise<import('../types').CostEntry[]> {
+  const query = engineFilter ? `?engine=${engineFilter}` : ''
+  const res = await fetchJSON<import('../types').ListResponse<import('../types').CostEntry>>(`${BASE}/costs/entries${query}`)
+  return res.data
+}
+
+export function recordCostEntry(data: {
+  engine_name: string
+  model_name?: string
+  operation?: string
+  token_count?: number
+  cost_usd: number
+}): Promise<{ entry_id: string; cost_usd: number }> {
+  return fetchJSON(`${BASE}/costs/entries`, { method: 'POST', body: JSON.stringify(data) })
+}
+
+export function getCostSummary(period?: string): Promise<import('../types').CostSummary> {
+  const query = period ? `?period=${period}` : ''
+  return fetchJSON(`${BASE}/costs/summary${query}`)
+}
+
+// R12: Usage Analytics
+export async function getUsageMetrics(): Promise<import('../types').UsageMetric[]> {
+  const res = await fetchJSON<import('../types').ListResponse<import('../types').UsageMetric>>(`${BASE}/usage/metrics`)
+  return res.data
+}
+
+export function getUsageSummary(period?: string): Promise<import('../types').UsageSummary> {
+  const query = period ? `?period=${period}` : ''
+  return fetchJSON(`${BASE}/usage/summary${query}`)
+}
+
+// R13: Optimization
+export async function getOptimizationRecommendations(): Promise<import('../types').OptimizationRec[]> {
+  const res = await fetchJSON<import('../types').ListResponse<import('../types').OptimizationRec>>(`${BASE}/optimizations/recommendations`)
+  return res.data
+}
+
+export function generateOptimizationRecommendations(autoSave?: boolean): Promise<{ recommendations: import('../types').OptimizationRec[]; count: number }> {
+  return fetchJSON(`${BASE}/optimizations/recommendations/generate`, {
+    method: 'POST',
+    body: JSON.stringify({ auto_save: autoSave ?? true }),
+  })
+}
+
+export function updateOptimizationStatus(recId: string, status: string): Promise<{ id: string; status: string }> {
+  return fetchJSON(`${BASE}/optimizations/recommendations/${recId}/status`, {
+    method: 'PUT',
+    body: JSON.stringify({ status }),
+  })
+}
+
+// R14: Version Tracking
+export async function getVersionEntries(): Promise<import('../types').VersionEntry[]> {
+  const res = await fetchJSON<import('../types').ListResponse<import('../types').VersionEntry>>(`${BASE}/versions/entries`)
+  return res.data
+}
+
+export function getVersionDiff(entryId: string): Promise<{ entry: import('../types').VersionEntry; has_changes: boolean }> {
+  return fetchJSON(`${BASE}/versions/entries/${entryId}`)
+}
+
+// R15: Incident Management
+export function getIncidents(): Promise<import('../types').IncidentListResponse> {
+  return fetchJSON(`${BASE}/incidents/events`)
+}
+
+export function createIncident(data: {
+  severity: string
+  category: string
+  title: string
+  description?: string
+  source?: string
+  entity_id?: string
+}): Promise<{ incident_id: string; status: string }> {
+  return fetchJSON(`${BASE}/incidents/events`, { method: 'POST', body: JSON.stringify(data) })
+}
+
+export function updateIncident(incidentId: string, data: { status?: string; resolution?: string }): Promise<{ incident_id: string; status: string }> {
+  return fetchJSON(`${BASE}/incidents/events/${incidentId}`, { method: 'PUT', body: JSON.stringify(data) })
+}
+
 export async function triggerDigest(ws: string): Promise<Blob> {
   const token = localStorage.getItem('token')
   const res = await fetch(`${BASE}/workspaces/${ws}/reports/digest`, {
