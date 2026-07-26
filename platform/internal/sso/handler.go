@@ -5,18 +5,17 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
 	"log/slog"
 	"math/big"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/httputil"
+	"github.com/go-chi/chi/v5"
 )
 
 type Handler struct {
@@ -40,7 +39,6 @@ type SSOConfig struct {
 	UpdatedAt   string `json:"updated_at"`
 }
 
-// GetConfig returns the SSO configuration for the current tenant.
 func (h *Handler) GetConfig(w http.ResponseWriter, r *http.Request) {
 	tenantID := httpmw.GetTenantID(r.Context())
 
@@ -61,7 +59,6 @@ func (h *Handler) GetConfig(w http.ResponseWriter, r *http.Request) {
 	httputil.WriteJSON(w, http.StatusOK, cfg)
 }
 
-// UpdateConfig creates or updates the SSO configuration for the current tenant.
 func (h *Handler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 	tenantID := httpmw.GetTenantID(r.Context())
 
@@ -107,7 +104,6 @@ func (h *Handler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 	httputil.WriteJSON(w, http.StatusOK, cfg)
 }
 
-// GetSPMetadata returns SAML SP metadata in XML format for IdP configuration.
 func (h *Handler) GetSPMetadata(w http.ResponseWriter, r *http.Request) {
 	tenantID := httpmw.GetTenantID(r.Context())
 
@@ -145,9 +141,8 @@ func (h *Handler) GetSPMetadata(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(metadata))
 }
 
-// HandleACS processes SAML assertion from IdP.
 func (h *Handler) HandleACS(w http.ResponseWriter, r *http.Request) {
-	tenantID := httpmw.GetTenantID(r.Context())
+	tenantID := chi.URLParam(r, "tenantId")
 
 	if err := r.ParseForm(); err != nil {
 		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "geçersiz SAML yanıtı"})
@@ -160,37 +155,34 @@ func (h *Handler) HandleACS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// IdP certificate doğrulaması
-	var cfg SSOConfig
+	var idpCert string
 	err := h.pool.QueryRow(r.Context(), `
 		SELECT idp_cert FROM sso.configs WHERE tenant_id = $1 AND enabled = true
-	`, tenantID).Scan(&cfg.IdpCert)
+	`, tenantID).Scan(&idpCert)
 	if err != nil {
 		httputil.WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "SSO etkin değil"})
 		return
 	}
 
-	// SAML yanıtını base64 decode et
-	raw, err := base64.StdEncoding.DecodeString(samlResp)
+	result, err := parseAndVerifySAMLResponse(samlResp, idpCert)
 	if err != nil {
-		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "geçersiz SAML yanıtı kodlaması"})
+		httputil.WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
 		return
 	}
 
-	// Basit assertion parsing — üretimde saml2 library kullanılmalı
-	bodyStr := string(raw)
-	email := extractSAMLAttribute(bodyStr, "email")
-	name := extractSAMLAttribute(bodyStr, "name")
+	email := result.GetAttribute("email")
+	name := result.GetAttribute("name")
+	if name == "" {
+		name = result.GetAttribute("displayName")
+	}
 	if email == "" {
-		// Try NameID as email fallback
-		email = extractNameID(bodyStr)
+		email = result.NameID()
 	}
 	if email == "" {
 		httputil.WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "SAML yanıtında email bulunamadı"})
 		return
 	}
 
-	// Kullanıcıyı tenant'a yönlendir
 	var userID, displayName string
 	err = h.pool.QueryRow(r.Context(), `
 		SELECT id, COALESCE(display_name, email)
@@ -214,7 +206,6 @@ func (h *Handler) HandleACS(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// Enable enables SSO for the current tenant.
 func (h *Handler) Enable(w http.ResponseWriter, r *http.Request) {
 	tenantID := httpmw.GetTenantID(r.Context())
 
@@ -229,7 +220,6 @@ func (h *Handler) Enable(w http.ResponseWriter, r *http.Request) {
 	httputil.WriteJSON(w, http.StatusOK, map[string]string{"status": "SSO etkinleştirildi"})
 }
 
-// Disable disables SSO for the current tenant.
 func (h *Handler) Disable(w http.ResponseWriter, r *http.Request) {
 	tenantID := httpmw.GetTenantID(r.Context())
 
@@ -244,7 +234,6 @@ func (h *Handler) Disable(w http.ResponseWriter, r *http.Request) {
 	httputil.WriteJSON(w, http.StatusOK, map[string]string{"status": "SSO devre dışı bırakıldı"})
 }
 
-// GenerateKeyPair generates a self-signed certificate for SAML signing.
 func (h *Handler) GenerateKeyPair(w http.ResponseWriter, r *http.Request) {
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -279,52 +268,4 @@ func (h *Handler) GenerateKeyPair(w http.ResponseWriter, r *http.Request) {
 		"certificate": string(certPEM),
 		"private_key": string(keyPEM),
 	})
-}
-
-func extractSAMLAttribute(xmlData, attrName string) string {
-	start := strings.Index(xmlData, `Attribute Name="`+attrName+`"`)
-	if start == -1 {
-		start = strings.Index(xmlData, `Attribute FriendlyName="`+attrName+`"`)
-	}
-	if start == -1 {
-		return ""
-	}
-	valStart := strings.Index(xmlData[start:], "<saml2:AttributeValue")
-	if valStart == -1 {
-		valStart = strings.Index(xmlData[start:], "<AttributeValue")
-	}
-	if valStart == -1 {
-		return ""
-	}
-	valStart += start
-	close := strings.Index(xmlData[valStart:], ">")
-	if close == -1 {
-		return ""
-	}
-	contentStart := valStart + close + 1
-	end := strings.Index(xmlData[contentStart:], "</")
-	if end == -1 {
-		return ""
-	}
-	return strings.TrimSpace(xmlData[contentStart : contentStart+end])
-}
-
-func extractNameID(xmlData string) string {
-	start := strings.Index(xmlData, "<saml2:NameID")
-	if start == -1 {
-		start = strings.Index(xmlData, "<NameID")
-	}
-	if start == -1 {
-		return ""
-	}
-	close := strings.Index(xmlData[start:], ">")
-	if close == -1 {
-		return ""
-	}
-	contentStart := start + close + 1
-	end := strings.Index(xmlData[contentStart:], "</")
-	if end == -1 {
-		return ""
-	}
-	return strings.TrimSpace(xmlData[contentStart : contentStart+end])
 }
