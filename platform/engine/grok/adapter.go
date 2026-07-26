@@ -1,4 +1,4 @@
-package grok
+tpackage grok
 
 import (
 	"bytes"
