@@ -605,7 +605,6 @@ func (s *service) MarkDismissed(ctx context.Context, id, tenantID, workspaceID s
 	if err != nil {
 		slog.Error("recommendation: gizleme hatası", "id", id, "error", err)
 		return fmt.Errorf("recommendation: gizleme hatası: %w", err)
-
 	}
 	if result.RowsAffected() == 0 {
 		return fmt.Errorf("recommendation: kayıt bulunamadı veya bu çalışma alanına ait değil")

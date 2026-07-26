@@ -110,8 +110,8 @@ func (h *Handler) ListIncidents(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var openCount, criticalCount int
-	h.pool.QueryRow(r.Context(), `SELECT COUNT(*) FROM incident.events WHERE tenant_id = $1 AND status NOT IN ('resolved','closed')`, tenantID).Scan(&openCount)
-	h.pool.QueryRow(r.Context(), `SELECT COUNT(*) FROM incident.events WHERE tenant_id = $1 AND severity IN ('critical','high') AND status NOT IN ('resolved','closed')`, tenantID).Scan(&criticalCount)
+	_ = h.pool.QueryRow(r.Context(), `SELECT COUNT(*) FROM incident.events WHERE tenant_id = $1 AND status NOT IN ('resolved','closed')`, tenantID).Scan(&openCount)
+	_ = h.pool.QueryRow(r.Context(), `SELECT COUNT(*) FROM incident.events WHERE tenant_id = $1 AND severity IN ('critical','high') AND status NOT IN ('resolved','closed')`, tenantID).Scan(&criticalCount)
 
 	httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{
 		"incidents":      incidents,

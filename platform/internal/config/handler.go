@@ -130,16 +130,16 @@ func (h *Handler) GetSetupStatus(w http.ResponseWriter, r *http.Request) {
 		MeasurementCount int `json:"measurement_count"`
 	}
 
-	h.pool.QueryRow(r.Context(), `
+	_ = h.pool.QueryRow(r.Context(), `
 		SELECT COALESCE((SELECT count(*) FROM config.brands WHERE workspace_id = $1 AND tenant_id = $2), 0)
 	`, workspaceID, tenantID).Scan(&checks.BrandCount)
-	h.pool.QueryRow(r.Context(), `
+	_ = h.pool.QueryRow(r.Context(), `
 		SELECT COALESCE((SELECT count(*) FROM config.panels WHERE workspace_id = $1 AND tenant_id = $2), 0)
 	`, workspaceID, tenantID).Scan(&checks.PanelCount)
-	h.pool.QueryRow(r.Context(), `
+	_ = h.pool.QueryRow(r.Context(), `
 		SELECT COALESCE((SELECT count(*) FROM config.prompt_sets WHERE workspace_id = $1 AND tenant_id = $2), 0)
 	`, workspaceID, tenantID).Scan(&checks.PromptSetCount)
-	h.pool.QueryRow(r.Context(), `
+	_ = h.pool.QueryRow(r.Context(), `
 		SELECT COALESCE((SELECT count(*) FROM measure.scores WHERE workspace_id = $1 AND tenant_id = $2), 0)
 	`, workspaceID, tenantID).Scan(&checks.MeasurementCount)
 

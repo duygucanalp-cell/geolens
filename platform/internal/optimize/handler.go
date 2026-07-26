@@ -119,7 +119,7 @@ func (h *Handler) GenerateRecommendations(w http.ResponseWriter, r *http.Request
 
 	// Analiz için mevcut skorları kontrol et
 	var scoreCount int
-	h.pool.QueryRow(r.Context(), `SELECT COUNT(*) FROM measure.scores WHERE tenant_id = $1`, tenantID).Scan(&scoreCount)
+	_ = h.pool.QueryRow(r.Context(), `SELECT COUNT(*) FROM measure.scores WHERE tenant_id = $1`, tenantID).Scan(&scoreCount)
 
 	recommendations := h.analyze(scoreCount)
 

@@ -670,7 +670,7 @@ func (h *Handler) GetBenchmarkContext(w http.ResponseWriter, r *http.Request) {
 
 	// Toplam kiracı sayısı (NFR-13 gizlilik eşiği)
 	var tenantCount int
-	h.pool.QueryRow(r.Context(), `
+	_ = h.pool.QueryRow(r.Context(), `
 		SELECT COUNT(DISTINCT tenant_id) FROM measure.scores
 	`).Scan(&tenantCount)
 
@@ -681,7 +681,7 @@ func (h *Handler) GetBenchmarkContext(w http.ResponseWriter, r *http.Request) {
 	var sectorMedian float64
 
 	if tenantCount >= 5 {
-		h.pool.QueryRow(r.Context(), `
+		_ = h.pool.QueryRow(r.Context(), `
 			SELECT AVG(sub.latest)::numeric(10,2),
 				MIN(sub.latest)::numeric(10,2),
 				MAX(sub.latest)::numeric(10,2)
@@ -693,7 +693,7 @@ func (h *Handler) GetBenchmarkContext(w http.ResponseWriter, r *http.Request) {
 		`).Scan(&sectorAvg, &sectorMin, &sectorMax)
 
 		// Medyan hesapla
-		h.pool.QueryRow(r.Context(), `
+		_ = h.pool.QueryRow(r.Context(), `
 			WITH ranked AS (
 				SELECT value, ROW_NUMBER() OVER (ORDER BY value) AS rn,
 					COUNT(*) OVER () AS cnt

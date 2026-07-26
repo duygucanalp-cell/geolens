@@ -157,7 +157,7 @@ func (h *Handler) GetUsageSummary(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var totalRequests, totalErrors, avgLatency float64
-	h.pool.QueryRow(r.Context(), `
+	_ = h.pool.QueryRow(r.Context(), `
 		SELECT COUNT(*), COALESCE(AVG(CASE WHEN status_code >= 400 THEN 1.0 ELSE 0 END), 0) * 100,
 		       COALESCE(AVG(latency_ms), 0)
 		FROM usage.metrics WHERE tenant_id = $1 AND recorded_at > NOW() - $2::INTERVAL
