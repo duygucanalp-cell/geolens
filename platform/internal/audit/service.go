@@ -161,7 +161,7 @@ func (s *service) checkRobotsTxt(websiteURL string) *RobotsTxtCheck {
 	baseURL := normalizeURL(websiteURL)
 	robotsURL := baseURL + "/robots.txt"
 
-	req, err := http.NewRequest("GET", robotsURL, nil)
+	req, err := http.NewRequestWithContext(context.Background(), "GET", robotsURL, nil)
 	if err != nil {
 		return &RobotsTxtCheck{Exists: false}
 	}
@@ -171,7 +171,7 @@ func (s *service) checkRobotsTxt(websiteURL string) *RobotsTxtCheck {
 	if err != nil {
 		return &RobotsTxtCheck{Exists: false}
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return &RobotsTxtCheck{
@@ -193,7 +193,7 @@ func (s *service) checkBotAccess(websiteURL string) *BotAccessCheck {
 	testAgent := aiCrawlers[0]
 	check.AIBotNamesTested = append(check.AIBotNamesTested, testAgent.UserAgent)
 
-	req, err := http.NewRequest("GET", websiteURL, nil)
+	req, err := http.NewRequestWithContext(context.Background(), "GET", websiteURL, nil)
 	if err != nil {
 		return check
 	}
@@ -222,7 +222,7 @@ func (s *service) checkBotAccess(websiteURL string) *BotAccessCheck {
 func (s *service) checkSSR(websiteURL string) *SSRCheck {
 	check := &SSRCheck{}
 
-	req, err := http.NewRequest("GET", websiteURL, nil)
+	req, err := http.NewRequestWithContext(context.Background(), "GET", websiteURL, nil)
 	if err != nil {
 		return check
 	}
@@ -233,7 +233,7 @@ func (s *service) checkSSR(websiteURL string) *SSRCheck {
 	if err != nil {
 		return check
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20)) // max 1MB
 	content := string(body)
@@ -259,7 +259,7 @@ func (s *service) checkSSR(websiteURL string) *SSRCheck {
 func (s *service) checkSSRFProtection(websiteURL string) *SSRFCheck {
 	check := &SSRFCheck{}
 
-	req, err := http.NewRequest("GET", websiteURL, nil)
+	req, err := http.NewRequestWithContext(context.Background(), "GET", websiteURL, nil)
 	if err != nil {
 		return check
 	}
@@ -269,7 +269,7 @@ func (s *service) checkSSRFProtection(websiteURL string) *SSRFCheck {
 	if err != nil {
 		return check
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	headers := resp.Header
 

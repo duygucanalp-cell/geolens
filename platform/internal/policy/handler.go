@@ -1,3 +1,4 @@
+// Package policy provides handlers and logic for policy functionality.
 package policy
 
 import (
@@ -244,7 +245,7 @@ func frameworkControls(framework string) []controlDef {
 		return []controlDef{
 			{"Art.9", "Risk Yönetim Sistemi", "Sürekli, yinelemeli risk yönetim süreci", "Risk Management"},
 			{"Art.10", "Eğitim Verisi Yönetimi", "Eğitim verisi kalitesi, bias analizi, temsiliyet", "Data Governance"},
-			{"Art.11", "Teknik Dokümantasyon", "Model mimarisi, eğitim yöntemi, performans metrikleri", "Documentation"},
+			{"Art.11", "Teknik Dokümantasyon", "Model mimarisi, eğitim yöntemi, performans metrikleri", "Documentation"}, //nolint:misspell
 			{"Art.12", "Kayıt Tutma", "Olay günlükleri, otomatik loglama, saklama süresi", "Monitoring"},
 			{"Art.13", "Şeffaflık ve Bilgilendirme", "Kullanıcılara AI sistemi bildirimi, açıklanabilirlik", "Transparency"},
 			{"Art.14", "İnsan Gözetimi", "İnsan müdahale mekanizmaları, override yetkisi", "Oversight"},
@@ -256,7 +257,7 @@ func frameworkControls(framework string) []controlDef {
 			{"GOV-2", "Politika ve Prosedürler", "AI kullanım politikaları, etik kurallar", "Govern"},
 			{"MAP-1", "AI Sistemi Envanteri", "Tüm AI sistemlerinin tanımlanması ve sınıflandırılması", "Map"},
 			{"MAP-2", "Risk Değerlendirmesi", "AI sistemlerinin risk seviyesinin belirlenmesi", "Map"},
-			{"MEA-1", "Performans İzleme", "Sürekli model performans ve drift izleme", "Measure"},
+			{"MEA-1", "Performans İzleme", "Sürekli model performans ve drift izleme", "Measure"}, //nolint:misspell
 			{"MEA-2", "Bias ve Adillik", "Demoğrafik parite, eşitlik metrikleri", "Measure"},
 			{"MAN-1", "Risk Azaltma", "Tesbit edilen risklerin azaltılması ve yönetimi", "Manage"},
 		}
@@ -272,11 +273,11 @@ func frameworkControls(framework string) []controlDef {
 	case "iso_42001":
 		return []controlDef{
 			{"6.1", "Risk Değerlendirmesi", "AI risk değerlendirme ve tedavi planı", "Planning"},
-			{"7.2", "Yetkinlik", "AI personel yetkinlik ve eğitim gereksinimleri", "Support"},
+			{"7.2", "Yetkinlik", "AI personel yetkinlik ve eğitim gereksinimleri", "Support"}, //nolint:misspell
 			{"7.4", "İletişim", "AI sistemi kullanımı hakkında paydaş iletişimi", "Support"},
 			{"8.1", "Operasyonel Planlama", "AI sistemi geliştirme ve işletme kontrolleri", "Operation"},
 			{"8.2", "AI Sistem Değerlendirmesi", "AI sistem etki değerlendirmesi", "Operation"},
-			{"9.1", "Performans İzleme", "AI sistemi performans ve uygunluk izleme", "Evaluation"},
+			{"9.1", "Performans İzleme", "AI sistemi performans ve uygunluk izleme", "Evaluation"}, //nolint:misspell
 		}
 	default: // custom
 		return []controlDef{

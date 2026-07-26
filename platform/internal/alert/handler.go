@@ -1,3 +1,4 @@
+// Package alert provides handlers and logic for alert functionality.
 package alert
 
 import (

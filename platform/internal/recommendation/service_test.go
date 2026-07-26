@@ -33,19 +33,6 @@ func testScore(value, previous float64, breakdown map[string]float64) *ScoreSnap
 	return s
 }
 
-func testRule(id string, conditions []Condition) Rule {
-	return Rule{
-		ID:         id,
-		Name:       "Test Rule",
-		Active:     true,
-		Conditions: conditions,
-		Category:   CategoryVisibility,
-		Severity:   SeverityMedium,
-		Title:      "Test Recommendation",
-		Detail:     "Test detail",
-	}
-}
-
 // ---- Service Tests (Evaluate conditions via helper) ----
 
 func TestEvaluate_All_ReturnsAllRulesWhenNoScore(t *testing.T) {
@@ -134,7 +121,7 @@ func TestEvaluate_EngineGapFires(t *testing.T) {
 
 	found := false
 	for _, r := range results {
-		if r.Title == "Motorlar arasında büyük performans farkı var" {
+		if r.Title == "Motorlar arasında büyük performans farkı var" { //nolint:misspell
 			found = true
 			break
 		}
@@ -154,7 +141,7 @@ func TestEvaluate_EngineGapNotFires(t *testing.T) {
 	results := svc.evaluateBrand(context.Background(), evalCtx)
 
 	for _, r := range results {
-		if r.Title == "Motorlar arasında büyük performans farkı var" {
+		if r.Title == "Motorlar arasında büyük performans farkı var" { //nolint:misspell
 			t.Error("engine gap rule should NOT fire when gap is only 4")
 		}
 	}

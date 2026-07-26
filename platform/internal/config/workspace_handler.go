@@ -94,7 +94,7 @@ func (h *Handler) TransferWorkspace(w http.ResponseWriter, r *http.Request) {
 		httputil.WriteError(w, http.StatusInternalServerError, "devir başarısız")
 		return
 	}
-	defer tx.Rollback(r.Context())
+	defer func() { _ = tx.Rollback(r.Context()) }()
 
 	_, err = tx.Exec(r.Context(), `
 		UPDATE config.workspaces SET tenant_id = $1, updated_at = now()

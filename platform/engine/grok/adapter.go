@@ -1,3 +1,4 @@
+// Package grok provides an adapter for the grok AI engine.
 package grok
 
 import (
@@ -121,7 +122,7 @@ func (a *Adapter) Execute(ctx context.Context, prompt string) (*engine.RawRespon
 	if err != nil {
 		return nil, fmt.Errorf("grok api çağrısı: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	durationMs := time.Since(start).Milliseconds()
 	rawBody, err := io.ReadAll(resp.Body)

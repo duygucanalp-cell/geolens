@@ -1,3 +1,4 @@
+// Package delivery provides handlers and logic for delivery functionality.
 package delivery
 
 import (

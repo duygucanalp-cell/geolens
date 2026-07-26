@@ -1,3 +1,4 @@
+// Package claude provides an adapter for the claude AI engine.
 package claude
 
 import (
@@ -145,7 +146,7 @@ func (a *Adapter) Execute(ctx context.Context, prompt string) (*engine.RawRespon
 	if err != nil {
 		return nil, fmt.Errorf("claude api çağrısı: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	durationMs := time.Since(start).Milliseconds()
 

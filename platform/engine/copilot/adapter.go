@@ -1,3 +1,4 @@
+// Package copilot provides an adapter for the copilot AI engine.
 package copilot
 
 import (
@@ -128,7 +129,7 @@ func (a *Adapter) Execute(ctx context.Context, prompt string) (*engine.RawRespon
 	if err != nil {
 		return nil, fmt.Errorf("copilot api çağrısı: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	durationMs := time.Since(start).Milliseconds()
 	rawBody, err := io.ReadAll(resp.Body)

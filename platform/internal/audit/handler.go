@@ -1,3 +1,4 @@
+// Package audit provides handlers and logic for audit functionality.
 package audit
 
 import (
@@ -285,7 +286,7 @@ func (h *Handler) ExportAuditTrail(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/csv")
 	w.Header().Set("Content-Disposition", "attachment; filename=\"audit-trail.csv\"")
 
-	w.Write([]byte("user_id,event_type,resource_type,resource_id,action,ip_address,created_at\n"))
+	_, _ = w.Write([]byte("user_id,event_type,resource_type,resource_id,action,ip_address,created_at\n"))
 	for rows.Next() {
 		var userID, eventType, resourceType, resourceID, action, ipAddr string
 		var createdAt time.Time

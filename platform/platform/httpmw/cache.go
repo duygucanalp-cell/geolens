@@ -1,3 +1,4 @@
+// Package httpmw provides httpmw related functionality.
 package httpmw
 
 import (
@@ -77,7 +78,7 @@ func CacheMiddleware(cfg CacheConfig) func(http.Handler) http.Handler {
 					}
 
 					w.Header().Set("X-Cache", "HIT")
-					w.Write(cachedData)
+					_, _ = w.Write(cachedData)
 					return
 				}
 			}
@@ -111,7 +112,7 @@ func CacheMiddleware(cfg CacheConfig) func(http.Handler) http.Handler {
 			// Header'ları gönder (ilk WriteHeader veya Write tetikler)
 			w.WriteHeader(buf.statusCode)
 			if buf.body.Len() > 0 {
-				w.Write(buf.body.Bytes())
+				_, _ = w.Write(buf.body.Bytes())
 			}
 		})
 	}

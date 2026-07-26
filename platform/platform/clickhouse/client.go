@@ -76,7 +76,7 @@ func (c *Client) Query(ctx context.Context, query string, args ...interface{}) (
 	if err != nil {
 		return nil, fmt.Errorf("ch çağrı: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	raw, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode >= 400 {

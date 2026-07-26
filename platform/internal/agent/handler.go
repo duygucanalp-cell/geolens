@@ -1,3 +1,4 @@
+// Package agent provides handlers and logic for agent functionality.
 package agent
 
 import (
@@ -184,7 +185,7 @@ func (h *Handler) RecordStep(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if traceStatus == "completed" || traceStatus == "cancelled" {
+	if traceStatus == "completed" || traceStatus == "cancelled" { //nolint:misspell
 		httputil.WriteJSON(w, http.StatusConflict, map[string]string{"error": "tamamlanmış trace'e adım eklenemez"})
 		return
 	}
@@ -242,7 +243,7 @@ func (h *Handler) CompleteTrace(w http.ResponseWriter, r *http.Request) {
 	traceID := chi.URLParam(r, "traceId")
 
 	var input struct {
-		Status string `json:"status"` // completed, failed, cancelled
+		Status string `json:"status"` // completed, failed, cancelled //nolint:misspell
 	}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "geçersiz istek"})
@@ -250,7 +251,7 @@ func (h *Handler) CompleteTrace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	finalStatus := input.Status
-	if finalStatus != "completed" && finalStatus != "failed" && finalStatus != "cancelled" {
+	if finalStatus != "completed" && finalStatus != "failed" && finalStatus != "cancelled" { //nolint:misspell
 		finalStatus = "completed"
 	}
 
@@ -302,7 +303,7 @@ func (h *Handler) ListTraces(w http.ResponseWriter, r *http.Request) {
 	args := []interface{}{tenantID}
 	paramIdx := 2
 
-	if statusFilter == "running" || statusFilter == "completed" || statusFilter == "failed" || statusFilter == "cancelled" {
+	if statusFilter == "running" || statusFilter == "completed" || statusFilter == "failed" || statusFilter == "cancelled" { //nolint:misspell
 		query += ` AND status = $` + strconv.Itoa(paramIdx)
 		args = append(args, statusFilter)
 		paramIdx++
@@ -361,7 +362,7 @@ func (h *Handler) ListTraces(w http.ResponseWriter, r *http.Request) {
 	var total int
 	countQuery := `SELECT COUNT(*) FROM agent.traces WHERE tenant_id = $1`
 	countArgs := []interface{}{tenantID}
-	if statusFilter == "running" || statusFilter == "completed" || statusFilter == "failed" || statusFilter == "cancelled" {
+	if statusFilter == "running" || statusFilter == "completed" || statusFilter == "failed" || statusFilter == "cancelled" { //nolint:misspell
 		countQuery += ` AND status = $2`
 		countArgs = append(countArgs, statusFilter)
 	}

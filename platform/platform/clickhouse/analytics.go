@@ -1,3 +1,4 @@
+// Package clickhouse provides ClickHouse analytics.
 package clickhouse
 
 import (

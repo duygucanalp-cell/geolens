@@ -73,7 +73,7 @@ func (s *StripeClient) CreateCheckout(tenantID, tier, successURL, cancelURL stri
 		return nil, fmt.Errorf("param marshal: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", "https://api.stripe.com/v1/checkout/sessions", bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(context.Background(), "POST", "https://api.stripe.com/v1/checkout/sessions", bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("stripe istek: %w", err)
 	}
@@ -84,7 +84,7 @@ func (s *StripeClient) CreateCheckout(tenantID, tier, successURL, cancelURL stri
 	if err != nil {
 		return nil, fmt.Errorf("stripe api çağrısı: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	raw, err := io.ReadAll(resp.Body)
 	if err != nil {

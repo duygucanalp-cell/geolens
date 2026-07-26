@@ -1,3 +1,4 @@
+// Package pdf provides handlers and logic for pdf functionality.
 package pdf
 
 import (
@@ -57,7 +58,7 @@ func (h *Handler) GenerateWeeklyDigest(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", "attachment; filename=\""+result.FileName+"\"")
 	w.Header().Set("Content-Length", fmt.Sprintf("%d", len(result.Data)))
 	w.WriteHeader(http.StatusOK)
-	w.Write(result.Data)
+	_, _ = w.Write(result.Data)
 }
 
 // GenerateScoreCard handles POST /v1/workspaces/{ws}/reports/score-card
@@ -95,7 +96,7 @@ func (h *Handler) GenerateScoreCard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", "attachment; filename=\""+result.FileName+"\"")
 	w.Header().Set("Content-Length", fmt.Sprintf("%d", len(result.Data)))
 	w.WriteHeader(http.StatusOK)
-	w.Write(result.Data)
+	_, _ = w.Write(result.Data)
 }
 
 // GenerateAuditReport handles POST /v1/workspaces/{ws}/reports/audit
@@ -133,7 +134,7 @@ func (h *Handler) GenerateAuditReport(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", "attachment; filename=\""+result.FileName+"\"")
 	w.Header().Set("Content-Length", fmt.Sprintf("%d", len(result.Data)))
 	w.WriteHeader(http.StatusOK)
-	w.Write(result.Data)
+	_, _ = w.Write(result.Data)
 }
 
 // ---- Async Report Flow (FR-F5) ----
@@ -275,5 +276,5 @@ func (h *Handler) DownloadReport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write(reportData)
+	_, _ = w.Write(reportData)
 }

@@ -1,3 +1,4 @@
+// Package billing provides handlers and logic for billing functionality.
 package billing
 
 import (

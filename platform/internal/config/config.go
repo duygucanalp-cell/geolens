@@ -1,3 +1,4 @@
+// Package internal/config provides internal/config functionality.
 package config
 
 import (

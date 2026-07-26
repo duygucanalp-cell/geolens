@@ -1,3 +1,4 @@
+// Package httputil provides httputil related functionality.
 package httputil
 
 import (

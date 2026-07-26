@@ -1,3 +1,4 @@
+// Package incident provides handlers and logic for incident functionality.
 package incident
 
 import (

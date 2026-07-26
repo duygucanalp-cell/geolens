@@ -1,3 +1,4 @@
+// Package guardrail provides handlers and logic for guardrail functionality.
 package guardrail
 
 import (

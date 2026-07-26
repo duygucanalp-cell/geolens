@@ -1,3 +1,4 @@
+// Package usage provides handlers and logic for usage functionality.
 package usage
 
 import (

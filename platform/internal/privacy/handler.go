@@ -1,3 +1,4 @@
+// Package privacy provides handlers and logic for privacy functionality.
 package privacy
 
 import (
@@ -103,7 +104,7 @@ func (h *Handler) RequestDeletion(w http.ResponseWriter, r *http.Request) {
 			httputil.WriteError(w, http.StatusInternalServerError, "silme işlemi başarısız")
 			return
 		}
-		defer tx.Rollback(ctx)
+		defer func() { _ = tx.Rollback(ctx) }()
 
 		err = tx.QueryRow(ctx, `
 			INSERT INTO privacy.deletion_requests (id, tenant_id, requested_by, status, reason, processed_at, processed_by)
@@ -272,7 +273,7 @@ func (h *Handler) ProcessDeletionRequest(w http.ResponseWriter, r *http.Request)
 			httputil.WriteError(w, http.StatusInternalServerError, "işlem başarısız")
 			return
 		}
-		defer tx.Rollback(ctx)
+		defer func() { _ = tx.Rollback(ctx) }()
 
 		err = tx.QueryRow(ctx, `
 			UPDATE privacy.deletion_requests

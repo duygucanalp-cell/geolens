@@ -1,3 +1,4 @@
+// Package measure provides handlers and logic for measure functionality.
 package measure
 
 import (
@@ -156,7 +157,7 @@ func (h *Handler) TriggerMeasurement(w http.ResponseWriter, r *http.Request) {
 	)
 
 	// Demo: asenkron job'ların yanında senkron ölçüm + skor da hesapla
-	// (mock engine ile anlık sonuç alınır, worker pipeline'ı da paralel işler)
+	// (mock engine ile anlık sonuç alınır, worker pipeline'ı da paralel işler) //nolint:misspell
 	// context.Background() kullanılır çünkü HTTP request context'i goroutine çalışana kadar iptal olabilir
 	go h.immediateMeasureAndScore(context.Background(), brandName, req.BrandID, websiteURL, panelID, workspaceID, tenantID, promptText)
 

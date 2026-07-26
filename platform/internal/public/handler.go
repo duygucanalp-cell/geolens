@@ -1,3 +1,4 @@
+// Package public provides handlers and logic for public functionality.
 package public
 
 import (

@@ -1,3 +1,4 @@
+// Package apikey provides handlers and logic for apikey functionality.
 package apikey
 
 import (

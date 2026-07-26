@@ -1,3 +1,4 @@
+// Package compliance provides handlers and logic for compliance functionality.
 package compliance
 
 import (

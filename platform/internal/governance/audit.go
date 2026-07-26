@@ -1,3 +1,4 @@
+// Package governance provides audit logging and quota management.
 package governance
 
 import (

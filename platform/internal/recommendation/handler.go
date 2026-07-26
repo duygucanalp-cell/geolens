@@ -1,3 +1,4 @@
+// Package recommendation provides handlers and logic for recommendation functionality.
 package recommendation
 
 import (

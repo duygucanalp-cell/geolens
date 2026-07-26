@@ -1,6 +1,7 @@
 package governance
 
 import (
+	"context"
 	"testing"
 	"time"
 )
@@ -53,7 +54,7 @@ func TestNewAuditLogger(t *testing.T) {
 func TestRecordEvent_NoPool(t *testing.T) {
 	t.Parallel()
 	logger := NewAuditLogger(nil)
-	err := logger.RecordEvent(nil, "tenant-1", "test.event", "brand", "brand-1", "delete")
+	err := logger.RecordEvent(context.TODO(), "tenant-1", "test.event", "brand", "brand-1", "delete")
 	// should panic or return error with nil pool — test passes if we reach here
 	if err == nil {
 		t.Log("no error (pool nil doesn't panic at this level)")
@@ -63,7 +64,7 @@ func TestRecordEvent_NoPool(t *testing.T) {
 func TestRecord_NoPool(t *testing.T) {
 	t.Parallel()
 	logger := NewAuditLogger(nil)
-	err := logger.Record(nil, AuditEntry{
+	err := logger.Record(context.TODO(), AuditEntry{
 		TenantID:  "tenant-1",
 		EventType: "test.event",
 		Action:    "read",

@@ -1,3 +1,4 @@
+// Package explain provides handlers and logic for explain functionality.
 package explain
 
 import (

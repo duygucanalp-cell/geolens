@@ -1,3 +1,4 @@
+// Package chatgpt provides an adapter for the chatgpt AI engine.
 package chatgpt
 
 import (
@@ -146,7 +147,7 @@ func (a *Adapter) Execute(ctx context.Context, prompt string) (*engine.RawRespon
 	if err != nil {
 		return nil, fmt.Errorf("chatgpt api çağrısı: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	durationMs := time.Since(start).Milliseconds()
 

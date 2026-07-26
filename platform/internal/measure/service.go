@@ -60,7 +60,6 @@ func (s *service) Measure(ctx context.Context, req MeasurementRequest) (*Measure
 	type sampleResult struct {
 		engineName string
 		responses  []*engine.RawResponse
-		err        error
 	}
 
 	results := make([]sampleResult, 0, len(engineNames))
@@ -80,7 +79,7 @@ func (s *service) Measure(ctx context.Context, req MeasurementRequest) (*Measure
 			adapter = ce.WithContext(req.TenantID, req.WorkspaceID)
 		}
 
-		// n={sampleCount} paralel örnekleme
+		// n={sampleCount} paralel örnekleme //nolint:misspell
 		var wg sync.WaitGroup
 		samples := make([]*engine.RawResponse, sampleCount)
 		var sampleErr error

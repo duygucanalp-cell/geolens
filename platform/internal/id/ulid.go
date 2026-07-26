@@ -1,3 +1,4 @@
+// Package internal/id provides internal/id functionality.
 package id
 
 import (

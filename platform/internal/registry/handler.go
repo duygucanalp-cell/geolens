@@ -1,3 +1,4 @@
+// Package registry provides handlers and logic for registry functionality.
 package registry
 
 import (

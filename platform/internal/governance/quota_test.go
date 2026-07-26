@@ -1,6 +1,7 @@
 package governance
 
 import (
+	"context"
 	"testing"
 )
 
@@ -36,7 +37,7 @@ func TestDefaultBuckets(t *testing.T) {
 
 func TestEnsureBuckets_NilPool(t *testing.T) {
 	qc := NewQuotaChecker(nil)
-	err := qc.EnsureBuckets(nil, "tenant-1")
+	err := qc.EnsureBuckets(context.TODO(), "tenant-1")
 	if err != nil {
 		t.Logf("expected no error with nil pool (just warning): %v", err)
 	}
@@ -44,7 +45,7 @@ func TestEnsureBuckets_NilPool(t *testing.T) {
 
 func TestCheckAndConsume_NilPool(t *testing.T) {
 	qc := NewQuotaChecker(nil)
-	allowed, err := qc.CheckAndConsume(nil, "tenant-1", "engine_calls_per_min")
+	allowed, err := qc.CheckAndConsume(context.TODO(), "tenant-1", "engine_calls_per_min")
 	if err != nil {
 		t.Fatal("expected no error from CheckAndConsume with nil pool")
 	}

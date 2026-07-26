@@ -1,3 +1,4 @@
+// Package sso provides handlers and logic for sso functionality.
 package sso
 
 import (
@@ -141,7 +142,7 @@ func (h *Handler) GetSPMetadata(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/samlmetadata+xml")
-	w.Write(buf)
+	_, _ = w.Write(buf)
 }
 
 func (h *Handler) HandleACS(w http.ResponseWriter, r *http.Request) {

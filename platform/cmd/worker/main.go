@@ -1,3 +1,4 @@
+// Package main is the entry point for the GeoLens background worker.
 package main
 
 import (
@@ -44,23 +45,23 @@ func main() {
 	shutdown, err := telemetry.InitOTel(context.Background(), cfg)
 	if err != nil {
 		slog.Error("opentelemetry başlatılamadı", "error", err)
-		os.Exit(1)
+		return
 	}
 	defer shutdown()
 
 	pool, err := db.NewPool(context.Background(), cfg.DatabaseURL)
 	if err != nil {
 		slog.Error("veritabanı bağlantısı kurulamadı", "error", err)
-		os.Exit(1)
+		return
 	}
-	defer pool.Close()
+	pool.Close()
 
 	rdb, err := queue.NewRedisClient(cfg.RedisURL)
 	if err != nil {
 		slog.Error("redis bağlantısı kurulamadı", "error", err)
-		os.Exit(1)
+		return
 	}
-	defer rdb.Close()
+	defer func() { _ = rdb.Close() }()
 
 	// S3 Storage
 	s3Client, err := storage.NewClient(cfg.S3Endpoint, cfg.S3AccessKey, cfg.S3SecretKey, cfg.S3Bucket, cfg.S3Region, false)
@@ -176,14 +177,6 @@ func main() {
 	cancel()
 	wg.Wait()
 	slog.Info("worker durduruldu")
-}
-
-// streamMessage represents a message from Redis Stream.
-type streamMessage struct {
-	ID       string
-	Event    string
-	TenantID string
-	Data     map[string]interface{}
 }
 
 // runWorker continuously reads from Redis Stream and processes measurement jobs.

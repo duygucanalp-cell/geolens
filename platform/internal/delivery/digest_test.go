@@ -1,3 +1,4 @@
+// Package delivery provides notification delivery.
 package delivery
 
 import (

@@ -1,3 +1,4 @@
+// Package internal/audit provides internal/audit functionality.
 package audit
 
 import (

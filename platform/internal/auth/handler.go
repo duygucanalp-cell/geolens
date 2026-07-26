@@ -115,7 +115,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		httputil.WriteError(w, http.StatusInternalServerError, "kayıt başarısız")
 		return
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	var tenantID, userID, workspaceID string
 	err = tx.QueryRow(ctx, `

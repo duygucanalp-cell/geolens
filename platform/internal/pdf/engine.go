@@ -1,3 +1,4 @@
+// Package internal/pdf provides internal/pdf functionality.
 package pdf
 
 import (

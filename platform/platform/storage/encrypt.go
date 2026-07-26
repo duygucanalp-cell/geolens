@@ -1,3 +1,4 @@
+// Package storage provides storage related functionality.
 package storage
 
 import (
@@ -144,7 +145,7 @@ func (ec *EncryptedClient) GetEncryptedRawResponse(ctx context.Context, key, ten
 	if err != nil {
 		return nil, fmt.Errorf("s3 okuma: %w", err)
 	}
-	defer obj.Close()
+	defer func() { _ = obj.Close() }()
 
 	encrypted, err := io.ReadAll(obj)
 	if err != nil {
@@ -200,7 +201,7 @@ func (ec *EncryptedClient) getOrCreateTenantKey(ctx context.Context, tenantID st
 		if err != nil {
 			break // Anahtar bozulmuş olabilir, yeni oluştur
 		}
-		defer objData.Close()
+		defer func() { _ = objData.Close() }()
 
 		data, err := io.ReadAll(objData)
 		if err != nil {
@@ -238,7 +239,7 @@ func (ec *EncryptedClient) getOrCreateTenantKey(ctx context.Context, tenantID st
 			return nil, fmt.Errorf("tenant key çözme: %w", err)
 		}
 
-		return tenantKey, nil
+		return tenantKey, nil //nolint:staticcheck
 	}
 
 	// Yeni tenant anahtarı oluştur
@@ -289,7 +290,7 @@ func (ec *EncryptedClient) getOrCreateTenantKey(ctx context.Context, tenantID st
 		return nil, fmt.Errorf("envelope key kaydetme: %w", err)
 	}
 
-	return tenantKey, nil
+	return tenantKey, nil //nolint:staticcheck
 }
 
 // encryptAESGCM encrypts data using AES-256-GCM with the given key.

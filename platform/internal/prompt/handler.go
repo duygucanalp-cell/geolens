@@ -1,3 +1,4 @@
+// Package prompt provides handlers and logic for prompt functionality.
 package prompt
 
 import (
@@ -276,7 +277,7 @@ func (h *Handler) auditPrompt(promptText string) (float64, []map[string]interfac
 	}
 
 	// PII riski (basit tarama)
-	piiPatterns := []string{"@", "tc kimlik", "kimlik no", "pasaport", "telefon", "phone", "email", "adres", "address"}
+	piiPatterns := []string{"@", "tc kimlik", "kimlik no", "pasaport", "telefon", "phone", "email", "adres", "address"} //nolint:misspell
 	if containsAny(promptText, piiPatterns) {
 		issues = append(issues, map[string]interface{}{
 			"type": "pii", "severity": "high",

@@ -1,3 +1,4 @@
+// Package internal/measure provides internal/measure functionality.
 package measure
 
 import (

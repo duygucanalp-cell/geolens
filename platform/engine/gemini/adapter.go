@@ -1,3 +1,4 @@
+// Package gemini provides an adapter for the gemini AI engine.
 package gemini
 
 import (
@@ -163,7 +164,7 @@ func (a *Adapter) Execute(ctx context.Context, prompt string) (*engine.RawRespon
 	if err != nil {
 		return nil, fmt.Errorf("gemini api çağrısı: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	durationMs := time.Since(start).Milliseconds()
 

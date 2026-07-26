@@ -1,3 +1,4 @@
+// Package retention provides handlers and logic for retention functionality.
 package retention
 
 import (

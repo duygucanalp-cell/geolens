@@ -1,3 +1,4 @@
+// Package bias provides handlers and logic for bias functionality.
 package bias
 
 import (

@@ -1,3 +1,4 @@
+// Package cost provides handlers and logic for cost functionality.
 package cost
 
 import (

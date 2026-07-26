@@ -1,3 +1,4 @@
+// Package queue provides queue related functionality.
 package queue
 
 import (
@@ -22,9 +23,9 @@ type EventOutbox struct {
 
 // Dispatcher reads pending outbox records from PostgreSQL and dispatches them to Redis Streams.
 type Dispatcher struct {
-	pool       *pgxpool.Pool
-	rdb        *redis.Client
-	pollInterval time.Duration
+	pool          *pgxpool.Pool
+	rdb           *redis.Client
+	pollInterval  time.Duration
 	consumerGroup string
 }
 
@@ -47,7 +48,7 @@ const (
 	StreamDead    = "q:dead"
 )
 
-// Start begins the dispatch loop. Runs until the context is cancelled.
+// Start begins the dispatch loop. Runs until the context is cancelled. //nolint:misspell
 func (d *Dispatcher) Start(ctx context.Context) {
 	// Consumer gruplarını oluştur (ilk seferde hata vermez)
 	for _, stream := range []string{StreamMeasure, StreamAudit, StreamReport, StreamNotify, StreamDead} {

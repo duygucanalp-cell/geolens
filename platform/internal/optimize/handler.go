@@ -1,3 +1,4 @@
+// Package optimize provides handlers and logic for optimize functionality.
 package optimize
 
 import (

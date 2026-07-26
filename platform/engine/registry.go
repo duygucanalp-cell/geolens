@@ -1,3 +1,4 @@
+// Package engine provides interfaces and registry for AI engine adapters.
 package engine
 
 import "context"

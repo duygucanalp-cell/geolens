@@ -1,6 +1,7 @@
 package governance
 
 import (
+	"context"
 	"testing"
 	"time"
 )
@@ -29,7 +30,7 @@ func TestUsageMetricConstants(t *testing.T) {
 
 func TestRecordUsage_NilPool(t *testing.T) {
 	ur := NewUsageRecorder(nil)
-	err := ur.RecordUsage(nil, "tenant-1", MetricEngineCalls, 1, "brand", "brand-1")
+	err := ur.RecordUsage(context.TODO(), "tenant-1", MetricEngineCalls, 1, "brand", "brand-1")
 	if err == nil {
 		t.Log("expected error with nil pool (no panic)")
 	}
@@ -37,7 +38,7 @@ func TestRecordUsage_NilPool(t *testing.T) {
 
 func TestIncrementUsage_NilPool(t *testing.T) {
 	ur := NewUsageRecorder(nil)
-	err := ur.IncrementUsage(nil, "tenant-1", MetricAPIRequests, "api", "req-1")
+	err := ur.IncrementUsage(context.TODO(), "tenant-1", MetricAPIRequests, "api", "req-1")
 	if err == nil {
 		t.Log("expected error with nil pool (no panic)")
 	}
@@ -45,7 +46,7 @@ func TestIncrementUsage_NilPool(t *testing.T) {
 
 func TestGetUsageSummary_NilPool(t *testing.T) {
 	ur := NewUsageRecorder(nil)
-	_, err := ur.GetUsageSummary(nil, "tenant-1", time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC))
+	_, err := ur.GetUsageSummary(context.TODO(), "tenant-1", time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC))
 	if err == nil {
 		t.Log("expected error with nil pool (no panic)")
 	}

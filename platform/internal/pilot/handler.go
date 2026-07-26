@@ -1,3 +1,4 @@
+// Package pilot provides handlers and logic for pilot functionality.
 package pilot
 
 import (

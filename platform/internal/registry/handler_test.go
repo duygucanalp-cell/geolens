@@ -640,10 +640,10 @@ func TestAssessRisk_DBError(t *testing.T) {
 func TestNoopIndexer(t *testing.T) {
 	e := noopIndexer{}
 
-	if err := e.IndexEntity(nil, Entity{}); err != nil {
+	if err := e.IndexEntity(context.TODO(), Entity{}); err != nil {
 		t.Fatalf("noop IndexEntity should not error: %v", err)
 	}
-	if err := e.DeleteEntity(nil, "test-id"); err != nil {
+	if err := e.DeleteEntity(context.TODO(), "test-id"); err != nil {
 		t.Fatalf("noop DeleteEntity should not error: %v", err)
 	}
 }
@@ -651,10 +651,10 @@ func TestNoopIndexer(t *testing.T) {
 func TestESIndexer_NilClient(t *testing.T) {
 	e := &esIndexer{client: nil}
 
-	if err := e.IndexEntity(nil, Entity{}); err != nil {
+	if err := e.IndexEntity(context.TODO(), Entity{}); err != nil {
 		t.Fatalf("esIndexer with nil client: %v", err)
 	}
-	if err := e.DeleteEntity(nil, "test-id"); err != nil {
+	if err := e.DeleteEntity(context.TODO(), "test-id"); err != nil {
 		t.Fatalf("esIndexer with nil client: %v", err)
 	}
 }

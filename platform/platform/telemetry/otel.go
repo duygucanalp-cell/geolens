@@ -1,3 +1,4 @@
+// Package telemetry provides OpenTelemetry initialization.
 package telemetry
 
 import (

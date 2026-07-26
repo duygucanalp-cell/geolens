@@ -1,3 +1,4 @@
+// Package gate provides handlers and logic for gate functionality.
 package gate
 
 import (

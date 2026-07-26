@@ -1,3 +1,4 @@
+// Package main is the entry point for the GeoLens API server.
 package main
 
 import (
@@ -74,7 +75,7 @@ func main() {
 	shutdown, err := telemetry.InitOTel(context.Background(), cfg)
 	if err != nil {
 		slog.Error("opentelemetry başlatılamadı", "error", err)
-		os.Exit(1)
+		return
 	}
 	defer shutdown()
 
@@ -82,9 +83,9 @@ func main() {
 	pool, err := db.NewPool(context.Background(), cfg.DatabaseURL)
 	if err != nil {
 		slog.Error("veritabanı bağlantısı kurulamadı", "error", err)
-		os.Exit(1)
+		return
 	}
-	defer pool.Close()
+	pool.Close()
 
 	// JWT servisi
 	jwtService := auth.NewJWTService(cfg.JWTSecret)
@@ -137,7 +138,7 @@ func main() {
 		slog.Warn("redis istemci oluşturulamadı, cache olmadan çalışılacak", "error", err)
 	}
 	if redisClient != nil {
-		defer redisClient.Close()
+		defer func() { _ = redisClient.Close() }()
 	}
 
 	// Handler'lar
@@ -196,7 +197,7 @@ func main() {
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"ok"}`))
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
 	})
 	r.Get("/metrics", promhttp.Handler().ServeHTTP)
 
@@ -469,7 +470,7 @@ func main() {
 		slog.Info("api sunucusu başlatılıyor", "port", cfg.Port)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			slog.Error("sunucu hatası", "error", err)
-			os.Exit(1)
+			return
 		}
 	}()
 
@@ -483,6 +484,6 @@ func main() {
 
 	if err := srv.Shutdown(ctx); err != nil {
 		slog.Error("sunucu kapatılamadı", "error", err)
-		os.Exit(1)
+		return
 	}
 }
