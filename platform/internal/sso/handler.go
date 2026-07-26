@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/beevik/etree"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/httputil"
@@ -130,15 +131,36 @@ func (h *Handler) GetSPMetadata(w http.ResponseWriter, r *http.Request) {
 		acsURL = "https://geolens.app/v1/sso/acs/" + tenantID
 	}
 
-	metadata := `<?xml version="1.0"?>
-<md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" entityID="` + spEntityID + `">
-  <md:SPSSODescriptor AuthnRequestsSigned="false" WantAssertionsSigned="true" protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
-    <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="` + acsURL + `" index="0"/>
-  </md:SPSSODescriptor>
-</md:EntityDescriptor>`
+	// Use etree for safe XML building (prevents XML injection)
+	doc := etree.NewDocument()
+	doc.WriteSettings = etree.WriteSettings{
+		CanonicalEndTags: false,
+	}
+	doc.CreateProcInst("xml", `version="1.0"`)
+
+	entityDesc := doc.CreateElement("md:EntityDescriptor")
+	entityDesc.CreateAttr("xmlns:md", "urn:oasis:names:tc:SAML:2.0:metadata")
+	entityDesc.CreateAttr("entityID", spEntityID)
+
+	spDescriptor := entityDesc.CreateElement("md:SPSSODescriptor")
+	spDescriptor.CreateAttr("AuthnRequestsSigned", "false")
+	spDescriptor.CreateAttr("WantAssertionsSigned", "true")
+	spDescriptor.CreateAttr("protocolSupportEnumeration", "urn:oasis:names:tc:SAML:2.0:protocol")
+
+	acs := spDescriptor.CreateElement("md:AssertionConsumerService")
+	acs.CreateAttr("Binding", "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST")
+	acs.CreateAttr("Location", acsURL)
+	acs.CreateAttr("index", "0")
+
+	metadata, err := doc.WriteToBytes()
+	if err != nil {
+		slog.Error("SAML metadata XML oluşturma hatası", "error", err)
+		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "metadata oluşturulamadı"})
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/samlmetadata+xml")
-	w.Write([]byte(metadata))
+	w.Write(metadata)
 }
 
 func (h *Handler) HandleACS(w http.ResponseWriter, r *http.Request) {

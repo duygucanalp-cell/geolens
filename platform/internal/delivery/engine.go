@@ -1,6 +1,7 @@
 package delivery
 
 import (
+	"context"
 	"fmt"
 	"time"
 )
@@ -156,8 +157,8 @@ type Service interface {
 	SendWeeklyDigest(workspaceID, tenantID string) error
 
 	// GetSettings returns the notification settings for a workspace.
-	GetSettings(workspaceID, tenantID string) (*NotificationSettings, error)
+	GetSettings(ctx context.Context, workspaceID, tenantID string) (*NotificationSettings, error)
 
-	// UpdateSettings saves notification settings for a workspace.
-	UpdateSettings(settings *NotificationSettings, tenantID string) error
+	// UpdateSettings saves notification settings for a workspace using the given context.
+	UpdateSettings(ctx context.Context, settings *NotificationSettings, tenantID string) error
 }

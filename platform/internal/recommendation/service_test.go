@@ -1,6 +1,7 @@
 package recommendation
 
 import (
+	"context"
 	"testing"
 	"time"
 )
@@ -51,8 +52,8 @@ func TestEvaluate_All_ReturnsAllRulesWhenNoScore(t *testing.T) {
 	// When no score data exists, no rules should fire
 	svc := &service{rules: defaultRules}
 
-	ctx := testContext(&ScoreSnapshot{}, nil)
-	results := svc.evaluateBrand(ctx)
+	evalCtx := testContext(&ScoreSnapshot{}, nil)
+	results := svc.evaluateBrand(context.Background(), evalCtx)
 
 	if len(results) != 0 {
 		t.Errorf("expected 0 results when no score, got %d", len(results))
@@ -61,9 +62,9 @@ func TestEvaluate_All_ReturnsAllRulesWhenNoScore(t *testing.T) {
 
 func TestEvaluate_ScoreDropFires(t *testing.T) {
 	svc := &service{rules: defaultRules}
-	ctx := testContext(testScore(50, 70, nil), nil) // dropped from 70 to 50
+	evalCtx := testContext(testScore(50, 70, nil), nil) // dropped from 70 to 50
 
-	results := svc.evaluateBrand(ctx)
+	results := svc.evaluateBrand(context.Background(), evalCtx)
 
 	found := false
 	for _, r := range results {
@@ -79,9 +80,9 @@ func TestEvaluate_ScoreDropFires(t *testing.T) {
 
 func TestEvaluate_ScoreDropNotFires(t *testing.T) {
 	svc := &service{rules: defaultRules}
-	ctx := testContext(testScore(65, 70, nil), nil) // dropped from 70 to 65 (only 5)
+	evalCtx := testContext(testScore(65, 70, nil), nil) // dropped from 70 to 65 (only 5)
 
-	results := svc.evaluateBrand(ctx)
+	results := svc.evaluateBrand(context.Background(), evalCtx)
 
 	for _, r := range results {
 		if r.Title == "Görünürlük skorunuz düşüyor" {
@@ -92,9 +93,9 @@ func TestEvaluate_ScoreDropNotFires(t *testing.T) {
 
 func TestEvaluate_TrendDeclineFires(t *testing.T) {
 	svc := &service{rules: defaultRules}
-	ctx := testContext(testScore(55, 70, nil), nil) // downward trend
+	evalCtx := testContext(testScore(55, 70, nil), nil) // downward trend
 
-	results := svc.evaluateBrand(ctx)
+	results := svc.evaluateBrand(context.Background(), evalCtx)
 
 	found := false
 	for _, r := range results {
@@ -110,9 +111,9 @@ func TestEvaluate_TrendDeclineFires(t *testing.T) {
 
 func TestEvaluate_TrendRisingNotFires(t *testing.T) {
 	svc := &service{rules: defaultRules}
-	ctx := testContext(testScore(78, 65, nil), nil) // upward trend
+	evalCtx := testContext(testScore(78, 65, nil), nil) // upward trend
 
-	results := svc.evaluateBrand(ctx)
+	results := svc.evaluateBrand(context.Background(), evalCtx)
 
 	for _, r := range results {
 		if r.Title == "Görünürlük trendiniz geriliyor" {
@@ -123,13 +124,13 @@ func TestEvaluate_TrendRisingNotFires(t *testing.T) {
 
 func TestEvaluate_EngineGapFires(t *testing.T) {
 	svc := &service{rules: defaultRules}
-	ctx := testContext(testScore(65, 0, map[string]float64{
+	evalCtx := testContext(testScore(65, 0, map[string]float64{
 		"perplexity": 85,
 		"chatgpt":    45,
 		"gemini":     80,
 	}), nil) // gap: 85-45 = 40 > 30
 
-	results := svc.evaluateBrand(ctx)
+	results := svc.evaluateBrand(context.Background(), evalCtx)
 
 	found := false
 	for _, r := range results {
@@ -145,12 +146,12 @@ func TestEvaluate_EngineGapFires(t *testing.T) {
 
 func TestEvaluate_EngineGapNotFires(t *testing.T) {
 	svc := &service{rules: defaultRules}
-	ctx := testContext(testScore(65, 0, map[string]float64{
+	evalCtx := testContext(testScore(65, 0, map[string]float64{
 		"perplexity": 72,
 		"chatgpt":    68,
 	}), nil) // gap: 72-68 = 4 < 30
 
-	results := svc.evaluateBrand(ctx)
+	results := svc.evaluateBrand(context.Background(), evalCtx)
 
 	for _, r := range results {
 		if r.Title == "Motorlar arasında büyük performans farkı var" {
@@ -162,12 +163,12 @@ func TestEvaluate_EngineGapNotFires(t *testing.T) {
 func TestEvaluate_MultipleRules(t *testing.T) {
 	svc := &service{rules: defaultRules}
 	// Score 50 -> 30 (drop of 20 > 10, trend declining)
-	ctx := testContext(testScore(30, 50, map[string]float64{
+	evalCtx := testContext(testScore(30, 50, map[string]float64{
 		"perplexity": 35,
 		"chatgpt":    25,
 	}), nil)
 
-	results := svc.evaluateBrand(ctx)
+	results := svc.evaluateBrand(context.Background(), evalCtx)
 
 	if len(results) < 2 {
 		t.Errorf("expected multiple rules to fire, got %d", len(results))
@@ -176,9 +177,9 @@ func TestEvaluate_MultipleRules(t *testing.T) {
 
 func TestEvaluate_ConfidenceScore(t *testing.T) {
 	svc := &service{rules: defaultRules}
-	ctx := testContext(testScore(50, 70, nil), nil)
+	evalCtx := testContext(testScore(50, 70, nil), nil)
 
-	results := svc.evaluateBrand(ctx)
+	results := svc.evaluateBrand(context.Background(), evalCtx)
 	if len(results) == 0 {
 		t.Fatal("expected at least one result")
 	}

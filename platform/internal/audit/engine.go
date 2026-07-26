@@ -1,6 +1,7 @@
 package audit
 
 import (
+	"context"
 	"time"
 )
 
@@ -71,8 +72,8 @@ type Service interface {
 	// Audit performs a complete site audit for the given brand.
 	Audit(brandID, brandName, websiteURL string) (*AuditResult, error)
 
-	// Save persists an audit result to the database.
-	Save(result *AuditResult) error
+	// Save persists an audit result to the database using the given context.
+	Save(ctx context.Context, result *AuditResult) error
 }
 
 // AICrawler represents a known AI crawler/bot information.

@@ -51,14 +51,21 @@ func (h *Handler) ListBrands(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
+	var parseErrors int
 	brands := make([]brandResponse, 0)
 	for rows.Next() {
 		var b brandResponse
 		if err := rows.Scan(&b.ID, &b.Name, &b.WebsiteURL); err != nil {
 			slog.Error("marka satır okuma hatası", "error", err)
+			parseErrors++
 			continue
 		}
 		brands = append(brands, b)
+	}
+
+	// K5: Kısmi sonuç uyarısı (parseErrors > 0 ise response header'a eklenir)
+	if parseErrors > 0 {
+		w.Header().Set("X-Has-More", "true")
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, brands)

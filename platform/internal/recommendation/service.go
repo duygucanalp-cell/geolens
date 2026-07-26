@@ -222,12 +222,11 @@ func NewService(pool *db.Pool) Service {
 
 // Evaluate evaluates all rules against real data for a single brand.
 // Sonuçlar NG10 filtresinden geçirilir: sadece NG (nötr) ve P (pozitif) öneriler döner.
-func (s *service) Evaluate(brandID, workspaceID, tenantID string) ([]Recommendation, error) {
+func (s *service) Evaluate(ctx context.Context, brandID, workspaceID, tenantID string) ([]Recommendation, error) {
 	if brandID == "" {
-		return s.EvaluateAll(workspaceID, tenantID)
+		return s.EvaluateAll(ctx, workspaceID, tenantID)
 	}
 
-	ctx := context.Background()
 	snapshot := s.loadScore(ctx, brandID, workspaceID, tenantID)
 	audit := s.loadAudit(ctx, brandID, tenantID)
 
@@ -239,7 +238,7 @@ func (s *service) Evaluate(brandID, workspaceID, tenantID string) ([]Recommendat
 		Audit:       audit,
 	}
 
-	recs := s.evaluateBrand(evalCtx)
+	recs := s.evaluateBrand(ctx, evalCtx)
 
 	// NG10 filtresi uygula
 	filtered := s.ng10.FilterRecommendations(recs)
@@ -256,9 +255,7 @@ func (s *service) Evaluate(brandID, workspaceID, tenantID string) ([]Recommendat
 
 // EvaluateAll evaluates all rules for every brand in a workspace.
 // Sonuçlar NG10 filtresinden geçirilir: sadece NG (nötr) ve P (pozitif) öneriler döner.
-func (s *service) EvaluateAll(workspaceID, tenantID string) ([]Recommendation, error) {
-	ctx := context.Background()
-
+func (s *service) EvaluateAll(ctx context.Context, workspaceID, tenantID string) ([]Recommendation, error) {
 	rows, err := s.pool.Query(ctx, `
 		SELECT id, name FROM config.brands
 		WHERE workspace_id = $1 AND tenant_id = $2 AND is_active = true
@@ -287,7 +284,7 @@ func (s *service) EvaluateAll(workspaceID, tenantID string) ([]Recommendation, e
 			Score:       snapshot,
 			Audit:       audit,
 		}
-		results = append(results, s.evaluateBrand(evalCtx)...)
+		results = append(results, s.evaluateBrand(ctx, evalCtx)...)
 	}
 
 	// NG10 filtresi uygula
@@ -389,43 +386,42 @@ func (s *service) loadAudit(ctx context.Context, brandID, tenantID string) *Audi
 
 // evaluateBrand runs all rules against a single brand's context.
 // Sonuçları DB'ye kaydeder (recommendation.results).
-func (s *service) evaluateBrand(ctx *EvaluationContext) []Recommendation {
+func (s *service) evaluateBrand(ctx context.Context, evalCtx *EvaluationContext) []Recommendation {
 	var results []Recommendation
 	for _, rule := range s.rules {
 		if !rule.Active {
 			continue
 		}
-		if s.evaluateConditions(ctx, rule.Conditions) {
+		if s.evaluateConditions(evalCtx, rule.Conditions) {
 			rec := Recommendation{
 				ID:          generateULID(),
-				TenantID:    ctx.TenantID,
-				WorkspaceID: ctx.WorkspaceID,
-				BrandID:     ctx.BrandID,
+				TenantID:    evalCtx.TenantID,
+				WorkspaceID: evalCtx.WorkspaceID,
+				BrandID:     evalCtx.BrandID,
 				Category:    rule.Category,
 				Severity:    rule.Severity,
 				Evidence:    rule.Evidence,
 				Title:       rule.Title,
 				Detail:      rule.Detail,
 				ActionURL:   rule.ActionURL,
-				Score:       s.computeConfidence(ctx, rule),
+				Score:       s.computeConfidence(evalCtx, rule),
 				CreatedAt:   time.Now().UTC(),
 			}
 			results = append(results, rec)
 
 			// DB'ye kaydet (idempotent: aynı ID tekrar kaydedilmez)
-			s.saveRecommendation(rec)
+			s.saveRecommendation(ctx, rec)
 		}
 	}
 	return results
 }
 
-// saveRecommendation persists a recommendation to the database.
+// saveRecommendation persists a recommendation to the database using the given context.
 // Pool nil ise (test) atlama yapılır.
-func (s *service) saveRecommendation(rec Recommendation) {
+func (s *service) saveRecommendation(ctx context.Context, rec Recommendation) {
 	if s.pool == nil {
 		return
 	}
-	ctx := context.Background()
 	_, err := s.pool.Exec(ctx, `
 		INSERT INTO recommendation.results
 			(id, brand_id, workspace_id, tenant_id, category, severity, evidence,
@@ -576,9 +572,9 @@ func (s *service) GetRulesBySector(sector string) []Rule {
 }
 
 // MarkApplied marks a recommendation as applied in the database.
-func (s *service) MarkApplied(id, tenantID, workspaceID string) error {
+func (s *service) MarkApplied(ctx context.Context, id, tenantID, workspaceID string) error {
 	now := time.Now().UTC()
-	result, err := s.pool.Exec(context.Background(), `
+	result, err := s.pool.Exec(ctx, `
 		UPDATE recommendation.results
 		SET applied = true, applied_at = $2, updated_at = $2
 		WHERE id = $1 AND tenant_id = $3 AND workspace_id = $4
@@ -595,9 +591,9 @@ func (s *service) MarkApplied(id, tenantID, workspaceID string) error {
 }
 
 // MarkDismissed marks a recommendation as dismissed in the database.
-func (s *service) MarkDismissed(id, tenantID, workspaceID string) error {
+func (s *service) MarkDismissed(ctx context.Context, id, tenantID, workspaceID string) error {
 	now := time.Now().UTC()
-	result, err := s.pool.Exec(context.Background(), `
+	result, err := s.pool.Exec(ctx, `
 		UPDATE recommendation.results
 		SET dismissed = true, dismissed_at = $2, updated_at = $2
 		WHERE id = $1 AND tenant_id = $3 AND workspace_id = $4

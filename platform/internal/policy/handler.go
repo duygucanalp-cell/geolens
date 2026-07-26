@@ -1,6 +1,7 @@
 package policy
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -48,6 +49,50 @@ type Control struct {
 	UpdatedAt   string  `json:"updated_at"`
 }
 
+// SeedDefaultPacks creates default policy packs for a tenant if they don't exist.
+// EU AI Act, NIST AI RMF, KVKK, ISO 42001 otomatik oluşturulur.
+func SeedDefaultPacks(ctx context.Context, pool *db.Pool, tenantID string) {
+	frameworks := []struct {
+		Name        string
+		Framework   string
+		Description string
+	}{
+		{"EU AI Act Compliance", "eu_ai_act", "Avrupa Birliği Yapay Zeka Yasası uyum paketi"},
+		{"NIST AI RMF", "nist_ai_rmf", "NIST AI Risk Management Framework uyum paketi"},
+		{"KVKK Uyum Paketi", "kvkk", "Kişisel Verilerin Korunması Kanunu uyum paketi"},
+		{"ISO 42001 AI Management", "iso_42001", "ISO 42001 Yapay Zeka Yönetim Sistemi uyum paketi"},
+	}
+
+	for _, f := range frameworks {
+		var packID string
+		err := pool.QueryRow(ctx, `
+			INSERT INTO policy.packs (tenant_id, name, framework, description, enabled)
+			VALUES ($1, $2, $3, $4, true)
+			ON CONFLICT (tenant_id, framework) DO UPDATE SET updated_at = now()
+			RETURNING id
+		`, tenantID, f.Name, f.Framework, f.Description).Scan(&packID)
+		if err != nil {
+			slog.Warn("policy pack seed hatası", "framework", f.Framework, "error", err)
+			continue
+		}
+
+		// Seed default controls
+		controls := frameworkControls(f.Framework)
+		for _, c := range controls {
+			_, err := pool.Exec(ctx, `
+				INSERT INTO policy.controls (pack_id, tenant_id, control_id, title, description, category)
+				VALUES ($1, $2, $3, $4, $5, $6)
+				ON CONFLICT (pack_id, control_id) DO NOTHING
+			`, packID, tenantID, c.ID, c.Title, c.Description, c.Category)
+			if err != nil {
+				slog.Error("control seed hatası", "error", err)
+			}
+		}
+
+		slog.Info("policy pack seeded", "framework", f.Framework, "pack_id", packID, "controls", len(controls))
+	}
+}
+
 func (h *Handler) ListPacks(w http.ResponseWriter, r *http.Request) {
 	tenantID := httpmw.GetTenantID(r.Context())
 
@@ -73,6 +118,28 @@ func (h *Handler) ListPacks(w http.ResponseWriter, r *http.Request) {
 		packs = append(packs, p)
 	}
 
+	// Auto-seed: tenant hiç pack oluşturmamışsa default pack'leri yükle
+	if len(packs) == 0 {
+		SeedDefaultPacks(r.Context(), h.pool, tenantID)
+		// Yeniden sorgula
+		rows2, err2 := h.pool.Query(r.Context(), `
+			SELECT id, tenant_id, name, framework, description, version, enabled, applied_at, created_at, updated_at
+			FROM policy.packs WHERE tenant_id = $1 ORDER BY framework
+		`, tenantID)
+		if err2 == nil {
+			defer rows2.Close()
+			packs = nil
+			for rows2.Next() {
+				var p Pack
+				if err := rows2.Scan(&p.ID, &p.TenantID, &p.Name, &p.Framework, &p.Description,
+					&p.Version, &p.Enabled, &p.AppliedAt, &p.CreatedAt, &p.UpdatedAt); err != nil {
+					continue
+				}
+				packs = append(packs, p)
+			}
+		}
+	}
+
 	httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{"packs": packs})
 }
 
@@ -94,7 +161,7 @@ func (h *Handler) ApplyPack(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Seed default controls if not exist
-	h.seedControls(p.ID, tenantID, p.Framework)
+	h.seedControls(r.Context(), p.ID, tenantID, p.Framework)
 
 	httputil.WriteJSON(w, http.StatusOK, p)
 }
@@ -103,32 +170,48 @@ func (h *Handler) GetCompliance(w http.ResponseWriter, r *http.Request) {
 	tenantID := httpmw.GetTenantID(r.Context())
 	entityID := chi.URLParam(r, "entityId")
 
-	var total, passed, failed int
+	var total, passed, failed, notApplicable int
 	_ = h.pool.QueryRow(r.Context(), `
-		SELECT COUNT(*), COALESCE(SUM(CASE WHEN status = 'passed' THEN 1 ELSE 0 END), 0),
-			COALESCE(SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END), 0)
+		SELECT
+			COUNT(*)::int,
+			COALESCE(SUM(CASE WHEN status = 'passed' THEN 1 ELSE 0 END), 0)::int,
+			COALESCE(SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END), 0)::int,
+			COALESCE(SUM(CASE WHEN status = 'not_applicable' THEN 1 ELSE 0 END), 0)::int
 		FROM policy.controls WHERE tenant_id = $1
-	`, tenantID).Scan(&total, &passed, &failed)
+	`, tenantID).Scan(&total, &passed, &failed, &notApplicable)
+
+	// entity_id varsa registry risk assessment ile ilişkilendir
+	var riskLevel string
+	if entityID != "" && entityID != "undefined" && entityID != "null" {
+		_ = h.pool.QueryRow(r.Context(), `
+			SELECT COALESCE(risk_class, '') FROM registry.entities WHERE id = $1 AND tenant_id = $2
+		`, entityID, tenantID).Scan(&riskLevel)
+	}
 
 	compliancePct := float64(0)
 	if total > 0 {
 		compliancePct = float64(passed) / float64(total) * 100
 	}
 
-	httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{
+	result := map[string]interface{}{
 		"entity_id":      entityID,
 		"compliance_pct": compliancePct,
 		"total_controls": total,
 		"passed":         passed,
 		"failed":         failed,
-		"not_applicable": total - passed - failed,
-	})
+		"not_applicable": notApplicable,
+	}
+	if riskLevel != "" {
+		result["entity_risk_class"] = riskLevel
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, result)
 }
 
-func (h *Handler) seedControls(packID, tenantID, framework string) {
+func (h *Handler) seedControls(ctx context.Context, packID, tenantID, framework string) {
 	controls := frameworkControls(framework)
 	for _, c := range controls {
-		_, err := h.pool.Exec(nil, `
+		_, err := h.pool.Exec(ctx, `
 			INSERT INTO policy.controls (pack_id, tenant_id, control_id, title, description, category)
 			VALUES ($1, $2, $3, $4, $5, $6)
 			ON CONFLICT (pack_id, control_id) DO NOTHING
@@ -218,6 +301,12 @@ func (h *Handler) ListControls(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{"controls": controls})
+}
+
+func (h *Handler) SeedPacks(w http.ResponseWriter, r *http.Request) {
+	tenantID := httpmw.GetTenantID(r.Context())
+	SeedDefaultPacks(r.Context(), h.pool, tenantID)
+	httputil.WriteJSON(w, http.StatusOK, map[string]string{"status": "policy packs seeded"})
 }
 
 func (h *Handler) UpdateControl(w http.ResponseWriter, r *http.Request) {

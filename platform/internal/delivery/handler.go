@@ -32,7 +32,7 @@ func (h *Handler) GetSettings(w http.ResponseWriter, r *http.Request) {
 	workspaceID := httpmw.GetWorkspaceID(r.Context())
 	tenantID := httpmw.GetTenantID(r.Context())
 
-	settings, err := h.svc.GetSettings(workspaceID, tenantID)
+	settings, err := h.svc.GetSettings(r.Context(), workspaceID, tenantID)
 	if err != nil {
 		slog.Error("notification settings okuma hatası", "error", err)
 		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "ayarlar okunamadı"})
@@ -54,7 +54,7 @@ func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 	}
 	req.WorkspaceID = workspaceID
 
-	if err := h.svc.UpdateSettings(&req, tenantID); err != nil {
+	if err := h.svc.UpdateSettings(r.Context(), &req, tenantID); err != nil {
 		slog.Error("notification settings kaydetme hatası", "error", err)
 		status := http.StatusInternalServerError
 		// Validation errors should be 400, not 500

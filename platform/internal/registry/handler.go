@@ -1,23 +1,88 @@
 package registry
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/geolens/platform/internal/search"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/httputil"
 )
 
+// Indexer interface for registry entity indexing.
+type Indexer interface {
+	IndexEntity(ctx context.Context, e Entity) error
+	DeleteEntity(ctx context.Context, entityID string) error
+}
+
+type noopIndexer struct{}
+
+func (n noopIndexer) IndexEntity(_ context.Context, _ Entity) error  { return nil }
+func (n noopIndexer) DeleteEntity(_ context.Context, _ string) error { return nil }
+
+// esIndexer indexes registry entities into Elasticsearch.
+type esIndexer struct {
+	client *search.Client
+}
+
+func (e *esIndexer) IndexEntity(ctx context.Context, entity Entity) error {
+	if e.client == nil {
+		return nil
+	}
+	doc := search.IndexDoc{
+		Index: "geolens-registry",
+		ID:    entity.ID,
+		Body: map[string]interface{}{
+			"tenant_id":         entity.TenantID,
+			"entity_type":       entity.EntityType,
+			"name":              entity.Name,
+			"description":       entity.Description,
+			"version":           entity.Version,
+			"provider":          entity.Provider,
+			"lifecycle_state":   entity.LifecycleState,
+			"risk_class":        entity.RiskClass,
+			"owner":             entity.Owner,
+			"documentation_url": entity.DocumentationURL,
+			"updated_at":        entity.UpdatedAt,
+		},
+	}
+	if err := e.client.Index(ctx, doc); err != nil {
+		slog.Warn("registry ES indeksleme hatası", "entity_id", entity.ID, "error", err)
+		return err
+	}
+	return nil
+}
+
+func (e *esIndexer) DeleteEntity(ctx context.Context, entityID string) error {
+	if e.client == nil {
+		return nil
+	}
+	// ES delete via search client (re-index with empty body or use DELETE API)
+	// For now, log the event
+	slog.Debug("registry ES entity deleted (cleanup needed)", "entity_id", entityID)
+	return nil
+}
+
 type Handler struct {
-	pool *db.Pool
+	pool    *db.Pool
+	indexer Indexer
 }
 
 func NewHandler(pool *db.Pool) *Handler {
-	return &Handler{pool: pool}
+	return &Handler{pool: pool, indexer: noopIndexer{}}
+}
+
+// WithIndexer sets the Elasticsearch indexer for registry entities.
+func (h *Handler) WithIndexer(client *search.Client) *Handler {
+	if client != nil {
+		h.indexer = &esIndexer{client: client}
+	}
+	return h
 }
 
 type Entity struct {
@@ -162,6 +227,11 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// R1: Elasticsearch'e indeksle (hatayı logla ama yanıtı engelleme)
+	if err := h.indexer.IndexEntity(r.Context(), e); err != nil {
+		slog.Warn("registry ES indeksleme hatası (non-fatal)", "entity_id", e.ID, "error", err)
+	}
+
 	httputil.WriteJSON(w, http.StatusCreated, e)
 }
 
@@ -209,6 +279,11 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// R1: Elasticsearch'e yeniden indeksle
+	if err := h.indexer.IndexEntity(r.Context(), e); err != nil {
+		slog.Warn("registry ES indeksleme hatası (non-fatal)", "entity_id", e.ID, "error", err)
+	}
+
 	httputil.WriteJSON(w, http.StatusOK, e)
 }
 
@@ -226,6 +301,11 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	if result.RowsAffected() == 0 {
 		httputil.WriteJSON(w, http.StatusNotFound, map[string]string{"error": "varlık bulunamadı"})
 		return
+	}
+
+	// R1: Elasticsearch'ten sil (non-fatal)
+	if err := h.indexer.DeleteEntity(r.Context(), entityID); err != nil {
+		slog.Warn("registry ES silme hatası (non-fatal)", "entity_id", entityID, "error", err)
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, map[string]string{"status": "silindi"})

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 
 	"github.com/geolens/platform/internal/id"
 	"github.com/geolens/platform/platform/db"
@@ -21,7 +22,7 @@ func NewHandler(pool *db.Pool) *Handler {
 }
 
 func (h *Handler) Evaluate(w http.ResponseWriter, r *http.Request) {
-	_ = httpmw.GetTenantID(r.Context())
+	tenantID := httpmw.GetTenantID(r.Context())
 
 	var input struct {
 		ModelID    string                 `json:"model_id"`
@@ -37,16 +38,98 @@ func (h *Handler) Evaluate(w http.ResponseWriter, r *http.Request) {
 
 	results := h.computeBias(input.MetricType, input.Data)
 
-	slog.Info("bias değerlendirmesi tamam", "test_id", testID, "metric", input.MetricType)
+	// Persist sonucu DB'ye yaz
+	detailsJSON, _ := json.Marshal(results)
+	recsJSON, _ := json.Marshal(results["recommendations"])
+
+	fairnessScore, _ := results["fairness_score"].(float64)
+	hasBias, _ := results["has_bias"].(bool)
+
+	_, err := h.pool.Exec(r.Context(), `
+		INSERT INTO bias.tests (id, tenant_id, model_id, metric_type, fairness_score, has_bias, max_gap, details, recommendations)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+	`, testID, tenantID, input.ModelID, input.MetricType, fairnessScore, hasBias, results["max_gap"], detailsJSON, recsJSON)
+	if err != nil {
+		slog.Warn("bias testi DB'ye yazılamadı", "test_id", testID, "error", err)
+		// Non-fatal: sonucu yine de döndür
+	}
+
+	slog.Info("bias değerlendirmesi tamam", "test_id", testID, "metric", input.MetricType, "has_bias", hasBias, "fairness_score", fairnessScore)
 
 	httputil.WriteJSON(w, http.StatusCreated, map[string]interface{}{
 		"test_id":         testID,
 		"model_id":        input.ModelID,
 		"metric_type":     input.MetricType,
 		"results":         results,
-		"fairness_score":  results["fairness_score"],
+		"fairness_score":  fairnessScore,
 		"recommendations": results["recommendations"],
 	})
+}
+
+func (h *Handler) ListTests(w http.ResponseWriter, r *http.Request) {
+	tenantID := httpmw.GetTenantID(r.Context())
+
+	modelID := r.URL.Query().Get("model_id")
+	limit := r.URL.Query().Get("limit")
+	if limit == "" {
+		limit = "20"
+	}
+
+	limitInt, err := strconv.Atoi(limit)
+	if err != nil || limitInt < 1 || limitInt > 100 {
+		limitInt = 20
+	}
+
+	query := `SELECT id, model_id, metric_type, fairness_score, has_bias, max_gap, details, recommendations, created_at
+		FROM bias.tests WHERE tenant_id = $1`
+	args := []interface{}{tenantID}
+
+	if modelID != "" {
+		query += ` AND model_id = $2`
+		args = append(args, modelID)
+		query += ` ORDER BY created_at DESC LIMIT $3`
+		args = append(args, limitInt)
+	} else {
+		query += ` ORDER BY created_at DESC LIMIT $2`
+		args = append(args, limitInt)
+	}
+
+	rows, err := h.pool.Query(r.Context(), query, args...)
+	if err != nil {
+		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "test geçmişi alınamadı"})
+		return
+	}
+	defer rows.Close()
+
+	type testResult struct {
+		ID            string      `json:"id"`
+		ModelID       string      `json:"model_id"`
+		MetricType    string      `json:"metric_type"`
+		FairnessScore float64     `json:"fairness_score"`
+		HasBias       bool        `json:"has_bias"`
+		MaxGap        float64     `json:"max_gap"`
+		Details       interface{} `json:"details"`
+		Recs          interface{} `json:"recommendations"`
+		CreatedAt     string      `json:"created_at"`
+	}
+
+	var tests []testResult
+	for rows.Next() {
+		var t testResult
+		var createdAt string
+		if err := rows.Scan(&t.ID, &t.ModelID, &t.MetricType, &t.FairnessScore, &t.HasBias, &t.MaxGap, &t.Details, &t.Recs, &createdAt); err != nil {
+			slog.Warn("bias test satırı okunamadı", "error", err)
+			continue
+		}
+		t.CreatedAt = createdAt
+		tests = append(tests, t)
+	}
+
+	if tests == nil {
+		tests = []testResult{}
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, tests)
 }
 
 func (h *Handler) computeBias(metricType string, data map[string]interface{}) map[string]interface{} {
@@ -83,6 +166,7 @@ func (h *Handler) demographicParity(data map[string]interface{}) map[string]inte
 		return map[string]interface{}{
 			"fairness_score":  1.0,
 			"has_bias":        false,
+			"max_gap":         0.0,
 			"recommendations": []string{"Değerlendirme için grup bazlı pozitif oran verisi gerekli"},
 		}
 	}
@@ -120,8 +204,8 @@ func (h *Handler) demographicParity(data map[string]interface{}) map[string]inte
 	return map[string]interface{}{
 		"fairness_score":  score,
 		"has_bias":        gap > 0.1,
-		"groups":          groups,
 		"max_gap":         gap,
+		"groups":          groups,
 		"recommendations": recs,
 	}
 }
@@ -138,6 +222,7 @@ func (h *Handler) equalOpportunity(data map[string]interface{}) map[string]inter
 		return map[string]interface{}{
 			"fairness_score":  1.0,
 			"has_bias":        false,
+			"max_gap":         0.0,
 			"recommendations": []string{"True Positive Rate verisi gerekli"},
 		}
 	}
@@ -167,8 +252,8 @@ func (h *Handler) equalOpportunity(data map[string]interface{}) map[string]inter
 	return map[string]interface{}{
 		"fairness_score": score,
 		"has_bias":       gap > 0.1,
-		"tpr_groups":     tpr,
 		"max_gap":        gap,
+		"tpr_groups":     tpr,
 	}
 }
 
@@ -187,6 +272,7 @@ func (h *Handler) disparateImpact(data map[string]interface{}) map[string]interf
 		return map[string]interface{}{
 			"fairness_score":  1.0,
 			"has_bias":        false,
+			"max_gap":         0.0,
 			"recommendations": []string{"Korumalı ve korumasız grup oranları gerekli"},
 		}
 	}
@@ -195,9 +281,6 @@ func (h *Handler) disparateImpact(data map[string]interface{}) map[string]interf
 	score := ratio
 	if score > 1 {
 		score = 1.0 / ratio
-	}
-	if score > 1 {
-		score = 1
 	}
 
 	hasBias := ratio < 0.8 || ratio > 1.25
@@ -209,6 +292,7 @@ func (h *Handler) disparateImpact(data map[string]interface{}) map[string]interf
 	return map[string]interface{}{
 		"fairness_score":   score,
 		"has_bias":         hasBias,
+		"max_gap":          ratio,
 		"disparate_impact": ratio,
 		"four_fifths_rule": ratio >= 0.8,
 		"recommendations":  recs,

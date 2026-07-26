@@ -78,7 +78,7 @@ func (h *Handler) RunAudit(w http.ResponseWriter, r *http.Request) {
 	result.TenantID = tenantID
 
 	// Audit sonucunu DB'ye kaydet (RLS için önce workspace/tenant set edilmeli)
-	if err := h.svc.Save(result); err != nil {
+	if err := h.svc.Save(r.Context(), result); err != nil {
 		slog.Error("audit kaydetme hatası", "error", err)
 		// Kaydetme başarısız olsa bile sonucu döndür
 	}
@@ -132,7 +132,9 @@ func (h *Handler) GetFindingsCatalog(w http.ResponseWriter, r *http.Request) {
 		Detail         string `json:"detail"`
 		Recommendation string `json:"recommendation,omitempty"`
 	}
-	_ = json.Unmarshal([]byte(issuesJSON), &issues)
+	if err := json.Unmarshal([]byte(issuesJSON), &issues); err != nil {
+		slog.Warn("bulgu JSON çözümleme hatası", "error", err)
+	}
 
 	if issues == nil {
 		issues = []struct {

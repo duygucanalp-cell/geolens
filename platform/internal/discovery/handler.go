@@ -1,9 +1,11 @@
 package discovery
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -51,8 +53,9 @@ func (h *Handler) StartScan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Arka planda tarama başlat
-	go h.runScan(scanID, tenantID, input.ScanType, input.Provider)
+	// Arka planda tarama başlat (30sn timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	go h.runScan(ctx, cancel, scanID, tenantID, input.ScanType, input.Provider)
 
 	httputil.WriteJSON(w, http.StatusCreated, map[string]interface{}{
 		"scan_id": scanID,
@@ -60,28 +63,43 @@ func (h *Handler) StartScan(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *Handler) runScan(scanID, tenantID, scanType, provider string) {
+func (h *Handler) runScan(ctx context.Context, cancel context.CancelFunc, scanID, tenantID, scanType, provider string) {
+	defer cancel()
 	slog.Info("shadow ai taraması başladı", "scan_id", scanID, "tenant", tenantID)
 
 	findings := h.simulateScan(tenantID, provider)
 
 	for _, f := range findings {
-		_, err := h.pool.Exec(nil, `
+		select {
+		case <-ctx.Done():
+			slog.Warn("shadow ai taraması iptal edildi", "scan_id", scanID)
+			_, _ = h.pool.Exec(ctx, `
+				UPDATE discovery.scans SET status = 'failed', error_message = 'timeout', completed_at = now()
+				WHERE id = $1
+			`, scanID)
+			return
+		default:
+		}
+
+		_, err := h.pool.Exec(ctx, `
 			INSERT INTO discovery.findings (scan_id, tenant_id, resource_type, resource_name, resource_id, provider, region, risk_level, details)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb)
 		`, scanID, tenantID, f.ResourceType, f.ResourceName, f.ResourceID, f.Provider, f.Region, f.RiskLevel, f.Details)
 		if err != nil {
 			slog.Error("finding kayıt hatası", "error", err)
 		}
 
 		// Bulunan kaynakları registry'e de ekle
-		h.registerFinding(tenantID, f)
+		h.registerFinding(ctx, tenantID, f)
 	}
 
-	_, _ = h.pool.Exec(nil, `
+	_, err := h.pool.Exec(ctx, `
 		UPDATE discovery.scans SET status = 'completed', total_found = $2, completed_at = now()
 		WHERE id = $1
 	`, scanID, len(findings))
+	if err != nil {
+		slog.Warn("scan durum güncelleme hatası", "error", err)
+	}
 
 	slog.Info("shadow ai taraması tamam", "scan_id", scanID, "findings", len(findings))
 }
@@ -119,7 +137,7 @@ func (h *Handler) simulateScan(tenantID, provider string) []finding {
 	}
 }
 
-func (h *Handler) registerFinding(tenantID string, f finding) {
+func (h *Handler) registerFinding(ctx context.Context, tenantID string, f finding) {
 	entityName := f.ResourceName
 	if entityName == "" {
 		entityName = f.ResourceID
@@ -129,12 +147,26 @@ func (h *Handler) registerFinding(tenantID string, f finding) {
 		"aws": "AWS SageMaker", "gcp": "Google Vertex AI", "azure": "Azure AI",
 	}
 
-	_, _ = h.pool.Exec(nil, `
+	provider, ok := providerMap[f.Provider]
+	if !ok {
+		provider = f.Provider
+	}
+
+	// Proper JSON building instead of string concatenation
+	metaJSON, _ := json.Marshal(map[string]interface{}{
+		"discovered_by": "shadow_ai_scan",
+		"resource_type": f.ResourceType,
+		"region":        f.Region,
+	})
+
+	_, err := h.pool.Exec(ctx, `
 		INSERT INTO registry.entities (tenant_id, entity_type, name, provider, description, lifecycle_state, risk_class, metadata)
-		VALUES ($1, 'model', $2, $3, $4, 'production', $5, $6)
+		VALUES ($1, 'model', $2, $3, $4, 'production', $5, $6::jsonb)
 		ON CONFLICT DO NOTHING
-	`, tenantID, entityName, providerMap[f.Provider], "Shadow AI Discovery ile bulundu", f.RiskLevel,
-		`{"discovered_by":"shadow_ai_scan","resource_type":"`+f.ResourceType+`","region":"`+f.Region+`"}`)
+	`, tenantID, entityName, provider, "Shadow AI Discovery ile bulundu", f.RiskLevel, string(metaJSON))
+	if err != nil {
+		slog.Warn("registry'e kayıt hatası", "error", err)
+	}
 }
 
 func (h *Handler) GetScanResults(w http.ResponseWriter, r *http.Request) {

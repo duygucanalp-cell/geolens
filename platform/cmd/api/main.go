@@ -309,6 +309,7 @@ func main() {
 				r.Use(httpmw.RequireRole(httpmw.RoleViewer))
 				r.Get("/packs", policyHandler.ListPacks)
 				r.Get("/packs/{packId}/controls", policyHandler.ListControls)
+				r.With(httpmw.RequireRole(httpmw.RoleAdmin)).Post("/packs/seed", policyHandler.SeedPacks)
 				r.With(httpmw.RequireRole(httpmw.RoleAdmin)).Post("/packs/{packId}/apply", policyHandler.ApplyPack)
 				r.With(httpmw.RequireRole(httpmw.RoleAdmin)).Put("/controls/{controlId}", policyHandler.UpdateControl)
 				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/compliance/{entityId}", policyHandler.GetCompliance)
@@ -319,6 +320,7 @@ func main() {
 				r.Use(httpmw.RequireRole(httpmw.RoleViewer))
 				r.Get("/rules", guardrailHandler.ListRules)
 				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/rules", guardrailHandler.CreateRule)
+				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Put("/rules/{ruleId}/toggle", guardrailHandler.ToggleRule)
 				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Delete("/rules/{ruleId}", guardrailHandler.DeleteRule)
 				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/seed-defaults", guardrailHandler.SeedDefaults)
 				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/evaluate", guardrailHandler.Evaluate)
@@ -332,14 +334,20 @@ func main() {
 			})
 
 			// R5: Bias/Fairness (authenticated)
-			r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/bias/evaluate", biasHandler.Evaluate)
+			r.Route("/bias", func(r chi.Router) {
+				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/evaluate", biasHandler.Evaluate)
+				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/tests", biasHandler.ListTests)
+			})
 
 			// R6: CI/CD Governance Gate (authenticated)
 			r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/gate/check", gateHandler.Check)
 			r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/gate/history/{entityId}", gateHandler.History)
 
 			// R7: Explainability (authenticated)
-			r.With(httpmw.RequireRole(httpmw.RoleViewer)).Post("/explain/{entityId}", explainHandler.Explain)
+			r.Route("/explain", func(r chi.Router) {
+				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Post("/{entityId}", explainHandler.Explain)
+				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/results", explainHandler.ListAnalyses)
+			})
 
 			// R8: Agent Tracing (authenticated)
 			r.Route("/agents", func(r chi.Router) {
@@ -347,6 +355,8 @@ func main() {
 				r.Post("/traces", agentHandler.StartTrace)
 				r.Get("/traces/{traceId}", agentHandler.GetTrace)
 				r.Get("/traces", agentHandler.ListTraces)
+				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/traces/{traceId}/steps", agentHandler.RecordStep)
+				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/traces/{traceId}/complete", agentHandler.CompleteTrace)
 			})
 
 			// Workspace-scoped routes (auth + workspace membership gerekli)

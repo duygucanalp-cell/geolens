@@ -390,10 +390,12 @@ func AuthenticateAPIKey(pool *db.Pool) func(http.Handler) http.Handler {
 				return
 			}
 
-			// Son kullanım güncelle (arka plan)
-			_, _ = pool.Exec(r.Context(), `
+			// Son kullanım güncelle (arka plan — hata önemli değil)
+			if _, err := pool.Exec(r.Context(), `
 				UPDATE identity.api_keys SET last_used_at = now() WHERE id = $1
-			`, id)
+			`, id); err != nil {
+				slog.Warn("API anahtarı son kullanım güncellenemedi", "key_id", id, "error", err)
+			}
 
 			ctx := context.WithValue(r.Context(), CtxKeyTenantID, tenantID)
 			ctx = context.WithValue(ctx, CtxKeyUserID, id)

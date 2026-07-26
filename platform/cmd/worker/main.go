@@ -469,7 +469,7 @@ func computeAndEvaluate(
 	logger.Info("compute: skor hesaplandı", "value", score.Value)
 
 	// 4. Tavsiyeleri değerlendir
-	recs, err := recSvc.Evaluate(brandID, workspaceID, tenantID)
+	recs, err := recSvc.Evaluate(ctx, brandID, workspaceID, tenantID)
 	if err != nil {
 		logger.Warn("compute: tavsiye değerlendirme hatası", "error", err)
 		return
@@ -488,7 +488,7 @@ func computeAndEvaluate(
 	}
 
 	// Bildirim ayarlarını kontrol et
-	settings, err := deliverySvc.GetSettings(workspaceID, tenantID)
+	settings, err := deliverySvc.GetSettings(ctx, workspaceID, tenantID)
 	if err != nil || settings == nil || !settings.NotifyOnDrop {
 		return
 	}

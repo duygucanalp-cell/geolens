@@ -123,9 +123,9 @@ func (s *service) Audit(brandID, brandName, websiteURL string) (*AuditResult, er
 	return result, nil
 }
 
-// Save persists an audit result to the audit_results table.
+// Save persists an audit result to the audit_results table using the provided context.
 // This should be called after WorkspaceID and TenantID are set on the result.
-func (s *service) Save(result *AuditResult) error {
+func (s *service) Save(ctx context.Context, result *AuditResult) error {
 	if s.pool == nil {
 		return nil
 	}
@@ -137,7 +137,7 @@ func (s *service) Save(result *AuditResult) error {
 	issuesJSON, _ := json.Marshal(result.Issues)
 	resultJSON, _ := json.Marshal(result)
 
-	_, err := s.pool.Exec(context.Background(), `
+	_, err := s.pool.Exec(ctx, `
 		INSERT INTO governance.audit_results
 			(id, brand_id, workspace_id, tenant_id, brand_name, website_url,
 			 overall_score, robots_txt, bot_access, ssr, ssrf, issues, raw_result, created_at)

@@ -6,10 +6,10 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/httputil"
+	"github.com/go-chi/chi/v5"
 )
 
 // ---- Request/Response Types ----
@@ -148,11 +148,13 @@ func (h *Handler) RequestDeletion(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Audit log
-	_, _ = h.pool.Exec(ctx, `
+	if _, err := h.pool.Exec(ctx, `
 		INSERT INTO governance.audit_log (id, tenant_id, user_id, event_type, resource_type, resource_id, action, metadata)
 		VALUES (gen_random_uuid()::text, $1, $2, 'privacy.deletion_requested', 'tenant', $3, 'request',
 		        jsonb_build_object('reason', $4, 'status', 'pending'))
-	`, tenantID, userID, tenantID, req.Reason)
+	`, tenantID, userID, tenantID, req.Reason); err != nil {
+		slog.Warn("KVKK silme audit log kaydı başarısız", "error", err)
+	}
 
 	httputil.WriteJSON(w, http.StatusAccepted, deletionResponse{
 		ID:      requestID,

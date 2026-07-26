@@ -48,13 +48,17 @@ func processPendingReports(pool *db.Pool, svc Service) {
 		}
 
 		// generating olarak işaretle
-		_, _ = pool.Exec(ctx, `
+		if _, err := pool.Exec(ctx, `
 			UPDATE measure.reports SET status = 'generating', updated_at = now()
 			WHERE id = $1 AND status = 'pending'
-		`, id)
+		`, id); err != nil {
+			slog.Warn("rapor durum güncelleme hatası", "id", id, "error", err)
+		}
 
 		var params map[string]string
-		_ = json.Unmarshal([]byte(paramsJSON), &params)
+		if err := json.Unmarshal([]byte(paramsJSON), &params); err != nil {
+			slog.Warn("rapor parametre çözümleme hatası", "id", id, "error", err)
+		}
 
 		var reportTypeEnum ReportType
 		switch reportType {

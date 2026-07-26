@@ -1,9 +1,12 @@
 package guardrail
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"regexp"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -66,6 +69,28 @@ func (h *Handler) ListRules(w http.ResponseWriter, r *http.Request) {
 		rules = append(rules, r)
 	}
 
+	// R3: tenant hiç kural oluşturmamışsa varsayılanları yükle
+	if len(rules) == 0 {
+		h.seedDefaults(r.Context(), tenantID)
+		// Yeniden sorgula
+		rows2, err2 := h.pool.Query(r.Context(), `
+			SELECT id, tenant_id, name, category, pattern, action, severity, enabled, created_at, updated_at
+			FROM guardrail.rules WHERE tenant_id = $1 ORDER BY category, name
+		`, tenantID)
+		if err2 == nil {
+			defer rows2.Close()
+			rules = nil
+			for rows2.Next() {
+				var r Rule
+				if err := rows2.Scan(&r.ID, &r.TenantID, &r.Name, &r.Category, &r.Pattern,
+					&r.Action, &r.Severity, &r.Enabled, &r.CreatedAt, &r.UpdatedAt); err != nil {
+					continue
+				}
+				rules = append(rules, r)
+			}
+		}
+	}
+
 	httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{"rules": rules})
 }
 
@@ -120,6 +145,8 @@ func (h *Handler) Evaluate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	start := time.Now()
+
 	rows, err := h.pool.Query(r.Context(), `
 		SELECT id, name, category, pattern, action, severity
 		FROM guardrail.rules WHERE tenant_id = $1 AND enabled = true
@@ -129,15 +156,6 @@ func (h *Handler) Evaluate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer rows.Close()
-
-	type rule struct {
-		ID       string
-		Name     string
-		Category string
-		Pattern  string
-		Action   string
-		Severity string
-	}
 
 	var rules []guardRule
 	for rows.Next() {
@@ -178,7 +196,7 @@ func (h *Handler) Evaluate(w http.ResponseWriter, r *http.Request) {
 			ActionTaken: actionTaken,
 		})
 
-		h.logEvaluation(tenantID, rule.ID, input.Prompt, input.Response, matched, actionTaken)
+		h.logEvaluation(r.Context(), tenantID, rule.ID, input.Prompt, input.Response, matched, actionTaken, time.Since(start).Milliseconds())
 	}
 
 	resp := map[string]interface{}{
@@ -194,43 +212,76 @@ func (h *Handler) Evaluate(w http.ResponseWriter, r *http.Request) {
 	httputil.WriteJSON(w, status, resp)
 }
 
+// compilePattern compiles a guardrail pattern into a regexp.
+// Patterns in /*keyword*/ format are treated as simple substring matches.
+// Patterns in /.../i format are treated as case-insensitive regex.
+// Other patterns are treated as exact substring matches.
+func compilePattern(pattern string) (*regexp.Regexp, bool, error) {
+	if len(pattern) <= 2 {
+		return nil, false, nil
+	}
+
+	// Case-insensitive regex: /pattern/i
+	if pattern[len(pattern)-2:] == "/i" && pattern[0] == '/' {
+		re, err := regexp.Compile("(?i)" + pattern[1:len(pattern)-2])
+		if err != nil {
+			return nil, false, err
+		}
+		return re, true, nil
+	}
+
+	// Regex pattern: /pattern/
+	if pattern[0] == '/' && pattern[len(pattern)-1] == '/' {
+		re, err := regexp.Compile(pattern[1 : len(pattern)-1])
+		if err != nil {
+			return nil, false, err
+		}
+		return re, true, nil
+	}
+
+	return nil, false, nil
+}
+
 func evaluateRule(r guardRule, prompt, response string) bool {
 	if r.Pattern == "" {
 		return false
 	}
-	if prompt != "" && containsPattern(r.Pattern, prompt) {
-		return true
-	}
-	if response != "" && containsPattern(r.Pattern, response) {
-		return true
-	}
-	return false
-}
 
-func containsPattern(pattern, text string) bool {
-	if len(pattern) > 2 && pattern[0] == '/' && pattern[len(pattern)-1] == '/' {
-		// Simple regex-like: /*keyword*/ pattern matching
-		keyword := pattern[1 : len(pattern)-1]
-		for i := 0; i <= len(text)-len(keyword); i++ {
-			if text[i:i+len(keyword)] == keyword {
-				return true
-			}
-		}
+	re, isRegex, err := compilePattern(r.Pattern)
+	if err != nil {
+		slog.Warn("guardrail: pattern derleme hatası", "rule_id", r.ID, "pattern", r.Pattern, "error", err)
 		return false
 	}
-	for i := 0; i <= len(text)-len(pattern); i++ {
-		if text[i:i+len(pattern)] == pattern {
+
+	text := ""
+	if prompt != "" {
+		text = prompt
+	}
+	if response != "" {
+		if text != "" {
+			text += "\n"
+		}
+		text += response
+	}
+
+	if isRegex && re != nil {
+		return re.MatchString(text)
+	}
+
+	// Plain substring match
+	for i := 0; i <= len(text)-len(r.Pattern); i++ {
+		if text[i:i+len(r.Pattern)] == r.Pattern {
 			return true
 		}
 	}
 	return false
 }
 
-func (h *Handler) logEvaluation(tenantID, ruleID, prompt, response string, matched bool, actionTaken string) {
-	_, err := h.pool.Exec(nil, `
-		INSERT INTO guardrail.evaluations (tenant_id, rule_id, prompt, response, matched, action_taken)
-		VALUES ($1, $2, $3, $4, $5, $6)
-	`, tenantID, ruleID, prompt, response, matched, actionTaken)
+func (h *Handler) logEvaluation(ctx context.Context, tenantID, ruleID, prompt, response string, matched bool, actionTaken string, durationMs int64) {
+	_, err := h.pool.Exec(ctx, `
+		INSERT INTO guardrail.evaluations (tenant_id, rule_id, prompt, response, matched, action_taken, duration_ms)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+	`, tenantID, ruleID, prompt, response, matched, actionTaken, durationMs)
 	if err != nil {
 		slog.Debug("guardrail log hatası", "error", err)
 	}
@@ -251,48 +302,69 @@ func (h *Handler) DeleteRule(w http.ResponseWriter, r *http.Request) {
 	httputil.WriteJSON(w, http.StatusOK, map[string]string{"status": "silindi"})
 }
 
+func (h *Handler) ToggleRule(w http.ResponseWriter, r *http.Request) {
+	tenantID := httpmw.GetTenantID(r.Context())
+	ruleID := chi.URLParam(r, "ruleId")
+
+	var input struct {
+		Enabled bool `json:"enabled"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "geçersiz istek"})
+		return
+	}
+
+	_, err := h.pool.Exec(r.Context(), `
+		UPDATE guardrail.rules SET enabled = $1, updated_at = now() WHERE id = $2 AND tenant_id = $3
+	`, input.Enabled, ruleID, tenantID)
+	if err != nil {
+		slog.Error("kural toggle hatası", "error", err)
+		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "kural güncellenemedi"})
+		return
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, map[string]string{"status": "güncellendi", "enabled": func() string {
+		if input.Enabled {
+			return "true"
+		}
+		return "false"
+	}()})
+}
+
 func (h *Handler) SeedDefaults(w http.ResponseWriter, r *http.Request) {
 	tenantID := httpmw.GetTenantID(r.Context())
+	h.seedDefaults(r.Context(), tenantID)
 
-	defaults := []struct {
-		Name     string
-		Category string
-		Pattern  string
-		Action   string
-		Severity string
-	}{
-		{"SQL Injection", "prompt_injection", "/ignore previous instructions/", "block", "critical"},
-		{"Prompt Leak", "prompt_injection", "/reveal your prompt/", "block", "critical"},
-		{"Email Leak", "pii_leakage", "/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}/", "block", "high"},
-		{"Phone Leak", "pii_leakage", "/\\+?[0-9]{10,15}/", "block", "high"},
-		{"Toxic Content", "toxic_output", "/\\b(hate|discriminate|violent|threat)\\b/i", "flag", "medium"},
-		{"Credit Card", "pii_leakage", "/\\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14})\\b/", "block", "critical"},
-		{"API Key Leak", "pii_leakage", "/\\b(sk-[a-zA-Z0-9]{20,}|ghp_[a-zA-Z0-9]{36,})\\b/", "block", "critical"},
-		{"Hallucination Pattern", "hallucination", "/\\bI am not aware\\b|\\bI cannot confirm\\b/i", "flag", "medium"},
+	httputil.WriteJSON(w, http.StatusCreated, map[string]string{"status": "varsayılan kurallar oluşturuldu"})
+}
+
+func (h *Handler) seedDefaults(ctx context.Context, tenantID string) {
+	now := time.Now().UTC()
+
+	defaults := []Rule{
+		{Name: "SQL Injection", Category: "prompt_injection", Pattern: "/ignore previous instructions/", Action: "block", Severity: "critical", Enabled: true},
+		{Name: "Prompt Leak", Category: "prompt_injection", Pattern: "/reveal your prompt/", Action: "block", Severity: "critical", Enabled: true},
+		{Name: "Email Leak", Category: "pii_leakage", Pattern: "/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}/", Action: "block", Severity: "high", Enabled: true},
+		{Name: "Phone Leak", Category: "pii_leakage", Pattern: "/\\+?[0-9]{10,15}/", Action: "block", Severity: "high", Enabled: true},
+		{Name: "Toxic Content", Category: "toxic_output", Pattern: "/\\b(hate|discriminate|violent|threat)\\b/i", Action: "flag", Severity: "medium", Enabled: true},
+		{Name: "Credit Card", Category: "pii_leakage", Pattern: "/\\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14})\\b/", Action: "block", Severity: "critical", Enabled: true},
+		{Name: "API Key Leak", Category: "pii_leakage", Pattern: "/\\b(sk-[a-zA-Z0-9]{20,}|ghp_[a-zA-Z0-9]{36,})\\b/", Action: "block", Severity: "critical", Enabled: true},
+		{Name: "Hallucination Pattern", Category: "hallucination", Pattern: "/\\bI am not aware\\b|\\bI cannot confirm\\b/i", Action: "flag", Severity: "medium", Enabled: true},
 	}
 
 	count := 0
 	for _, d := range defaults {
-		var existing int
-		h.pool.QueryRow(nil, `SELECT COUNT(*) FROM guardrail.rules WHERE tenant_id = $1 AND category = $2 AND name = $3`,
-			tenantID, d.Category, d.Name).Scan(&existing)
-		if existing > 0 {
-			continue
-		}
-
-		_, err := h.pool.Exec(nil, `
-			INSERT INTO guardrail.rules (tenant_id, name, category, pattern, action, severity)
-			VALUES ($1, $2, $3, $4, $5, $6)
-		`, tenantID, d.Name, d.Category, d.Pattern, d.Action, d.Severity)
+		_, err := h.pool.Exec(ctx, `
+			INSERT INTO guardrail.rules (tenant_id, name, category, pattern, action, severity, enabled, created_at, updated_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+			ON CONFLICT DO NOTHING
+		`, tenantID, d.Name, d.Category, d.Pattern, d.Action, d.Severity, d.Enabled, now, now)
 		if err != nil {
-			slog.Error("default rule seed hatası", "error", err)
+			slog.Error("default rule seed hatası", "name", d.Name, "error", err)
 			continue
 		}
 		count++
 	}
 
-	httputil.WriteJSON(w, http.StatusCreated, map[string]interface{}{
-		"status":  "varsayılan kurallar oluşturuldu",
-		"created": count,
-	})
+	slog.Info("guardrail varsayılan kurallar yüklendi", "tenant", tenantID, "created", count)
 }

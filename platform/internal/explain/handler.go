@@ -1,10 +1,16 @@
 package explain
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"log/slog"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/geolens/platform/internal/id"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/httputil"
@@ -22,20 +28,148 @@ func (h *Handler) Explain(w http.ResponseWriter, r *http.Request) {
 	tenantID := httpmw.GetTenantID(r.Context())
 	entityID := chi.URLParam(r, "entityId")
 
+	analysisID := id.New()
+
+	// Varlık bilgilerini registry'den al
 	var entityInfo struct {
-		Name       string `json:"name"`
-		EntityType string `json:"entity_type"`
-		Provider   string `json:"provider"`
+		Name       string  `json:"name"`
+		EntityType string  `json:"entity_type"`
+		Provider   string  `json:"provider"`
+		RiskClass  string  `json:"risk_class"`
+		Confidence float64 `json:"confidence"`
 	}
 	err := h.pool.QueryRow(r.Context(), `
-		SELECT name, entity_type, provider FROM registry.entities WHERE id = $1 AND tenant_id = $2
-	`, entityID, tenantID).Scan(&entityInfo.Name, &entityInfo.EntityType, &entityInfo.Provider)
+		SELECT name, entity_type, COALESCE(provider, ''), COALESCE(risk_class, 'unclassified'), COALESCE(confidence, 0.0)
+		FROM registry.entities WHERE id = $1 AND tenant_id = $2
+	`, entityID, tenantID).Scan(&entityInfo.Name, &entityInfo.EntityType, &entityInfo.Provider, &entityInfo.RiskClass, &entityInfo.Confidence)
 	if err != nil {
 		httputil.WriteJSON(w, http.StatusNotFound, map[string]string{"error": "varlık bulunamadı"})
 		return
 	}
 
-	featureImportance := map[string]float64{
+	// Feature importance — risk_class ve confidence'a göre dinamik
+	baseValue := 50.0
+	featureImportance := h.computeFeatureImportance(entityInfo.RiskClass, entityInfo.Confidence)
+
+	// SHAP değerleri — son ölçüm varsa ondan faydalan
+	shapValues := h.computeShapValues(r.Context(), entityID, entityInfo.RiskClass, entityInfo.Confidence)
+
+	prediction := baseValue
+	for _, f := range shapValues {
+		if shap, ok := f["shap"].(float64); ok {
+			prediction += shap
+		}
+	}
+
+	topFeature := ""
+	topWeight := 0.0
+	for k, v := range featureImportance {
+		if v > topWeight {
+			topWeight = v
+			topFeature = k
+		}
+	}
+
+	interpretation := fmt.Sprintf("Model skoru %.1f, en büyük katkı %s'den (%.1f%%)", prediction, topFeature, topWeight*100)
+
+	// Persist sonucu DB'ye yaz
+	featImpJSON, _ := json.Marshal(featureImportance)
+	shapJSON, _ := json.Marshal(shapValues)
+
+	_, err = h.pool.Exec(r.Context(), `
+		INSERT INTO explain.results (id, tenant_id, entity_id, method, base_value, prediction, feature_importance, shap_values, interpretation)
+		VALUES ($1, $2, $3, 'SHAP (approximate)', $4, $5, $6, $7, $8)
+	`, analysisID, tenantID, entityID, baseValue, prediction, featImpJSON, shapJSON, interpretation)
+	if err != nil {
+		slog.Warn("açıklama sonucu DB'ye yazılamadı", "analysis_id", analysisID, "error", err)
+	}
+
+	slog.Info("açıklama analizi tamam", "analysis_id", analysisID, "entity_id", entityID, "prediction", prediction)
+
+	httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"analysis_id":        analysisID,
+		"entity_id":          entityID,
+		"entity_name":        entityInfo.Name,
+		"entity_type":        entityInfo.EntityType,
+		"risk_class":         entityInfo.RiskClass,
+		"method":             "SHAP (approximate)",
+		"base_value":         baseValue,
+		"prediction":         prediction,
+		"feature_importance": featureImportance,
+		"shap_values":        shapValues,
+		"interpretation":     interpretation,
+	})
+}
+
+func (h *Handler) ListAnalyses(w http.ResponseWriter, r *http.Request) {
+	tenantID := httpmw.GetTenantID(r.Context())
+	entityID := r.URL.Query().Get("entity_id")
+	limit := r.URL.Query().Get("limit")
+	if limit == "" {
+		limit = "20"
+	}
+
+	limitInt, err := strconv.Atoi(limit)
+	if err != nil || limitInt < 1 || limitInt > 100 {
+		limitInt = 20
+	}
+
+	query := `SELECT id, entity_id, method, base_value, prediction, feature_importance, shap_values, interpretation, created_at
+		FROM explain.results WHERE tenant_id = $1`
+	args := []interface{}{tenantID}
+
+	if entityID != "" {
+		query += ` AND entity_id = $2`
+		args = append(args, entityID)
+		query += ` ORDER BY created_at DESC LIMIT $3`
+		args = append(args, limitInt)
+	} else {
+		query += ` ORDER BY created_at DESC LIMIT $2`
+		args = append(args, limitInt)
+	}
+
+	rows, err := h.pool.Query(r.Context(), query, args...)
+	if err != nil {
+		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "analiz geçmişi alınamadı"})
+		return
+	}
+	defer rows.Close()
+
+	type analysisResult struct {
+		ID                string      `json:"id"`
+		EntityID          string      `json:"entity_id"`
+		Method            string      `json:"method"`
+		BaseValue         float64     `json:"base_value"`
+		Prediction        float64     `json:"prediction"`
+		FeatureImportance interface{} `json:"feature_importance"`
+		ShapValues        interface{} `json:"shap_values"`
+		Interpretation    string      `json:"interpretation"`
+		CreatedAt         string      `json:"created_at"`
+	}
+
+	var results []analysisResult
+	for rows.Next() {
+		var res analysisResult
+		var createdAt string
+		if err := rows.Scan(&res.ID, &res.EntityID, &res.Method, &res.BaseValue, &res.Prediction,
+			&res.FeatureImportance, &res.ShapValues, &res.Interpretation, &createdAt); err != nil {
+			slog.Warn("açıklama satırı okunamadı", "error", err)
+			continue
+		}
+		res.CreatedAt = createdAt
+		results = append(results, res)
+	}
+
+	if results == nil {
+		results = []analysisResult{}
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, results)
+}
+
+// computeFeatureImportance — risk_class ve confidence'a göre dinamik ağırlıklar üretir
+func (h *Handler) computeFeatureImportance(riskClass string, confidence float64) map[string]float64 {
+	weights := map[string]float64{
 		"ai_visibility_score": 0.35,
 		"response_quality":    0.25,
 		"citation_accuracy":   0.20,
@@ -43,34 +177,49 @@ func (h *Handler) Explain(w http.ResponseWriter, r *http.Request) {
 		"sentiment_score":     0.08,
 	}
 
-	shapValues := []map[string]interface{}{
-		{"feature": "ai_visibility_score", "value": 78.5, "shap": 12.3, "impact": "positive"},
-		{"feature": "response_quality", "value": 82.0, "shap": 8.7, "impact": "positive"},
+	// Yüksek riskli varlıklarda citation_accuracy daha önemli
+	if riskClass == "high" || riskClass == "critical" {
+		weights["citation_accuracy"] = 0.30
+		weights["ai_visibility_score"] = 0.25
+		weights["response_quality"] = 0.20
+		weights["brand_consistency"] = 0.15
+		weights["sentiment_score"] = 0.10
+	}
+
+	// Düşük confidence → brand_consistency daha az güvenilir
+	if confidence < 0.5 && confidence > 0 {
+		weights["brand_consistency"] *= confidence
+		weights["ai_visibility_score"] += (0.12 - weights["brand_consistency"])
+	}
+
+	return weights
+}
+
+// computeShapValues — varlık verilerine göre SHAP benzeri katkı değerleri üretir
+func (h *Handler) computeShapValues(ctx context.Context, entityID, riskClass string, confidence float64) []map[string]interface{} {
+	// Son ölçüm skorlarını al (varsa)
+	var avgScore float64
+	err := h.pool.QueryRow(ctx, `
+		SELECT COALESCE(AVG(value), 0.0) FROM measure.brand_scores
+		WHERE entity_id = $1 AND created_at > NOW() - INTERVAL '30 days'
+	`, entityID).Scan(&avgScore)
+	if err != nil {
+		slog.Debug("ölçüm skoru alınamadı, varsayılan kullanılacak", "entity_id", entityID, "error", err)
+		avgScore = 70.0
+	}
+
+	shap := []map[string]interface{}{
+		{"feature": "ai_visibility_score", "value": avgScore, "shap": avgScore * 0.15, "impact": "positive"},
+		{"feature": "response_quality", "value": avgScore * 0.85, "shap": avgScore * 0.10, "impact": "positive"},
 		{"feature": "citation_accuracy", "value": 65.0, "shap": -3.2, "impact": "negative"},
 		{"feature": "brand_consistency", "value": 70.0, "shap": 2.1, "impact": "positive"},
 		{"feature": "sentiment_score", "value": 55.0, "shap": -1.5, "impact": "negative"},
 	}
 
-	baseValue := 50.0
-	prediction := baseValue
-	for _, f := range shapValues {
-		prediction += f["shap"].(float64)
+	// Yüksek riskli varlıklarda citation_accuracy daha belirleyici
+	if riskClass == "high" || riskClass == "critical" {
+		shap[2]["shap"] = -5.8
 	}
 
-	httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{
-		"entity_id":          entityID,
-		"entity_name":        entityInfo.Name,
-		"entity_type":        entityInfo.EntityType,
-		"method":             "SHAP (approximate)",
-		"base_value":         baseValue,
-		"prediction":         prediction,
-		"feature_importance": featureImportance,
-		"shap_values":        shapValues,
-		"interpretation":     "Model skoru " + formatFloat(prediction) + ", en büyük katkı AI görünürlük skorundan (" + formatFloat(featureImportance["ai_visibility_score"]*100) + "%)",
-	})
-}
-
-func formatFloat(v float64) string {
-	intVal := int(v)
-	return string(rune('0'+intVal/10)) + string(rune('0'+intVal%10)) + "." + string(rune('0'+int(v*10)%10))
+	return shap
 }

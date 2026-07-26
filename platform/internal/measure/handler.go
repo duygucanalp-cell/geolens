@@ -228,12 +228,14 @@ func (h *Handler) ListScores(w http.ResponseWriter, r *http.Request) {
 		BrandID         string             `json:"brand_id"`
 	}
 
+	var parseErrors int
 	scores := make([]scoreRow, 0)
 	for rows.Next() {
 		var s scoreRow
 		var engBreakdown string
 		if err := rows.Scan(&s.ID, &s.BrandName, &s.Value, &s.CILow, &s.CIHigh, &s.FidelityLabel, &engBreakdown, &s.FreshnessAt, &s.BrandID); err != nil {
 			slog.Error("skor satır okuma hatası", "error", err)
+			parseErrors++
 			continue
 		}
 		if engBreakdown != "" && engBreakdown != "{}" {
@@ -242,6 +244,11 @@ func (h *Handler) ListScores(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		scores = append(scores, s)
+	}
+
+	// K5: Kısmi sonuç uyarısı (parseErrors > 0 ise response header'a eklenir)
+	if parseErrors > 0 {
+		w.Header().Set("X-Has-More", "true")
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, scores)

@@ -1,6 +1,7 @@
 package recommendation
 
 import (
+	"context"
 	"time"
 
 	"github.com/geolens/platform/platform/db"
@@ -113,10 +114,10 @@ type Rule struct {
 // Service defines the interface for the recommendation engine.
 type Service interface {
 	// Evaluate evaluates all rules against the given context and returns matching recommendations.
-	Evaluate(brandID, workspaceID, tenantID string) ([]Recommendation, error)
+	Evaluate(ctx context.Context, brandID, workspaceID, tenantID string) ([]Recommendation, error)
 
 	// EvaluateAll evaluates rules for all brands in a workspace.
-	EvaluateAll(workspaceID, tenantID string) ([]Recommendation, error)
+	EvaluateAll(ctx context.Context, workspaceID, tenantID string) ([]Recommendation, error)
 
 	// GetRules returns all registered rules.
 	GetRules() []Rule
@@ -124,11 +125,11 @@ type Service interface {
 	// GetRulesBySector returns rules for a specific sector.
 	GetRulesBySector(sector string) []Rule
 
-	// MarkApplied marks a recommendation as applied.
-	MarkApplied(id, tenantID, workspaceID string) error
+	// MarkApplied marks a recommendation as applied using the given context.
+	MarkApplied(ctx context.Context, id, tenantID, workspaceID string) error
 
-	// MarkDismissed marks a recommendation as dismissed.
-	MarkDismissed(id, tenantID, workspaceID string) error
+	// MarkDismissed marks a recommendation as dismissed using the given context.
+	MarkDismissed(ctx context.Context, id, tenantID, workspaceID string) error
 
 	// GetPool returns the database pool for external queries.
 	GetPool() *db.Pool

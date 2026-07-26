@@ -31,7 +31,7 @@ func (h *Handler) ListRecommendations(w http.ResponseWriter, r *http.Request) {
 
 	brandID := r.URL.Query().Get("brand_id")
 
-	recs, err := h.svc.Evaluate(brandID, workspaceID, tenantID)
+	recs, err := h.svc.Evaluate(r.Context(), brandID, workspaceID, tenantID)
 	if err != nil {
 		slog.Error("öneri değerlendirme hatası", "error", err)
 		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "öneriler alınamadı"})
@@ -55,7 +55,7 @@ func (h *Handler) MarkApplied(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.svc.MarkApplied(recID, tenantID, workspaceID); err != nil {
+	if err := h.svc.MarkApplied(r.Context(), recID, tenantID, workspaceID); err != nil {
 		slog.Error("öneri uygulama hatası", "error", err)
 		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "öneri uygulanamadı"})
 		return
@@ -74,7 +74,7 @@ func (h *Handler) MarkDismissed(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.svc.MarkDismissed(recID, tenantID, workspaceID); err != nil {
+	if err := h.svc.MarkDismissed(r.Context(), recID, tenantID, workspaceID); err != nil {
 		slog.Error("öneri gizleme hatası", "error", err)
 		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "öneri gizlenemedi"})
 		return

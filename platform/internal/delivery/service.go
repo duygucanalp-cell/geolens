@@ -104,7 +104,7 @@ func (s *service) SendWeeklyDigest(workspaceID, tenantID string) error {
 	htmlContent := s.buildDigestHTML(subject, brands, recs, workspaceID, tenantID)
 
 	// 4. Alıcı e-posta adresini ayarlardan al
-	settings, err := s.GetSettings(workspaceID, tenantID)
+	settings, err := s.GetSettings(ctx, workspaceID, tenantID)
 	if err != nil {
 		slog.Warn("digest: ayarlar okunamadı, varsayılan e-posta kullanılacak", "error", err)
 	}
@@ -315,10 +315,10 @@ func escapeHTML(s string) string {
 
 // GetSettings returns the notification settings for a workspace.
 // Reads from PostgreSQL; returns defaults if no record exists.
-func (s *service) GetSettings(workspaceID, tenantID string) (*NotificationSettings, error) {
+func (s *service) GetSettings(ctx context.Context, workspaceID, tenantID string) (*NotificationSettings, error) {
 	settings := &NotificationSettings{WorkspaceID: workspaceID}
 
-	err := s.pool.QueryRow(context.Background(), `
+	err := s.pool.QueryRow(ctx, `
 		SELECT email_address, digest_enabled, digest_day, digest_time,
 		       digest_format, notify_on_drop, drop_threshold
 		FROM delivery.notification_settings
@@ -346,12 +346,12 @@ func (s *service) GetSettings(workspaceID, tenantID string) (*NotificationSettin
 }
 
 // UpdateSettings validates and saves the notification settings for a workspace.
-func (s *service) UpdateSettings(settings *NotificationSettings, tenantID string) error {
+func (s *service) UpdateSettings(ctx context.Context, settings *NotificationSettings, tenantID string) error {
 	if err := ValidateSettings(settings); err != nil {
 		return err
 	}
 
-	_, err := s.pool.Exec(context.Background(), `
+	_, err := s.pool.Exec(ctx, `
 		INSERT INTO delivery.notification_settings
 			(workspace_id, tenant_id, email_address, digest_enabled, digest_day,
 			 digest_time, digest_format, notify_on_drop, drop_threshold, updated_at)

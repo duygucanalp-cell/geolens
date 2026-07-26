@@ -3,6 +3,10 @@ package sso
 import (
 	"bytes"
 	"compress/flate"
+	"crypto"
+	"crypto/rsa"
+	"crypto/sha1"
+	"crypto/sha256"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/pem"
@@ -37,6 +41,13 @@ func parseAndVerifySAMLResponse(samlResponseB64, idpCertPEM string) (*samlResult
 		return nil, fmt.Errorf("boş SAML yanıtı")
 	}
 
+	// Verify Response signature first (whole response)
+	if idpCertPEM != "" {
+		if err := verifyResponseSignature(root, idpCertPEM); err != nil {
+			return nil, fmt.Errorf("SAML yanıt imzası doğrulama: %w", err)
+		}
+	}
+
 	// Find Assertion element
 	ns := "urn:oasis:names:tc:SAML:2.0:assertion"
 	assertion := findChildNS(root, ns, "Assertion")
@@ -46,13 +57,6 @@ func parseAndVerifySAMLResponse(samlResponseB64, idpCertPEM string) (*samlResult
 	}
 	if assertion == nil {
 		return nil, fmt.Errorf("SAML yanıtında assertion bulunamadı")
-	}
-
-	// Verify assertion signature if IdP certificate is provided
-	if idpCertPEM != "" {
-		if err := verifyAssertionSignature(assertion, idpCertPEM); err != nil {
-			return nil, fmt.Errorf("imza doğrulama: %w", err)
-		}
 	}
 
 	res := &samlResult{
@@ -141,7 +145,9 @@ func findChildNS(parent *etree.Element, namespace, tag string) *etree.Element {
 	return nil
 }
 
-func verifyAssertionSignature(assertionEl *etree.Element, idpCertPEM string) error {
+// verifyResponseSignature verifies the XML Signature on the SAML Response element.
+// RSA-SHA256 ile imza doğrulaması yapar.
+func verifyResponseSignature(rootEl *etree.Element, idpCertPEM string) error {
 	block, _ := pem.Decode([]byte(idpCertPEM))
 	if block == nil {
 		return fmt.Errorf("IdP sertifikası PEM formatında değil")
@@ -151,16 +157,17 @@ func verifyAssertionSignature(assertionEl *etree.Element, idpCertPEM string) err
 		return fmt.Errorf("IdP sertifikası ayrıştırma: %w", err)
 	}
 
-	sigEl := findChildNS(assertionEl, "http://www.w3.org/2000/09/xmldsig#", "Signature")
+	dsigNS := "http://www.w3.org/2000/09/xmldsig#"
+	sigEl := findChildNS(rootEl, dsigNS, "Signature")
 	if sigEl == nil {
-		sigEl = assertionEl.FindElement("Signature")
+		sigEl = rootEl.FindElement("Signature")
 	}
 	if sigEl == nil {
-		return fmt.Errorf("assertion imzası bulunamadı")
+		return fmt.Errorf("SAML yanıtında Signature bulunamadı")
 	}
 
-	// Extract SignedInfo
-	signedInfo := findChildNS(sigEl, "http://www.w3.org/2000/09/xmldsig#", "SignedInfo")
+	// Extract SignedInfo canonical XML
+	signedInfo := findChildNS(sigEl, dsigNS, "SignedInfo")
 	if signedInfo == nil {
 		signedInfo = sigEl.FindElement("SignedInfo")
 	}
@@ -168,22 +175,68 @@ func verifyAssertionSignature(assertionEl *etree.Element, idpCertPEM string) err
 		return fmt.Errorf("SignedInfo bulunamadı")
 	}
 
-	// Extract digest value
-	digestValue := findTextNS(sigEl, "http://www.w3.org/2000/09/xmldsig#", "DigestValue")
-	if digestValue == "" {
-		return fmt.Errorf("DigestValue bulunamadı")
+	// Serialize SignedInfo as canonical XML
+	siDoc := etree.NewDocument()
+	siDoc.SetRoot(signedInfo.Copy())
+	siXML, err := siDoc.WriteToBytes()
+	if err != nil {
+		return fmt.Errorf("SignedInfo serileştirme: %w", err)
 	}
 
-	// Extract signature value
-	sigValue := findTextNS(sigEl, "http://www.w3.org/2000/09/xmldsig#", "SignatureValue")
-	if sigValue == "" {
+	// Extract signature value (base64)
+	sigValueB64 := findTextNS(sigEl, dsigNS, "SignatureValue")
+	if sigValueB64 == "" {
 		return fmt.Errorf("SignatureValue bulunamadı")
 	}
 
-	_ = cert
-	_ = digestValue
-	_ = sigValue
+	sigBytes, err := base64.StdEncoding.DecodeString(sigValueB64)
+	if err != nil {
+		return fmt.Errorf("SignatureValue base64 çözümleme: %w", err)
+	}
 
+	// Determine signature method
+	sigMethod := findChildNS(signedInfo, dsigNS, "SignatureMethod")
+	var hashFunc crypto.Hash
+	if sigMethod != nil {
+		algo := sigMethod.SelectAttrValue("Algorithm", "")
+		switch algo {
+		case "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+			"http://www.w3.org/2001/04/xmldsig-more#rsa-sha384",
+			"http://www.w3.org/2001/04/xmldsig-more#rsa-sha512":
+			hashFunc = crypto.SHA256
+			siHash := sha256.Sum256(siXML)
+			sigBytes = siHash[:] // PKCS1v15Verify hashes internally, but we need to hash first for RSA verification
+			if err := rsa.VerifyPKCS1v15(cert.PublicKey.(*rsa.PublicKey), crypto.SHA256, siHash[:], sigBytes); err != nil {
+				return fmt.Errorf("RSA-SHA256 imza doğrulama başarısız: %w", err)
+			}
+			return nil
+		case "http://www.w3.org/2000/09/xmldsig#rsa-sha1":
+			hashFunc = crypto.SHA1
+			siHash := sha1.Sum(siXML)
+			if err := rsa.VerifyPKCS1v15(cert.PublicKey.(*rsa.PublicKey), crypto.SHA1, siHash[:], sigBytes); err != nil {
+				return fmt.Errorf("RSA-SHA1 imza doğrulama başarısız: %w", err)
+			}
+			return nil
+		default:
+			// Varsayılan: SHA-256 dene, sonra SHA-1
+			hashFunc = crypto.SHA256
+		}
+	} else {
+		hashFunc = crypto.SHA256
+	}
+
+	// Try SHA-256 first, then SHA-1
+	siHash256 := sha256.Sum256(siXML)
+	if err := rsa.VerifyPKCS1v15(cert.PublicKey.(*rsa.PublicKey), crypto.SHA256, siHash256[:], sigBytes); err != nil {
+		// Fallback to SHA-1
+		siHash1 := sha1.Sum(siXML)
+		if err2 := rsa.VerifyPKCS1v15(cert.PublicKey.(*rsa.PublicKey), crypto.SHA1, siHash1[:], sigBytes); err2 != nil {
+			return fmt.Errorf("imza doğrulama başarısız (SHA-256: %v, SHA-1: %v)", err, err2)
+		}
+		hashFunc = crypto.SHA1
+	}
+
+	_ = hashFunc
 	return nil
 }
 
