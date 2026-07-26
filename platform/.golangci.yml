@@ -5,15 +5,12 @@ version: "2"
 
 run:
   timeout: 5m
-  tests: true
-
-issues-exit-code: 1
 
 output:
   formats:
-    colored-line-number:
-      print-issued-lines: true
-      print-linter-name: true
+    text:
+      path: stdout
+      colors: true
 
 linters:
   enable:
@@ -34,7 +31,7 @@ linters:
       max-complexity: 35
     misspell:
       locale: US
-      ignore-words:
+      ignore-rules:
         - "performans"
         - "paralel"
         - "adres"
@@ -42,27 +39,28 @@ linters:
         - "cancelled"
         - "güncellen"
     revive:
+      severity: warning
       rules:
         - name: blank-imports
         - name: var-naming
         - name: package-comments
-      severity: warning
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
+          - cyclop
+          - gocritic
+          - noctx
+      - path: _test\.go
+        text: "unused-parameter"
+        linters:
+          - revive
 
 formatters:
   enable:
     - gofmt
 
 issues:
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - errcheck
-        - cyclop
-        - gocritic
-        - noctx
-    - path: _test\.go
-      text: "unused-parameter"
-      linters:
-        - revive
   max-issues-per-linter: 0
   max-same-issues: 0
