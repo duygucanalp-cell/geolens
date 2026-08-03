@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getSetupStatus, createBrand, createPanel, createPromptSet, triggerMeasurement, getBrands } from '../api/client'
 import type { SetupStatus } from '../types'
@@ -29,6 +29,9 @@ export function OnboardingWizard({ workspaceId, onComplete }: OnboardingWizardPr
   const [brandName, setBrandName] = useState('')
   const [brandUrl, setBrandUrl] = useState('')
   const [creatingBrand, setCreatingBrand] = useState(false)
+  const [allBrands, setAllBrands] = useState<import('../types').Brand[]>([])
+  const [brandCompetitors, setBrandCompetitors] = useState<string[]>([])
+  const [brandsLoading, setBrandsLoading] = useState(false)
 
   // Panel form state
   const [panelName, setPanelName] = useState('')
@@ -43,18 +46,25 @@ export function OnboardingWizard({ workspaceId, onComplete }: OnboardingWizardPr
   const [measuring, setMeasuring] = useState(false)
   const [measureDone, setMeasureDone] = useState(false)
 
+  // Success feedback state
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  function showSuccess(msg: string) {
+    if (successTimerRef.current) clearTimeout(successTimerRef.current)
+    setSuccessMessage(msg)
+    successTimerRef.current = setTimeout(() => setSuccessMessage(null), 2500)
+  }
+
+  useEffect(() => {
+    return () => {
+      if (successTimerRef.current) clearTimeout(successTimerRef.current)
+    }
+  }, [])
+
   useEffect(() => {
     loadStatus()
   }, [workspaceId])
-
-  useEffect(() => {
-    if (status && !status.setup_complete) {
-      const nextUndone = status.steps.find(s => !s.done)
-      if (nextUndone) {
-        setActiveStep(nextUndone.key as StepKey)
-      }
-    }
-  }, [status])
 
   async function loadStatus() {
     try {
@@ -64,6 +74,11 @@ export function OnboardingWizard({ workspaceId, onComplete }: OnboardingWizardPr
       if (s.setup_complete) {
         onComplete()
         return
+      }
+      // Set initial active step to first undone step
+      const nextUndone = s.steps.find(st => !st.done)
+      if (nextUndone) {
+        setActiveStep(nextUndone.key as StepKey)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : t('dashboard.error_load'))
@@ -84,12 +99,38 @@ export function OnboardingWizard({ workspaceId, onComplete }: OnboardingWizardPr
     }
   }
 
+  // Fetch brands for competitor selection when brand step is active
+  useEffect(() => {
+    if (activeStep === 'brand' && !isStepDone('brand')) {
+      setBrandsLoading(true)
+      getBrands(workspaceId)
+        .then(data => setAllBrands(data))
+        .catch(() => {})
+        .finally(() => setBrandsLoading(false))
+    }
+  }, [activeStep, workspaceId])
+
+  function toggleCompetitor(id: string) {
+    setBrandCompetitors(prev =>
+      prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
+    )
+  }
+
   async function handleCreateBrand() {
     if (!brandName.trim() || !brandUrl.trim()) return
     setCreatingBrand(true)
     setError(null)
     try {
-      await createBrand(workspaceId, { name: brandName.trim(), website_url: brandUrl.trim() })
+      await createBrand(workspaceId, {
+        name: brandName.trim(),
+        website_url: brandUrl.trim(),
+        competitors: brandCompetitors.length > 0 ? brandCompetitors : undefined,
+      })
+      setBrandName('')
+      setBrandUrl('')
+      setBrandCompetitors([])
+      getBrands(workspaceId).then(data => setAllBrands(data)).catch(() => {})
+      showSuccess(t('wizard.brand_added'))
       await refreshStatus()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create brand')
@@ -104,6 +145,8 @@ export function OnboardingWizard({ workspaceId, onComplete }: OnboardingWizardPr
     setError(null)
     try {
       await createPanel(workspaceId, { name: panelName.trim() })
+      setPanelName('')
+      showSuccess(t('wizard.panel_added'))
       await refreshStatus()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create panel')
@@ -121,6 +164,9 @@ export function OnboardingWizard({ workspaceId, onComplete }: OnboardingWizardPr
         name: promptName.trim(),
         prompt_text: promptText.trim(),
       })
+      setPromptName('')
+      setPromptText('')
+      showSuccess(t('wizard.prompt_added'))
       await refreshStatus()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create prompt set')
@@ -217,8 +263,15 @@ export function OnboardingWizard({ workspaceId, onComplete }: OnboardingWizardPr
           </div>
         )}
 
+        {successMessage && (
+          <div className="wizard-success-banner">
+            <span className="wizard-success-icon">✓</span>
+            {successMessage}
+          </div>
+        )}
+
         {/* Step: Add Brand */}
-        {activeStep === 'brand' && !isStepDone('brand') && (
+        {activeStep === 'brand' && (
           <div className="wizard-step-content">
             <div className="wizard-step-icon-large">{STEP_ICONS.brand}</div>
             <h2>{t('wizard.step_brand')}</h2>
@@ -238,6 +291,27 @@ export function OnboardingWizard({ workspaceId, onComplete }: OnboardingWizardPr
                 onChange={e => setBrandUrl(e.target.value)}
                 disabled={creatingBrand}
               />
+
+              {/* Competitor selection */}
+              {!brandsLoading && allBrands.length > 0 && (
+                <div className="wizard-competitors">
+                  <label className="wizard-competitors-label">{t('wizard.select_competitors')}</label>
+                  <div className="wizard-competitors-list">
+                    {allBrands.map(b => (
+                      <label key={b.id} className="wizard-competitor-item">
+                        <input
+                          type="checkbox"
+                          checked={brandCompetitors.includes(b.id)}
+                          onChange={() => toggleCompetitor(b.id)}
+                          disabled={creatingBrand}
+                        />
+                        <span>{b.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <button
                 className="wizard-btn"
                 onClick={handleCreateBrand}
@@ -250,7 +324,7 @@ export function OnboardingWizard({ workspaceId, onComplete }: OnboardingWizardPr
         )}
 
         {/* Step: Create Panel */}
-        {activeStep === 'panel' && !isStepDone('panel') && (
+        {activeStep === 'panel' && (
           <div className="wizard-step-content">
             <div className="wizard-step-icon-large">{STEP_ICONS.panel}</div>
             <h2>{t('wizard.step_panel')}</h2>
@@ -275,7 +349,7 @@ export function OnboardingWizard({ workspaceId, onComplete }: OnboardingWizardPr
         )}
 
         {/* Step: Create Prompt Set */}
-        {activeStep === 'prompt_set' && !isStepDone('prompt_set') && (
+        {activeStep === 'prompt_set' && (
           <div className="wizard-step-content">
             <div className="wizard-step-icon-large">{STEP_ICONS.prompt_set}</div>
             <h2>{t('wizard.step_prompt_set')}</h2>

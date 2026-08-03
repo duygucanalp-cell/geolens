@@ -51,6 +51,12 @@
 | ID | Metrik | Eşik | Bağ |
 |----|--------|:----:|:---:|
 | **M9** | Alıntı çözümleme oranı | ≥ %90 [K] | G3 |
+| **M15** | Sentiment tespit doğruluğu | ≥ %80 [K] | G10 |
+| **M16** | Hallüsinasyon tespit oranı | ≥ %85 [K] | G11 |
+| **M17** | Response Archive kapsama oranı | %100 (sert) | G12 |
+| **M18** | Conversation replay erişilebilirlik oranı | ≥ %98 [K] | G12 |
+| **M19** | LLM bot tespit başarısı | ≥ %90 [K] | G13 |
+| **M20** | Content gap tesbit doğruluğu | ≥ %75 [K] | G14 |
 
 ### İzleme Sürekliliği (G5, G6)
 
@@ -92,6 +98,11 @@
 | G7 | M12, M13, M14 | Kurumsal operasyon |
 | G8 | M1, M2, M3 | Benimseme |
 | G9 | — | Platform ufku. Metrik 0206 ile birlikte tanımlanır. |
+| G10 | M15 | Sentiment tespiti |
+| G11 | M16 | Hallüsinasyon tespiti |
+| G12 | M17, M18 | Conversation replay + arşiv |
+| G13 | M19 | LLM bot izleme |
+| G14 | M20 | Content gap analizi |
 
 ---
 
@@ -132,3 +143,4 @@
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: GeoLens başarı metrikleri. North Star (WAT%), M1-M14 kataloğu, K1-K3 korumaları. |
 | 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-79 (pilot profili), D-88 (örnekleme n=3), D-68 (uptime SLO). Devralınan Kararlar eklendi. |
+| 1.2 | 27.07.2026 | Turkcell RFP kapsamında yeni metrikler eklendi: M15 (sentiment), M16 (hallüsinasyon), M17 (response archive), M18 (conversation replay), M19 (LLM bot), M20 (content gap). Hedef-metrik eşlemesi güncellendi. |

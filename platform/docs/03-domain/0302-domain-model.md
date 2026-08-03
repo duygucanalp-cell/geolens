@@ -4,11 +4,11 @@
 |---|---|
 | Doküman ID | 0302 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.1 |
+| Versiyon | 1.2 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
-| Tarih | 22 Temmuz 2026 |
-| İlişkili | 0301, 0204, 0207, 0303, 0304, 0305, 0306, 0309, 0310 |
+| Tarih | 28 Temmuz 2026 |
+| İlişkili | 0301, 0204, 0207, 0303, 0304, 0305, 0306, 0309, 0310, 0312, 0511, 0416, 0417, 0418, 0419 |
 
 ---
 
@@ -37,12 +37,16 @@ Kapsam dışı: DDL ve migration'lar, API şekilleri, arayüz modelleri, perform
 
 | Bağlam (0305 modül adayı) | Sorumluluk | Tükettiği / Beslediği |
 |---|---|---|
-| BC1 · Kimlik ve Kiracılık (identity) | Kiracı, çalışma alanı, kullanıcı, üyelik, rol, paket hakları, davet | Tüm bağlamlara kiracı bağlamı ve hak kararları verir |
-| BC2 · Yapılandırma (config) | Marka, site, pazar, prompt seti, şablon kütüphanesi, motor kapsamı, izleme planı | BC3'e panel tanımı; BC1'den hak sınırları |
-| BC3 · Ölçüm ve Hesap (measure) | Ölçüm işi, ham yanıt, alıntı, calculation_run, skor, trend, site denetimi | BC2'den panel; BC4-BC5'e skor ve olaylar |
-| BC4 · İçgörü (insight) | Öneri, öneri-etki (HT1), benchmark (HT2) | BC3'ten skor ve bulgular |
-| BC5 · Bildirim ve Raporlama (delivery) | Uyarı kuralı, uyarı, kanal, özet, rapor | BC3-BC4'ten olaylar; dış kanallara çıkış |
-| BC6 · Denetim ve Kota (governance) | Denetim izi, kullanım kayıtları, kota sayaçları | Tüm bağlamlardan yazma olayları |
+| BC1 · Kimlik ve Kiracılık (identity) | Kiracı, çalışma alanı, kullanıcı, üyelik, rol, paket hakları, davet, SSO yapılandırması (HT1) | Tüm bağlamlara kiracı bağlamı ve hak kararları verir |
+| BC2 · Yapılandırma (config) | Marka, site, pazar, prompt seti, şablon kütüphanesi, motor kapsamı, izleme planı, LLM bot takibi (HT1), schema korelasyonu (HT1), rakip yönetimi (HT1) | BC3'e panel tanımı; BC1'den hak sınırları |
+| BC3 · Ölçüm ve Hesap (measure) | Ölçüm işi, ham yanıt, alıntı, calculation_run, skor, trend, site denetimi, duygu analizi (HT1), hallüsinasyon tespiti (HT1), per-platform metrikler (HT1), competitive visibility (HT1) | BC2'den panel; BC4-BC5'e skor ve olaylar; BC7-BC9'a ham veri |
+| BC4 · İçgörü (insight) | Öneri, öneri-etki (HT1), competitive gap (HT1), content gap (HT1), technical GEO önerileri (HT1), benchmark (HT2) | BC3'ten skor ve bulgular; BC7-BC8'den geçmiş veri |
+| BC5 · Bildirim ve Raporlama (delivery) | Uyarı kuralı, uyarı, kanal, özet, rapor, alert history (HT1), webhook çeşitlendirme (HT1) | BC3-BC4'ten olaylar; dış kanallara çıkış |
+| BC6 · Denetim ve Kota (governance) | Denetim izi, kullanım kayıtları, kota sayaçları, denetim izi export (HT1) | Tüm bağlamlardan yazma olayları |
+| **BC7 · Arşiv (archive)** | **Response archive, S3 versiyonlu saklama, retention policy, toplu dışa aktarım** | **BC3'ten ham yanıt alır; BC5'e export rapor verir** |
+| **BC8 · Replay (replay)** | **Conversation replay, snapshot capture, side-by-side karşılaştırma, conversation diff** | **BC3'ten ölçüm sonuçlarını alır** |
+| **BC9 · SEO (seo)** | **Google Search Console + GA4 OAuth2 bağlantısı, periyodik veri senkronizasyonu, SEO veri depolama** | **Harici Google API'lerden veri çeker; UI'a veri sağlar** |
+| **BC10 · Denetim ve Analiz (audit & analysis)** | **Duygu analizi, hallüsinasyon tespiti, competitive gap analizi, content/topic/prompt gap, denetim izi genişletme (HT1 export)** | **BC3'ten ham yanıt ve skor tüketir; BC4'ü gap sonuçlarıyla besler; BC6 ile birlikte denetim izi genişletmesini yönetir** |
 
 ---
 
@@ -107,9 +111,55 @@ Kapsam dışı: DDL ve migration'lar, API şekilleri, arayüz modelleri, perform
 
 | Varlık | Önemli Alanlar | İlişkiler |
 |--------|---------------|-----------|
-| Denetim Kaydı (AuditLogEntry) | aktör (kullanıcı kimliği), eylem (oluşturma/güncelleme/silme), kaynak türü/kimliği, özet, zaman damgası; yalnız ekleme | Tüm yazma yolları |
-| Kullanım Kaydı (UsageRecord) | sayaç türü (prompt/motor çağrısı/rapor/ölçüm), dönem başlangıç/bitiş, miktar | N-1 Kiracı |
-| Kota Sınırı (QuotaLimit) | sayaç türü, dönem, limit değer, aşım politikası (beklet/reddet) | N-1 Kiracı |
+| **Denetim Kaydı (AuditLogEntry)** | aktör (kullanıcı kimliği), eylem (oluşturma/güncelleme/silme), kaynak türü/kimliği, özet, zaman damgası; yalnız ekleme; **HT1: export desteği (CSV)** | Tüm yazma yolları |
+| **Kullanım Kaydı (UsageRecord)** | sayaç türü (prompt/motor çağrısı/rapor/ölçüm), dönem başlangıç/bitiş, miktar | N-1 Kiracı |
+| **Kota Sınırı (QuotaLimit)** | sayaç türü, dönem, limit değer, aşım politikası (beklet/reddet) | N-1 Kiracı |
+
+### BC7 · Arşiv (HT1)
+
+| Varlık | Önemli Alanlar | İlişkiler |
+|--------|---------------|-----------|
+| **Arşiv Girdisi (ArchiveEntry)** | brand_id, engine_name, prompt_text, response_preview (≤1000 karakter), response_full (tam metin), S3 referansı, versiyon no (otomatik artan), içerik karması (SHA-256), tenant_id; değiştirilemez | N-1 Marka; 1-1 Ölçüm İşi (ölçüm bazlı); S3'te versiyonlu depolama |
+| Saklama Politikası (RetentionPolicy) | brand_id (opsiyonel → marka bazlı veya genel), saklama süresi (gün), eylem (otomatik sil/arşivle/uyarı), tenant_id; **— tasarım aşaması, HT2'de implemente edilecek** | N-1 Kiracı; değerlendirilir: Arşiv Girdisi |
+| Arşiv Dışa Aktarım (ArchiveExport) | seçili dönem başlangıç/bitiş, filtre (engine, brand), format (json/csv), durum (kuyrukta/hazır/başarısız), S3 referansı, imzalı URL | N-1 Çalışma Alanı; kaynak: Arşiv Girdisi |
+
+**Değişmez (BC7):** Arşiv girdisi yazıldıktan sonra değiştirilemez ve silinemez. İçerik karması bütünlük doğrulaması için kullanılır (I5 genişletmesi).
+
+### BC8 · Replay (HT1)
+
+| Varlık | Önemli Alanlar | İlişkiler |
+|--------|---------------|-----------|
+| **Konuşma Anlık Görüntüsü (ConversationSnapshot)** | brand_id, prompt_text, engine_name, response_preview (≤500 karakter), response_full, içerik karması (SHA-256), S3 referansı (opsiyonel), tenant_id; yalnız ekle | N-1 Marka, N-1 Engine; 1-N DiffResult |
+| **Fark Sonucu (DiffResult)** | snapshot_a_id, snapshot_b_id, has_changed (bool), değişiklik özeti, analiz zamanı | 1-2 ConversationSnapshot |
+
+**Değişmez (BC8):** Her snapshot benzersiz bir brand × engine × prompt × zaman bileşimini temsil eder. Aynı bileşimle ikinci snapshot alınabilir (zaman farklı), ancak var olan snapshot değiştirilemez.
+
+### BC9 · SEO (HT1)
+
+| Varlık | Önemli Alanlar | İlişkiler |
+|--------|---------------|-----------|
+| **SEO Bağlantısı (SEOConnection)** | platform (search_console / ga4), email (bağlı Google hesabı), access_token (şifreli), refresh_token (şifreli), token_expiry, is_active, last_synced_at, workspace_id | N-1 Çalışma Alanı; Google OAuth2 yönetimi |
+| OAuth2 Belirteci (OAuth2Token) | access_token, refresh_token, token_expiry, scope; geçici (5 dk) state token | 1-1 SEO Bağlantısı (yenileme) |
+| SC Sorgu Verisi (SearchConsoleQuery) | query (arama sorgusu), clicks, impressions, ctr, avg_position, brand_id (eşleşen marka), measured_at | N-1 SEO Bağlantısı; N-1 Marka |
+| GA4 Ölçüm Verisi (GA4Metric) | page_views, sessions, bounce_rate, avg_session_duration, brand_id (eşleşen marka), measured_at | N-1 SEO Bağlantısı; N-1 Marka |
+
+**Değişmez (BC9):** SEO bağlantısı yalnız workspace bazlıdır; token'lar şifreli saklanır, düz metin loga yazılamaz. Her bağlantı için en fazla bir aktif OAuth2 oturumu vardır.
+
+### BC10 · Denetim ve Analiz (HT1)
+
+| Varlık | Önemli Alanlar | İlişkiler |
+|--------|---------------|-----------|
+| **Duygu Skoru (SentimentScore)** | brand_id, engine_name, overall_sentiment (0-1), positive_score, neutral_score, negative_score, mention_count, analyzed_at | N-1 Marka; N-1 Engine; kaynak: Ham Yanıt |
+| **Hallüsinasyon İşareti (HallucinationFlag)** | brand_id, engine_name, hallucination_type (çelişki/yokluk/yanlış atıf/çarpıtma), severity (low/medium/high/critical), description, confidence (0-1), verified (null/bool), created_at | N-1 Marka; N-1 Engine; kaynak: Ham Yanıt |
+| **Gap Anlık Görüntüsü (GapSnapshot)** | brand_id, competitor_id, period_start/end, 5 gap türü (visibility/citation/content/topic/prompt), competitive_score (0-100), breakdown (JSON ile gap detayı) | N-1 Marka; N-1 Rakip (Brand); kaynak: Skor + Citation |
+| **Gap Detayı (GapDetail)** | gap_value, normalized (0-100), brand_value, competitor_value, direction (brand_ahead/competitor_ahead/equal) | 1-1 Gap Görüntüsü × gap türü (5 tane) |
+| **Gap Önerisi (GapRecommendation)** | gap_id, gap_type, priority, description, impact, kanıt_derecesi, related_fr | N-1 GapSnapshot |
+| **Bot Erişim Kaydı (BotAccessRecord)** | brand_id, bot_name, erişim_durumu (izinli/engelli/bulunamadı), robots.txt yönergesi, test_tarihi, site_url | N-1 Marka; kaynak: Site Denetimi |
+| **Şema Analizi (SchemaAnalysis)** | brand_id, schema_type, kullanım_var_mı (bool), geçerlilik_oranı, önerilen_iyileştirme, analiz_tarihi | N-1 Marka |
+| **İçerik Boşluğu (ContentGap)** | brand_id, konu, önem_derecesi, mevcut_durum, öneri, competitor_reference (opsiyonel), tespit_tarihi | N-1 Marka; N-1 Rakip (opsiyonel) |
+| **Konu Kümesi (TopicCluster)** | brand_id, konu_adi, alt_konular (JSON), önerilen_içerik_türü, öncelik, durum (önerildi/planlandı/uygulandı) | N-1 Marka |
+
+**Değişmez (BC10):** Duygu analizi ve hallüsinasyon tespiti yalnız mevcut ham yanıtlar üzerinde çalışır; ayrı motor çağrısı yapılmaz (P6). Gap analizi daima en az 2 marka (bir marka + bir rakip) arasında yapılır; tek markalı gap hesaplanamaz. Denetim izi genişletmesi (HT1 export), BC6 ile paylaşılan denetim izi verisine dayanır.
 
 ---
 
@@ -140,6 +190,11 @@ Panel; prompt seti içeriği, motor kapsamı ve pazarın birlikte dondurulmuş h
 | I9 | Kota sayacı aşımında motor çağrısı alan düzeyinde engellenir; iş ertelenir. | NFR-16 |
 | I10 | Arşivlenen çalışma alanında yeni ölçüm üretilmez; tarihçe okunur kalır. | FR-G3 |
 | I11 | Rapor yalnız yayınlanmış (etiketli) skorlardan üretilir; etiketsiz veri hiçbir çıktı yüzeyine giremez. | İ2, FR-F4 |
+| I12 | Arşiv girdisi yazıldıktan sonra değiştirilemez ve silinemez; içerik karması bütünlük doğrulaması sağlar. | FR-D13, NFR-11 |
+| I13 | SEO bağlantı token'ları şifreli saklanır; düz metin hiçbir loga veya hata mesajına yazılamaz. | NFR-3, FR-B8 |
+| I14 | Duygu analizi ve hallüsinasyon tespiti yalnız mevcut ham yanıtlar üzerinde çalışır; ayrı motor çağrısı yapılmaz. | P6, FR-D7, FR-D8 |
+| I15 | Competitive gap analizi daima en az 2 marka arasında yapılır; tek markalı gap hesaplanamaz. | FR-D11, 0419 |
+| I16 | Conversation snapshot'ı yalnız yayınlanmış (tamamlanmış) ölçüm işlerinden alınır; devam eden işten snapshot alınamaz. | FR-D12 |
 
 ---
 
@@ -154,6 +209,10 @@ Panel; prompt seti içeriği, motor kapsamı ve pazarın birlikte dondurulmuş h
 | Çalışma Alanı | aktif → arşiv; arşiv → aktif (geri alma) \| devredildi (HT1) | I10 uygulanır; devir denetim kaydıyla |
 | Kiracı | aktif → pasif → askıda; askıda → aktif | Pasif: yeni ölçüm durur; askıda: tüm erişim kesilir |
 | Davet | bekliyor → kabul \| red \| süre doldu | Süre: 7 gün |
+| **Konuşma Anlık Görüntüsü** | **oluşturuldu → karşılaştırıldı \| arşivlendi** | **Snapshot oluşturulduktan sonra değiştirilemez; karşılaştırma yeni bir DiffResult üretir** |
+| **Arşiv Girdisi** | **kaydedildi → dışa aktarıldı \| bekliyor; dışa aktarıldı → (süre sonu) → silindi** | **Süre RetentionPolicy tarafından belirlenir; silme otomatiktir** |
+| **Gap Analizi** | **hesaplanıyor → tamamlandı \| başarısız** | **Ölçüm sonrası otomatik tetiklenir; gap eşik aşımı alert üretir** |
+| **SEO Bağlantısı** | **bağlı → token yenileniyor → bağlı; bağlı → kopuk → (manüel) → yeniden bağla** | **Token expiry yaklaştığında otomatik yenileme dener; başarısız olursa kopuk durumuna geçer** |
 
 ---
 
@@ -168,16 +227,23 @@ Model, 0006 sözlüğündeki yerleşik terimleri aynen kullanır. Aşağıdaki t
 | Bulgu (finding) | Site erişim denetiminin önem dereceli tekil çıktısı |
 | Digest | Aynı gün tetiklerinin birleştirildiği toplu bildirim |
 | Calculation Run | Değiştirilemez skorlama kaydı; girdi, faktör ve algoritma versiyonunu saklar |
+| **Arşiv girdisi (archive entry)** | **Ham AI yanıtının versiyonlu, değiştirilemez arşiv kaydı; S3'te saklanır** |
+| **Konuşma anlık görüntüsü (conversation snapshot)** | **Belirli bir andaki AI yanıtının dondurulmuş hali; replay için kullanılır** |
+| **Gap (competitive gap)** | **Marka ile rakip arasındaki görünürlük/alıntı/içerik/konu/prompt farkı** |
+| **SEO bağlantısı (SEO connection)** | **Google Search Console veya GA4'e OAuth2 ile kurulan veri bağlantısı** |
+| **Gap türü (gap type)** | **5 tür: visibility, citation, content, topic, prompt — 0419'da detaylandırılır** |
 
 ---
 
 ## 9. GeoLens İçin Çıkarımlar
 
 1. **0303 (Aggregates)** her bağlam için toplam köklerini ve erişim kurallarını bu modelden türetir.
-2. **0305 (Bounded Contexts)** bağlam haritasıyla birebir eşlenir; bağlamlar arası erişim yalnız kök varlık arayüzlerinden yapılır.
+2. **0305 (Bounded Contexts)** bağlam haritasıyla birebir eşlenir; HT1'de BC7-BC10 eklenmiştir; bağlamlar arası erişim yalnız kök varlık arayüzlerinden yapılır.
 3. **0306 (API Design)** kaynak adları varlık adlarından türetilir; dış kimlikler opak, iç kimlikler ULID.
 4. **0309 (Scoring Engine)** calculation_run alanları ve iki versiyon ekseninin ayrımı (§5 kural 4) hesap motorunun tasarım girdisidir.
 5. **0310 (Security)** üyelik-çalışma alanı erişim modeli rol tasarımının ilk sorusudur.
+6. **HT1 genişletmesi (v1.2):** 4 yeni bağlam (BC7-BC10) ve 15+ yeni varlık eklenmiştir. Bu genişleme, 0511 (HT1 Sistem Mimarisi) dokümanındaki bounded context genişletmesini yansıtır. Yeni bağlamlar, mevcut BC1-BC6 ile aynı RLS politikası, ULID kimlik stratejisi ve değişmez kurallarına tabidir.
+7. **0416-0419 framework bağlantısı:** BC10 varlıkları (SentimentScore, HallucinationFlag, GapSnapshot, ContentGap, TopicCluster) sırasıyla 0416 (Sentiment & Hallucination), 0419 (Competitive Gap Analysis), 0418 (Content GEO) framework dokümanlarındaki metodolojilerle birebir eşlenir.
 
 ---
 
@@ -186,7 +252,7 @@ Model, 0006 sözlüğündeki yerleşik terimleri aynen kullanır. Aşağıdaki t
 | ID | Soru | Durum |
 |----|------|-------|
 | O-1 | Benchmark varlığının anonimleştirme modeli | ⏳ HT2 öncesi netleşir. AVIP D-60 (≥5 kiracı eşiği) devralındı. |
-| O-2 | Öneri-etki takibi varlık modeli (HT1) | ⏳ FR-E4 ile birlikte. |
+| O-2 | Öneri-etki takibi varlık modeli (HT1) | ✅ **KAPANDI:** RecommendationImpact varlığı BC4'e eklendi (FR-E4 implementasyonu ile birlikte). |
 | O-3 | ULID'nin indeks performans etkisi | ⏳ Pilot öncesi test. AVIP D-35 (ULID kararı) onaylandı. |
 
 ### Devralınan AVIP Kararları
@@ -212,3 +278,4 @@ Model, 0006 sözlüğündeki yerleşik terimleri aynen kullanır. Aşağıdaki t
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: 6 bağlamlı harita, 30+ çekirdek varlık, panel versiyonlama modeli (2 versiyon ekseni), 11 değişmez, 7 durum makinesi, sözlük hizası. 0301'den türetilmiştir. |
 | 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-35 (ULID), D-34 (trend sınırı). Devralınan Kararlar eklendi. |
+| 1.2 | 28.07.2026 | **HT1 domain model genişletmesi:** 4 yeni bağlam (BC7 Arşiv, BC8 Replay, BC9 SEO, BC10 Analiz) ve 15+ yeni varlık eklendi (ArchiveEntry, RetentionPolicy, ConversationSnapshot, DiffResult, SEOConnection, OAuth2Token, SearchConsoleQuery, GA4Metric, SentimentScore, HallucinationFlag, GapSnapshot, GapDetail, GapRecommendation, BotAccessRecord, SchemaAnalysis, ContentGap, TopicCluster, SSOConfig). 5 yeni değişmez (I12-I16), 4 yeni durum makinesi (snapshot, arşiv, gap, SEO). Sözlüğe 5 yeni terim eklendi. Mevcut BC1-BC6 bağlamları HT1 genişletmelerini yansıtacak şekilde güncellendi. |

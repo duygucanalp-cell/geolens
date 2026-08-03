@@ -20,12 +20,29 @@ Bu doküman, GeoLens Görünürlük Skoru'nun (0-100) hesaplama metodolojisini t
 
 ## 2. Skor Bileşenleri
 
+### 2.1 Görünürlük Skoru Bileşenleri
+
 | # | Bileşen | Açıklama | Varsayılan Ağırlık | Kaynak |
 |:-:|---------|----------|:------------------:|--------|
-| 1 | **Varlık Payı** | Markanın yanıtlarda geçme oranı | %35 | 0407 |
-| 2 | **Konum Ağırlığı** | Yanıt içinde öne çıkma sırası | %25 | 0407 |
-| 3 | **Kaynak Payı** | Marka domainlerinin alıntılardaki oranı | %20 | 0405 |
-| 4 | **Rakip Bağlamı** | Rakiplere göre normalize görünürlük | %20 | 0411 |
+| 1 | **Varlık Payı** | Markanın yanıtlarda geçme oranı | %30 | 0407 |
+| 2 | **Konum Ağırlığı** | Yanıt içinde öne çıkma sırası | %20 | 0407 |
+| 3 | **Kaynak Payı** | Marka domainlerinin alıntılardaki oranı | %15 | 0405 |
+| 4 | **Rakip Bağlamı** | Rakiplere göre normalize görünürlük | %15 | 0411 |
+| 5 | **Appearance Rate** | Prompt setinde markanın görünme sıklığı | %10 | 0407 |
+| 6 | **Sentiment / Algı** | AI yanıtlarındaki duygu durumu puanı | %5 | 0411 |
+| 7 | **Competitive Visibility** | Rakiplere göre normalize edilmiş AI görünürlük performansı | %5 | 0411 |
+
+### 2.2 Per-Platform Metrikler
+
+Her motor için ayrı hesaplanan metrikler:
+
+| Metrik | Açıklama | Hesaplama |
+|--------|----------|:---------:|
+| **Visibility Position** | Motor yanıtındaki marka sıralaması | 1-tabanlı pozisyon |
+| **Citation Presence** | Motor alıntılarında marka domainlerinin varlığı | Boolean + oran |
+| **Mention Frequency** | Motor yanıtlarında marka geçme sıklığı | /toplam yanıt |
+| **Recommendation Rate** | Motorun markayı önerme/öne çıkarma oranı | /toplam öneri |
+| **Prompt Coverage Score** | Markanın prompt setinde kaçında geçtiği | /toplam prompt |
 
 ---
 
@@ -72,6 +89,9 @@ Her skor aşağıdaki etiketleri taşır:
 | Tazelik | En son ölçüm zamanı |
 | Panel versiyonu | Hangi panel ile ölçüldüğü |
 | Motor kırılımı | Motor bazında alt skorlar |
+| Sentiment etiketi | Olumlu / Nötr / Olumsuz |
+| Hallüsinasyon bayrağı | Varsa marka hakkında yanlış bilgi tespit edildi |
+| Conversation Replay ID | Yanıtın arşiv bağlantısı |
 
 ---
 
@@ -101,3 +121,4 @@ Her skor aşağıdaki etiketleri taşır:
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: 4 bileşenli skor modeli, formül, motor kırılımı, skor etiketleri. |
 | 1.1 | 23.07.2026 | Devralınan AVIP Kararları eklendi: D-30 (örnekleme n=3), D-31 (anlamlılık), D-32 (devralma), D-89 (skor bileşen adları). |
+| 1.2 | 27.07.2026 | Turkcell RFP kapsamında genişletme: 7 bileşenli skor modeline geçiş (Appearance Rate, Sentiment, Competitive Visibility eklendi). Per-platform metrikler (Visibility Position, Citation Presence, Mention Frequency, Recommendation Rate, Prompt Coverage Score) eklendi. Skor etiketlerine sentiment, hallüsinasyon ve conversation replay ID eklendi. |

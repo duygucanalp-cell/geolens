@@ -2,6 +2,7 @@ export interface Score {
   id: string
   brand_name: string
   brand_id?: string
+  panel_id?: string
   value: number
   ci_low: number
   ci_high: number
@@ -408,6 +409,8 @@ export const ENGINE_COLORS: Record<string, string> = {
   claude: '#ef4444',
   grok: '#22c55e',
   copilot: '#a855f7',
+  mistral: '#2563eb',
+  google_ai_overview: '#d97706',
 }
 
 export const ENGINE_NAMES: Record<string, string> = {
@@ -417,4 +420,185 @@ export const ENGINE_NAMES: Record<string, string> = {
   claude: 'engine.claude',
   grok: 'engine.grok',
   copilot: 'engine.copilot',
+  mistral: 'engine.mistral',
+  google_ai_overview: 'engine.google_ai_overview',
+}
+
+// R9: Prompt Audit
+export interface PromptAudit {
+  id: string
+  prompt_text: string
+  model: string
+  risk_score: number
+  category: string
+  findings: string[]
+  created_at: string
+}
+
+// R10: Model Benchmark
+export interface BenchmarkResult {
+  id: string
+  model_name: string
+  benchmark_name: string
+  score: number
+  metrics: Record<string, number>
+  tested_at: string
+}
+
+export interface BenchmarkComparison {
+  models: string[]
+  metrics: string[]
+  results: Record<string, Record<string, number>>
+}
+
+// Sentiment Analysis
+export interface SentimentResult {
+  id: string
+  text: string
+  sentiment: 'positive' | 'negative' | 'neutral'
+  score: number
+  confidence: number
+  analyzed_at: string
+}
+
+export interface SentimentSummary {
+  total: number
+  positive: number
+  negative: number
+  neutral: number
+  avg_score: number
+}
+
+// Hallucination Detection
+export interface HallucinationFlag {
+  id: string
+  text: string
+  model: string
+  flag_type: string
+  confidence: number
+  detail: string
+  is_verified: boolean
+  created_at: string
+}
+
+// Alert Rules
+export interface AlertRule {
+  id: string
+  brand_id: string
+  name: string
+  metric: string
+  condition: string
+  threshold: number
+  channel: string
+  channel_config: Record<string, string>
+  enabled: boolean
+  cooldown_min: number
+  last_fired_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+// Technical GEO
+export interface TechnicalGEOScore {
+  overall_score: number
+  bot_access_score: number
+  schema_score: number
+  robots_score: number
+}
+
+export interface BotAnalysis {
+  id: string
+  brand_id: string
+  bot_name: string
+  accessible: boolean
+  status_code: number
+  response_time_ms: number
+  analyzed_at: string
+}
+
+// Content GEO
+export interface ContentGap {
+  id: string
+  brand_id: string
+  topic: string
+  competitor_covered: boolean
+  our_coverage: boolean
+  importance: string
+  recommendation: string
+}
+
+export interface TopicCluster {
+  name: string
+  count: number
+  avg_score: number
+}
+
+// Competitive Gap
+export interface CompetitiveGapOverview {
+  brand_id: string
+  brand_name: string
+  our_score: number
+  competitor_avg: number
+  gap: number
+  strengths: string[]
+  weaknesses: string[]
+}
+
+// Tenant Settings
+export interface TenantMember {
+  user_id: string
+  email: string
+  full_name: string
+  workspace_role: string
+  workspace_id: string
+  created_at: string
+}
+
+export interface TenantInvitation {
+  id: string
+  email: string
+  role: string
+  workspace_id: string
+  created_at: string
+  expires_at: string
+  accepted: boolean
+}
+
+export interface ApiKey {
+  id: string
+  name: string
+  key_prefix: string
+  role: string
+  is_active: boolean
+  last_used_at: string | null
+  expires_at: string | null
+  created_at: string
+}
+
+// Benchmark Context (FR-D5: Sektör kıyası, DP korumalı)
+export interface BenchmarkContext {
+  my_score: number
+  tenant_count: number
+  sufficient_data: boolean
+  sector_average?: number
+  sector_median?: number
+  sector_min?: number
+  sector_max?: number
+  sector_stddev?: number
+  percentile_25?: number
+  percentile_75?: number
+  percentile_90?: number
+  difference?: number
+  trend?: 'up' | 'down' | 'stable'
+  message?: string
+}
+
+// Retention Policy
+export interface RetentionPolicy {
+  id: string
+  data_type: string
+  retention_days: number
+  action: string
+  enabled: boolean
+  created_at: string
 }

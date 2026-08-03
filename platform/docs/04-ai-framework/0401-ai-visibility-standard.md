@@ -4,11 +4,11 @@
 |---|---|
 | Doküman ID | 0401 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.3 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
-| Tarih | 22 Temmuz 2026 |
-| İlişkili | 0006, 0301, 0302, 0402-0415, 0204 (GAVF S1-S4) |
+| Tarih | 27 Temmuz 2026 |
+| İlişkili | 0006, 0301, 0302, 0402-0419, 0204 (GAVF S1-S5), docs/AI_Visibility_Generative_Search_Intelligence_Platform.md |
 
 ---
 
@@ -30,9 +30,10 @@ GAVF dört katmandan oluşur:
 | Katman | Adı | Sorumluluk | Doküman(lar) |
 |:------:|-----|-----------|:------------:|
 | **S1** | Ölçüm Standardı | Prompt tasarımı, motor çağrısı, örnekleme | 0402, 0403, 0404 |
-| **S2** | Yanıt Standardı | Alıntı çıkarma, varlık tanıma, sınıflandırma | 0405, 0406, 0407, 0408 |
-| **S3** | Skor Standardı | Görünürlük, otorite, pay, bileşik skor | 0409, 0410, 0411 |
-| **S4** | Aksiyon Standardı | Fırsat, öneri, trend, gözlem | 0412, 0413, 0414, 0415 |
+| **S2** | Yanıt Standardı | Alıntı çıkarma, varlık tanıma, sınıflandırma, **duygu analizi, hallüsinasyon tespiti** | 0405, 0406, 0407, 0408, **0416** |
+| **S3** | Skor Standardı | Görünürlük, otorite, pay, bileşik skor, **competitive gap** | 0409, 0410, 0411, **0419** |
+| **S4** | Aksiyon Standardı | Fırsat, öneri, trend, gözlem, içerik önerileri | 0412, 0413, 0414, 0415 |
+| **S5** | GEO Standardı | Teknik GEO, Content GEO, schema optimizasyonu | **0417 (Teknik GEO)**, **0418 (Content GEO)** |
 
 ---
 
@@ -55,7 +56,7 @@ GAVF dört katmandan oluşur:
 |:------:|--------|:------------:|
 | **Temel** | GAVF uyumlu skor üretimi | G1, G2, G3, G4 |
 | **İleri** | GAVF uyumlu skor + raporlama | Temel + G5, tüm S3 bileşenleri |
-| **Tam** | GAVF uyumlu tüm katmanlar | İleri + S4 aksiyon bileşenleri |
+| **Tam** | GAVF uyumlu tüm katmanlar | İleri + S4 aksiyon bileşenleri + S5 GEO standardı |
 | **Sertifikalı** | Bağımsız doğrulama | Tam + üçüncü taraf denetimi |
 
 ---
@@ -65,6 +66,9 @@ GAVF dört katmandan oluşur:
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: 4 katmanlı GAVF yapısı, 6 çekirdek ilke, 4 uyumluluk seviyesi |
+| 1.1 | 27.07.2026 | Turkcell RFP kapsamında S5 GEO Standardı katmanı eklendi (Teknik GEO, Content GEO). Uyumluluk seviyelerine S5 dahil edildi. Platform-GAVF bağı güncellendi. |
+| 1.2 | 27.07.2026 | 0416 (Duygu Analizi ve Hallüsinasyon Tespiti) S2 katmanına eklendi. 0417 (Teknik GEO) ve 0418 (Content GEO) S5 katmanına eklendi. Katman haritası, İlişkili alanı ve Kaynaklar güncellendi. |
+| 1.3 | 27.07.2026 | 0419 (Competitive Gap Analysis) S3 katmanına eklendi. S3 sorumluluk alanına competitive gap eklendi. Katman haritası, İlişkili alanı ve Kaynaklar güncellendi. |
 
 ## 6. GeoLens Platform-GAVF Bağı
 
@@ -84,7 +88,7 @@ GAVF dört katmandan oluşur:
 - 0006 Glossary — GAVF, fidelite, calculation_run terimleri
 - 0301 Core Concepts — görünürlük, panel, kademe kavramları
 - 0204 PRD — İ1-İ6 ürün ilkeleri
-- 0402-0415 — alt dokümanlar (framework bileşenleri)
+- 0402-0419 — alt dokümanlar (framework bileşenleri)
 
 ## Changelog
 

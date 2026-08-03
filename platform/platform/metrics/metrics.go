@@ -157,4 +157,54 @@ var (
 		Name: "geolens_emails_sent",
 		Help: "Gönderilen e-posta sayısı (tenant ayrımıyla)",
 	}, []string{LabelTenant})
+
+	// ---- AI Analysis Metrics (0416-0419) ----
+
+	// SentimentAnalysesCompleted tracks completed sentiment analyses per tenant.
+	SentimentAnalysesCompleted = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "geolens_sentiment_analyses_completed_total",
+		Help: "Tamamlanan duygu analizi sayısı (tenant ayrımıyla)",
+	}, []string{LabelTenant})
+
+	// HallucinationsDetected tracks detected hallucinations per tenant.
+	HallucinationsDetected = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "geolens_hallucinations_detected_total",
+		Help: "Tespit edilen hallüsinasyon sayısı (tenant, severity ayrımıyla)",
+	}, []string{LabelTenant, "severity"})
+
+	// ConversationSnapshotsCreated tracks conversation replay snapshots.
+	ConversationSnapshotsCreated = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "geolens_conversation_snapshots_total",
+		Help: "Oluşturulan conversation replay snapshot sayısı (tenant ayrımıyla)",
+	}, []string{LabelTenant})
+
+	// ResponseArchiveEntriesCreated tracks response archive entries.
+	ResponseArchiveEntriesCreated = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "geolens_response_archive_entries_total",
+		Help: "Arşivlenen yanıt girişi sayısı (tenant ayrımıyla)",
+	}, []string{LabelTenant})
+
+	// TechnicalGEOAnalysesCompleted tracks completed technical GEO analyses.
+	TechnicalGEOAnalysesCompleted = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "geolens_technical_geo_analyses_total",
+		Help: "Tamamlanan teknik GEO analizi sayısı (tenant ayrımıyla)",
+	}, []string{LabelTenant})
+
+	// ContentGEOAnalysesCompleted tracks completed content GEO analyses.
+	ContentGEOAnalysesCompleted = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "geolens_content_geo_analyses_total",
+		Help: "Tamamlanan içerik GEO analizi sayısı (tenant ayrımıyla)",
+	}, []string{LabelTenant})
+
+	// CompetitiveGapAnalysesCompleted tracks completed competitive gap analyses.
+	CompetitiveGapAnalysesCompleted = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "geolens_competitive_gap_analyses_total",
+		Help: "Tamamlanan competitive gap analizi sayısı (tenant ayrımıyla)",
+	}, []string{LabelTenant})
+
+	// GapAlertsTriggered tracks triggered gap alerts.
+	GapAlertsTriggered = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "geolens_gap_alerts_triggered_total",
+		Help: "Tetiklenen gap alert sayısı (gap_type ayrımıyla)",
+	}, []string{"gap_type"})
 )

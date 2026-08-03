@@ -138,9 +138,16 @@ Her motorun skora katkısı ayrı ayrı hesaplanır:
 
 | Motor | Varsayılan Ağırlık | Gerekçe |
 |-------|:------------------:|---------|
-| Perplexity | 0.34 | Tier 1, web arama |
-| ChatGPT | 0.33 | Tier 2, search grounding |
-| Gemini | 0.33 | Tier 1, Google Search grounding |
+| Perplexity | 0.30 | Tier 1, web arama |
+| ChatGPT | 0.30 | Tier 2, search grounding — TR'de en yaygın |
+| Gemini | 0.25 | Tier 1, Google Search grounding |
+| Google AI Overview | 0.10 | Tier 3, directional — MVP'de Gemini vekili |
+| Claude | 0.05 | Tier 2 — HT1 adayı |
+| Grok | 0 — (HT1) | Tier 2 — HT1 adayı |
+| Mistral | 0 — (HT1) | Tier 2 — Avrupa pazarı stratejik |
+| Copilot | 0 — (HT1) | Tier 3 — HT1 adayı |
+
+Not: Google AI Overview ağırlığı başlangıçta düşük tutulmuştur çünkü Kademe 3 (directional) ölçümüdür. Doğrulama verisi toplandıkça ağırlık artırılabilir.
 
 ---
 
@@ -166,7 +173,46 @@ Yeni algoritma versiyonu eskiyle karşılaştırılır:
 
 ---
 
-## 8. Hata Kodları
+## 8. Genişletilmiş Skor Bileşenleri
+
+Turkcell RFP kapsamında skor motoruna eklenen yeni hesaplamalar:
+
+### 8.1 Sentiment Skoru Hesaplama
+
+```
+sentiment_skoru = (olumlu_yanıt_sayısı × 1.0 + nötr_yanıt_sayısı × 0.5) / toplam_yanıt
+```
+
+| Değer | Anlamı |
+|:----:|--------|
+| ≥0.7 | Olumlu |
+| 0.4-0.7 | Nötr |
+| <0.4 | Olumsuz |
+
+### 8.2 Competitive Gap Hesaplama
+
+```
+visibility_gap = marka_SOV - rakip_SOV
+citation_gap = marka_citation_oranı - rakip_citation_oranı
+content_gap = |marka_kaynak_türleri| - |rakip_kaynak_türleri|
+topic_gap = her_konu_için_SOV_farkı
+prompt_gap = markanın_geçtiği_prompt_seti - rakibin_geçtiği_prompt_seti
+```
+
+### 8.3 Hallüsinasyon Tespiti
+
+Hallüsinasyon tespiti için AI yanıtı markanın doğrulanmış bilgileriyle karşılaştırılır:
+
+| Kontrol | Yöntem |
+|---------|--------|
+| Marka adı doğruluğu | Bilinen marka varyasyonlarıyla eşleme |
+| Ürün/hizmet ilişkisi | Marka-ürün matrisi kontrolü |
+| Sayısal veri | Tarih, fiyat, puan gibi verilerin doğrulaması |
+| Bağlam uyumu | Markanın doğru sektör/bağlamda geçmesi |
+
+---
+
+## 9. Hata Kodları
 
 | Kod | Açıklama | HTTP |
 |:---:|----------|:----:|
@@ -175,6 +221,8 @@ Yeni algoritma versiyonu eskiyle karşılaştırılır:
 | SCORE_003 | Panel versiyonu bulunamadı | 404 |
 | SCORE_004 | Determinizm doğrulaması başarısız | 500 |
 | SCORE_005 | GA hedef dışı (>15 puan) | Uyarı |
+| SCORE_006 | Sentiment analizi başarısız | Uyarı |
+| SCORE_007 | Hallüsinasyon tespiti zaman aşımı | Uyarı |
 
 ---
 
@@ -183,3 +231,4 @@ Yeni algoritma versiyonu eskiyle karşılaştırılır:
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 25.07.2026 | İlk yayın: skor hesaplama, GA, fidelite, determinizm, motor kırılımı, kalibrasyon |
+| 1.1 | 27.07.2026 | Turkcell RFP kapsamında genişletme: Motor ağırlıkları güncellendi (Google AI Overview, Claude, Grok, Mistral, Copilot). Yeni skor bileşenleri eklendi: Sentiment skoru, Competitive Gap (visibility/citation/content/topic/prompt gap), Hallüsinasyon tespiti. Hata kodlarına SCORE_006-SCORE_007 eklendi. |

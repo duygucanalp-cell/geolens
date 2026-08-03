@@ -21,17 +21,21 @@ import (
 	"github.com/geolens/platform/engine/copilot"
 	"github.com/geolens/platform/engine/gemini"
 	"github.com/geolens/platform/engine/grok"
+	"github.com/geolens/platform/engine/mistral"
 	"github.com/geolens/platform/engine/perplexity"
 	"github.com/geolens/platform/internal/agent"
 	"github.com/geolens/platform/internal/alert"
 	"github.com/geolens/platform/internal/apikey"
+	"github.com/geolens/platform/internal/archive"
 	"github.com/geolens/platform/internal/audit"
 	"github.com/geolens/platform/internal/auth"
 	"github.com/geolens/platform/internal/benchmark"
 	"github.com/geolens/platform/internal/bias"
 	"github.com/geolens/platform/internal/billing"
+	"github.com/geolens/platform/internal/competitive"
 	"github.com/geolens/platform/internal/compliance"
 	"github.com/geolens/platform/internal/config"
+	"github.com/geolens/platform/internal/contentgeo"
 	"github.com/geolens/platform/internal/cost"
 	"github.com/geolens/platform/internal/delivery"
 	"github.com/geolens/platform/internal/discovery"
@@ -50,8 +54,12 @@ import (
 	"github.com/geolens/platform/internal/public"
 	"github.com/geolens/platform/internal/recommendation"
 	"github.com/geolens/platform/internal/registry"
+	"github.com/geolens/platform/internal/replay"
 	"github.com/geolens/platform/internal/retention"
+	"github.com/geolens/platform/internal/sentiment"
+	"github.com/geolens/platform/internal/seo"
 	"github.com/geolens/platform/internal/sso"
+	"github.com/geolens/platform/internal/technicalgeo"
 	"github.com/geolens/platform/internal/usage"
 	"github.com/geolens/platform/internal/version"
 	"github.com/geolens/platform/platform/db"
@@ -85,7 +93,7 @@ func main() {
 		slog.Error("veritabanı bağlantısı kurulamadı", "error", err)
 		return
 	}
-	pool.Close()
+	defer pool.Close()
 
 	// JWT servisi
 	jwtService := auth.NewJWTService(cfg.JWTSecret)
@@ -128,6 +136,8 @@ func main() {
 	engines.Register(grokAdapter)
 	copilotAdapter := copilot.NewAdapter(cfg.CopilotAPIKey, saver)
 	engines.Register(copilotAdapter)
+	mistralAdapter := mistral.NewAdapter(cfg.MistralAPIKey, saver)
+	engines.Register(mistralAdapter)
 
 	slog.Info("motor kayıt defteri hazır", "engine_count", engines.Count(), "engines", engines.List())
 
@@ -176,6 +186,17 @@ func main() {
 	optimizeHandler := optimize.NewProductionHandler(pool)
 	versionHandler := version.NewProductionHandler(pool)
 	incidentHandler := incident.NewProductionHandler(pool)
+	sentimentHandler := sentiment.NewProductionHandler(pool)
+	replayHandler := replay.NewProductionHandler(pool)
+	archiveHandler := archive.NewProductionHandler(pool)
+	technicalgeoHandler := technicalgeo.NewProductionHandler(pool)
+	contentgeoHandler := contentgeo.NewProductionHandler(pool)
+	competitiveHandler := competitive.NewProductionHandler(pool)
+	seoHandler := seo.NewProductionHandler(pool, cfg.GoogleOAuthClientID, cfg.GoogleOAuthClientSecret, cfg.BaseURL)
+
+	// SEO data sync worker (FR-B8) — her 1 saatte Search Console verilerini senkronize eder
+	seoWorker := seo.NewSyncWorker(pool, cfg.GoogleOAuthClientID, cfg.GoogleOAuthClientSecret, 1*time.Hour)
+	go seoWorker.Start(context.Background())
 
 	pdf.StartReportProcessor(pool, pdfHandler.Svc(), 10*time.Second)
 	retentionWorker := retention.NewWorker(pool, cfg.RetentionInterval)
@@ -204,8 +225,19 @@ func main() {
 	r.Route("/public/v1", func(r chi.Router) {
 		r.Use(httpmw.AuthenticateAPIKey(pool))
 		r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/scores/{brandID}", publicHandler.GetScore)
+		r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/scores", publicHandler.ListScores)
 		r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/trends", publicHandler.ListTrends)
+		r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/brands", publicHandler.ListBrands)
+		r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/brands/{brandID}", publicHandler.GetBrand)
+		r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/citations", publicHandler.ListCitations)
+		r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/reports", publicHandler.ListReports)
+		r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/reports/{reportID}/download", publicHandler.DownloadReport)
 	})
+
+	// SEO OAuth callback — JWT kimlik doğrulaması DIŞINDA, çünkü Google OAuth redirect'i
+	// kullanıcının tarayıcısına plain GET isteği olarak gelir, Bearer token taşımaz.
+	// Tenant/workspace bilgisi state token'dan çözülür.
+	r.Get("/v1/workspaces/{ws}/seo/callback", seoHandler.HandleCallback)
 
 	r.Route("/v1", func(r chi.Router) {
 		r.Use(httpmw.ValidateContentType("application/json"))
@@ -394,6 +426,8 @@ func main() {
 					r.Use(httpmw.CacheMiddleware(cacheCfg))
 					r.Use(httpmw.RequireRole(httpmw.RoleViewer))
 					r.Get("/brands", configHandler.ListBrands)
+					r.Get("/brands/search", configHandler.SearchBrands)
+					r.Get("/brands/{brandId}/competitors", configHandler.ListBrandCompetitors)
 					r.Get("/panels", panelHandler.ListPanels)
 					r.Get("/panels/{panelID}", panelHandler.GetPanel)
 					r.Get("/prompt-sets", panelHandler.ListPromptSets)
@@ -407,6 +441,10 @@ func main() {
 				r.Group(func(r chi.Router) {
 					r.Use(httpmw.RequireRole(httpmw.RoleAdmin))
 					r.Post("/brands", configHandler.CreateBrand)
+					r.Put("/brands/{brandId}", configHandler.UpdateBrand)
+					r.Delete("/brands/{brandId}", configHandler.DeleteBrand)
+					r.Put("/brands/{brandId}/competitors", configHandler.UpdateBrandCompetitors)
+					r.Delete("/brands/{brandId}/competitors/{competitorId}", configHandler.DeleteBrandCompetitor)
 					r.Post("/archive", configHandler.ArchiveWorkspace)
 					r.Post("/unarchive", configHandler.UnarchiveWorkspace)
 					r.Post("/transfer", configHandler.TransferWorkspace)
@@ -426,10 +464,64 @@ func main() {
 				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/benchmark/context", measureHandler.GetBenchmarkContext)
 				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/measurements/{runId}/status", measureHandler.GetMeasurementStatus)
 
+				// AI Analysis routes (0416-0419)
+				r.Route("/sentiment", func(r chi.Router) {
+					r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/", sentimentHandler.ListSentiment)
+					r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/summary", sentimentHandler.GetSentimentSummary)
+					r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/analyze", sentimentHandler.AnalyzeSentiment)
+				})
+				r.Route("/hallucination", func(r chi.Router) {
+					r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/", sentimentHandler.ListHallucinations)
+					r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/detect", sentimentHandler.DetectHallucinations)
+					r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/{flagId}/verify", sentimentHandler.VerifyHallucination)
+				})
+				r.Route("/replay", func(r chi.Router) {
+					r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/", replayHandler.ListSnapshots)
+					r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/compare", replayHandler.CompareSnapshots)
+					r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/{snapshotId}", replayHandler.GetSnapshot)
+					r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/capture", replayHandler.CaptureSnapshot)
+					r.With(httpmw.RequireRole(httpmw.RoleAdmin)).Delete("/{snapshotId}", replayHandler.DeleteSnapshot)
+				})
+				r.Route("/archive", func(r chi.Router) {
+					r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/", archiveHandler.ListEntries)
+					r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/versions", archiveHandler.GetVersionHistory)
+					r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/{entryId}", archiveHandler.GetEntry)
+					r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/", archiveHandler.ArchiveResponse)
+				})
+				r.Route("/technical-geo", func(r chi.Router) {
+					r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/bots", technicalgeoHandler.ListBotAnalyses)
+					r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/schema", technicalgeoHandler.ListSchemaAnalyses)
+					r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/score", technicalgeoHandler.GetTechnicalGEOScore)
+					r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/bots", technicalgeoHandler.AnalyzeBots)
+					r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/schema", technicalgeoHandler.AnalyzeSchema)
+				})
+				r.Route("/content-geo", func(r chi.Router) {
+					r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/gap", contentgeoHandler.ListContentGaps)
+					r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/topics", contentgeoHandler.ListTopicClusters)
+					r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/hub-score", contentgeoHandler.GetContentHubScore)
+					r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/gap", contentgeoHandler.AnalyzeContentGap)
+				})
+				r.Route("/competitive-gap", func(r chi.Router) {
+					r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/overview", competitiveHandler.GetOverview)
+					r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/visibility", competitiveHandler.GetVisibilityGap)
+					r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/recommendations", competitiveHandler.GetRecommendations)
+					r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/analyze", competitiveHandler.AnalyzeGap)
+				})
+
 				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/retention/policies", retentionHandler.ListPolicies)
 				r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/retention/archive-summary", retentionHandler.GetArchiveSummary)
 				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Put("/retention/policies", retentionHandler.UpsertPolicy)
 				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Delete("/retention/policies/{policyId}", retentionHandler.DeletePolicy)
+
+				// SEO Entegrasyonları (FR-B8)
+				r.Route("/seo", func(r chi.Router) {
+					r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/connections", seoHandler.ListConnections)
+					r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/auth-url", seoHandler.GetAuthURL)
+					r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/callback", seoHandler.HandleCallback)
+					r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/search-console", seoHandler.GetSearchConsoleData)
+					r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/ga4", seoHandler.GetGA4Data)
+					r.With(httpmw.RequireRole(httpmw.RoleAdmin)).Delete("/connections/{platform}", seoHandler.Disconnect)
+				})
 
 				r.Group(func(r chi.Router) {
 					r.Use(httpmw.RequireRole(httpmw.RoleEditor))

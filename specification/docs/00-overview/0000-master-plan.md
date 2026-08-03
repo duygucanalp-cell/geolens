@@ -4,11 +4,11 @@
 |---|---|
 | Doküman ID | 0000 |
 | Proje | GeoLens Specification |
-| Versiyon | 1.0 |
+| Versiyon | 1.2 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Product |
-| Tarih | 22 Temmuz 2026 |
-| İlişkili | platform/docs/0000, platform/docs/0401, platform/docs/adr/0001–0005 |
+| Tarih | 27 Temmuz 2026 |
+| İlişkili | platform/docs/0000, platform/docs/0401, platform/docs/0416-0419, platform/docs/adr/0001–0005 |
 
 ---
 
@@ -58,6 +58,19 @@ Platform, Specification'ın referans uygulamasıdır. Specification'daki her kar
 | S4 | **Dürüstlük** | Standardın kendisi asla sıralama garantisi ima etmez. |
 | S5 | **Katılımcılık** | Sektör oyuncuları geri bildirim ve katkı yapabilmelidir. |
 | S6 | **Platform-Nötr** | Hiçbir AI motoru veya ticari ürün lehine tasarlanmaz. |
+| S7 | **Kapsayıcılık** | Standart, sentiment analizi, hallüsinasyon tespiti ve GEO (Generative Engine Optimization) alanlarını da kapsar. |
+
+---
+
+## 4. Yeni Eklenen GAVF Bileşenleri
+
+| Bileşen | Tür | Açıklama | Eklendiği Katman |
+|---------|:---:|----------|:----------------:|
+| **S5 GEO Standardı** | Katman | Teknik GEO (LLM bot izleme, schema analizi) + Content GEO (content gap, topic cluster, FAQ, entity, semantik optimizasyon) | S5 |
+| **Sentiment Analizi** | Metrik | AI yanıtlarında duygu durumu (olumlu/nötr/olumsuz) tespiti | S2 |
+| **Hallüsinasyon Tespiti** | Metrik | AI motorlarının marka hakkında yanlış bilgi üretimini işaretleme | S2, S3 |
+| **Competitive Gap** | Skor | 5 boyutlu rakip-marka farkı: Visibility/Citation/Content/Topic/Prompt Gap | S3, S4 |
+| **Conversation Replay & Response Archive** | Veri | AI yanıtlarının anlık görüntü ve versiyonlu arşivi | S2 |
 
 ---
 
@@ -167,6 +180,7 @@ Her skor, üretildiği GAVF versiyonunu taşır. Versiyon değişiklikleri adr/ 
 - GeoLens Platform: `platform/docs/00-overview/0000-master-plan.md`
 - GAVF Standardı (Platform uygulaması): `platform/docs/04-ai-framework/0401-ai-visibility-standard.md`
 - GeoLens Vizyon: `platform/docs/00-overview/0001-vision.md`
+- GeoLens Platform AI Framework (0416-0419): `platform/docs/04-ai-framework/0416-sentiment-hallucination.md`, `0417-technical-geo.md`, `0418-content-geo.md`, `0419-competitive-gap-analysis.md`
 
 ## Changelog
 
@@ -174,3 +188,4 @@ Her skor, üretildiği GAVF versiyonunu taşır. Versiyon değişiklikleri adr/ 
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: Specification reposu master planı, doküman ağacı, GAVF versiyonlama, yayın döngüsü. |
 | 1.1 | 22.07.2026 | Doküman ağacı güncellendi: 00-overview'e 0005-version-sync-plan, 03-compliance'a 0305-gavf-compliance-matrix eklendi. Toplam: 43 doküman. |
+| 1.2 | 27.07.2026 | Turkcell RFP kapsamında yeni GAVF bileşenleri eklendi: S5 GEO Standardı, Sentiment/Hallüsinasyon, Competitive Gap, Conversation Replay/Response Archive. Felsefe ilkelerine S7 (Kapsayıcılık) eklendi. Üst veri ve Kaynaklar güncellendi. Toplam: 47+ doküman. |

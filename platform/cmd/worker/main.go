@@ -23,11 +23,15 @@ import (
 	"github.com/geolens/platform/engine/gemini"
 	"github.com/geolens/platform/engine/grok"
 	"github.com/geolens/platform/engine/perplexity"
+	"github.com/geolens/platform/internal/benchmark"
+	"github.com/geolens/platform/internal/competitive"
 	"github.com/geolens/platform/internal/config"
+	"github.com/geolens/platform/internal/dbiface"
 	"github.com/geolens/platform/internal/delivery"
 	"github.com/geolens/platform/internal/id"
 	"github.com/geolens/platform/internal/measure"
 	"github.com/geolens/platform/internal/recommendation"
+	"github.com/geolens/platform/internal/sentiment"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/metrics"
 	"github.com/geolens/platform/platform/queue"
@@ -130,11 +134,21 @@ func main() {
 	// Tavsiye servisi (kural değerlendirme)
 	recommendationSvc := recommendation.NewService(pool)
 
+	// AI Analiz motorları (sentiment, competitive gap)
+	sentimentEngine := sentiment.NewEngine(pool)
+	competitiveEngine := competitive.NewEngine(pool)
+
+	// Benchmark sektör istatistikleri toplayıcı (FR-D5/C)
+	benchmarkAggregator := benchmark.NewAggregator(dbiface.NewAdapter(pool), nil)
+	// Benchmark collector ticker-based'dir, Redis Stream gerektirmez
+	benchmarkCollector := benchmark.NewCollector(benchmarkAggregator, 1*time.Hour)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	// Redis Stream consumer group'u oluştur (yoksa)
-	for _, s := range []string{queue.StreamMeasure} {
+	analysisStreams := []string{queue.StreamSentiment, queue.StreamReplay, queue.StreamArchive, queue.StreamGap, queue.StreamTechnicalGeo, queue.StreamContentGeo}
+	for _, s := range append([]string{queue.StreamMeasure}, analysisStreams...) {
 		if err := rdb.XGroupCreateMkStream(ctx, s, cfg.ConsumerGroup, "0").Err(); err != nil {
 			if !isGroupAlreadyExists(err) {
 				slog.Warn("redis stream grubu oluşturma", "stream", s, "error", err)
@@ -150,7 +164,7 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		runWorker(ctx, pool.Pool, rdb, engines, saver, cfg.ConsumerGroup, cfg.ConsumerGroup, measureSvc, recommendationSvc, deliverySvc)
+		runWorker(ctx, pool.Pool, rdb, engines, saver, cfg.ConsumerGroup, cfg.ConsumerGroup, measureSvc, recommendationSvc, deliverySvc, sentimentEngine, competitiveEngine)
 	}()
 
 	// Queue depth collector (periyodik XLEN ile kuyruk derinliği metrikleri)
@@ -167,6 +181,15 @@ func main() {
 		runAccountMetricsCollector(ctx, pool.Pool)
 	}()
 
+	// Benchmark aggregator (periyodik sektör istatistikleri toplulaştırması)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := benchmarkCollector.Run(ctx); err != nil && err != context.Canceled && err != context.DeadlineExceeded {
+			slog.Warn("benchmark toplayıcı beklenmeyen hata ile durdu", "error", err)
+		}
+	}()
+
 	slog.Info("worker başlatılıyor", "consumer_group", cfg.ConsumerGroup)
 
 	quit := make(chan os.Signal, 1)
@@ -180,7 +203,7 @@ func main() {
 }
 
 // runWorker continuously reads from Redis Stream and processes measurement jobs.
-func runWorker(ctx context.Context, pool *pgxpool.Pool, rdb *redis.Client, engines *engine.Registry, s3Client engine.RawSaver, consumerGroup, ackGroup string, measureSvc measure.Service, recSvc recommendation.Service, deliverySvc delivery.Service) {
+func runWorker(ctx context.Context, pool *pgxpool.Pool, rdb *redis.Client, engines *engine.Registry, s3Client engine.RawSaver, consumerGroup, ackGroup string, measureSvc measure.Service, recSvc recommendation.Service, deliverySvc delivery.Service, sentimentEng *sentiment.Engine, competitiveEng *competitive.Engine) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -199,7 +222,7 @@ func runWorker(ctx context.Context, pool *pgxpool.Pool, rdb *redis.Client, engin
 				if isNoGroupError(err) {
 					// Stream veya consumer group silinmiş olabilir, yeniden oluştur
 					slog.Warn("redis stream grubu bulunamadı, yeniden oluşturuluyor", "error", err)
-					for _, s := range []string{queue.StreamMeasure} {
+					for _, s := range append([]string{queue.StreamMeasure}, []string{queue.StreamSentiment, queue.StreamReplay, queue.StreamArchive, queue.StreamGap, queue.StreamTechnicalGeo, queue.StreamContentGeo}...) {
 						_ = rdb.XGroupCreateMkStream(ctx, s, consumerGroup, "0").Err()
 					}
 				} else {
@@ -215,7 +238,7 @@ func runWorker(ctx context.Context, pool *pgxpool.Pool, rdb *redis.Client, engin
 
 			for _, stream := range results {
 				for _, msg := range stream.Messages {
-					processMessage(ctx, pool, rdb, engines, s3Client, stream.Stream, msg.ID, msg.Values, ackGroup, measureSvc, recSvc, deliverySvc)
+					processMessage(ctx, pool, rdb, engines, s3Client, stream.Stream, msg.ID, msg.Values, ackGroup, measureSvc, recSvc, deliverySvc, sentimentEng, competitiveEng)
 				}
 			}
 		}
@@ -235,6 +258,8 @@ func processMessage(
 	measureSvc measure.Service,
 	recSvc recommendation.Service,
 	deliverySvc delivery.Service,
+	sentimentEng *sentiment.Engine,
+	competitiveEng *competitive.Engine,
 ) {
 	logger := slog.With("msg_id", msgID, "stream", stream)
 
@@ -376,13 +401,13 @@ func processMessage(
 	// Redis Stream'den ACK'le
 	ackMessage(rdb, stream, msgID, consumerGroup)
 
-	// Skor hesaplama + tavsiye üretimi (arka planda, hata worker'ı durdurmaz)
-	computeAndEvaluate(ctx, pool, job.TenantID, job.WorkspaceID, job.PanelID, job.BrandID, measureSvc, recSvc, deliverySvc)
+	// Skor hesaplama + AI analizleri (arka planda, hata worker'ı durdurmaz)
+	computeAndEvaluate(ctx, pool, job.TenantID, job.WorkspaceID, job.PanelID, job.BrandID, measureSvc, recSvc, deliverySvc, sentimentEng, competitiveEng)
 
 	logger.Info("worker: iş tamamlandı")
 }
 
-// computeAndEvaluate loads raw responses, computes a score, evaluates rules, and sends notifications.
+// computeAndEvaluate loads raw responses, computes a score, evaluates rules, runs AI analysis, and sends notifications.
 func computeAndEvaluate(
 	ctx context.Context,
 	pool *pgxpool.Pool,
@@ -390,6 +415,8 @@ func computeAndEvaluate(
 	measureSvc measure.Service,
 	recSvc recommendation.Service,
 	deliverySvc delivery.Service,
+	sentimentEng *sentiment.Engine,
+	competitiveEng *competitive.Engine,
 ) {
 	logger := slog.With("brand", brandID, "tenant", tenantID, "workspace", workspaceID)
 
@@ -469,7 +496,38 @@ func computeAndEvaluate(
 	}
 	logger.Info("compute: tavsiyeler değerlendirildi", "count", len(recs))
 
-	// 5. Kritik bildirimleri kontrol et
+	// 5. AI Analizleri (sentiment, hallucination, competitive gap)
+	// Bunlar worker'ı bloke etmez; hata durumunda sadece log yazılır
+
+	// 5a. Duygu analizi (FR-D7)
+	if sentimentEng != nil {
+		sentimentResults, sentErr := sentimentEng.AnalyzeSentiment(ctx, brandID, workspaceID, tenantID, "")
+		if sentErr != nil {
+			logger.Warn("compute: sentiment analiz hatası", "error", sentErr)
+		} else {
+			logger.Info("compute: sentiment analizi tamamlandı", "count", len(sentimentResults))
+		}
+
+		// 5b. Hallüsinasyon tespiti (FR-D8)
+		hallResults, hallErr := sentimentEng.DetectHallucinations(ctx, brandID, workspaceID, tenantID)
+		if hallErr != nil {
+			logger.Warn("compute: hallüsinasyon tespit hatası", "error", hallErr)
+		} else {
+			logger.Info("compute: hallüsinasyon tespiti tamamlandı", "count", len(hallResults))
+		}
+	}
+
+	// 5c. Competitive gap analizi (FR-D11)
+	if competitiveEng != nil {
+		gapResults, gapErr := competitiveEng.AnalyzeAllGaps(ctx, brandID, workspaceID, tenantID)
+		if gapErr != nil {
+			logger.Warn("compute: competitive gap analiz hatası", "error", gapErr)
+		} else {
+			logger.Info("compute: competitive gap analizi tamamlandı", "competitors", len(gapResults))
+		}
+	}
+
+	// 6. Kritik bildirimleri kontrol et
 	var criticalRecs []recommendation.Recommendation
 	for _, r := range recs {
 		if r.Severity == "critical" || r.Severity == "high" {
@@ -692,7 +750,8 @@ func runQueueDepthCollector(ctx context.Context, rdb *redis.Client) {
 	ticker := time.NewTicker(15 * time.Second)
 	defer ticker.Stop()
 
-	streams := []string{queue.StreamMeasure, queue.StreamAudit, queue.StreamReport, queue.StreamNotify}
+	streams := []string{queue.StreamMeasure, queue.StreamAudit, queue.StreamReport, queue.StreamNotify,
+		queue.StreamSentiment, queue.StreamReplay, queue.StreamArchive, queue.StreamGap, queue.StreamTechnicalGeo, queue.StreamContentGeo}
 	deadStreams := []string{queue.StreamDead}
 
 	slog.Info("kuyruk derinliği toplayıcı başlatıldı", "interval", "15s")

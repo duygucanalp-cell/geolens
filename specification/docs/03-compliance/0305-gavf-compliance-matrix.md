@@ -4,10 +4,10 @@
 |---|---|
 | Doküman ID | 0305 |
 | Proje | GeoLens Specification + Platform |
-| Versiyon | 1.0.1 |
+| Versiyon | 1.1.0 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Engineering |
-| Tarih | 22 Temmuz 2026 |
+| Tarih | 27 Temmuz 2026 |
 | İlişkili | 0101, 0109, 0301, platform/docs/0401, platform/docs/0204 |
 
 ---
@@ -40,9 +40,29 @@ Bu doküman, **GeoLens Platform**'un **GeoLens Specification (GAVF)** ile uyumlu
 | Katman | Adı | Specification Doküman(lar)ı | Platform Doküman(lar)ı | Karşılama |
 |:------:|-----|:---------------------------:|:-----------------------:|:---------:|
 | **S1** | Ölçüm Standardı | 0102, 0106, 0201 | 0402, 0403, 0404, 0505 | 🟢 MVP |
-| **S2** | Yanıt Standardı | 0103, 0107, 0209 | 0405, 0406, 0407, 0408 | 🟢 MVP |
-| **S3** | Skor Standardı | 0104, 0202, 0203, 0204, 0205 | 0409, 0410, 0411, 0309 | 🟢 MVP |
-| **S4** | Aksiyon Standardı | 0105, 0206, 0207, 0208 | 0412, 0413, 0414, 0415 | 🟡 Kısmi (MVP daraltılmış) |
+| **S2** | Yanıt Standardı | 0103, 0107, 0209 | 0405, 0406, 0407, 0408, **0416** | 🟢 MVP **(sentiment/hallüsinasyon eklendi)** |
+| **S3** | Skor Standardı | 0104, 0202, 0203, 0204, 0205 | 0409, 0410, 0411, 0309, **0419** | 🟢 MVP **(competitive gap eklendi)** |
+| **S4** | Aksiyon Standardı | 0105, 0206, 0207, 0208 | 0412, 0413, 0414, 0415, **0418** | 🟡 Kısmi (MVP daraltılmış) |
+| **S5** | GEO Standardı | 0105 (§4) | **0417, 0418** | 🟡 Yeni (MVP daraltılmış) |
+
+### S4 Detaylı Durum
+
+| S4 Bileşeni | Platform FR | MVP Durumu | Hızlı Takip |
+|-------------|:-----------:|:-----------:|:-----------:|
+| Fırsat Tespiti | FR-E1 (daraltılmış) | 🟡 Kural tabanlı | HT1 |
+| Öneri Üretimi | FR-E1 (daraltılmış) | 🟡 Kural tabanlı | HT1 |
+| Trend Analizi | FR-D4 | 🟢 Tam | — |
+| Uyarı/Aksiyon | FR-F1, FR-F2 (daraltılmış) | 🟡 Varsayılan eşikler | HT1 |
+| GEO İçerik Önerileri | FR-E6 | 🟢 Tam | — |
+
+### S5 Detaylı Durum
+
+| S5 Bileşeni | Platform FR | MVP Durumu | Hızlı Takip |
+|-------------|:-----------:|:-----------:|:-----------:|
+| Teknik GEO (bot izleme) | FR-B6 | 🟢 Tam | — |
+| Schema korelasyonu | FR-B7 | 🟡 Daraltılmış | HT1 |
+| Content Gap Analizi | FR-E5 | 🟢 Tam | — |
+| Teknik GEO önerileri | FR-E7 | 🟡 Daraltılmış | HT1 |
 
 ### S4 Detaylı Durum
 
@@ -107,10 +127,20 @@ Aşağıdaki tablo, platformdaki **her Çekirdek FR'yi** hangi GAVF gereksinimin
 | FR-C7 | Tazelik damgası | G5 | S3 | İleri |
 | FR-D1 | Motor kırılımı | G1 | S3 | Temel |
 | FR-D2 | Alıntı/kaynak analizi | G1 | S2 | Temel |
+| **FR-D7** | **Sentiment/algı skoru** | G1 | S2 | İleri |
+| **FR-D8** | **Hallüsinasyon tespiti** | G1, G6 | S2, S3 | İleri |
+| **FR-D11** | **Competitive Gap Analysis** | G1, G4 | S3, S4 | İleri |
+| **FR-D12** | **Conversation Replay** | G1 | S2 | Temel |
+| **FR-D13** | **Response Archive** | G1, G5 | S2 | Temel |
 | FR-D4 | Zaman serisi | G4 | S4 | İleri |
 | FR-E1 | Öneri üretimi | G6 | S4 | Tam |
 | FR-E2 | Politika filtresi | G6 | S4 | Tam |
 | FR-E3 | Öneri işaretleme | G5 | S4 | Tam |
+| **FR-E5** | **Content Gap Analizi** | G1 | S4, S5 | İleri |
+| **FR-E6** | **GEO içerik önerileri** | G6 | S4, S5 | İleri |
+| **FR-E7** | **Teknik GEO önerileri** | G1 | S5 | İleri |
+| **FR-B6** | **LLM Bot izleme** | — | S5 | Temel (altyapı) |
+| **FR-B7** | **Schema korelasyonu** | — | S5 | Temel (altyapı) |
 | FR-F1 | Anlamlı uyarı | G4 | S4 | Tam |
 | FR-B2 | Prompt seti kurulumu | — | S1 | Temel (altyapı) |
 | FR-B4 | Site erişim denetimi | — | S2 | Temel (altyapı) |
@@ -142,10 +172,14 @@ Aşağıdaki tablo, platformdaki **her Çekirdek FR'yi** hangi GAVF gereksinimin
 | ProbeResult (ham yanıt) | Alıntı çıkarma + varlık tanıma | 0107, 0209 |
 | CalculationRun | Skor girdi anlık görüntüsü | 0104, 0202 |
 | Scoring Engine (GA) | Bileşik skor hesaplama | 0202, 0203 |
+| Sentiment Engine | Duygu analizi + hallüsinasyon tespiti | 0103 (S2) |
+| Gap Analysis Engine | 5 gap türü hesaplama | 0104 (S3) |
 | FidelityLabel (Kademe 1/2/3) | Fidelite etiketi | 0108 |
 | Recommendations | Kanıt dereceli öneri sınıflandırması | 0207 |
 | Trend Analysis | Trend sınıflandırması | 0208 |
 | Opportunity Engine | Fırsat puanı hesaplama | 0206 |
+| Technical GEO Engine | Bot izleme, schema analizi | 0105 (S5) |
+| Content GEO Engine | Content gap, topic cluster, entity | 0105 (S5) |
 
 ---
 
@@ -169,7 +203,7 @@ Aşağıdaki tablo, platformdaki **her Çekirdek FR'yi** hangi GAVF gereksinimin
 
 | Aşama | GAVF Seviyesi | Zamanlama | Kritik Kilometre Taşları |
 |:-----:|:-------------:|:---------:|--------------------------|
-| **V1.0 MVP** | Temel + İleri | MVP lansmanı | G1–G6 tam, S1–S3 tam, S4 kısmi |
+| **V1.0 MVP** | Temel + İleri | MVP lansmanı | G1–G6 tam, S1–S3 tam, S4 kısmi, S5 kısmi (bot/content gap tam, schema/teknik GEO daraltılmış) |
 | **HT1** | Tam | MVP+1 çeyrek | S4 tamamı (FR-E4, FR-F2 derinleşmesi) |
 | **HT2** | Tam (denetimli) | MVP+2 çeyrek | Bağımsız denetim süreci başlangıcı |
 | **Kurumsal Kapı** | Sertifikalı | P1 satışı ile | SOC 2 + GAVF sertifikası |
@@ -182,7 +216,7 @@ Aşağıdaki tablo, platformdaki **her Çekirdek FR'yi** hangi GAVF gereksinimin
 |:-------------:|:---------------:|:---------------:|----------|
 | 🟢 **Temel** | MVP'de tam | %100 | — |
 | 🟢 **İleri** | MVP'de tam | %100 | — |
-| 🟡 **Tam** | HT1 hedefi | ~%70 | S4 bileşenlerinin derinleşmesi |
+| 🟡 **Tam** | HT1 hedefi | ~%75 | S4 derinleşmesi + S5 schema/teknik GEO |
 | 🔴 **Sertifikalı** | Kurumsal kapı | %0 | Bağımsız denetim, sertifika süreci |
 
 ---
@@ -220,3 +254,4 @@ Aşağıdaki tablo, platformdaki **her Çekirdek FR'yi** hangi GAVF gereksinimin
 |----------|-------|------------|
 | 1.0.0 | 22.07.2026 | İlk yayın: Platform-Specification uyumluluk matrisi. GAVF ilkeleri → FR/NFR eşlemesi, katman-doküman haritası, 4 seviyeli karşılama durumu, geçiş yolu. |
 | 1.0.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-45 (SOC 2), D-47 (sızma testi), D-90 (sızma kapsamı), D-82 (GA tanımı). Devralınan Kararlar eklendi. |
+| 1.1.0 | 27.07.2026 | Turkcell RFP kapsamında genişletme: S5 GEO Standardı katmanı eklendi. S2'ye sentiment/hallüsinasyon, S3'e competitive gap, S4'e GEO önerileri eklendi. FR-D7, FR-D8, FR-D11-D13, FR-E5-E7, FR-B6-B7 GAVF bağlantıları eklendi. Mimari bileşenlere Sentiment Engine, Gap Analysis Engine, GEO Engine'ler eklendi. Geçiş yolu güncellendi. |

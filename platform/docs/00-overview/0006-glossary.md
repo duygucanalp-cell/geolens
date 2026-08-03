@@ -39,6 +39,22 @@ Doküman setinde ve üründe kullanılan terimlerin tek doğruluk kaynağı. Ama
 | **Temellendirme** | Grounding / RAG | Motorun yanıtını gerçek zamanlı aramayla desteklemesi. |
 | **Halüsinasyon** | Hallucination | Motorun doğru olmayan bilgi üretmesi. |
 | **Fidelite** | Fidelity | Ölçüm yönteminin tüketici yüzeyine yakınlık derecesi (Kademe 1/2/3). |
+| **AI Mode** | AI Mode | Google'ın gelişmiş AI arama modu; derinlemesine araştırma ve karşılaştırma yanıtları üretir. |
+| **Google AI Overview** | Google AI Overview | Google arama sonuçlarının üstünde görünen AI tarafından sentezlenmiş yanıt. |
+| **Conversation Replay** | Conversation Replay | AI motorunun ürettiği yanıtın anlık görüntü olarak saklanması, sonradan incelenebilmesi. |
+| **Response Archive** | Response Archive | Geçmiş AI yanıtlarının tarihsel karşılaştırma yapılabilmesi için versiyonlu saklanması. |
+| **Recommendation Rate** | Recommendation Rate | AI yanıtlarında markanın önerilme/öne çıkarılma oranı. |
+| **Appearance Rate** | Appearance Rate | Prompt setindeki sorgularda markanın AI yanıtlarında görünme sıklığı. |
+| **Sentiment / Algı Skoru** | Sentiment / Brand Perception Score | AI yanıtlarında marka hakkındaki duygu durumu (olumlu/nötr/olumsuz). |
+| **Hallüsinasyon Tespiti** | Hallucination Detection | AI motorunun marka hakkında ürettiği yanlış/gerçek dışı bilgilerin otomatik tespiti. |
+| **Competitive Visibility Score** | Competitive Visibility Score | Markanın rakiplere göre normalize edilmiş AI görünürlük performansı. |
+| **Prompt Coverage Score** | Prompt Coverage Score | Tanımlı prompt setinde markanın ne kadarında geçtiğinin oranı. |
+| **Competitive Gap** | Competitive Gap | Belirli bir boyuttaki rakip-marka farkı (Visibility/Citation/Content/Topic/Prompt Gap). |
+| **Content Gap** | Content Gap | AI sistemlerinin sektörel sorularda eksik bulduğu içerik alanları. |
+| **Structured Data** | Structured Data / Schema | Web sayfasındaki Schema.org yapılandırılmış veri işaretlemesi. |
+| **LLM Bot** | LLM Bot | AI motorlarının web sitesini taramak için kullandığı tarayıcı bot (GPTBot, Google-Extended, PerplexityBot vb.). |
+| **Earned AI Visibility** | Earned AI Visibility | Organik olarak (ücretli/izinsiz yöntem olmadan) kazanılmış AI görünürlüğü. |
+| **Mistral** | Mistral | Fransız AI şirketi Mistral AI'nın dil modeli ailesi. |
 
 ---
 
@@ -92,6 +108,7 @@ Doküman setinde ve üründe kullanılan terimlerin tek doğruluk kaynağı. Ama
 | ID | Soru | Durum |
 |----|------|-------|
 | O-1 | Yeni terim ekleme süreci | ⏳ AVIP 0005 §2 kullanım kuralları devralındı: yeni terim 0007 karar süreciyle eklenir, tüm dokümanlarda tarama gerekir. |
+| O-2 | Conversation Replay depolama süresi | ⏳ Pilot deneyiyle belirlenecek. KVKK/GDPR saklama politikalarıyla uyumlu olmalıdır. |
 
 ---
 
@@ -105,3 +122,4 @@ Doküman setinde ve üründe kullanılan terimlerin tek doğruluk kaynağı. Ama
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: GeoLens sözlüğü. Alan, ürün, teknik ve süreç terimleri. |
 | 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: terim ekleme süreci AVIP 0005'ten devralındı. |
+| 1.2 | 27.07.2026 | Turkcell RFP kapsamında yeni terimler eklendi: AI Mode, Google AI Overview, Conversation Replay, Response Archive, Recommendation Rate, Appearance Rate, Sentiment/Algı Skoru, Hallüsinasyon Tespiti, Competitive Visibility Score, Prompt Coverage Score, Competitive Gap, Content Gap, Structured Data, LLM Bot, Earned AI Visibility, Mistral. |

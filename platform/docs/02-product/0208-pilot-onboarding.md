@@ -21,11 +21,39 @@ Pilot program, GeoLens Platform'un gerçek kullanıcılarla test edilmesini ve �
 |:-------:|----------|:----------:|
 | **P2** | Dijital ajans yöneticisi | 2-3 ajans |
 | **P3** | Kurum içi marka yöneticisi | 3-5 marka |
+| **P1 (Kurumsal)** | Büyük ölçekli kurum — Turkcell tipi müşteri adayı | 1-2 kurum |
 
 ### 1.3 Pilot Süresi
 - **Minimum:** 4 hafta
 - **Hedef:** 8 hafta
+- **Kurumsal PoC:** 15-30 gün (Turkcell RFP standardı)
 - **Değerlendirme:** Her hafta geri bildirim toplanır
+
+### 1.4 PoC (Proof of Concept) Kriterleri
+
+Turkcell RFP ve benzeri kurumsal müşteriler için PoC gereksinimleri:
+
+| Kriter | Değer |
+|:------:|-------|
+| **PoC süresi** | 15-30 gün |
+| **Minimum prompt sayısı** | 100 prompt |
+| **Minimum rakip sayısı** | 5 rakip marka |
+| **Marka bazlı analiz** | Her marka için ayrı görünürlük analizi |
+| **Citation analizi** | Zorunlu |
+| **Visibility benchmark raporu** | PoC sonunda teslim |
+| **Executive Summary** | PoC sonunda yönetici özeti raporu |
+| **Onboarding & eğitim** | Vendor tarafından sağlanmalı |
+| **PoC sonuç sunumu** | Ekip ve yönetime sunum |
+
+### 1.5 PoC Teslimatları
+
+| Teslimat | Açıklama | Zamanlama |
+|----------|----------|:---------:|
+| **Brand Visibility Report** | Her marka için görünürlük skoru ve rakip kıyası | PoC sonu |
+| **Citation Analysis** | Alıntı kaynakları, frekansları ve domain bazlı rapor | PoC sonu |
+| **Content Gap Analysis** | AI sistemlerinin eksik bulduğu içerik alanları | PoC sonu |
+| **Technical GEO Audit** | LLM bot erişimi, robots.txt, structured data analizi | PoC sonu |
+| **Executive Summary** | Yönetici özeti ve roadmap önerileri | PoC sonu
 
 ---
 
@@ -152,3 +180,4 @@ Pilot kiracısının referans vermesi için:
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 24.07.2026 | İlk yayın: onboarding adımları, kullanıcı kılavuzu, geri bildirim anketi |
+| 1.1 | 27.07.2026 | Turkcell RFP kapsamında genişletme: PoC kriterleri eklendi (15-30 gün, 100+ prompt, 5+ rakip). PoC teslimatları (brand visibility, citation, content gap, technical GEO, executive summary) eklendi. Kurumsal müşteri profili (P1) eklendi. |

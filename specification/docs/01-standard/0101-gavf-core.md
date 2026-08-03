@@ -4,10 +4,10 @@
 |---|---|
 | Doküman ID | 0101 |
 | Proje | GeoLens Specification |
-| Versiyon | 1.0.0 |
+| Versiyon | 1.1.0 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Engineering |
-| Tarih | 22 Temmuz 2026 |
+| Tarih | 27 Temmuz 2026 |
 | İlişkili | 0102–0109, 02-methodology/*, 03-compliance/* |
 
 ---
@@ -25,9 +25,10 @@ GAVF dört katmandan oluşur:
 | Katman | Adı | Kapsam | Doküman |
 |:------:|-----|--------|:-------:|
 | **S1** | Ölçüm Standardı | Prompt tasarımı, motor çağrısı, örnekleme | 0102 |
-| **S2** | Yanıt Standardı | Alıntı çıkarma, varlık tanıma, sınıflandırma | 0103 |
-| **S3** | Skor Standardı | Görünürlük, otorite, pay, bileşik skor | 0104 |
-| **S4** | Aksiyon Standardı | Fırsat, öneri, trend, gözlem | 0105 |
+| **S2** | Yanıt Standardı | Alıntı çıkarma, varlık tanıma, sınıflandırma, **sentiment analizi, hallüsinasyon tespiti** | 0103 |
+| **S3** | Skor Standardı | Görünürlük, otorite, pay, bileşik skor, **competitive gap** | 0104 |
+| **S4** | Aksiyon Standardı | Fırsat, öneri, trend, gözlem, **GEO önerileri** | 0105 |
+| **S5** | GEO Standardı | Teknik GEO (bot izleme, schema), Content GEO (topic cluster, FAQ, entity) | 0105 |
 
 ---
 
@@ -59,7 +60,8 @@ GAVF dört katmandan oluşur:
 
 | Sürüm | Tarih | Açıklama |
 |-------|-------|----------|
-| 1.0.0 | 22.07.2026 | İlk kararlı sürüm. |
+| 1.0.0 | 22.07.2026 | İlk kararlı sürüm (S1-S4). |
+| 1.1.0 | 27.07.2026 | Turkcell RFP kapsamında genişletme: S5 GEO Standardı eklendi. S2'ye sentiment/hallüsinasyon, S3'e competitive gap, S4'e GEO önerileri eklendi. |
 
 ---
 
@@ -67,4 +69,5 @@ GAVF dört katmandan oluşur:
 
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
+| 1.1.0 | 27.07.2026 | Turkcell RFP kapsamında genişletme: S5 GEO Standardı katmanı eklendi. S2 kapsamına sentiment/hallüsinasyon, S3 kapsamına competitive gap, S4 kapsamına GEO önerileri eklendi. Platform 0401-0419 ile senkronize edildi. |
 | 1.0.0 | 22.07.2026 | İlk yayın: GAVF çekirdek standardı, 4 katman, 6 ilke, 4 uyumluluk seviyesi. |

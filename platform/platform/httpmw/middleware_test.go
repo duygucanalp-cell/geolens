@@ -474,12 +474,10 @@ func TestMiddlewareChain_ContextFlow(t *testing.T) {
 }
 
 func TestMiddlewareChain_RBACBlocking(t *testing.T) {
-	// Bu test, Authenticate sonrası RequireRole'un context'te rol olmadığında
-	// 401 döndüğünü doğrular.
-	// NOT: Authenticate token'dan role döndürür ama context'e KOYMAZ.
-	// Role yalnızca RequireWorkspaceAccess (DB membership sorgusu) tarafından
-	// context'e konur. Bu testte RequireWorkspaceAccess olmadığı için
-	// RequireRole rol bulamaz ve 401 döner.
+	// Bu test, Authenticate sonrası RequireRole'un JWT claim'indeki rolü
+	// kullanarak yetkisiz erişimi bloke ettiğini doğrular.
+	// Authenticate token'dan rolü context'e taşır (JWT claim → context),
+	// böylece workspace dışı rotalarda (R-serisi vb.) RBAC çalışır.
 
 	tokenValidator := func(token string) (string, string, string, error) {
 		return "U01", "T01", "viewer", nil
@@ -501,11 +499,44 @@ func TestMiddlewareChain_RBACBlocking(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("context'te rol olmadığı için beklenen 401, gerçek %d", w.Code)
+	// Viewer admin route'una erişemez: kimliği doğrulanmış ama yetkisiz → 403
+	if w.Code != http.StatusForbidden {
+		t.Errorf("viewer admin route için beklenen 403, gerçek %d", w.Code)
 	}
 	if handlerCalled {
 		t.Error("handler bloke edilmeliydi")
+	}
+}
+
+func TestMiddlewareChain_AuthenticatePropagatesRole(t *testing.T) {
+	// Bu test, Authenticate'in JWT claim'indeki rolü context'e taşıdığını
+	// ve RequireRole'un workspace dışı rotalarda bu rolü kullanabildiğini doğrular.
+
+	tokenValidator := func(token string) (string, string, string, error) {
+		return "U01", "T01", "editor", nil
+	}
+
+	var handlerCalled bool
+
+	handler := Authenticate(tokenValidator)(
+		RequireRole(RoleEditor)(
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				handlerCalled = true
+				w.WriteHeader(http.StatusOK)
+			}),
+		),
+	)
+
+	req := httptest.NewRequest("GET", "/editor", nil)
+	req.Header.Set("Authorization", "Bearer token")
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("editor editor route'a erişebilmeli, beklenen 200, gerçek %d", w.Code)
+	}
+	if !handlerCalled {
+		t.Error("handler çağrılmalıydı")
 	}
 }
 

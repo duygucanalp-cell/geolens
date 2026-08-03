@@ -56,16 +56,45 @@ Periyodik olarak üretilen, AI görünürlük sektörünün genel durumunu özet
 
 ---
 
-## 5. GAVF Geri Bildirim Döngüsü
+## 5. Alerting & Monitoring (Genişletilmiş)
+
+Turkcell RFP kapsamında eklenen uyarı ve izleme senaryoları:
+
+| Uyarı Türü | Açıklama | Tespit Yöntemi | Eşik |
+|:----------:|----------|:---------------:|:----:|
+| **Visibility Score Düşüşü** | Görünürlük skorunda anlamlı düşüş | GA ayrışması (0309 §6) | ≥5 puan düşüş |
+| **Citation Kaybı** | Daha önce alıntılanan kaynağın kaybı | Citation varlık karşılaştırması | ≥2 kaynak kaybı |
+| **Rakip Görünürlük Artışı** | Rakibin görünürlüğünde anlamlı artış | SOV trend karşılaştırması | ≥10 puan artış |
+| **Negatif Sentiment** | Marka hakkında olumsuz duygu durumu | NLP duygu analizi | ≤0.4 sentiment skoru |
+| **Hallüsinasyon Tespiti** | AI'nın marka hakkında yanlış bilgi üretmesi | Doğruluk kontrolü | Her tespit |
+| **Yeni Kaynak** | Daha önce görülmeyen bir kaynağın ortaya çıkması | Domain karşılaştırması | Yeni domain tespiti |
+
+### 5.1 Conversation Replay & Response Archive
+
+Conversation Replay ve Response Archive, AI yanıtlarının saklanması ve geçmişe dönük incelenmesini sağlar:
+
+| Özellik | Açıklama | Saklama Süresi |
+|---------|----------|:--------------:|
+| **Conversation Replay** | AI motor yanıtının anlık görüntüsü (ekran görüntüsü) | 90 gün (STANDARD) |
+| **Response Archive** | Tüm yanıtların versiyonlu, aranabilir arşivi | 1 yıl |
+| **Tarihsel Karşılaştırma** | Aynı prompt'un farklı zamanlardaki yanıtlarının karşılaştırması| 1 yıl |
+| **AI Cevap Değişimi İzleme** | Aynı prompt'un zaman içinde değişen yanıtlarının takibi | Sürekli |
+
+> Conversation Replay verileri KVKK/GDPR kapsamında değerlendirilmeli ve kullanıcı onayı ile saklanmalıdır.
+
+---
+
+## 6. GAVF Geri Bildirim Döngüsü
 
 ```
 Platform ölçüm verisi → Metodoloji doğrulama → GAVF güncelleme → Platform'a geri
       ↓                     ↓                        ↓
   Gözlem raporu       Kalibrasyon          Specification
-                                                        reposu
+  Alert/Monitoring    Sentiment analizi    reposu
+  Hallüsinasyon       Conversation Replay
 ```
 
-> Bu döngü, GeoLens Platform ile GeoLens Specification arasındaki sürekli iyileştirme bağını kurar.
+> Bu döngü, GeoLens Platform ile GeoLens Specification arasındaki sürekli iyileştirme bağını kurar. Alert verileri ve Conversation Replay kayıtları, metodoloji iyileştirmelerine girdi sağlar.
 
 ---
 
@@ -73,6 +102,7 @@ Platform ölçüm verisi → Metodoloji doğrulama → GAVF güncelleme → Plat
 
 - 0401 AI Visibility Standard — GAVF metodolojisi
 - 0409 Visibility Score — skor modeli
+- 0411 Share of Voice — SOV ve sentiment
 - 0414 Trend Analysis — trend tespiti
 - 0311 Observability — sistem gözlem metrikleri
 - 0310 Security — güvenlik ve uyum
@@ -82,3 +112,4 @@ Platform ölçüm verisi → Metodoloji doğrulama → GAVF güncelleme → Plat
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: kendi kendini ölçme, platform sağlık metrikleri, sektör gözlem raporu, GAVF geri bildirim döngüsü. |
+| 1.1 | 27.07.2026 | Turkcell RFP kapsamında genişletme: Alerting & Monitoring bölümü eklendi (Visibility düşüşü, Citation kaybı, rakip artışı, negatif sentiment, hallüsinasyon, yeni kaynak uyarıları). Conversation Replay & Response Archive bölümü eklendi. GAVF geri bildirim döngüsü güncellendi. |

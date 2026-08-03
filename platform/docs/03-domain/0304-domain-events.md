@@ -4,11 +4,11 @@
 |---|---|
 | Doküman ID | 0304 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.1 |
+| Versiyon | 1.2 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
-| Tarih | 22 Temmuz 2026 |
-| İlişkili | 0302, 0303, 0305, 0306, 0307, 0309, 0311 |
+| Tarih | 28 Temmuz 2026 |
+| İlişkili | 0302, 0303, 0305, 0306, 0307, 0309, 0311, 0511, 0416, 0417, 0418, 0419 |
 
 ---
 
@@ -89,23 +89,75 @@ GeoLens'te alan olayları **outbox pattern** ile taşınır:
 | **MembershipChanged** | identity | config, measure | Rol/üyelik değişikliği | membership_id, user_id, tenant_id, eski_rol, yeni_rol |
 | **WorkspaceArchived** | identity | measure, delivery | Çalışma alanı arşivlendi | workspace_id, tenant_id |
 
+### 3.6 Arşiv Olayları (BC7 — HT1)
+
+| Olay | Üretici | Tüketici | Tetikleyici | İçerdiği Veri |
+|------|---------|----------|------------|---------------|
+| **MeasurementCompleted → ArchiveEntryCreated** | measure worker → archive worker | archive | Ölçüm tamamlandı, ham yanıtlar arşive gönderilir | job_id, brand_id, engine_listesi, ham_yanıt_sayısı, workspace_id |
+| **ArchiveExportRequested** | kullanıcı (API) | archive worker | Kullanıcı dışa aktarım talep etti | export_id, workspace_id, dönem_başlangıç/bitiş, format (json/csv), filtreler |
+| **ArchiveExportCompleted** | archive worker | notify worker | Dışa aktarım dosyası hazır | export_id, S3_url, imzalı_URL, satır_sayısı, dosya_boyutu |
+| **ArchiveExportFailed** | archive worker | governance | Dışa aktarım başarısız | export_id, hata_kodu, hata_detayı |
+
+### 3.7 Replay Olayları (BC8 — HT1)
+
+| Olay | Üretici | Tüketici | Tetikleyici | İçerdiği Veri |
+|------|---------|----------|------------|---------------|
+| **MeasurementCompleted → SnapshotCaptured** | measure worker → replay worker | replay | Ölçüm tamamlandı, conversation snapshot'ı alınır | job_id, brand_id, prompt_text, engine_listesi, snapshot_id |
+| **SnapshotCompared** | kullanıcı (API) | replay | Kullanıcı iki snapshot'ı karşılaştırdı | snapshot_a_id, snapshot_b_id, has_changed, brand_id, engine_name |
+
+### 3.8 SEO Olayları (BC9 — HT1)
+
+| Olay | Üretici | Tüketici | Tetikleyici | İçerdiği Veri |
+|------|---------|----------|------------|---------------|
+| **SEOConnectionEstablished** | seo worker | governance (audit log) | Google OAuth2 bağlantısı kuruldu | connection_id, platform (SC/GA4), email, workspace_id |
+| **SEOConnectionDisconnected** | kullanıcı (API) | seo worker, governance | Kullanıcı bağlantıyı kaldırdı | connection_id, platform, workspace_id |
+| **SEOSyncCompleted** | seo-sc/ga4 worker | UI | Periyodik veri senkronizasyonu tamamlandı | platform, satır_sayısı, senkron_süresi, measured_at |
+| **SEOSyncFailed** | seo-sc/ga4 worker | governance | Veri senkronizasyonu başarısız | platform, hata_kodu, deneme_sayısı, sonraki_deneme_zamanı |
+| **TokenExpiryImminent** | seo worker | notify worker | OAuth2 token'ı 7 gün içinde süresi doluyor | connection_id, platform, email, expiry_date |
+
+### 3.9 Analiz Olayları (BC10 — HT1)
+
+| Olay | Üretici | Tüketici | Tetikleyici | İçerdiği Veri |
+|------|---------|----------|------------|---------------|
+| **MeasurementCompleted → SentimentAnalyzed** | measure worker → sentiment worker | analysis | Ölçüm tamamlandı, duygu analizi tetiklenir | job_id, brand_id, mention_sayısı, overall_sentiment, positive/neutral/negative_skor |
+| **HallucinationDetected** | sentiment worker | delivery (alert) | Hallüsinasyon tespit edildi | flag_id, brand_id, engine_name, tür, severity, confidence, description |
+| **HallucinationVerified** | kullanıcı (API) | sentiment worker | Kullanıcı hallüsinasyonu doğruladı/yanlış pozitif işaretledi | flag_id, verified (true/false) |
+| **MeasurementCompleted → GapAnalysisStarted** | measure worker → gap worker | competitive | Ölçüm tamamlandı, competitive gap analizi tetiklenir | job_id, brand_id, rakip_sayısı, gap_türleri |
+| **GapAnalysisCompleted** | gap worker | insight, delivery | Gap analizi tamamlandı | snapshot_id, brand_id, competitor_id, competitive_score, gap_overview |
+| **GapThresholdExceeded** | gap worker | delivery (alert) | Gap eşiği aşıldı → alert tetiklenir | snapshot_id, gap_türü, gap_değeri, eşik, brand_id, competitor_id |
+
 ---
 
 ## 4. Olay Fırtınası (Event Storming) Çıktısı
 
-### 4.1 Ölçüm Hattı Olay Zinciri
+### 4.1 Ölçüm Hattı Olay Zinciri (HT1 Genişletilmiş)
 
 ```
 İzleme Planı → MeasurementJobCreated → [Motor çağrıları] → MeasurementJobCompleted
                                                                      ↓
                                                             ScoreCalculated → ScoreSignificantChange
                                                                      ↓
-                                                            RecommendationGenerated → [kullanıcı işaretler]
-                                                                     ↓
-                                                            AlertTriggered → [bildirim iletilir]
-                                                                     ↓
-                                                            ReportGenerated
+                                                            ┌─────────────────────┬──────────────────────┬──────────────────────┐
+                                                            ▼                     ▼                      ▼                      ▼
+                                               Recommendation   ArchiveEntry      SnapshotCaptured   SentimentAnalyzed
+                                               Generated        Created                              ↓
+                                                    ↓                                    HallucinationDetected
+                                               [kullanıcı                                  → AlertTriggered
+                                                işaretler]                                    ↓
+                                                                                        GapAnalysisStarted
+                                                                                             ↓
+                                                                                    GapAnalysisCompleted
+                                                                                             ↓
+                                                                                    GapThresholdExceeded
+                                                                                             ↓
+                                                                                    AlertTriggered
 ```
+
+**HT1 genişletmesi:** Ölçüm tamamlandıktan sonra 4 paralel kol tetiklenir:
+1. **Insight** → RecommendationGenerated (MVP'den devam)
+2. **Archive** → ArchiveEntryCreated (yeni)
+3. **Replay** → SnapshotCaptured (yeni)
+4. **Analysis** → SentimentAnalyzed → HallucinationDetected → GapAnalysisStarted → GapAnalysisCompleted (yeni)
 
 ### 4.2 Haftalık Özet Akışı
 
@@ -124,7 +176,9 @@ GeoLens'te alan olayları **outbox pattern** ile taşınır:
 
 ## 5. Olay Şablonu (Event Schema)
 
-Tüm olaylar aşağıdaki ortak alanları taşır:
+Tüm olaylar aşağıdaki ortak alanları taşır. HT1'de eklenen olaylar da aynı şablonu kullanır:
+
+
 
 ```json
 {
@@ -167,11 +221,13 @@ Tüm olaylar aşağıdaki ortak alanları taşır:
 
 ## 7. GeoLens İçin Çıkarımlar
 
-1. **21 alan olayı** tanımlanmıştır. Bunlardan 12'si MVP kapsamında, 6'sı HT1'de, 3'ü HT2'de devreye girer.
-2. **Ölçüm hattı olayları** en kritik olay zinciridir. MeasurementJobCreated → MeasurementJobCompleted zinciri uçtan uca izlenebilir olmalıdır (0311).
+1. **21'den 38 alan olayına genişleme** (MVP → HT1). 17 yeni olay eklenmiştir: 4 arşiv (BC7), 2 replay (BC8), 5 SEO (BC9), 6 analiz (BC10).
+2. **Ölçüm hattı olayları** HT1'de 4 paralel kola ayrılmıştır: insight, archive, replay, analysis. MeasurementJobCompleted artık tek bir tüketici değil, 4 farklı worker profiline yönlendirme yapar.
 3. **Outbox pattern** tüm olay üretiminde zorunludur. Bu, olay kaybını önler ve transaction bütünlüğünü korur.
-4. **Correlation_id** tüm olay zinciri boyunca taşınır. request_id → job_id → calculation_run_id zinciri log ve metriklerde izlenebilir.
-5. **0307 (Background Jobs)** bu olayların kuyruk yapılandırmasını (Streams, tüketici grupları, DLQ) tanımlar.
+4. **Correlation_id** tüm olay zinciri boyunca taşınır. HT1'de measurement_job_id → snapshot_id/archive_entry_id/gap_snapshot_id zincirleri eklenmiştir.
+5. **0307 (Background Jobs)** bu olayların kuyruk yapılandırmasını (Streams, tüketici grupları, DLQ) tanımlar. HT1'de 5 yeni Redis Stream (q:archive, q:replay, q:sentiment, q:gap, q:seo-sc, q:seo-ga4) eklenmiştir.
+6. **SEO olayları** diğerlerinden farklı olarak periyodik zamanlayıcı ile tetiklenir (ölçüm olayıyla değil). SEOSyncCompleted/SEOSyncFailed worker profili bazlı metriklerle izlenir.
+7. **GapThresholdExceeded** ve **HallucinationDetected** olayları, doğrudan alert sistemini (BC5) tetikleyerek uyarı üretir — ölçüm sonrası ikincil analizlerden kaynaklanan otomatik uyarı modelinin ilk örnekleridir.
 
 ---
 
@@ -182,6 +238,8 @@ Tüm olaylar aşağıdaki ortak alanları taşır:
 | O-1 | Per-brand partitioning MVP'de gerekli mi? | ⏳ MVP'de hayır; HT1'de değerlendirilir. |
 | O-2 | Olay şeması versiyonlama stratejisi | ⏳ 0307 ile birlikte netleşir. |
 | O-3 | Benchmark olayları (HT2) şimdiden tanımlanmalı mı? | ⏳ Hayır; HT2'de eklenir. |
+| O-4 | HT1 ölçüm sonrası 4 paralel kol (insight, archive, replay, analysis) — başarısızlık durumunda diğer kolları beklemeli mi? | ⏳ Mevcut tasarım: tamamen bağımsız (bir kol başarısız olursa diğerleri etkilenmez). |
+| O-5 | SEO worker'larının (seo-sc, seo-ga4) olayları outbox üzerinden mi yoksa doğrudan Redis Streams'e mi yazılmalı? | ⏳ Mevcut karar: doğrudan Redis Streams (periyodik worker, transaction gerekmez). |
 
 ### Devralınan AVIP Kararları
 
@@ -206,3 +264,4 @@ Tüm olaylar aşağıdaki ortak alanları taşır:
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: 21 alan olayı, olay şablonu, outbox pattern, olay fırtınası çıktıları (ölçüm hattı, haftalık özet, kota), tüketim garantileri. 0302/0303'ten türetilmiştir. |
 | 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-74 (Redis Streams), D-75 (DLQ). Devralınan Kararlar eklendi. |
+| 1.2 | 28.07.2026 | **HT1 domain events genişletmesi:** 17 yeni olay eklendi (BC7: 4 arşiv; BC8: 2 replay; BC9: 5 SEO; BC10: 6 analiz). Toplam olay sayısı 21'den 38'e çıktı. Ölçüm hattı olay zinciri 4 paralel kolla güncellendi. Çıkarımlar güncellendi. Açık sorulara O-4 (paralel kol bağımsızlığı) ve O-5 (SEO olay mekanizması) eklendi. |

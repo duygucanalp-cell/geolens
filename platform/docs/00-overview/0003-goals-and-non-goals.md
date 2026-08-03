@@ -31,6 +31,11 @@
 | **G7** | Çok kiracılı, güvenli ve denetlenebilir kurumsal altyapı sunmak | — | V1 |
 | **G8** | Pilot müşterilerle değer hipotezini doğrulamak | H5 | V1 |
 | **G9** | AI görünürlüğü ölçümünde kategori referansı olmak (GAVF ile) | Vizyon | Platform |
+| **G10** | AI yanıtlarındaki duygu durumunu (sentiment) tespit etmek ve raporlamak | P2 | V1 |
+| **G11** | AI motorlarının ürettiği hallüsinasyon ve yanlış bilgileri otomatik tespit etmek | P2 | V1 |
+| **G12** | AI yanıtlarının geçmiş sürümlerini saklayarak Conversation Replay ve Response Archive sunmak | P1, P2 | V1 |
+| **G13** | Web sitesinin AI tarayıcıları tarafından taranabilirliğini (LLM Bot izleme, robots.txt, structured data) analiz etmek | P1 | V1 |
+| **G14** | İçerik stratejisi için AI odaklı optimizasyon önerileri sunmak (Content Gap, Topic Cluster, FAQ, Entity) | P2, P3 | V1 |
 
 ---
 
@@ -48,6 +53,8 @@
 | **NG8** | Görünürlük garantisi | AI çıktıları deterministik değil; olasılıksal ölçüm sunarız |
 | **NG9** | Yetkisiz veri toplama | Resmî API'ler ve izinli yöntemler esastır |
 | **NG10** | Manipülatif GEO teknikleri | Açıklanabilirlik ilkesiyle çelişir |
+| **NG11** | Gerçek zamanlı AI model eğitimi | Yüzey ölçümü, model eğitimi değildir |
+| **NG12** | Reklam/tanıtım içeriği yönetimi | Ölçüm ve analiz platformuyuz, reklam yönetimi değil |
 
 ---
 
@@ -87,3 +94,4 @@
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: GeoLens hedefleri. G1-G9, NG1-NG10, V1/Platform ufuk ayrımı. |
 | 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-79 (pilot profili), D-80 (MVP motor kapsamı). O-1 kapandı. Devralınan Kararlar eklendi. |
+| 1.2 | 27.07.2026 | Turkcell RFP kapsamında yeni hedefler eklendi: G10 (sentiment), G11 (hallüsinasyon), G12 (conversation replay/response archive), G13 (LLM bot/technical GEO), G14 (content GEO). NG11-NG12 eklendi. |

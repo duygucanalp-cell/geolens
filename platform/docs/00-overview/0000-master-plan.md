@@ -4,11 +4,11 @@
 |---|---|
 | Doküman ID | 0000 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.4 |
+| Versiyon | 1.5 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Product |
-| Tarih | 22 Temmuz 2026 |
-| İlişkili | 0001–0007, 0101–0109, 0201–0208, 0301–0311, 0401–0415, 0501–0510, 0700–0705, 0800–0805, 0900–0905, 1000–1006, archive/avip-v1/README, specification/docs/00-overview/0000-master-plan, specification/docs/00-overview/0005-version-sync-plan |
+| Tarih | 27 Temmuz 2026 |
+| İlişkili | 0001–0007, 0101–0109, 0201–0208, 0301–0312, 0401–0419, 0501–0510, 0700–0705, 0800–0805, 0900–0905, 1000–1006, archive/avip-v1/README, specification/docs/00-overview/0000-master-plan, specification/docs/00-overview/0005-version-sync-plan |
 
 ---
 
@@ -74,7 +74,7 @@ GeoLens Platform, kurumların AI yanıt motorlarında (ChatGPT, Gemini, Perplexi
 | **Faz 0 · Foundation** | Vizyon, master plan, tasarım felsefesi, tüm doküman ağacı | Eksiksiz doküman seti | 2 hafta |
 | **Faz 1 · Product Design** | Persona, PRD, MVP, roadmap, feature catalog, UI/UX tasarımı | Ürün spesifikasyonu | 4 hafta |
 | **Faz 2 · Architecture** | Sistem mimarisi, domain model, data model, API, security | Teknik blueprint | 4 hafta |
-| **Faz 3 · AI Framework** | Prompt generator, answer parser, entity recognition, scoring engine, recommendation engine | AI altyapı tasarımı | 6 hafta |
+| **Faz 3 · AI Framework** | Prompt generator, answer parser, entity recognition, scoring engine, recommendation engine, sentiment/hallucination, GEO, competitive gap | AI altyapı tasarımı | 6 hafta |
 | **Faz 4 · Development** | Walking skeleton, dilimler, CI/CD, test, deployment | Çalışan ürün | 12 hafta |
 | **Faz 5 · Growth** | Pilot, onboarding, ecosystem SDK, whitepaper, GTM | Pazar girişi | Sürekli |
 
@@ -161,7 +161,11 @@ platform/docs/
 │   ├── 0412-opportunity-engine.md
 │   ├── 0413-recommendation-engine.md
 │   ├── 0414-trend-analysis.md
-│   └── 0415-ai-observability.md
+│   ├── 0415-ai-observability.md
+│   ├── 0416-sentiment-hallucination.md
+│   ├── 0417-technical-geo.md
+│   ├── 0418-content-geo.md
+│   └── 0419-competitive-gap-analysis.md
 │
 ├── 05-architecture/    # Mimari
 │   ├── 0501-system-architecture.md
@@ -349,5 +353,6 @@ Not: Bu çerçeve üst düzey bir tahmindir. Detaylı bütçe Faz 1'de hazırlan
 | 1.1 | 22.07.2026 | Eksik bölümler eklendi: Felsefe filtresi uygulaması, paydaşlar, bağımlılıklar, kaynak çerçevelesi, North Star metriği. İlişkili alanı düzeltildi (0401–0409). R-01 typo düzeltildi. |
 | 1.2 | 22.07.2026 | Tutarlılık düzeltmesi: §5 doküman ağacındaki 04-ai-framework listesi 15 GeoLens dosya adıyla güncellendi; İlişkili alanı 0401–0415 olarak düzeltildi. |
 | 1.3 | 22.07.2026 | GAVF Specification referansları güncellendi: D-1 durumu 'tamamlandı' olarak değiştirildi, D-6 (versiyon senkronizasyonu) eklendi, İlişkili alanına spec doküman referansları eklendi, North Star metriği GAVF kaynağı düzeltildi, O-4 açıklaması güncellendi, Kaynaklar bölümüne spec referansları eklendi. |
+| 1.5 | 27.07.2026 | Turkcell RFP kapsamında yeni AI framework dokümanları eklendi: 0416 (Sentiment/Hallucination), 0417 (Teknik GEO), 0418 (Content GEO), 0419 (Competitive Gap Analysis). Doküman ağacı, İlişkili alanı, Faz 3 tanımı güncellendi. Domain kapsamı 0312'ye genişletildi. |
 | 1.4 | 22.07.2026 | AVIP kapalı kararları toplu taşındı: O-1 (Redis Streams) kapatıldı, §12 Devralınan Kararlar eklendi (D-43, D-74, D-82, D-04, D-87). D-1 sayısı 43 olarak güncellendi. |
 | 1.0 | 22.07.2026 | İlk yayın: GeoLens Platform master planı. Altı filtreli tasarım felsefesi, 5 fazlı yapı, 85+ dokümanlı ağaç, risk kaydı. |

@@ -39,6 +39,13 @@ export function getBrands(ws: string): Promise<Brand[]> {
   return fetchJSON(`${BASE}/workspaces/${ws}/brands`)
 }
 
+export function searchBrands(ws: string, query: string, exclude?: string, offset?: number, limit?: number): Promise<{ data: Brand[]; total: number; offset: number; limit: number }> {
+  const excl = exclude ? `&exclude=${encodeURIComponent(exclude)}` : ''
+  const off = offset !== undefined ? `&offset=${offset}` : ''
+  const lim = limit !== undefined ? `&limit=${limit}` : ''
+  return fetchJSON(`${BASE}/workspaces/${ws}/brands/search?q=${encodeURIComponent(query)}${excl}${off}${lim}`)
+}
+
 export function getPanels(ws: string): Promise<Panel[]> {
   return fetchJSON(`${BASE}/workspaces/${ws}/panels`)
 }
@@ -314,6 +321,37 @@ export function createBrand(ws: string, data: { name: string; website_url: strin
   return fetchJSON(`${BASE}/workspaces/${ws}/brands`, { method: 'POST', body: JSON.stringify(data) })
 }
 
+export function updateBrand(ws: string, brandId: string, data: { name?: string; website_url?: string }): Promise<import('../types').Brand> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/brands/${brandId}`, { method: 'PUT', body: JSON.stringify(data) })
+}
+
+export function deleteBrand(ws: string, brandId: string): Promise<{ status: string; brand_id: string }> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/brands/${brandId}`, { method: 'DELETE' })
+}
+
+export interface CompetitorItem {
+  competitor_id: string
+  competitor_name: string
+  created_at: string
+}
+
+export function getBrandCompetitors(ws: string, brandId: string): Promise<CompetitorItem[]> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/brands/${brandId}/competitors`)
+}
+
+export function updateBrandCompetitors(ws: string, brandId: string, competitorIds: string[]): Promise<{ status: string }> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/brands/${brandId}/competitors`, {
+    method: 'PUT',
+    body: JSON.stringify({ competitors: competitorIds }),
+  })
+}
+
+export function deleteBrandCompetitor(ws: string, brandId: string, competitorId: string): Promise<{ status: string; competitor_id: string }> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/brands/${brandId}/competitors/${competitorId}`, {
+    method: 'DELETE',
+  })
+}
+
 export function createPanel(ws: string, data: { name: string; description?: string; brand_ids?: string[] }): Promise<import('../types').Panel> {
   return fetchJSON(`${BASE}/workspaces/${ws}/panels`, { method: 'POST', body: JSON.stringify(data) })
 }
@@ -322,8 +360,91 @@ export function createPromptSet(ws: string, data: { name: string; prompt_text: s
   return fetchJSON(`${BASE}/workspaces/${ws}/prompt-sets`, { method: 'POST', body: JSON.stringify(data) })
 }
 
+export function listPromptSets(ws: string): Promise<{ id: string; name: string; description?: string; prompt_text: string; is_active: boolean }[]> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/prompt-sets`)
+}
+
 export function triggerMeasurement(ws: string, data: { brand_id: string; panel_id?: string }): Promise<{ status: string; run_id: string; brand: string; engines: string[] }> {
   return fetchJSON(`${BASE}/workspaces/${ws}/measurements`, { method: 'POST', body: JSON.stringify(data) })
+}
+
+// SEO Entegrasyonları (FR-B8)
+export interface SEOConnection {
+  id: string
+  platform: string
+  email: string
+  is_active: boolean
+  last_synced_at: string | null
+  created_at: string
+}
+
+export interface GA4DataRow {
+  page_views: number
+  sessions: number
+  bounce_rate: number
+  avg_session_duration: number
+  measured_at: string
+}
+
+export interface SearchConsoleRow {
+  query: string
+  clicks: number
+  impressions: number
+  ctr: number
+  avg_position: number
+  measured_at: string
+}
+
+export function getSEOConnections(ws: string): Promise<SEOConnection[]> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/seo/connections`)
+}
+
+export function getSEOAuthURL(ws: string, platform: string): Promise<{ auth_url: string; state_token: string }> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/seo/auth-url?platform=${platform}`)
+}
+
+export function disconnectSEO(ws: string, platform: string): Promise<{ status: string; platform: string }> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/seo/connections/${platform}`, { method: 'DELETE' })
+}
+
+export function getSearchConsoleData(ws: string, brandId?: string): Promise<SearchConsoleRow[]> {
+  const q = brandId ? `?brand_id=${brandId}` : ''
+  return fetchJSON(`${BASE}/workspaces/${ws}/seo/search-console${q}`)
+}
+
+export function getGA4Data(ws: string, brandId?: string): Promise<GA4DataRow[]> {
+  const q = brandId ? `?brand_id=${brandId}` : ''
+  return fetchJSON(`${BASE}/workspaces/${ws}/seo/ga4${q}`)
+}
+
+// Site Audit (FR-B4)
+export interface AuditFindingsCatalog {
+  brand_id: string
+  overall_score: number
+  summary: {
+    total: number
+    critical: number
+    high: number
+    medium: number
+    low: number
+  }
+  catalog: {
+    robots_txt?: AuditFindingItem[]
+    bot_access?: AuditFindingItem[]
+    ssr?: AuditFindingItem[]
+    ssrf?: AuditFindingItem[]
+  }
+}
+
+export interface AuditFindingItem {
+  title: string
+  detail: string
+  severity: string
+  recommendation?: string
+}
+
+export function getAuditFindings(ws: string, brandId: string): Promise<AuditFindingsCatalog> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/audit/findings?brand_id=${brandId}`)
 }
 
 export async function triggerDigest(ws: string): Promise<Blob> {
@@ -339,4 +460,180 @@ export async function triggerDigest(ws: string): Promise<Blob> {
     throw new Error(err.error || 'Failed to generate report')
   }
   return res.blob()
+}
+
+// R9: Prompt Audit
+export function runPromptAudit(data: { prompt_text: string; model: string }): Promise<import('../types').PromptAudit> {
+  return fetchJSON(`${BASE}/prompts/audit`, { method: 'POST', body: JSON.stringify(data) })
+}
+
+export function listPromptAudits(): Promise<import('../types').ListResponse<import('../types').PromptAudit>> {
+  return fetchJSON(`${BASE}/prompts/audits`)
+}
+
+export function getPromptAudit(auditId: string): Promise<import('../types').PromptAudit> {
+  return fetchJSON(`${BASE}/prompts/audits/${auditId}`)
+}
+
+// R10: Model Benchmark
+export function runBenchmark(data: { model_name: string; benchmark_name?: string }): Promise<import('../types').BenchmarkResult> {
+  return fetchJSON(`${BASE}/benchmarks/models`, { method: 'POST', body: JSON.stringify(data) })
+}
+
+export function listBenchmarks(): Promise<import('../types').ListResponse<import('../types').BenchmarkResult>> {
+  return fetchJSON(`${BASE}/benchmarks/models`)
+}
+
+export function compareBenchmarks(): Promise<import('../types').BenchmarkComparison> {
+  return fetchJSON(`${BASE}/benchmarks/compare`)
+}
+
+// Sentiment Analysis
+export function analyzeSentiment(ws: string, text: string): Promise<import('../types').SentimentResult> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/sentiment/analyze`, {
+    method: 'POST',
+    body: JSON.stringify({ text }),
+  })
+}
+
+export function getSentimentSummary(ws: string): Promise<import('../types').SentimentSummary> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/sentiment/summary`)
+}
+
+export function listSentiment(ws: string): Promise<import('../types').ListResponse<import('../types').SentimentResult>> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/sentiment/`)
+}
+
+// Hallucination Detection
+export function detectHallucinations(ws: string, text: string): Promise<import('../types').HallucinationFlag> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/hallucination/detect`, {
+    method: 'POST',
+    body: JSON.stringify({ text }),
+  })
+}
+
+export function listHallucinations(ws: string): Promise<import('../types').ListResponse<import('../types').HallucinationFlag>> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/hallucination/`)
+}
+
+export function verifyHallucination(ws: string, flagId: string): Promise<{ status: string }> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/hallucination/${flagId}/verify`, { method: 'POST' })
+}
+
+// Alert Rules
+export function listAlertRules(ws: string, brandId?: string): Promise<{ rules: import('../types').AlertRule[] }> {
+  const q = brandId ? `?brand_id=${brandId}` : ''
+  return fetchJSON(`${BASE}/workspaces/${ws}/alert-rules${q}`)
+}
+
+export function createAlertRule(ws: string, data: {
+  brand_id: string; name: string; metric: string; condition: string
+  threshold: number; channel: string; channel_config?: Record<string, string>
+}): Promise<import('../types').AlertRule> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/alert-rules`, { method: 'POST', body: JSON.stringify(data) })
+}
+
+export function updateAlertRule(ws: string, ruleId: string, data: Partial<import('../types').AlertRule>): Promise<import('../types').AlertRule> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/alert-rules/${ruleId}`, { method: 'PUT', body: JSON.stringify(data) })
+}
+
+export function deleteAlertRule(ws: string, ruleId: string): Promise<{ status: string }> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/alert-rules/${ruleId}`, { method: 'DELETE' })
+}
+
+// Tenants & Members
+export function getTenant(): Promise<{ id: string; name: string; slug: string; tier: string; created_at: string }> {
+  return fetchJSON(`${BASE}/tenant`)
+}
+
+export function listMembers(): Promise<{ members: import('../types').TenantMember[] }> {
+  return fetchJSON(`${BASE}/tenant/members`)
+}
+
+export function inviteMember(email: string, workspaceId: string, role: string): Promise<{ status: string; email: string; token: string }> {
+  return fetchJSON(`${BASE}/tenant/invitations`, {
+    method: 'POST',
+    body: JSON.stringify({ email, workspace_id: workspaceId, role }),
+  })
+}
+
+export function listInvitations(): Promise<{ invitations: import('../types').TenantInvitation[] }> {
+  return fetchJSON(`${BASE}/tenant/invitations`)
+}
+
+// API Keys
+export function listApiKeys(): Promise<{ keys: import('../types').ApiKey[] }> {
+  return fetchJSON(`${BASE}/api-keys`)
+}
+
+export function createApiKey(data: { name: string; role?: string; expires_at?: string }): Promise<{ id: string; api_key: string; key_prefix: string; warning: string }> {
+  return fetchJSON(`${BASE}/api-keys`, { method: 'POST', body: JSON.stringify(data) })
+}
+
+export function deleteApiKey(keyId: string): Promise<{ status: string }> {
+  return fetchJSON(`${BASE}/api-keys/${keyId}`, { method: 'DELETE' })
+}
+
+// Compliance
+export function getComplianceReport(): Promise<{ report: Record<string, unknown>; frameworks: string[] }> {
+  return fetchJSON(`${BASE}/compliance/report`)
+}
+
+export function getComplianceSOC2(): Promise<Record<string, unknown>> {
+  return fetchJSON(`${BASE}/compliance/soc2`)
+}
+
+export function getComplianceEvidence(): Promise<{ evidence: { id: string; framework: string; name: string; status: string; updated_at: string }[] }> {
+  return fetchJSON(`${BASE}/compliance/evidence`)
+}
+
+// Benchmark Context (FR-D5: DP korumalı sektör kıyası)
+export function getBenchmarkContext(ws: string): Promise<import('../types').BenchmarkContext> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/benchmark/context`)
+}
+
+// Billing
+export function getSubscription(): Promise<{ tenant_id: string; tier: string; updated_at: string }> {
+  return fetchJSON(`${BASE}/billing/subscription`)
+}
+
+// Technical GEO
+export function getTechnicalGEOScore(ws: string): Promise<import('../types').TechnicalGEOScore> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/technical-geo/score`)
+}
+
+export function listBotAnalyses(ws: string): Promise<import('../types').ListResponse<import('../types').BotAnalysis>> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/technical-geo/bots`)
+}
+
+// Content GEO
+export function listContentGaps(ws: string): Promise<import('../types').ListResponse<import('../types').ContentGap>> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/content-geo/gap`)
+}
+
+export function getContentHubScore(ws: string): Promise<{ score: number; total: number }> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/content-geo/hub-score`)
+}
+
+// Competitive Gap
+export function getCompetitiveGapOverview(ws: string): Promise<import('../types').CompetitiveGapOverview[]> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/competitive-gap/overview`)
+}
+
+// Retention Policies
+export function listRetentionPolicies(ws: string): Promise<{ policies: import('../types').RetentionPolicy[] }> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/retention/policies`)
+}
+
+export function upsertRetentionPolicy(ws: string, data: Partial<import('../types').RetentionPolicy>): Promise<import('../types').RetentionPolicy> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/retention/policies`, { method: 'PUT', body: JSON.stringify(data) })
+}
+
+export function deleteRetentionPolicy(ws: string, policyId: string): Promise<{ status: string }> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/retention/policies/${policyId}`, { method: 'DELETE' })
+}
+
+// Panorama
+export function getWorkspacePanorama(): Promise<{ workspaces: { id: string; name: string; avg_score: number; brand_count: number; measurement_count: number; archived: boolean; created_at: string }[] }> {
+  return fetchJSON(`${BASE}/tenant/panorama`)
 }

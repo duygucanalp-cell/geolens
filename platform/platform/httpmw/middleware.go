@@ -116,7 +116,7 @@ func Authenticate(validate TokenValidator) func(http.Handler) http.Handler {
 				tokenStr = authHeader[7:]
 			}
 
-			userID, tenantID, _, err := validate(tokenStr)
+			userID, tenantID, role, err := validate(tokenStr)
 			if err != nil {
 				http.Error(w, `{"error":"invalid_token"}`, http.StatusUnauthorized)
 				return
@@ -124,6 +124,12 @@ func Authenticate(validate TokenValidator) func(http.Handler) http.Handler {
 
 			ctx := context.WithValue(r.Context(), CtxKeyUserID, userID)
 			ctx = context.WithValue(ctx, CtxKeyTenantID, tenantID)
+			// JWT claim'deki rolü context'e taşı (R-serisi gibi workspace dışı rotalar
+			// RequireWorkspaceAccess'ten geçmediği için rol buradan doldurulur).
+			// Workspace rotalarında RequireWorkspaceAccess bu değeri DB'deki üyelik rolüyle ezer.
+			if role != "" {
+				ctx = context.WithValue(ctx, ctxKeyUserRole, role)
+			}
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

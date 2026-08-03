@@ -56,7 +56,7 @@ Aşağıdaki platform değişiklikleri Specification'ın güncellenmesini zorunl
 
 ### Kural 3: Platform Dokümantasyon Değişiklikleri Specification'a Bildirilir
 
-Platform'daki (0401-0415) her değişiklik, Specification'ın ilgili dokümanına issue olarak kaydedilir. Her değişiklik patch/minor/major olarak sınıflandırılır ve bir sonraki yayın döngüsünde işlenir.
+Platform'daki (0401-0419) her değişiklik, Specification'ın ilgili dokümanına issue olarak kaydedilir. Her değişiklik patch/minor/major olarak sınıflandırılır ve bir sonraki yayın döngüsünde işlenir.
 
 ### Kural 4: Specification Yayını Öncesi Platform Doğrulaması
 
@@ -96,6 +96,9 @@ Specification'ın yeni bir versiyonu yayınlanmadan önce, platformun o versiyon
 | **Skor algoritması iyileştirmesi** | `v1.3.0` | `1.1.0` (minor) | Varlık tespit metodu iyileştirmesi |
 | **Örnekleme parametre değişikliği** | `v1.4.0` | `1.1.1` (patch) | n=3→4 veya temp değişikliği |
 | **Yeni skor bileşeni** | `v1.2.0` | `1.2.0` (minor) | Geriye uyumlu yeni boyut |
+| **Sentiment/hallüsinasyon eklenmesi** | `v1.1.0` | `1.1.0` (minor) | S2/S3 genişletmesi — platform 0416 ile spec 0103 güncellenir |
+| **Competitive Gap eklenmesi** | `v1.2.0` | `1.1.0` (minor) | S3 genişletmesi — platform 0419 ile spec 0104 güncellenir |
+| **S5 GEO Standardı eklenmesi** | `v1.3.0` | `1.2.0` (minor) | Yeni katman — platform 0417-0418 ile spec 0105 güncellenir |
 | **Kırıcı skor değişikliği** | `v2.0.0` | `2.0.0` (major) | Ağırlıkların yeniden dağıtımı |
 | **GAVF standardı revizyonu** | Platform PR | `1.1.0` (minor) | Sektör geri bildirimi sonrası |
 | **Sertifikasyon lansmanı** | `v2.1.0` | `1.3.0` | Uyumluluk seviyesi güncellemesi |
@@ -250,3 +253,4 @@ Platform v1.1.0 (yeni motor, düzeltmeler)
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: 4 senkronizasyon kuralı, olay-matrisi, tag koordinasyonu, CI/CD entegrasyonu, 3 geçiş senaryosu. |
 | 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-82 (GA tanımı), D-17 (hotfix), D-77 (tren günü), D-57 (dondurma), D-86 (staging yedek). Devralınan Kararlar eklendi. |
+| 1.2 | 27.07.2026 | Platform doküman referans aralığı 0401-0415 → 0401-0419 olarak genişletildi. Olay-matrisine yeni senkronizasyon olayları eklendi: sentiment/hallüsinasyon, competitive gap, S5 GEO Standardı. |

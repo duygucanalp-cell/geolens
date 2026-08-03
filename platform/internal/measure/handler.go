@@ -13,6 +13,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/geolens/platform/engine"
+	"github.com/geolens/platform/internal/benchmark"
 	"github.com/geolens/platform/internal/dbiface"
 	"github.com/geolens/platform/internal/id"
 	"github.com/geolens/platform/platform/db"
@@ -653,6 +654,7 @@ func (h *Handler) ListRadarComparison(w http.ResponseWriter, r *http.Request) {
 // GetBenchmarkContext handles GET /v1/workspaces/{ws}/benchmark/context
 // T2: Anonim sektör kıyası — kullanıcının skorunu tüm kiracıların ortalamasıyla karşılaştırır.
 // NFR-13: ≥5 kiracı eşiği altında sonuç döndürmez.
+// DP: Laplace mekanizması (ε=1.0) ile diferansiyel gizlilik koruması (bkz. benchmark/privacy.go).
 func (h *Handler) GetBenchmarkContext(w http.ResponseWriter, r *http.Request) {
 	workspaceID := httpmw.GetWorkspaceID(r.Context())
 	tenantID := httpmw.GetTenantID(r.Context())
@@ -674,13 +676,12 @@ func (h *Handler) GetBenchmarkContext(w http.ResponseWriter, r *http.Request) {
 		SELECT COUNT(DISTINCT tenant_id) FROM measure.scores
 	`).Scan(&tenantCount)
 
-	// Anonim sektör ortalaması (tüm kiracılar)
-	var sectorAvg float64
-	var sectorMin float64
-	var sectorMax float64
-	var sectorMedian float64
+	// Ham sektör istatistiklerini topla
+	var sectorAvg, sectorMin, sectorMax, sectorMedian, sectorStdDev float64
+	var percentile25, percentile75, percentile90 float64
 
 	if tenantCount >= 5 {
+		// Ortalama, min, max
 		_ = h.pool.QueryRow(r.Context(), `
 			SELECT AVG(sub.latest)::numeric(10,2),
 				MIN(sub.latest)::numeric(10,2),
@@ -692,7 +693,7 @@ func (h *Handler) GetBenchmarkContext(w http.ResponseWriter, r *http.Request) {
 			) sub
 		`).Scan(&sectorAvg, &sectorMin, &sectorMax)
 
-		// Medyan hesapla
+		// Medyan
 		_ = h.pool.QueryRow(r.Context(), `
 			WITH ranked AS (
 				SELECT value, ROW_NUMBER() OVER (ORDER BY value) AS rn,
@@ -707,19 +708,67 @@ func (h *Handler) GetBenchmarkContext(w http.ResponseWriter, r *http.Request) {
 			FROM ranked
 			WHERE rn IN ((cnt + 1) / 2, (cnt + 2) / 2)
 		`).Scan(&sectorMedian)
+
+		// Standart sapma
+		_ = h.pool.QueryRow(r.Context(), `
+			SELECT COALESCE(STDDEV(sub.latest)::numeric(10,2), 0)
+			FROM (
+				SELECT DISTINCT ON (brand_id) value AS latest
+				FROM measure.scores
+				ORDER BY brand_id, freshness_at DESC
+			) sub
+		`).Scan(&sectorStdDev)
+
+		// Yüzdelik dilimler (PG 16+ percentile_cont)
+		_ = h.pool.QueryRow(r.Context(), `
+			WITH distinct_scores AS (
+				SELECT DISTINCT ON (brand_id) value AS latest
+				FROM measure.scores
+				ORDER BY brand_id, freshness_at DESC
+			)
+			SELECT
+				PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY latest)::numeric(10,2),
+				PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY latest)::numeric(10,2),
+				PERCENTILE_CONT(0.90) WITHIN GROUP (ORDER BY latest)::numeric(10,2)
+			FROM distinct_scores
+		`).Scan(&percentile25, &percentile75, &percentile90)
 	}
 
-	response := map[string]interface{}{
-		"my_score":        myScore,
-		"tenant_count":    tenantCount,
-		"sufficient_data": tenantCount >= 5,
+	// Difarensiyel gizlilik katmanı uygula
+	raw := benchmark.RawSectorStats{
+		MyScore:      myScore,
+		SectorAvg:    sectorAvg,
+		SectorMedian: sectorMedian,
+		SectorMin:    sectorMin,
+		SectorMax:    sectorMax,
+		SectorStdDev: sectorStdDev,
+		Percentile25: percentile25,
+		Percentile75: percentile75,
+		Percentile90: percentile90,
+		TenantCount:  tenantCount,
 	}
-	if tenantCount >= 5 {
-		response["sector_avg"] = sectorAvg
-		response["sector_median"] = sectorMedian
-		response["sector_min"] = sectorMin
-		response["sector_max"] = sectorMax
-		response["difference"] = myScore - sectorAvg
+
+	stats := benchmark.AnonymizeSectorStats(raw, benchmark.DefaultDPConfig())
+
+	// Response'u oluştur
+	response := map[string]interface{}{
+		"my_score":        stats.MyScore,
+		"tenant_count":    stats.TenantCount,
+		"sufficient_data": stats.SufficientData,
+	}
+
+	if stats.SufficientData {
+		response["sector_avg"] = stats.SectorAvg     // backward-compatible
+		response["sector_average"] = stats.SectorAvg // canonical key
+		response["sector_median"] = stats.SectorMedian
+		response["sector_min"] = stats.SectorMin
+		response["sector_max"] = stats.SectorMax
+		response["sector_stddev"] = stats.SectorStdDev
+		response["percentile_25"] = stats.Percentile25
+		response["percentile_75"] = stats.Percentile75
+		response["percentile_90"] = stats.Percentile90
+		response["difference"] = stats.Difference
+		response["trend"] = stats.Trend
 	} else {
 		response["message"] = "yetersiz veri — anonim kıyas için en az 5 kiracı gerekli"
 	}

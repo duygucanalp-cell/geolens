@@ -41,17 +41,23 @@ func NewDispatcher(pool *pgxpool.Pool, rdb *redis.Client, pollInterval time.Dura
 
 // Streams constants
 const (
-	StreamMeasure = "q:measure"
-	StreamAudit   = "q:audit"
-	StreamReport  = "q:report"
-	StreamNotify  = "q:notify"
-	StreamDead    = "q:dead"
+	StreamMeasure      = "q:measure"
+	StreamAudit        = "q:audit"
+	StreamReport       = "q:report"
+	StreamNotify       = "q:notify"
+	StreamDead         = "q:dead"
+	StreamSentiment    = "q:sentiment"
+	StreamReplay       = "q:replay"
+	StreamArchive      = "q:archive"
+	StreamGap          = "q:gap"
+	StreamTechnicalGeo = "q:technical-geo"
+	StreamContentGeo   = "q:content-geo"
 )
 
 // Start begins the dispatch loop. Runs until the context is cancelled. //nolint:misspell
 func (d *Dispatcher) Start(ctx context.Context) {
 	// Consumer gruplarını oluştur (ilk seferde hata vermez)
-	for _, stream := range []string{StreamMeasure, StreamAudit, StreamReport, StreamNotify, StreamDead} {
+	for _, stream := range []string{StreamMeasure, StreamAudit, StreamReport, StreamNotify, StreamDead, StreamSentiment, StreamReplay, StreamArchive, StreamGap, StreamTechnicalGeo, StreamContentGeo} {
 		if err := d.rdb.XGroupCreateMkStream(ctx, stream, d.consumerGroup, "0").Err(); err != nil {
 			// BUSYGROUP: grup zaten var — ilk çalıştırmada sorun değil
 			slog.Debug("redis stream grubu", "stream", stream, "error", err)

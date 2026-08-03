@@ -4,11 +4,11 @@
 |---|---|
 | Doküman ID | 0311 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Engineering |
-| Tarih | 25 Temmuz 2026 |
-| İlişkili | 0304, 0415, 0904, 0606, 0204, 0905 |
+| Tarih | 27 Temmuz 2026 |
+| İlişkili | 0304, 0415, 0419, 0904, 0606, 0204, 0905 |
 
 ---
 
@@ -71,7 +71,18 @@ Bu doküman, GeoLens Platform'un gözlemlenebilirlik altyapısını tanımlar. K
 | DLQ Birikmesi | `geolens_queue_dlq_count` | >10 | Uyarı | DLQ'daki işleri manuel incele |
 | Motor Hatası | `geolens_engine_errors_total` | >%5 | Yüksek | API anahtarlarını kontrol et |
 
-### 3.2 Alarm Kanalları
+### 3.2 AI Görünürlük Alarmları (0415 ve 0419 ile Entegrasyon)
+
+Platform gözlemlenebilirliğinin yanı sıra, **AI düzeyinde gözlemlenebilirlik** aşağıdaki dokümanlarda tanımlanmıştır:
+
+| Doküman | Kapsam | Alarm Türü |
+|:-------:|--------|:----------:|
+| **0415 AI Observability** | Görünürlük skoru düşüşü, citation kaybı, rakip artışı, negatif sentiment, hallüsinasyon, yeni kaynak | 6 uyarı türü (FR-D13) |
+| **0419 Competitive Gap** | Visibility/Citation/Content/Topic/Prompt gap eşik aşımı | 5 gap türü × alert eşiği |
+
+Bu alarmlar, §3.1'deki platform alarmlarına ek olarak çalışır ve aynı kanallara (Slack, e-posta) iletilir.
+
+### 3.3 Alarm Kanalları
 
 | Kanal | Kritik | Yüksek | Uyarı |
 |-------|:------:|:------:|:-----:|
@@ -128,4 +139,5 @@ GET /v1/health
 
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
+| 1.1 | 27.07.2026 | 0419 (Competitive Gap) referansı eklendi. AI düzeyinde gözlemlenebilirlik entegrasyonu: 0415 ve 0419 alarm türleri platform kanallarına bağlandı (§3.2). İlişkili ve Kaynaklar güncellendi. |
 | 1.0 | 25.07.2026 | İlk yayın: metrik kataloğu, alarm seti, panolar, runbook'lar |

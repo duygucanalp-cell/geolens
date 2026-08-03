@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface MetricService {
   title: string
@@ -17,11 +17,33 @@ interface MonitoringPanelProps {
 export function MonitoringPanel({ workspaceId: _workspaceId }: MonitoringPanelProps = {}) {
   const { t } = useTranslation()
 
+  const [healthStatus, setHealthStatus] = useState<string | null>(null)
+  const [healthLoading, setHealthLoading] = useState(true)
+
+  useEffect(() => {
+    checkHealth()
+    const interval = setInterval(checkHealth, 30000)
+    return () => clearInterval(interval)
+  }, [])
+
+  async function checkHealth() {
+    try {
+      setHealthLoading(true)
+      const res = await fetch('/health')
+      const data = await res.json()
+      setHealthStatus(data.status === 'ok' ? '✅ Healthy' : '⚠️ Degraded')
+    } catch {
+      setHealthStatus('❌ Unreachable')
+    } finally {
+      setHealthLoading(false)
+    }
+  }
+
   const METRICS: MetricService[] = [
     { title: 'Prometheus', value: '9090', desc: t('monitoring.metrics_desc'), icon: '📊', color: '#e6522c', url: 'http://localhost:9090' },
     { title: 'Grafana', value: '4000', desc: t('monitoring.grafana_desc'), icon: '📈', color: '#f46800', url: 'http://localhost:4000' },
     { title: 'API Metrics', value: '/metrics', desc: t('monitoring.metrics_endpoint_desc'), icon: '🔢', color: '#6366f1' },
-    { title: 'Health Check', value: '/health', desc: t('monitoring.health_desc'), icon: '💚', color: '#22c55e' },
+    { title: 'Health Check', value: healthLoading ? '...' : (healthStatus || '/health'), desc: t('monitoring.health_desc'), icon: healthLoading ? '⏳' : (healthStatus?.startsWith('✅') ? '💚' : '❤️‍🔥'), color: healthStatus?.startsWith('✅') ? '#22c55e' : (healthStatus?.startsWith('⚠️') ? '#eab308' : '#ef4444') },
   ]
 
   const ALARM_LIST = [
