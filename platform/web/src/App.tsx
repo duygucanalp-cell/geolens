@@ -376,55 +376,89 @@ export default function App() {
   if (page === 'invite') {
     return (
       <div className="auth-page">
-        <div className="auth-card">
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem', marginBottom: '0.5rem' }}>
-            {themeButton()}
-            <button onClick={toggleLang} className="lang-btn">
-              {currentLang === 'tr' ? '🇬🇧 EN' : '🇹🇷 TR'}
-            </button>
+        <div className="auth-shell">
+          {authHero()}
+          <div className="auth-card">
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem', marginBottom: '0.5rem' }}>
+              {themeButton()}
+              <button onClick={toggleLang} className="lang-btn">
+                {currentLang === 'tr' ? '🇬🇧 EN' : '🇹🇷 TR'}
+              </button>
+            </div>
+            <div className="auth-brand-row">
+              <div className="auth-brand-logo" aria-hidden="true">G</div>
+              <span className="auth-brand-name">{t('app.platform')}</span>
+            </div>
+            <h2>{t('invite.title')}</h2>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+              {t('invite.subtitle')} <strong>{inviteEmail}</strong>
+            </p>
+            <form onSubmit={handleAcceptInvitation}>
+              <input
+                type="text"
+                placeholder={t('auth.name_placeholder')}
+                value={inviteName}
+                onChange={(e) => setInviteName(e.target.value)}
+                required
+              />
+              <input
+                type="email"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                required
+                readOnly
+              />
+              <input
+                type="password"
+                placeholder={t('invite.password_placeholder')}
+                value={invitePassword}
+                onChange={(e) => setInvitePassword(e.target.value)}
+                required
+                minLength={8}
+              />
+              {inviteError && <p className="auth-error">{inviteError}</p>}
+              <button type="submit" disabled={inviting}>
+                {inviting ? t('invite.accepting') : t('invite.accept')}
+              </button>
+            </form>
           </div>
-          <div className="auth-brand-row">
-            <div className="auth-brand-logo" aria-hidden="true">G</div>
-            <span className="auth-brand-name">{t('app.platform')}</span>
-          </div>
-          <h2>{t('invite.title')}</h2>
-          <p style={{ fontSize: '0.9rem', color: '#475569', marginBottom: '1rem' }}>
-            {t('invite.subtitle')} <strong>{inviteEmail}</strong>
-          </p>
-          <form onSubmit={handleAcceptInvitation}>
-            <input
-              type="text"
-              placeholder={t('auth.name_placeholder')}
-              value={inviteName}
-              onChange={(e) => setInviteName(e.target.value)}
-              required
-            />
-            <input
-              type="email"
-              value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              required
-              readOnly
-            />
-            <input
-              type="password"
-              placeholder={t('invite.password_placeholder')}
-              value={invitePassword}
-              onChange={(e) => setInvitePassword(e.target.value)}
-              required
-              minLength={8}
-            />
-            {inviteError && <p className="auth-error">{inviteError}</p>}
-            <button type="submit" disabled={inviting}>
-              {inviting ? t('invite.accepting') : t('invite.accept')}
-            </button>
-          </form>
         </div>
       </div>
     )
   }
 
-  // Profesyonel üst çubuk: logo + uygulama adı + kullanıcı e-postası + eylemler
+  // Giriş sayfasındaki marka/özellik paneli (iki panelli düzenin sol tarafı)
+  function authHero() {
+    return (
+      <div className="auth-hero" aria-hidden="true">
+        <div className="auth-hero-content">
+          <div className="auth-hero-logo">
+            <div className="auth-brand-logo">G</div>
+            <span className="auth-brand-name">{t('app.platform')}</span>
+          </div>
+          <h1 className="auth-hero-title">{t('auth.hero_title')}</h1>
+          <p className="auth-hero-desc">{t('auth.hero_desc')}</p>
+          <ul className="auth-hero-features">
+            <li><span>📊</span>{t('auth.hero_feature_1')}</li>
+            <li><span>🤖</span>{t('auth.hero_feature_2')}</li>
+            <li><span>🛡️</span>{t('auth.hero_feature_3')}</li>
+            <li><span>📈</span>{t('auth.hero_feature_4')}</li>
+          </ul>
+        </div>
+      </div>
+    )
+  }
+
+  // E-postadan baş harf avatarı üretir (adem@x.com → 'A', a.b.kaya@x.com → 'AB')
+  function emailInitials(mail: string): string {
+    const local = mail.split('@')[0] || ''
+    const parts = local.split(/[._\-]+/).filter(Boolean)
+    const first = (parts[0]?.[0] || local[0] || '?').toUpperCase()
+    if (parts.length >= 2) return first + (parts[1][0] || '').toUpperCase()
+    return first
+  }
+
+  // Profesyonel üst çubuk: logo + uygulama adı + kullanıcı avatarı + eylemler
   function appHeader() {
     return (
       <header className="app-header">
@@ -437,9 +471,12 @@ export default function App() {
         </div>
         <div className="app-header-actions">
           {email && (
-            <div className="app-header-user" title={email}>
-              <span aria-hidden="true">👤</span>
-              <span className="app-header-user-email">{email}</span>
+            <div className="app-header-user" title={`${email} · ${t('app.workspace')}`}>
+              <span className="app-header-avatar" aria-hidden="true">{emailInitials(email)}</span>
+              <span className="app-header-email-wrap">
+                <span className="app-header-user-email">{email}</span>
+                <span className="app-header-user-role">{t('app.workspace')}</span>
+              </span>
             </div>
           )}
           {themeButton()}
@@ -485,62 +522,66 @@ export default function App() {
 
   return (
     <div className="auth-page">
-      <div className="auth-card">
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem', marginBottom: '0.5rem' }}>
-          {themeButton()}
-          <button
-            onClick={toggleLang}
-            className="lang-btn"
-          >
-            {currentLang === 'tr' ? '🇬🇧 EN' : '🇹🇷 TR'}
-          </button>
-        </div>
-        <div className="auth-brand-row">
-          <div className="auth-brand-logo" aria-hidden="true">G</div>
-          <span className="auth-brand-name">{t('app.platform')}</span>
-        </div>
-        <h2>{isRegister ? t('auth.register') : t('auth.login')}</h2>
-        <form onSubmit={handleAuth}>
-          <input
-            type="email"
-            placeholder={t('auth.email_placeholder')}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <input
-            type="password"
-            placeholder={t('auth.password_placeholder')}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={8}
-          />
-          {isRegister && (
+      <div className="auth-shell">
+        {authHero()}
+        <div className="auth-card">
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem', marginBottom: '0.5rem' }}>
+            {themeButton()}
+            <button
+              onClick={toggleLang}
+              className="lang-btn"
+            >
+              {currentLang === 'tr' ? '🇬🇧 EN' : '🇹🇷 TR'}
+            </button>
+          </div>
+          <div className="auth-brand-row">
+            <div className="auth-brand-logo" aria-hidden="true">G</div>
+            <span className="auth-brand-name">{t('app.platform')}</span>
+          </div>
+          <h2>{isRegister ? t('auth.register') : t('auth.login')}</h2>
+          <p className="auth-subtitle">{isRegister ? t('auth.register_subtitle') : t('auth.login_subtitle')}</p>
+          <form onSubmit={handleAuth}>
             <input
-              type="text"
-              placeholder={t('auth.name_placeholder')}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              type="email"
+              placeholder={t('auth.email_placeholder')}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
             />
-          )}
-          {sessionExpired && (
-            <p className="auth-notice">
-              {sessionNoticeKind.current === 'elsewhere' ? t('auth.session_expired_elsewhere') : t('auth.session_expired')}
-            </p>
-          )}
-          {authError && <p className="auth-error">{authError}</p>}
-          <button type="submit">{isRegister ? t('auth.register') : t('auth.login')}</button>
-        </form>
-        <p className="auth-toggle">
-          <button
-            className="link-btn"
-            onClick={() => { setIsRegister(!isRegister); setAuthError(null); setSessionExpired(false); clearSessionNoticeTimer() }}
-          >
-            {isRegister ? t('auth.already_have_account') : t('auth.no_account')}
-          </button>
-        </p>
+            <input
+              type="password"
+              placeholder={t('auth.password_placeholder')}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={8}
+            />
+            {isRegister && (
+              <input
+                type="text"
+                placeholder={t('auth.name_placeholder')}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            )}
+            {sessionExpired && (
+              <p className="auth-notice">
+                {sessionNoticeKind.current === 'elsewhere' ? t('auth.session_expired_elsewhere') : t('auth.session_expired')}
+              </p>
+            )}
+            {authError && <p className="auth-error">{authError}</p>}
+            <button type="submit">{isRegister ? t('auth.register') : t('auth.login')}</button>
+          </form>
+          <p className="auth-toggle">
+            <button
+              className="link-btn"
+              onClick={() => { setIsRegister(!isRegister); setAuthError(null); setSessionExpired(false); clearSessionNoticeTimer() }}
+            >
+              {isRegister ? t('auth.already_have_account') : t('auth.no_account')}
+            </button>
+          </p>
+        </div>
       </div>
     </div>
   )

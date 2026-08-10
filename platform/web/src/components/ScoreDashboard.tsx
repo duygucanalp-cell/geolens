@@ -208,6 +208,18 @@ export function ScoreDashboard({ workspaceId }: ScoreDashboardProps) {
     return map
   }, [filteredScores])
 
+  // Genel bakış (KPI) kartları: ortalama skor + izlenen marka/panel/motor sayısı
+  const kpis = useMemo(() => {
+    const avg = scores.length
+      ? Math.round((scores.reduce((sum, s) => sum + s.value, 0) / scores.length) * 10) / 10
+      : null
+    const uniqueBrands = new Set(scores.map(s => s.brand_name)).size
+    const uniqueEngines = new Set(
+      scores.flatMap(s => (s.engine_breakdown ? Object.keys(s.engine_breakdown) : []))
+    ).size
+    return { avg, uniqueBrands, uniqueEngines }
+  }, [scores])
+
   // Navigasyonu dış tıklama / Escape ile kapat (arama sorgusu da sıfırlanır)
   useEffect(() => {
     if (!navOpen) return
@@ -540,10 +552,45 @@ export function ScoreDashboard({ workspaceId }: ScoreDashboardProps) {
   return (
     <div className="dashboard">
       <div className="dashboard-header">
-        <h2>{t('dashboard.title')}</h2>
+        <div>
+          <h2>{t('dashboard.title')}</h2>
+          <p className="dashboard-header-sub">{t('dashboard.subtitle')}</p>
+        </div>
         <button className="refresh-btn" onClick={loadAll}>
-          {t('dashboard.refresh')}
+          <span aria-hidden="true">⟳</span> {t('dashboard.refresh')}
         </button>
+      </div>
+
+      {/* Genel bakış KPI kartları */}
+      <div className="kpi-grid" aria-label={t('dashboard.kpi_label')}>
+        <div className="kpi-card" title={t('dashboard.kpi_avg_score_hint')}>
+          <span className="kpi-icon" aria-hidden="true">📈</span>
+          <div className="kpi-body">
+            <span className="kpi-value">{kpis.avg !== null ? kpis.avg.toFixed(1) : '—'}</span>
+            <span className="kpi-label">{t('dashboard.kpi_avg_score')}</span>
+          </div>
+        </div>
+        <div className="kpi-card" title={t('dashboard.kpi_brands_hint')}>
+          <span className="kpi-icon" aria-hidden="true">🏷️</span>
+          <div className="kpi-body">
+            <span className="kpi-value">{kpis.uniqueBrands}</span>
+            <span className="kpi-label">{t('dashboard.kpi_brands')}</span>
+          </div>
+        </div>
+        <div className="kpi-card" title={t('dashboard.kpi_panels_hint')}>
+          <span className="kpi-icon" aria-hidden="true">🧩</span>
+          <div className="kpi-body">
+            <span className="kpi-value">{panels.length}</span>
+            <span className="kpi-label">{t('dashboard.kpi_panels')}</span>
+          </div>
+        </div>
+        <div className="kpi-card" title={t('dashboard.kpi_engines_hint')}>
+          <span className="kpi-icon" aria-hidden="true">🤖</span>
+          <div className="kpi-body">
+            <span className="kpi-value">{kpis.uniqueEngines}</span>
+            <span className="kpi-label">{t('dashboard.kpi_engines')}</span>
+          </div>
+        </div>
       </div>
 
       {/* Pin'lenen sekmeler — hızlı erişim çipleri */}

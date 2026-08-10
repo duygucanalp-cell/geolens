@@ -87,14 +87,47 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .lang-btn { background: none; border: 1px solid var(--text-secondary); color: var(--text-faint); padding: 0.3rem 0.6rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; transition: all 0.2s; }
 .lang-btn:hover { background: var(--text-strong); color: #fff; }
 
-.auth-page { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: var(--surface-hover); }
-.auth-card { background: var(--surface); padding: 2rem; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+.auth-page { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: var(--surface-hover); padding: 1.5rem; }
+.auth-shell {
+  display: grid; grid-template-columns: 1.05fr 1fr; gap: 0;
+  width: 100%; max-width: 960px; min-height: 560px;
+  background: var(--surface); border-radius: 20px; overflow: hidden;
+  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.14);
+  border: 1px solid var(--border);
+}
+.auth-hero {
+  background: linear-gradient(160deg, #4f46e5 0%, #6366f1 45%, #818cf8 100%);
+  color: #fff; padding: 3rem 2.5rem; display: flex; align-items: center;
+}
+.auth-hero-content { width: 100%; }
+.auth-hero-logo { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 2.5rem; }
+.auth-hero-logo .auth-brand-logo {
+  width: 44px; height: 44px; border-radius: 12px; font-size: 1.35rem;
+  background: rgba(255, 255, 255, 0.18); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+.auth-hero-logo .auth-brand-name { color: #fff; font-size: 1.25rem; font-weight: 700; }
+.auth-hero-title { font-size: 1.7rem; font-weight: 700; line-height: 1.3; margin-bottom: 0.75rem; }
+.auth-hero-desc { font-size: 0.95rem; line-height: 1.6; opacity: 0.9; margin-bottom: 2rem; }
+.auth-hero-features { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.9rem; }
+.auth-hero-features li {
+  display: flex; align-items: center; gap: 0.75rem; font-size: 0.92rem; font-weight: 500;
+}
+.auth-hero-features li span {
+  width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.16); display: flex; align-items: center;
+  justify-content: center; font-size: 1.05rem;
+}
+.auth-card {
+  background: var(--surface); padding: 3rem 2.5rem; width: 100%; max-width: none;
+  display: flex; flex-direction: column; justify-content: center;
+}
 .auth-card h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
-.auth-card h2 { font-size: 1rem; color: var(--text-muted); margin-bottom: 1.5rem; }
-.auth-card form { display: flex; flex-direction: column; gap: 0.75rem; }
-.auth-card input { padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; font-size: 0.9rem; }
-.auth-card input:focus { outline: none; border-color: var(--accent); }
-.auth-card button[type=submit] { background: var(--accent); color: #fff; padding: 0.75rem; border: none; border-radius: 8px; font-size: 0.9rem; cursor: pointer; }
+.auth-card h2 { font-size: 1.35rem; font-weight: 700; color: var(--text); margin-bottom: 0.35rem; }
+.auth-subtitle { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.5rem; }
+.auth-card form { display: flex; flex-direction: column; gap: 0.85rem; }
+.auth-card input { padding: 0.8rem 0.9rem; border: 1px solid var(--border); border-radius: 10px; font-size: 0.92rem; background: var(--surface-2); transition: border-color 0.2s, box-shadow 0.2s, background 0.2s; }
+.auth-card input:focus { outline: none; border-color: var(--accent); background: var(--surface); }
+.auth-card button[type=submit] { background: var(--accent); color: #fff; padding: 0.85rem; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; cursor: pointer; }
 .auth-card button[type=submit]:hover { background: var(--accent-hover); }
 .auth-error { color: var(--danger); font-size: 0.85rem; }
 .auth-notice { background: var(--warn-bg); color: var(--warn-text); border: 1px solid var(--warn-border); border-radius: 8px; padding: 0.75rem; font-size: 0.85rem; margin-bottom: 0.75rem; animation: authNotice 3s ease forwards; }
@@ -144,8 +177,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 
 /* Filters */
 .dashboard-filters { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
-.filter-select { padding: 0.4rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem; background: var(--surface); color: var(--text-secondary); cursor: pointer; }
-.filter-select:focus { outline: none; border-color: var(--accent); }
+.filter-select {
+  padding: 0.4rem 0.75rem; border: 1px solid var(--border); border-radius: 6px;
+  font-size: 0.85rem; background: var(--surface); color: var(--text-secondary); cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+.filter-select:hover { border-color: var(--border-strong); }
+.filter-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12); }
 
 /* Engine Comparison */
 .engine-comparison { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
@@ -805,6 +843,30 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .tab-panel { min-height: 200px; }
 .tab-panel[hidden] { display: none; }
 
+/* Sekme geçişlerinde hafif giriş animasyonu */
+@keyframes tab-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.tab-panel:not([hidden]) { animation: tab-enter 0.22s ease-out; }
+
+/* ==== Hata kartı iyileştirme ==== */
+.dashboard-error {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  gap: 0.5rem; padding: 3.5rem 1.5rem;
+  border: 1px solid var(--danger-soft); border-radius: 12px;
+  background: var(--danger-bg);
+}
+.dashboard-error::before {
+  content: '⚠️'; font-size: 2.5rem; line-height: 1;
+}
+.dashboard-error p { margin: 0; color: var(--text-strong); font-size: 0.95rem; }
+.dashboard-error button {
+  margin-top: 0.5rem; padding: 0.55rem 1.4rem; border-radius: 8px;
+  font-weight: 600; transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.dashboard-error button:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
+
 /* ==== App shell ==== */
 .app { min-height: 100vh; display: flex; flex-direction: column; }
 .app-header {
@@ -826,9 +888,26 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .app-header-sub { font-size: 0.72rem; color: var(--text-faint); margin-top: 0.1rem; }
 .app-header-actions { display: flex; gap: 0.5rem; align-items: center; flex-shrink: 0; }
 .app-header-user {
-  display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0.75rem;
-  border: 1px solid var(--border-strong); border-radius: 8px; font-size: 0.8rem;
-  color: var(--text-strong); background: rgba(255, 255, 255, 0.04); max-width: 240px;
+  display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.75rem 0.25rem 0.3rem;
+  border: 1px solid var(--border-strong); border-radius: 999px; font-size: 0.8rem;
+  color: var(--text-strong); background: rgba(255, 255, 255, 0.04); max-width: 260px;
+}
+.app-header-avatar {
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--accent), #818cf8);
+  color: #fff; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.3px;
+  text-transform: uppercase; user-select: none;
+}
+.app-header-email-wrap {
+  display: flex; flex-direction: column; min-width: 0; line-height: 1.15;
+}
+.app-header-user-email {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+.app-header-user-role {
+  font-size: 0.65rem; color: var(--text-faint); letter-spacing: 0.4px;
 }
 .app-header-user-email {
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary);
@@ -1006,6 +1085,14 @@ button { font-family: inherit; }
 }
 
 /* Odak görünürlüğü (erişilebilirlik) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
   outline: 2px solid var(--accent); outline-offset: 2px;
 }
@@ -1016,13 +1103,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 ::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
 ::-webkit-scrollbar-track { background: transparent; }
 
-/* ==== Auth sayfası cilalama ==== */
+/* ==== Auth sayfası (iki panelli) ==== */
 .auth-page {
-  background: linear-gradient(135deg, var(--bg) 0%, var(--accent-soft) 100%);
-}
-.auth-card {
-  border: 1px solid var(--border);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+  background: radial-gradient(1200px 600px at 15% -10%, var(--accent-soft) 0%, transparent 60%),
+    radial-gradient(1000px 500px at 110% 110%, var(--accent-soft) 0%, transparent 55%), var(--bg);
 }
 .auth-brand-row {
   display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.25rem;
@@ -1042,8 +1126,46 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   font-weight: 600; letter-spacing: 0.2px; margin-top: 0.25rem;
   transition: background 0.2s, transform 0.1s;
 }
+.auth-card button[type=submit]:hover { background: var(--accent-hover); }
 .auth-card button[type=submit]:active { transform: scale(0.98); }
 .auth-card button[type=submit]:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Mobil: hero gizlenir, yalnızca form kartı görünür */
+@media (max-width: 720px) {
+  .auth-shell { grid-template-columns: 1fr; max-width: 440px; min-height: 0; }
+  .auth-hero { display: none; }
+  .auth-card { padding: 2.25rem 1.75rem; }
+}
+
+/* ==== Genel bakış (KPI) kartları ==== */
+.kpi-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem; margin-bottom: 1rem;
+}
+.kpi-card {
+  display: flex; align-items: center; gap: 0.85rem;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 0.85rem 1rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.kpi-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+}
+.kpi-icon {
+  width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 1.15rem;
+  background: var(--accent-soft);
+}
+.kpi-body { display: flex; flex-direction: column; min-width: 0; }
+.kpi-value { font-size: 1.35rem; font-weight: 700; color: var(--text-strong); line-height: 1.1; }
+.kpi-label { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.dashboard-header { align-items: flex-start; }
+.dashboard-header h2 { margin-bottom: 0.15rem; }
+.dashboard-header-sub { margin: 0; font-size: 0.82rem; color: var(--text-muted); }
+.dashboard-header .refresh-btn { flex-shrink: 0; display: inline-flex; align-items: center; gap: 0.35rem; }
 
 /* ==== Skeleton / Shimmer yükleme görünümü ==== */
 @keyframes shimmer {
