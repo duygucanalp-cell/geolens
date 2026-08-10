@@ -1,6 +1,6 @@
-import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
+import { PanelSkeleton } from './PanelSkeleton'
 import { listPromptSets } from '../api/client'
 
 interface PromptSet {

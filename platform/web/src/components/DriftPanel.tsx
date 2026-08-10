@@ -1,6 +1,6 @@
-import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
+import { PanelSkeleton } from './PanelSkeleton'
 import { listDriftEntities, listDriftAlerts, analyzeDrift, recordDriftObservation, listDriftObservations } from '../api/client'
 import type { DriftEntitySummary, DriftAlert, DriftAnalysis, DriftObservation } from '../types'
 

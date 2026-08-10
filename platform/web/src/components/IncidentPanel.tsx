@@ -1,6 +1,6 @@
-import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
+import { PanelSkeleton } from './PanelSkeleton'
 import { getIncidents, createIncident, updateIncident } from '../api/client'
 import type { IncidentListResponse } from '../types'
 import { SEVERITY_COLORS, SEVERITY_LABELS } from '../types'

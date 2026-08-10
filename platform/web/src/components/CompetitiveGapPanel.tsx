@@ -1,10 +1,10 @@
-import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useMemo, useState } from 'react'
 import { RadarChart, PolarGrid, PolarAngleAxis, Radar, Legend, Tooltip, ResponsiveContainer } from 'recharts'
 import {
   getCompetitiveGapOverview, analyzeCompetitiveGap, getCompetitiveRecommendations,
 } from '../api/client'
+import { PanelSkeleton } from './PanelSkeleton'
 import type { Brand, CompetitiveGapOverview, GapSnapshot, CompetitiveRecommendation, GapDetail } from '../types'
 
 interface Props {

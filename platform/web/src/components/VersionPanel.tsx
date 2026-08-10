@@ -1,6 +1,6 @@
-import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useMemo, useState } from 'react'
+import { PanelSkeleton } from './PanelSkeleton'
 import { getVersionEntries } from '../api/client'
 import type { VersionEntry } from '../types'
 

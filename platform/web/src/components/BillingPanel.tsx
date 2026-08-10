@@ -1,4 +1,3 @@
-import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import {
@@ -11,6 +10,7 @@ import {
   eFaturaXMLDownloadUrl,
   invoicePDFDownloadUrl,
 } from '../api/client'
+import { PanelSkeleton } from './PanelSkeleton'
 import type { BillingInvoice } from '../api/client'
 
 interface Props {

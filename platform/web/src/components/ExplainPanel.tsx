@@ -1,6 +1,6 @@
-import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
+import { PanelSkeleton } from './PanelSkeleton'
 import { explainEntity, listExplainResults } from '../api/client'
 import type { ExplainResult } from '../types'
 

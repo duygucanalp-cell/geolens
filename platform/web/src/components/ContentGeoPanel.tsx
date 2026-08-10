@@ -1,9 +1,9 @@
-import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import {
   getContentHubScore, analyzeContentGap, listContentGaps, listTopicClusters,
 } from '../api/client'
+import { PanelSkeleton } from './PanelSkeleton'
 import type { Brand, ContentHubScore, ContentGap, TopicCluster } from '../types'
 
 interface Props {

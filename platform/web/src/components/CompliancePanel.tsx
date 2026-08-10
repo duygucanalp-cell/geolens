@@ -1,6 +1,6 @@
-import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
+import { PanelSkeleton } from './PanelSkeleton'
 import { getComplianceReport, getComplianceSOC2, getComplianceEvidence } from '../api/client'
 
 interface EvidenceItem {

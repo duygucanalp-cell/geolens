@@ -1,6 +1,6 @@
-import { PanelSkeleton } from './PanelSkeleton'
 import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
+import { PanelSkeleton } from './PanelSkeleton'
 import { getBrands, createBrand, updateBrand, deleteBrand, getBrandCompetitors, updateBrandCompetitors, deleteBrandCompetitor, searchBrands } from '../api/client'
 import type { Brand } from '../types'
 import type { CompetitorItem } from '../api/client'

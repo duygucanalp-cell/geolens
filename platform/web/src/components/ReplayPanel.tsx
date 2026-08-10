@@ -1,10 +1,10 @@
-import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import {
   listReplaySnapshots, getReplaySnapshot, captureReplaySnapshot,
   compareReplaySnapshots, deleteReplaySnapshot,
 } from '../api/client'
+import { PanelSkeleton } from './PanelSkeleton'
 import type { Brand, ReplaySnapshot, ReplaySnapshotDetail, ReplayDiff } from '../types'
 import { ENGINE_NAMES } from '../types'
 

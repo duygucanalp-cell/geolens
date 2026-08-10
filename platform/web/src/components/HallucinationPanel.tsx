@@ -1,6 +1,6 @@
-import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
+import { PanelSkeleton } from './PanelSkeleton'
 import { detectHallucinations, listHallucinations, verifyHallucination } from '../api/client'
 import type { HallucinationFlag } from '../types'
 

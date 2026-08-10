@@ -1,6 +1,6 @@
-import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useMemo, useState } from 'react'
+import { PanelSkeleton } from './PanelSkeleton'
 import { listBenchmarks, runBenchmark, compareBenchmarks } from '../api/client'
 import type { BenchmarkResult, BenchmarkComparison } from '../types'
 

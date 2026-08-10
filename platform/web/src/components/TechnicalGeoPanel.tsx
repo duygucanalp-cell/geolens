@@ -1,10 +1,10 @@
-import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import {
   getTechnicalGEOScore, analyzeBotAccess, listBotAnalyses,
   analyzeSchema, listSchemaAnalyses,
 } from '../api/client'
+import { PanelSkeleton } from './PanelSkeleton'
 import type { Brand, TechnicalGEOScore, BotAnalysis, SchemaAnalysis } from '../types'
 
 interface Props {

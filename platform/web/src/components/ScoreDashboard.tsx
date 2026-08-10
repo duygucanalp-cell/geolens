@@ -1,6 +1,6 @@
-import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { PanelSkeleton } from './PanelSkeleton'
 import { ScoreCard } from './ScoreCard'
 import { TrendChart } from './TrendChart'
 import { EngineComparison } from './EngineComparison'
