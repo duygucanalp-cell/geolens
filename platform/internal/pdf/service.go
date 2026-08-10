@@ -426,7 +426,7 @@ func (s *service) generateAuditReport(req ReportRequest) (*ReportResult, error) 
 func (s *service) GetReportData(ctx context.Context, reportID string) ([]byte, error) {
 	var paramsJSON string
 	err := s.pool.QueryRow(ctx, `
-		SELECT params FROM governance.reports WHERE id = $1
+		SELECT params FROM measure.reports WHERE id = $1
 	`, reportID).Scan(&paramsJSON)
 	if err != nil {
 		return nil, fmt.Errorf("rapor bulunamadı: %w", err)

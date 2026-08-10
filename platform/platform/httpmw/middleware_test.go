@@ -379,6 +379,85 @@ func TestAuthenticate_NoBearerPrefix(t *testing.T) {
 	}
 }
 
+func TestNormalizeRole(t *testing.T) {
+	tests := []struct{ in, want string }{
+		{"admin", "admin"},
+		{"editor", "editor"},
+		{"viewer", "viewer"},
+		{"member", "viewer"}, // identity.users legacy rolü → viewer
+		{"", "viewer"},       // boş rol → viewer (401 authentication_required düzeltmesi)
+		{"superadmin", "viewer"},
+	}
+	for _, tt := range tests {
+		if got := normalizeRole(tt.in); got != tt.want {
+			t.Errorf("normalizeRole(%q) = %q, want %q", tt.in, got, tt.want)
+		}
+	}
+}
+
+func TestAuthenticate_MemberRoleBecomesViewer(t *testing.T) {
+	validator := func(ctx context.Context, tokenStr string) (userID, tenantID, role string, err error) {
+		return "U01", "T01", "member", nil
+	}
+	handler := Authenticate(validator)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if role := GetUserRole(r.Context()); role != RoleViewer {
+			t.Errorf("beklenen viewer, gerçek %q", role)
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	req := httptest.NewRequest("GET", "/protected", nil)
+	req.Header.Set("Authorization", "Bearer token")
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("member role'lu token için beklenen 200, gerçek %d", w.Code)
+	}
+}
+
+func TestAuthenticate_EmptyRoleBecomesViewer(t *testing.T) {
+	validator := func(ctx context.Context, tokenStr string) (userID, tenantID, role string, err error) {
+		return "U01", "T01", "", nil
+	}
+	handler := Authenticate(validator)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if role := GetUserRole(r.Context()); role != RoleViewer {
+			t.Errorf("beklenen viewer, gerçek %q", role)
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	req := httptest.NewRequest("GET", "/protected", nil)
+	req.Header.Set("Authorization", "Bearer token")
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("boş role'lu token için beklenen 200, gerçek %d", w.Code)
+	}
+}
+
+// TestRequireRole_AfterAuthenticateWithMemberToken — Runtime Guardrails senaryosu:
+// 'member' (veya boş) role sahip geçerli bir JWT, RequireRole(viewer) ile korunan
+// tenant-level rotaya artık 401 authentication_required üretmeden erişebilir.
+func TestRequireRole_AfterAuthenticateWithMemberToken(t *testing.T) {
+	validator := func(ctx context.Context, tokenStr string) (userID, tenantID, role string, err error) {
+		return "U01", "T01", "member", nil
+	}
+	handler := Authenticate(validator)(RequireRole(RoleViewer)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})))
+
+	req := httptest.NewRequest("GET", "/v1/guardrails/rules", nil)
+	req.Header.Set("Authorization", "Bearer token")
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("member role'lu token viewer route'a erişebilmeli, gerçek %d", w.Code)
+	}
+}
+
 // assertAnError is a minimal error implementation for testing.
 type assertAnError struct{}
 

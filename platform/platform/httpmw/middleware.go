@@ -89,6 +89,27 @@ const (
 	RoleViewer = "viewer"
 )
 
+// normalizeRole, JWT role claim'indeki geçerli RBAC rollerini garanti eder.
+// identity.users.role sütunu 'admin'/'member' sözlüğünü kullanır; RBAC ise
+// 'admin'/'editor'/'viewer' bekler. Tenant-level rotalar (guardrails, registry,
+// vb.) RequireRole ile yalnızca bu claim'e güvenir; workspace rotaları rolü
+// memberships tablosundan çözer. 'member' ve boş/bilinmeyen değerler en düşük
+// yetki olan 'viewer'a eşlenir — aksi halde davet edilen kullanıcılar tüm
+// tenant-level sayfalarda 401/403 alır.
+//
+// BİLİNÇLİ GÜVENLİK KARARI: geçerli (imzalı) bir token'da rol claim'i boşsa
+// 401 yerine salt-okunur 'viewer' verilir. Yetki yükseltmesi yoktur — viewer
+// en düşük kademedir ve admin/editor rotaları yine engellenir; kullanıcı
+// zaten token ile tenant'ın kimliğini doğrulamıştır.
+func normalizeRole(role string) string {
+	switch role {
+	case RoleAdmin, RoleEditor, RoleViewer:
+		return role
+	default: // 'member', '' veya bilinmeyen değer → en düşük yetki
+		return RoleViewer
+	}
+}
+
 // roleWeights maps roles to numeric weights for hierarchy comparison.
 var roleWeights = map[string]int{
 	RoleAdmin:  3,
@@ -128,9 +149,10 @@ func Authenticate(validate TokenValidator) func(http.Handler) http.Handler {
 			// JWT claim'deki rolü context'e taşı (R-serisi gibi workspace dışı rotalar
 			// RequireWorkspaceAccess'ten geçmediği için rol buradan doldurulur).
 			// Workspace rotalarında RequireWorkspaceAccess bu değeri DB'deki üyelik rolüyle ezer.
-			if role != "" {
-				ctx = context.WithValue(ctx, ctxKeyUserRole, role)
-			}
+			// Rol claim'i normalize edilir: 'member'/boş/bilinmeyen değerler 'viewer' olarak
+			// ele alınır, böylece identity.users.role sözlüğü RBAC ile uyumsuz olsa bile
+			// tenant-level rotalar (guardrails vb.) gereksiz 401 authentication_required almaz.
+			ctx = context.WithValue(ctx, ctxKeyUserRole, normalizeRole(role))
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

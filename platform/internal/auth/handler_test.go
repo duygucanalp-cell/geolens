@@ -13,6 +13,7 @@ import (
 	"github.com/geolens/platform/internal/dbiface"
 	"github.com/geolens/platform/internal/testutil"
 	"github.com/geolens/platform/platform/httpmw"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func newTestHandler() *Handler {
@@ -284,6 +285,100 @@ func TestRefresh_SlidesSession(t *testing.T) {
 	}
 	if body.ExpiresAt == "" {
 		t.Fatalf("expires_at boş olmamalı")
+	}
+}
+
+func TestResolveRBACRole(t *testing.T) {
+	tests := []struct {
+		name       string
+		membership string
+		queryErr   bool
+		fallback   string
+		want       string
+	}{
+		{name: "üyelik admin", membership: "admin", want: "admin"},
+		{name: "üyelik editor", membership: "editor", want: "editor"},
+		{name: "üyelik viewer", membership: "viewer", want: "viewer"},
+		{name: "üyelik member (legacy) → viewer", membership: "member", want: "viewer"},
+		{name: "üyelik yok + fallback admin", queryErr: true, fallback: "admin", want: "admin"},
+		{name: "üyelik yok + fallback member → viewer", queryErr: true, fallback: "member", want: "viewer"},
+		{name: "üyelik yok + fallback boş → viewer", queryErr: true, fallback: "", want: "viewer"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pool := &testutil.MockPool{
+				QueryRowFunc: func(ctx context.Context, sql string, args ...any) dbiface.RowScanner {
+					if tt.queryErr {
+						return &testutil.MockRow{Err: fmt.Errorf("satır bulunamadı")}
+					}
+					return &testutil.MockRow{Values: []any{tt.membership}}
+				},
+			}
+			h := NewHandler(pool, nil, nil, nil, "")
+			got := h.resolveRBACRole(context.Background(), "U1", "T1", tt.fallback)
+			if got != tt.want {
+				t.Errorf("resolveRBACRole = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestLogin_ResolvesRBACRoleFromMembership — identity.users.role 'member' olsa bile
+// JWT claim'i üyelikten (config.memberships) çözülür; tenant-level rotalar (guardrails
+// vb.) artık 401 authentication_required / 403 almaz.
+func TestLogin_ResolvesRBACRoleFromMembership(t *testing.T) {
+	h := newTestHandler()
+	h.jwt = NewJWTService("test-secret")
+
+	hashedPW, err := bcrypt.GenerateFromPassword([]byte("12345678"), bcrypt.MinCost)
+	if err != nil {
+		t.Fatalf("bcrypt hash: %v", err)
+	}
+
+	queryCalls := 0
+	h.pool = &testutil.MockPool{
+		QueryRowFunc: func(ctx context.Context, sql string, args ...any) dbiface.RowScanner {
+			queryCalls++
+			switch queryCalls {
+			case 1: // kullanıcı (ana sorgu): users.role = 'member'
+				return &testutil.MockRow{Values: []any{"U1", "T1", string(hashedPW), "member"}}
+			case 2: // ilk workspace
+				return &testutil.MockRow{Values: []any{"WS1"}}
+			default: // üyelik rolü
+				return &testutil.MockRow{Values: []any{"editor"}}
+			}
+		},
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/auth/login", bytes.NewReader([]byte(`{"email":"x@y.com","password":"12345678"}`)))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	h.Login(w, req)
+
+	if queryCalls != 3 {
+		t.Fatalf("expected 3 QueryRow calls (user, workspace, membership), got %d", queryCalls)
+	}
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+	var auth authResponse
+	if err := json.NewDecoder(resp.Body).Decode(&auth); err != nil {
+		t.Fatalf("yanıt ayrıştırılamadı: %v", err)
+	}
+	if auth.Role != "editor" {
+		t.Fatalf("expected role editor (membership'ten), got %q", auth.Role)
+	}
+	// Token claim'i de aynı rolü taşımalı
+	claims, err := h.jwt.ValidateToken(auth.Token)
+	if err != nil {
+		t.Fatalf("token doğrulanamadı: %v", err)
+	}
+	if claims.Role != "editor" {
+		t.Fatalf("expected claim role editor, got %q", claims.Role)
 	}
 }
 

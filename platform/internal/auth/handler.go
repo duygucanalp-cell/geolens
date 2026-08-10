@@ -2,6 +2,7 @@
 package auth
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -92,6 +93,34 @@ func NewProductionHandler(pool *db.Pool, jwt *JWTService, rdb *redis.Client, mai
 		rdb:     rdb,
 		mail:    mail,
 		baseURL: baseURL,
+	}
+}
+
+// resolveRBACRole, kullanıcının gerçek RBAC rolünü config.memberships üzerinden çözer.
+// identity.users.role sütunu 'admin'/'member' sözlüğünü kullanır ve RBAC ile
+// ('admin'/'editor'/'viewer') uyumsuzdur; bu yüzden JWT claim'i üyelik rolünden
+// türetilir (privacy.userRoleFromDB ile aynı desen — tenant-level rotalar bu
+// claim'e güvenir). Birden çok üyelik varsa EN YÜKSEK yetki seçilir: JWT tenant
+// kapsamlıdır ve kullanıcının kiracıdaki en yetkili rolünü yansıtmalıdır.
+// Üyelik bulunamazsa fallbackRole normalize edilerek kullanılır:
+// 'member'/boş/bilinmeyen değerler en düşük yetki olan 'viewer'a eşlenir.
+func (h *Handler) resolveRBACRole(ctx context.Context, userID, tenantID, fallbackRole string) string {
+	var role string
+	err := h.pool.QueryRow(ctx, `
+		SELECT m.role FROM config.memberships m
+		WHERE m.user_id = $1 AND m.tenant_id = $2
+		ORDER BY CASE m.role WHEN 'admin' THEN 3 WHEN 'editor' THEN 2 ELSE 1 END DESC, m.created_at
+		LIMIT 1
+	`, userID, tenantID).Scan(&role)
+	if err != nil || role == "" {
+		role = fallbackRole
+	}
+
+	switch role {
+	case "admin", "editor", "viewer":
+		return role
+	default: // 'member', '' veya bilinmeyen değer → en düşük yetki
+		return "viewer"
 	}
 }
 
@@ -249,7 +278,10 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		workspaceID = ""
 	}
 
-	token, expiresAt, err := h.jwt.GenerateToken(userID, tenantID, role)
+	// JWT claim'i için RBAC rolünü üyelikten çöz (identity.users.role 'member'
+	// olabilir — RBAC sözlüğüyle uyumsuz; bkz. resolveRBACRole).
+	rbacRole := h.resolveRBACRole(ctx, userID, tenantID, role)
+	token, expiresAt, err := h.jwt.GenerateToken(userID, tenantID, rbacRole)
 	if err != nil {
 		slog.Error("jwt oluşturma hatası", "error", err)
 		httputil.WriteError(w, http.StatusInternalServerError, "giriş başarısız")
@@ -262,7 +294,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		UserID:      userID,
 		TenantID:    tenantID,
 		WorkspaceID: workspaceID,
-		Role:        role,
+		Role:        rbacRole,
 	})
 }
 
@@ -313,7 +345,9 @@ func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, expiresAt, err := h.jwt.GenerateToken(claims.UserID, claims.TenantID, role)
+	// JWT claim'i için RBAC rolünü üyelikten çöz (bkz. resolveRBACRole).
+	rbacRole := h.resolveRBACRole(r.Context(), claims.UserID, claims.TenantID, role)
+	token, expiresAt, err := h.jwt.GenerateToken(claims.UserID, claims.TenantID, rbacRole)
 	if err != nil {
 		slog.Error("jwt yenileme hatası", "error", err)
 		httputil.WriteError(w, http.StatusInternalServerError, "oturum yenilenemedi")
@@ -326,7 +360,7 @@ func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 		UserID:      claims.UserID,
 		TenantID:    claims.TenantID,
 		WorkspaceID: "",
-		Role:        role,
+		Role:        rbacRole,
 	})
 }
 
@@ -593,8 +627,10 @@ func (h *Handler) AcceptInvitation(w http.ResponseWriter, r *http.Request) {
 		slog.Warn("davet işaretleme hatası (non-fatal)", "invitation_id", invitationID, "error", err)
 	}
 
-	// JWT üret
-	token, expiresAtJWT, err := h.jwt.GenerateToken(userID, tenantID, role)
+	// JWT claim'i için RBAC rolünü az önce oluşturulan üyelikten çöz
+	// (invitation role 'member' olabilir — bkz. resolveRBACRole).
+	rbacRole := h.resolveRBACRole(r.Context(), userID, tenantID, role)
+	token, expiresAtJWT, err := h.jwt.GenerateToken(userID, tenantID, rbacRole)
 	if err != nil {
 		slog.Error("jwt oluşturma hatası", "error", err)
 		httputil.WriteError(w, http.StatusInternalServerError, "davet kabul edildi ama giriş yapılamadı")
@@ -607,7 +643,7 @@ func (h *Handler) AcceptInvitation(w http.ResponseWriter, r *http.Request) {
 		UserID:      userID,
 		TenantID:    tenantID,
 		WorkspaceID: workspaceID,
-		Role:        role,
+		Role:        rbacRole,
 	})
 }
 

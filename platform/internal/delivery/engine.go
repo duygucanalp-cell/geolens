@@ -205,4 +205,8 @@ type Service interface {
 
 	// UpdateSettings saves notification settings for a workspace using the given context.
 	UpdateSettings(ctx context.Context, settings *NotificationSettings, tenantID string) error
+
+	// SendGovernanceEvent forwards a Faz 4 governance event (guardrail, gate, incident,
+	// drift, redteam) to all webhook-active workspaces of the tenant (O-6 bildirim tüketicisi).
+	SendGovernanceEvent(ctx context.Context, tenantID, eventType string, payload map[string]interface{}) error
 }

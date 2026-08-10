@@ -214,6 +214,13 @@ var (
 		Name: "geolens_governance_events_total",
 		Help: "Faz 4 yönetişim olayı sayısı (event_type, tenant ayrımıyla)",
 	}, []string{LabelType, LabelTenant})
+
+	// WebhookDeliveriesTotal counts governance event webhook deliveries (O-6 bildirim tüketicisi).
+	// status: sent, failed, no_target.
+	WebhookDeliveriesTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "geolens_webhook_deliveries_total",
+		Help: "Governance olay webhook gönderim sayısı (event_type, status ayrımıyla)",
+	}, []string{LabelType, "status"})
 )
 
 // ---- SEO Sync Metrics (FR-B8 / HT2 sertleştirme) ----

@@ -127,6 +127,15 @@ func buildPagerDutyPayload(notif Notification) ([]byte, string, error) {
 	if notif.Type == NotificationScoreDrop {
 		severity = "warning"
 	}
+	// Governance olayları: payload severity (critical/warning/high) PagerDuty severity'ye yansır
+	if s, ok := notif.Data["severity"].(string); ok && s != "" {
+		switch s {
+		case "critical":
+			severity = "critical"
+		case "warning", "high":
+			severity = "warning"
+		}
+	}
 	payload := map[string]interface{}{
 		"routing_key":  "geolens-alert",
 		"event_action": "trigger",
@@ -146,4 +155,68 @@ func buildPagerDutyPayload(notif Notification) ([]byte, string, error) {
 		return nil, "", err
 	}
 	return b, "application/json", nil
+}
+
+// buildGovernanceNotification constructs a webhook Notification from a Faz 4 governance event.
+// NotificationType olarak eventType taşınır (generic payload'da "event" alanına yansır).
+func buildGovernanceNotification(tenantID, workspaceID, eventType string, payload map[string]interface{}, kind WebhookKind, url string) Notification {
+	title, body := governanceEventMeta(eventType, payload)
+	return Notification{
+		TenantID:    tenantID,
+		WorkspaceID: workspaceID,
+		Type:        NotificationType(eventType),
+		Channel:     ChannelWebhook,
+		Title:       title,
+		Body:        body,
+		Data:        payload,
+		WebhookURL:  url,
+		WebhookKind: kind,
+		Status:      DeliveryPending,
+	}
+}
+
+// governanceEventMeta maps a governance event type to a human-readable title and body summary.
+// Bilinmeyen event tipleri için genel bir başlık döner (gelecekteki olaylar da taşınabilir).
+func governanceEventMeta(eventType string, payload map[string]interface{}) (string, string) {
+	str := func(k string) string {
+		if v, ok := payload[k].(string); ok {
+			return v
+		}
+		return ""
+	}
+	num := func(k string) float64 {
+		if v, ok := payload[k].(float64); ok {
+			return v
+		}
+		return 0
+	}
+
+	switch eventType {
+	case "guardrail.violation":
+		body := "Kural: " + str("rule_name")
+		if c := str("category"); c != "" {
+			body += " | Kategori: " + c
+		}
+		if a := str("action_taken"); a != "" {
+			body += " | Aksiyon: " + a
+		}
+		return "Guardrail İhlali Tespit Edildi", body
+	case "gate.check.decision":
+		return "Gate Kontrol Kararı", fmt.Sprintf("%s %s sürümü → %s (%s)",
+			str("entity_type"), str("version"), str("decision"), str("target_env"))
+	case "incident.opened":
+		return "Yeni Olay Açıldı", fmt.Sprintf("[%s] %s (%s)", str("severity"), str("title"), str("category"))
+	case "drift.alert.triggered":
+		return "Drift Uyarısı", fmt.Sprintf("%s: skor %.2f (%s, delta %.2f)",
+			str("metric"), num("drift_score"), str("severity"), num("delta"))
+	case "redteam.run.completed":
+		return "Red Team Çalışması Tamamlandı", fmt.Sprintf("Hedef: %s | Geçen: %.0f | Kalan: %.0f | Savunma Skoru: %.0f",
+			str("target_name"), num("passed"), num("failed"), num("defense_score"))
+	default:
+		body := str("detail")
+		if body == "" {
+			body = "Olay detayları için panoyu kontrol edin."
+		}
+		return "Yönetişim Olayı: " + eventType, body
+	}
 }

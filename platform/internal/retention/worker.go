@@ -131,7 +131,7 @@ func (w *Worker) archiveReports(ctx context.Context, tenantID string, cutoff tim
 	switch strategy {
 	case "delete":
 		_, err := w.pool.Exec(ctx, `
-			DELETE FROM governance.reports WHERE tenant_id = $1 AND created_at < $2
+			DELETE FROM measure.reports WHERE tenant_id = $1 AND created_at < $2
 		`, tenantID, cutoff)
 		return err
 	case "archive_s3":

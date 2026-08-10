@@ -230,6 +230,7 @@ func (h *Handler) Evaluate(w http.ResponseWriter, r *http.Request) {
 				"rule_id":      rule.ID,
 				"rule_name":    rule.Name,
 				"category":     rule.Category,
+				"severity":     rule.Severity,
 				"action_taken": actionTaken,
 			}, tenantID, idemKey); err != nil {
 				slog.Warn("guardrail olayı outbox'a yazılamadı", "rule_id", rule.ID, "error", err)

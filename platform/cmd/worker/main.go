@@ -175,7 +175,7 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		runGovernanceWorker(ctx, rdb, cfg.ConsumerGroup)
+		runGovernanceWorker(ctx, rdb, cfg.ConsumerGroup, deliverySvc)
 	}()
 
 	// Queue depth collector (periyodik XLEN ile kuyruk derinliği metrikleri)
@@ -258,9 +258,9 @@ func runWorker(ctx context.Context, pool *pgxpool.Pool, rdb *redis.Client, engin
 
 // runGovernanceWorker consumes Faz 4 governance events from q:governance (O-6).
 // Olaylar kaynak tablolarında (guardrail.evaluations, drift.alerts, vb.) zaten kalıcıdır;
-// bu tüketici telemetri toplar (GovernanceEventsTotal) ve mesajları ACK'ler.
-// Gelecekte webhook/bildirim tüketicisi buraya eklenebilir.
-func runGovernanceWorker(ctx context.Context, rdb *redis.Client, consumerGroup string) {
+// bu tüketici telemetri toplar (GovernanceEventsTotal), webhook bildirimlerini iletir
+// (deliverySvc.SendGovernanceEvent) ve mesajları ACK'ler.
+func runGovernanceWorker(ctx context.Context, rdb *redis.Client, consumerGroup string, deliverySvc delivery.Service) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -291,15 +291,16 @@ func runGovernanceWorker(ctx context.Context, rdb *redis.Client, consumerGroup s
 
 			for _, stream := range results {
 				for _, msg := range stream.Messages {
-					processGovernanceMessage(rdb, stream.Stream, msg.ID, msg.Values, consumerGroup)
+					processGovernanceMessage(ctx, rdb, stream.Stream, msg.ID, msg.Values, consumerGroup, deliverySvc)
 				}
 			}
 		}
 	}
 }
 
-// processGovernanceMessage processes a single q:governance message: metrik toplar ve ACK'ler.
-func processGovernanceMessage(rdb *redis.Client, stream, msgID string, values map[string]interface{}, consumerGroup string) {
+// processGovernanceMessage processes a single q:governance message: metrik toplar,
+// webhook bildirimi iletir ve ACK'ler.
+func processGovernanceMessage(ctx context.Context, rdb *redis.Client, stream, msgID string, values map[string]interface{}, consumerGroup string, deliverySvc delivery.Service) {
 	logger := slog.With("msg_id", msgID, "stream", stream)
 
 	eventType, _ := values["event"].(string)
@@ -312,6 +313,22 @@ func processGovernanceMessage(rdb *redis.Client, stream, msgID string, values ma
 	}
 
 	metrics.GovernanceEventsTotal.WithLabelValues(eventType, tenantID).Inc()
+
+	// Webhook iletimi (best-effort): dispatcher payload'ı "data" alanında taşır
+	payload := map[string]interface{}{}
+	if dataVal, ok := values["data"]; ok {
+		var dispatched struct {
+			Payload json.RawMessage `json:"payload"`
+		}
+		if err := json.Unmarshal([]byte(fmt.Sprintf("%v", dataVal)), &dispatched); err == nil && len(dispatched.Payload) > 0 {
+			_ = json.Unmarshal(dispatched.Payload, &payload)
+		}
+	}
+
+	if err := deliverySvc.SendGovernanceEvent(ctx, tenantID, eventType, payload); err != nil {
+		logger.Warn("governance webhook iletim hatası", "event_type", eventType, "error", err)
+	}
+
 	logger.Debug("governance olayı işlendi", "event_type", eventType, "tenant_id", tenantID)
 
 	ackMessage(rdb, stream, msgID, consumerGroup)
