@@ -124,6 +124,8 @@ END $$;
 -- mevcut DB'lerde measure.reports oluşmaz; pdf worker 'bekleyen rapor sorgu
 -- hatası' (42P01) üretir. Bu blok tabloyu idempotent şekilde tamamlar.
 -- ============================================================================
+CREATE SCHEMA IF NOT EXISTS measure;
+
 CREATE TABLE IF NOT EXISTS measure.reports (
     id              TEXT PRIMARY KEY,
     tenant_id       TEXT NOT NULL REFERENCES identity.tenants(id),

@@ -3,6 +3,8 @@
 package public
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"log/slog"
 	"net/http"
 	"time"
@@ -226,17 +228,24 @@ func (h *Handler) ListCitations(w http.ResponseWriter, r *http.Request) {
 }
 
 // ListReports handles GET /public/v1/reports?brand_id=xxx
-// Bir markaya ait rapor meta verilerini döndürür.
+// Kiracının hazır (ready) rapor meta verilerini döndürür.
+// FR-F5 async rapor akışının gerçek tablosu olan measure.reports üzerinden okur
+// (eski, hiç oluşturulmamış measurement_reports şeması yerine).
 func (h *Handler) ListReports(w http.ResponseWriter, r *http.Request) {
 	tenantID := httpmw.GetTenantID(r.Context())
 	brandID := r.URL.Query().Get("brand_id")
 
+	// params JSONB şekli (pdf_b64/file_data/s3_url/page_count) pdf paketi tarafından
+	// yazılır — şema değişirse internal/pdf/service.go GetReportData ile birlikte güncellenmeli.
 	query := `
-		SELECT r.id, r.type, r.file_name, r.page_count, r.generated_at
-		FROM measure.measurement_reports r
+		SELECT r.id, r.report_type, COALESCE(r.file_name, ''),
+		       COALESCE(CASE WHEN r.params->>'page_count' ~ '^[0-9]+$' THEN (r.params->>'page_count')::int ELSE 0 END, 0),
+		       r.created_at
+		FROM measure.reports r
 		WHERE r.tenant_id = $1
+			AND r.status = 'ready'
 			AND ($2 = '' OR r.brand_id = $2)
-		ORDER BY r.generated_at DESC
+		ORDER BY r.created_at DESC
 		LIMIT 50
 	`
 	rows, err := h.pool.Query(r.Context(), query, tenantID, brandID)
@@ -270,27 +279,59 @@ func (h *Handler) ListReports(w http.ResponseWriter, r *http.Request) {
 }
 
 // DownloadReport handles GET /public/v1/reports/{reportID}/download
-// Bir raporu PDF/CSV/Excel olarak indirir.
+// Hazır bir raporu PDF olarak indirir. Rapor verisi FR-F5 akışında
+// measure.reports.params içinde pdf_b64 (base64) veya file_data olarak saklanır;
+// s3_url varsa harici depolamaya yönlendirilir.
 func (h *Handler) DownloadReport(w http.ResponseWriter, r *http.Request) {
 	tenantID := httpmw.GetTenantID(r.Context())
 	reportID := chi.URLParam(r, "reportID")
 
-	var fileData []byte
-	var fileName, fileType string
+	var fileName, paramsJSON string
 	err := h.pool.QueryRow(r.Context(), `
-		SELECT report_data, file_name, mime_type
-		FROM measure.measurement_reports
-		WHERE id = $1 AND tenant_id = $2
-	`, reportID, tenantID).Scan(&fileData, &fileName, &fileType)
+		SELECT COALESCE(file_name, ''), params::text
+		FROM measure.reports
+		WHERE id = $1 AND tenant_id = $2 AND status = 'ready'
+	`, reportID, tenantID).Scan(&fileName, &paramsJSON)
 	if err != nil {
 		httputil.WriteError(w, http.StatusNotFound, "rapor bulunamadı")
 		return
 	}
 
-	w.Header().Set("Content-Type", fileType)
-	w.Header().Set("Content-Disposition", "attachment; filename=\""+fileName+"\"")
+	var params struct {
+		FileData []byte `json:"file_data"`
+		S3URL    string `json:"s3_url"`
+		PDFB64   string `json:"pdf_b64"`
+	}
+	if err := json.Unmarshal([]byte(paramsJSON), &params); err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, "rapor verisi çözümlenemedi")
+		return
+	}
+
+	if params.S3URL != "" {
+		http.Redirect(w, r, params.S3URL, http.StatusFound)
+		return
+	}
+
+	data := params.FileData
+	if params.PDFB64 != "" {
+		decoded, err := base64.StdEncoding.DecodeString(params.PDFB64)
+		if err != nil {
+			httputil.WriteError(w, http.StatusInternalServerError, "rapor verisi çözümlenemedi")
+			return
+		}
+		data = decoded
+	}
+	if len(data) == 0 {
+		httputil.WriteError(w, http.StatusNotFound, "rapor verisi bulunamadı")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/pdf")
+	if fileName != "" {
+		w.Header().Set("Content-Disposition", "attachment; filename=\""+fileName+"\"")
+	}
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write(fileData)
+	_, _ = w.Write(data)
 }
 
 // ListTrends handles GET /public/v1/trends?brand_id=xxx

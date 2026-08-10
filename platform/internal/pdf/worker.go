@@ -39,6 +39,9 @@ func processPendingReports(pool *db.Pool, svc Service) {
 	}
 	defer rows.Close()
 
+	// Tek geçişte işle: imleci iki kez dolaşmak ikinci döngüyü ölü kod yapar
+	// (raporlar 'generating'de takılı kalırdı). Satır başına: önce claim et
+	// (pending → generating), sonra üret ve ready/failed olarak güncelle.
 	for rows.Next() {
 		var id, tenantID, workspaceID, reportType, brandID, paramsJSON string
 		if err := rows.Scan(&id, &tenantID, &workspaceID, &reportType, &brandID, &paramsJSON); err != nil {
@@ -46,32 +49,18 @@ func processPendingReports(pool *db.Pool, svc Service) {
 			continue
 		}
 
-		// generating olarak işaretle
-		if _, err := pool.Exec(ctx, `
+		// generating olarak işaretle (yalnızca hâlâ pending ise). Başka bir worker
+		// zaten aldıysa 0 satır etkilenir — yarışı önlemek için işlem atlanır.
+		res, err := pool.Exec(ctx, `
 			UPDATE measure.reports SET status = 'generating', updated_at = now()
 			WHERE id = $1 AND status = 'pending'
-		`, id); err != nil {
+		`, id)
+		if err != nil {
 			slog.Warn("rapor durum güncelleme hatası", "id", id, "error", err)
-		}
-	}
-
-	if rows.Err() != nil {
-		slog.Warn("pdf worker rows iterasyon hatası", "error", rows.Err())
-	}
-
-	for rows.Next() {
-		var id, tenantID, workspaceID, reportType, brandID, paramsJSON string
-		if err := rows.Scan(&id, &tenantID, &workspaceID, &reportType, &brandID, &paramsJSON); err != nil {
-			slog.Warn("rapor satır okuma hatası", "error", err)
 			continue
 		}
-
-		// generating olarak işaretle
-		if _, err := pool.Exec(ctx, `
-			UPDATE measure.reports SET status = 'generating', updated_at = now()
-			WHERE id = $1 AND status = 'pending'
-		`, id); err != nil {
-			slog.Warn("rapor durum güncelleme hatası", "id", id, "error", err)
+		if res.RowsAffected() == 0 {
+			continue // başka bir worker zaten bu raporu üstlendi
 		}
 
 		var params map[string]string
@@ -125,6 +114,10 @@ func processPendingReports(pool *db.Pool, svc Service) {
 		}
 
 		slog.Info("rapor hazır", "id", id, "type", reportType, "size", len(result.Data))
+	}
+
+	if rows.Err() != nil {
+		slog.Warn("pdf worker rows iterasyon hatası", "error", rows.Err())
 	}
 }
 func markFailed(pool *db.Pool, id, errMsg string) {
