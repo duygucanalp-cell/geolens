@@ -4,17 +4,17 @@
 |---|---|
 | Doküman ID | 0303 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.2 |
+| Versiyon | 1.3 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
-| Tarih | 28 Temmuz 2026 |
-| İlişkili | 0302, 0301, 0304, 0305, 0306, 0310, 0511, 0416, 0417, 0418, 0419 |
+| Tarih | 04 Ağustos 2026 |
+| İlişkili | 0302, 0301, 0304, 0305, 0306, 0310, 0511, 0209, 0210, 0416, 0417, 0418, 0419 |
 
 ---
 
 ## 1. Amaç
 
-Bu doküman, 0302 Domain Model'de tanımlanan varlıkların hangi toplam kökleri (aggregate root) etrafında kümelendiğini, her toplamın değişmezlerini ve erişim kurallarını tanımlar. Amaç, veri tutarlılığı sınırlarını netleştirmek ve transaction kapsamını belirlemektir.
+Bu doküman, 0302 Domain Model'de tanımlanan varlıkların hangi toplam kökleri (aggregate root) etrafında kümelendiğini, her toplamın değişmezlerini ve erişim kurallarını tanımlar. Amaç, veri tutarlılığı sınırlarını netleştirmek ve transaction kapsamını belirlemektir. HT1 genişletmesi (v1.2) BC7-BC10 köklerini, Faz 4 genişletmesi (v1.3) BC11-BC13 köklerini kapsar (0302 v1.3 ile senkron).
 
 > **Kural:** Dış dünya bir bağlama yalnız toplam kökü üzerinden yazar. Toplam içi varlıklara doğrudan dışarıdan erişilmez.
 
@@ -43,6 +43,27 @@ Bu doküman, 0302 Domain Model'de tanımlanan varlıkların hangi toplam kökler
 | **17** | **Hallüsinasyon İşareti (HallucinationFlag)** | **BC10 Denetim ve Analiz** | **Transactional** |
 | **18** | **Gap Anlık Görüntüsü (GapSnapshot)** | **BC10 Denetim ve Analiz** | **Transactional** |
 | **19** | **Konu Kümesi (TopicCluster)** | **BC10 Denetim ve Analiz** | **Transactional** |
+| **20** | **Envanter Varlığı (RegistryEntity)** | **BC11 AI Yönetişimi** | **Transactional** |
+| **21** | **Kaçak AI Taraması (DiscoveryScan)** | **BC11 AI Yönetişimi** | **Transactional** |
+| **22** | **Guardrail Kuralı (GuardrailRule)** | **BC11 AI Yönetişimi** | **Transactional** |
+| **23** | **Politika Paketi (PolicyPack)** | **BC11 AI Yönetişimi** | **Transactional** |
+| **24** | **Önyargı Testi (BiasTest)** | **BC11 AI Yönetişimi** | **Transactional** |
+| **25** | **CI/CD Kapı Denetimi (GateCheck)** | **BC11 AI Yönetişimi** | **Transactional** |
+| **26** | **Açıklama Sonucu (ExplainResult)** | **BC11 AI Yönetişimi** | **Transactional** |
+| **27** | **Ajan İzi (AgentTrace)** | **BC11 AI Yönetişimi** | **Transactional** |
+| **28** | **Kırmızı Takım Senaryosu (RedTeamCase)** | **BC11 AI Yönetişimi** | **Transactional** |
+| **29** | **Kırmızı Takım Koşusu (RedTeamRun)** | **BC11 AI Yönetişimi** | **Transactional** |
+| **30** | **Prompt Denetimi (PromptAudit)** | **BC12 AI Operasyonları** | **Transactional** |
+| **31** | **Model Kıyaslaması (ModelBenchmark)** | **BC12 AI Operasyonları** | **Transactional** |
+| **32** | **Maliyet Kaydı (CostEntry)** | **BC12 AI Operasyonları** | **Transactional** |
+| **33** | **Kullanım Ölçümü (UsageMetric)** | **BC12 AI Operasyonları** | **Transactional** |
+| **34** | **Optimizasyon Önerisi (OptimizationRecommendation)** | **BC12 AI Operasyonları** | **Transactional** |
+| **35** | **Versiyon Kaydı (VersionEntry)** | **BC12 AI Operasyonları** | **Transactional** |
+| **36** | **Olay Kaydı (IncidentEvent)** | **BC12 AI Operasyonları** | **Transactional** |
+| **37** | **Sapma Gözlemi (DriftObservation)** | **BC12 AI Operasyonları** | **Transactional** |
+| **38** | **Sapma Uyarısı (DriftAlert)** | **BC12 AI Operasyonları** | **Transactional** |
+| **39** | **Fatura (BillingInvoice)** | **BC13 Faturalama** | **Transactional** |
+| **40** | **Stripe Müşterisi (StripeCustomer)** | **BC13 Faturalama** | **Transactional** |
 
 ---
 
@@ -241,6 +262,210 @@ Bu doküman, 0302 Domain Model'de tanımlanan varlıkların hangi toplam kökler
 | **Durum makinesi** | önerildi → planlandı → uygulandı |
 | **Transaction sınırı** | Tek TopicCluster transaction'ı; kullanıcı güncellemesi ayrı transaction |
 
+### 3.20 Envanter Varlığı (RegistryEntity) — BC11 (Faz 4)
+
+| Alan | Değer |
+|------|-------|
+| **Kök** | Envanter Varlığı |
+| **İç varlıklar** | Risk Değerlendirmesi (RiskAssessment) — yalnız ekle geçmiş |
+| **Değişmezler** | Risk sınıfı ve yaşam döngüsü enum'larıyla sınırlıdır (düşük/orta/yüksek/kritik; geliştirme→emekli) |
+| **Erişim kuralı** | Kiracı yöneticisi/editörü yazabilir; risk değerlendirmeleri yalnız eklemelidir |
+| **Transaction sınırı** | Varlık + ilk RiskDeğerlendirmesi tek transaction; sonraki değerlendirmeler ayrı transaction |
+
+### 3.21 Kaçak AI Taraması (DiscoveryScan) — BC11 (Faz 4)
+
+| Alan | Değer |
+|------|-------|
+| **Kök** | Kaçak AI Taraması |
+| **İç varlıklar** | Kaçak AI Bulgusu (DiscoveryFinding) |
+| **Değişmezler** | Bulgu yalnız tamamlanmış taramaya bağlanabilir; tarama sonucu (bulunan sayısı) bulgularla tutarlıdır |
+| **Erişim kuralı** | Worker (tarama profili) yazar; kullanıcı sorgular ve bulguları envantere aday gösterir |
+| **Durum makinesi** | bekliyor → çalışıyor → tamamlandı \| başarısız |
+
+### 3.22 Guardrail Kuralı (GuardrailRule) — BC11 (Faz 4)
+
+| Alan | Değer |
+|------|-------|
+| **Kök** | Guardrail Kuralı |
+| **İç varlıklar** | Guardrail Değerlendirmesi (GuardrailEvaluation) — yalnız ekle geçmiş |
+| **Değişmezler** | I17 (aksiyon yalnız eşleşen kuralda); desen regex/anahtar tipindedir, aksiyon block/flag/log |
+| **Erişim kuralı** | Yönetici/editör kural CRUD; değerlendirmeleri runtime (worker/scheduler) yazar |
+| **Transaction sınırı** | Kural ve değerlendirme ayrı transaction; değerlendirme yalnız ekle |
+
+### 3.23 Politika Paketi (PolicyPack) — BC11 (Faz 4)
+
+| Alan | Değer |
+|------|-------|
+| **Kök** | Politika Paketi |
+| **İç varlıklar** | Politika Kontrolü (PolicyControl) |
+| **Değişmezler** | I21 (kiracı × çerçeve tekil); kontrol durumu enum ile sınırlı (bekliyor/geçti/kaldı/uygun değil) |
+| **Erişim kuralı** | Yönetici uygular/seed'ler; uyum yüzdesi kontrollerin durumundan türetilir |
+| **Durum makinesi** | (kontrol) bekliyor → geçti \| kaldı \| uygun değil |
+| **Transaction sınırı** | Paket + N Kontrol tek transaction; framework çakışmasında ret (I21) |
+
+### 3.24 Önyargı Testi (BiasTest) — BC11 (Faz 4)
+
+| Alan | Değer |
+|------|-------|
+| **Kök** | Önyargı Testi |
+| **İç varlıklar** | — (adillik skoru, maksimum fark, öneriler — değer tipleri) |
+| **Değişmezler** | Adillik skoru 0-1 aralığında; maksimum fark 4/5 kuralıyla değerlendirilir |
+| **Erişim kuralı** | Worker (test profili) yazar; kullanıcı sorgular |
+
+### 3.25 CI/CD Kapı Denetimi (GateCheck) — BC11 (Faz 4)
+
+| Alan | Değer |
+|------|-------|
+| **Kök** | CI/CD Kapı Denetimi |
+| **İç varlıklar** | — (check_details JSON — değer tipi) |
+| **Değişmezler** | Karar onaylandı/işaretli/engelli üçlüsünden biridir; geçen denetim sayısı toplamı aşamaz; yalnız ekle |
+| **Erişim kuralı** | Yalnız gate servisi (deployment pipeline) yazar; kullanıcı geçmişi sorgular |
+| **Transaction sınırı** | Tek GateCheck transaction'ı; append-only |
+
+### 3.26 Açıklama Sonucu (ExplainResult) — BC11 (Faz 4)
+
+| Alan | Değer |
+|------|-------|
+| **Kök** | Açıklama Sonucu |
+| **İç varlıklar** | — (SHAP değerleri, özellik önemleri — değer tipleri) |
+| **Değişmezler** | Envanter Varlığı'na yabancı anahtarla bağlanır; yalnız ekle |
+| **Erişim kuralı** | Worker yazar; kullanıcı okur |
+
+### 3.27 Ajan İzi (AgentTrace) — BC11 (Faz 4)
+
+| Alan | Değer |
+|------|-------|
+| **Kök** | Ajan İzi |
+| **İç varlıklar** | Ajan Adımı (AgentStep) |
+| **Değişmezler** | Tamamlanan adım sayısı ≤ toplam adım; iz durumu adım durumlarıyla tutarlıdır |
+| **Erişim kuralı** | Worker/agent runtime yazar; kullanıcı izler |
+| **Durum makinesi** | çalışıyor → tamamlandı \| başarısız \| iptal edildi |
+| **Transaction sınırı** | İz başlatma tek transaction; adım güncellemeleri ayrı transaction (eventual) |
+
+### 3.28 Kırmızı Takım Senaryosu (RedTeamCase) — BC11 (Faz 4)
+
+| Alan | Değer |
+|------|-------|
+| **Kök** | Kırmızı Takım Senaryosu |
+| **İç varlıklar** | — |
+| **Değişmezler** | Kategori 8'li enum (jailbreak/prompt injection/rol yapma/kodlama/PII çıkarma/yanlış bilgi/reddi aşma/özel); payload boş olamaz |
+| **Erişim kuralı** | Yönetici/editör CRUD; varsayılan 8 senaryo seed'i yalnız boşken yazılır |
+
+### 3.29 Kırmızı Takım Koşusu (RedTeamRun) — BC11 (Faz 4)
+
+| Alan | Değer |
+|------|-------|
+| **Kök** | Kırmızı Takım Koşusu |
+| **İç varlıklar** | Kırmızı Takım Sonucu (RedTeamResult) |
+| **Değişmezler** | I18 (savunma skoru passed/total × 100); toplam = geçen + kalan; sonuçlar Senaryo'ya yabancı anahtarla bağlanır |
+| **Erişim kuralı** | Editör çalıştırır; koşu ve sonuçları yalnız okunur |
+| **Transaction sınırı** | Koşu + N Sonuç tek transaction; skor sonuçlardan türetilir |
+
+### 3.30 Prompt Denetimi (PromptAudit) — BC12 (Faz 4)
+
+| Alan | Değer |
+|------|-------|
+| **Kök** | Prompt Denetimi |
+| **İç varlıklar** | — (sorunlar JSON — değer tipi) |
+| **Değişmezler** | Durum geçti/işaretli/kaldı üçlüsünden biridir; yalnız ekle |
+| **Erişim kuralı** | Worker (denetim profili) yazar; kullanıcı okur |
+
+### 3.31 Model Kıyaslaması (ModelBenchmark) — BC12 (Faz 4)
+
+| Alan | Değer |
+|------|-------|
+| **Kök** | Model Kıyaslaması |
+| **İç varlıklar** | — |
+| **Değişmezler** | Doğruluk skoru 0-100; alıntı oranı 0-1; yalnız ekle |
+| **Erişim kuralı** | Worker (benchmark profili) yazar; kullanıcı okur |
+
+### 3.32 Maliyet Kaydı (CostEntry) — BC12 (Faz 4)
+
+| Alan | Değer |
+|------|-------|
+| **Kök** | Maliyet Kaydı |
+| **İç varlıklar** | — |
+| **Değişmezler** | I22 (yalnız ekle); işlem türü enum ile sınırlı; tutar + para birimi zorunlu |
+| **Erişim kuralı** | Otomatik (ölçüm/değerlendirme akışı) yazar; kullanıcı analitik okur |
+
+### 3.33 Kullanım Ölçümü (UsageMetric) — BC12 (Faz 4)
+
+| Alan | Değer |
+|------|-------|
+| **Kök** | Kullanım Ölçümü |
+| **İç varlıklar** | — |
+| **Değişmezler** | I22 (yalnız ekle); uç nokta/yöntem/durum kodu telemetri alanları zorunlu |
+| **Erişim kuralı** | API middleware yazar; yönetici analitik okur |
+
+### 3.34 Optimizasyon Önerisi (OptimizationRecommendation) — BC12 (Faz 4)
+
+| Alan | Değer |
+|------|-------|
+| **Kök** | Optimizasyon Önerisi |
+| **İç varlıklar** | — |
+| **Değişmezler** | Etki/çaba yüksek/orta/düşük; durum bekliyor/uygulandı/görmezden gelindi |
+| **Erişim kuralı** | Worker üretir; kullanıcı durumu günceller |
+| **Durum makinesi** | bekliyor → uygulandı \| görmezden gelindi |
+
+### 3.35 Versiyon Kaydı (VersionEntry) — BC12 (Faz 4)
+
+| Alan | Değer |
+|------|-------|
+| **Kök** | Versiyon Kaydı |
+| **İç varlıklar** | — |
+| **Değişmezler** | Eski/yeni sürüm alanları dolu; yalnız ekle denetim kaydı |
+| **Erişim kuralı** | Sürüm değişikliği yapan sistem bileşeni yazar; kullanıcı geçmişi okur |
+
+### 3.36 Olay Kaydı (IncidentEvent) — BC12 (Faz 4)
+
+| Alan | Değer |
+|------|-------|
+| **Kök** | Olay Kaydı |
+| **İç varlıklar** | — |
+| **Değişmezler** | Durum geçişleri enum ile sınırlı (açık→kapandı); çözüm notu yalnız çözüm/kapanış öncesi yazılır |
+| **Erişim kuralı** | Guardrail/denetim/gate kaynaklı otomatik veya manüel; atanan ve durum güncellenebilir |
+| **Durum makinesi** | açık → soruşturmada → hafifletildi → çözüldü → kapandı |
+
+### 3.37 Sapma Gözlemi (DriftObservation) — BC12 (Faz 4)
+
+| Alan | Değer |
+|------|-------|
+| **Kök** | Sapma Gözlemi |
+| **İç varlıklar** | — |
+| **Değişmezler** | I22 (yalnız ekle); değer ve pencere başlangıcı zorunlu |
+| **Erişim kuralı** | Otomatik (ölçüm/metrik akışı) yazar; kullanıcı zaman serisini okur |
+
+### 3.38 Sapma Uyarısı (DriftAlert) — BC12 (Faz 4)
+
+| Alan | Değer |
+|------|-------|
+| **Kök** | Sapma Uyarısı |
+| **İç varlıklar** | — |
+| **Değişmezler** | I19 (yalnız eşik aşımında üretilir); sapma skoru 0-100; önem bilgi/uyarı/kritik |
+| **Erişim kuralı** | Analiz servisi yazar; kullanıcı okur; Olay Kaydı'na (BC12) kaynak adayı |
+| **Durum makinesi** | üretildi → olaya bağlanabilir (BC12 olay akışına katılır) |
+
+### 3.39 Fatura (BillingInvoice) — BC13 (FR-A6 · HT2)
+
+| Alan | Değer |
+|------|-------|
+| **Kök** | Fatura |
+| **İç varlıklar** | — (KDV, GİB durumu, müşteri bilgileri — değer tipleri) |
+| **Değişmezler** | I20 (kuruş + izinli KDV {0,1,10,20} + ara toplam = toplam); GİB durumu akışı enum ile sınırlı |
+| **Erişim kuralı** | Stripe webhook yazar (senkron); kullanıcı görüntüler/indirir; RLS izolasyonu (ADR-004) |
+| **Durum makinesi** | draft → open → paid \| void \| uncollectible; GİB: none → pending → accepted \| rejected |
+| **Transaction sınırı** | Webhook olayı başına tek Fatura transaction'ı; e-Fatura gönderimi GİB durum güncellemesiyle ayrı transaction |
+
+### 3.40 Stripe Müşterisi (StripeCustomer) — BC13 (FR-A6 · HT2)
+
+| Alan | Değer |
+|------|-------|
+| **Kök** | Stripe Müşterisi |
+| **İç varlıklar** | — |
+| **Değişmezler** | tenant_id ↔ customer_id birebir; yalnız webhook olaylarında kiracı çözümü için kullanılır |
+| **Erişim kuralı** | Webhook yazar; RLS izolasyonu (ADR-004) |
+| **Transaction sınırı** | Tek satır; webhook olayı başına en fazla bir yazma |
+
 > **Alt varlık notu:** `BotAccessRecord` ve `SchemaAnalysis`, BC10 (Bot erişim kaydı ve şema analizi) entity'leri olarak 0302'de tanımlanmıştır; bunlar BC3'teki Denetim Koşusu (SiteAuditRun) toplamının iç varlıklarıdır (kaynak: Site Denetimi). Tek başlarına aggregate root değildirler.
 
 ---
@@ -268,6 +493,27 @@ Bu doküman, 0302 Domain Model'de tanımlanan varlıkların hangi toplam kökler
 | **Duygu Skoru** | **Marka** | **Yabancı anahtar (brand_id)** |
 | **Gap Anlık Görüntüsü** | **Marka, Rakip** | **Yabancı anahtar (brand_id, competitor_id)** |
 | **Hallüsinasyon İşareti** | **Marka** | **Yabancı anahtar (brand_id)** |
+| Envanter Varlığı | Kiracı | Yabancı anahtar (tenant_id) |
+| Açıklama Sonucu | Envanter Varlığı | Yabancı anahtar (entity_id) |
+| Kırmızı Takım Koşusu | Kırmızı Takım Senaryosu | Yabancı anahtar (case_id, sonuç üzerinden) |
+| Kaçak AI Taraması | Kiracı | Yabancı anahtar (tenant_id) |
+| Guardrail Kuralı | Kiracı | Yabancı anahtar (tenant_id) |
+| Politika Paketi | Kiracı | Yabancı anahtar (tenant_id) |
+| Önyargı Testi | Kiracı | Yabancı anahtar (tenant_id) |
+| CI/CD Kapı Denetimi | Kiracı | Yabancı anahtar (tenant_id) |
+| Ajan İzi | Kiracı | Yabancı anahtar (tenant_id) |
+| Kırmızı Takım Senaryosu | Kiracı | Yabancı anahtar (tenant_id) |
+| Prompt Denetimi | Kiracı | Yabancı anahtar (tenant_id) |
+| Model Kıyaslaması | Kiracı | Yabancı anahtar (tenant_id) |
+| Maliyet Kaydı | Kiracı | Yabancı anahtar (tenant_id) |
+| Kullanım Ölçümü | Kiracı | Yabancı anahtar (tenant_id) |
+| Optimizasyon Önerisi | Kiracı | Yabancı anahtar (tenant_id) |
+| Versiyon Kaydı | Kiracı | Yabancı anahtar (tenant_id) |
+| Olay Kaydı | Kiracı | Yabancı anahtar (tenant_id) |
+| Sapma Gözlemi | Kiracı | Yabancı anahtar (tenant_id) |
+| Sapma Uyarısı | Kiracı | Yabancı anahtar (tenant_id) |
+| Fatura | Kiracı | Yabancı anahtar (tenant_id, RLS) |
+| Stripe Müşterisi | Kiracı | Yabancı anahtar (tenant_id, RLS) |
 
 > **Kural:** Toplamlar arası referans yalnız yabancı anahtar (ID) üzerinden yapılır. Başka bir toplamın iç varlıklarına doğrudan erişilmez.
 
@@ -288,6 +534,13 @@ Bu doküman, 0302 Domain Model'de tanımlanan varlıkların hangi toplam kökler
 | **SEO bağlantısı** | **SEOConnection + OAuth2Token (şifreli)** | **Tek transaction; token yenileme ayrı transaction (yalnız token alanları)** |
 | **Duygu analizi** | **SentimentScore (1-N mention) tek transaction** | **Worker (sentiment profili) toplu yazma; hata durumunda kısmi sonuç kabul edilmez** |
 | **Gap analizi** | **GapSnapshot + 5 GapDetail + N GapRecommendation** | **Tek transaction UPSERT; aynı kombinasyon varsa güncelle** |
+| Envanter risk değerlendirmesi | RegistryEntity + RiskAssessment | İlk değerlendirme varlıkla aynı transaction; sonrakiler ayrı (append-only) |
+| Politika paketi uygulama | PolicyPack + N PolicyControl | Tek transaction; framework çakışması reddedilir (I21) |
+| Guardrail değerlendirmesi | GuardrailEvaluation tek transaction | Runtime akışı; eşleşme + aksiyon kaydı birlikte |
+| Kırmızı takım koşusu | RedTeamRun + N RedTeamResult | Tek transaction; savunma skoru sonuçlardan türetilir (I18) |
+| Ajan izi kapanışı | AgentTrace + adım güncellemeleri | İz başlatma tek transaction; adımlar ayrı transaction (eventual) |
+| Fatura senkronu | BillingInvoice tek transaction | Stripe webhook olayı başına bir yazma; e-Fatura GİB durumu ayrı transaction |
+| Gözlem yazma | CostEntry / UsageMetric / DriftObservation tek satır | Telemetri append-only; toplu yazım satır bazında commit edilir |
 
 ---
 
@@ -300,6 +553,10 @@ Bu doküman, 0302 Domain Model'de tanımlanan varlıkların hangi toplam kökler
 5. **0305 (Bounded Contexts)** her toplam kökünü ait olduğu bağlam paketine atar. Transaction sınırları modül sınırlarıyla çakışır.
 6. **SEOConnection** diğer toplamlardan farklı olarak şifreli token saklama zorunluluğu (I13) ve OAuth2 yenileme mekanizması nedeniyle özel bir transaction modeline sahiptir.
 7. **GapSnapshot**, UPSERT kullanan tek toplamdır. Aynı brand × competitor × period kombinasyonu tekrar hesaplandığında mevcut kayıt güncellenir; bu, gap analizinin periyodik doğasıyla uyumludur.
+8. **Faz 4 genişletmesi (v1.3):** toplam kök sayısı 19'dan 40'a çıktı — BC11 (10 kök), BC12 (9 kök), BC13 (2 kök). 0302 v1.3 bağlam haritasıyla birebir senkrondur.
+9. **Append-only yoğunluğu:** Yeni köklerin çoğu yalnız eklemelidir (GateCheck, ExplainResult, PromptAudit, ModelBenchmark, CostEntry, UsageMetric, VersionEntry, DriftObservation, RiskAssessment, GuardrailEvaluation, RedTeamRun). Bu, denetlenebilirlik ilkesini (I6/I22) gözlem ve güvenlik alanına taşır.
+10. **İzolasyon stratejisi:** BC13 (Fatura, Stripe Müşterisi) RLS ile izole edilir (ADR-004); BC11/BC12 kökleri handler WHERE koşullarıyla kiracı izolasyonu sağlar — 0302 v1.3 §9.9 ile senkron. Her iki strateji de I1 değişmezini sağlar.
+11. **RedTeamRun → RedTeamCase bağımlılığı:** Koşu, senaryo toplamına sonuçlar üzerinden bağlanır; savunma skoru koşu içi sonuçlardan türetilir (I18). Senaryo silinmesi ilişkili sonuçları kademeli sildiğinden kapanmış koşu skorlarının tutarlılığı HT2 kısıtlı-silme kararına bağlanmıştır (O-6).
 
 ---
 
@@ -312,6 +569,7 @@ Bu doküman, 0302 Domain Model'de tanımlanan varlıkların hangi toplam kökler
 | O-3 | ULID indeks performansı | ⏳ Pilot öncesi test. AVIP D-35 (ULID) onaylandı. |
 | O-4 | Hallüsinasyon İşareti (HallucinationFlag) ayrı toplam mı, SentimentScore altında mı? | ⏳ Mevcut karar: ayrı toplam (bağımsız yaşam döngüsü, doğrulama mekanizması). |
 | O-5 | SC Sorgu Verisi ve GA4 Ölçüm Verisi — ayrı toplam olarak kalmalı mı, SEOConnection altında mı? | ⏳ Mevcut karar: ayrı toplam (farklı schema ve yaşam döngüsü). |
+| O-6 | RedTeamCase silinmesi, ilişkili RedTeamResult'ları kademeli sildiği için kapanmış RedTeamRun savunma skorlarının tutarlılığını etkiler. Kısıtlı silme (yalnız koşusuz senaryo silinebilir) kuralı uygulanmalı mı? | ⏳ HT2'de karara bağlanır. |
 
 ### Devralınan AVIP Kararları
 
@@ -338,3 +596,4 @@ Bu doküman, 0302 Domain Model'de tanımlanan varlıkların hangi toplam kökler
 | 1.0 | 22.07.2026 | İlk yayın: 11 toplam kökü haritası, her toplam için detaylı tanım (iç varlıklar, değişmezler, erişim kuralları, durum makineleri), toplamlar arası referans kuralları, transaction kapsamı. 0302'den türetilmiştir. |
 | 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-74 (Redis Streams), D-54 (saklama), D-58 (KVKK silme). Devralınan Kararlar eklendi. |
 | 1.2 | 28.07.2026 | **HT1 aggregate genişletmesi:** BC7-BC10 için 8 yeni toplam kökü eklendi (ArchiveEntry, ArchiveExport, ConversationSnapshot, SEOConnection, SentimentScore, HallucinationFlag, GapSnapshot, TopicCluster). Toplam kök sayısı 11'den 19'a çıktı. Her yeni toplam için detaylı tanım (iç varlıklar, değişmezler, erişim kuralları, durum makineleri, transaction sınırları). BotAccessRecord ve SchemaAnalysis'in SiteAuditRun iç varlığı olduğu notu eklendi. ContentGap'in GapSnapshot iç varlığı olduğu notu eklendi. §4 referans kuralları BC7-BC10 toplamlarıyla genişletildi. §5 transaction kapsamına HT1 işlemleri eklendi. §6 çıkarımlar güncellendi. §7 açık sorulara O-4 (HallucinationFlag) ve O-5 (SC/GA4 veri modeli) eklendi. |
+| 1.3 | 04.08.2026 | **Faz 4 ve HT2 aggregate genişletmesi:** BC11 (10 kök), BC12 (9 kök), BC13 (2 kök) için 21 yeni toplam kökü eklendi (RegistryEntity, DiscoveryScan, GuardrailRule, PolicyPack, BiasTest, GateCheck, ExplainResult, AgentTrace, RedTeamCase, RedTeamRun, PromptAudit, ModelBenchmark, CostEntry, UsageMetric, OptimizationRecommendation, VersionEntry, IncidentEvent, DriftObservation, DriftAlert, BillingInvoice, StripeCustomer). Toplam kök sayısı 19'dan 40'a çıktı. Her toplam için detaylı tanım eklendi. §4 referans kuralları, §5 transaction kapsamı, §6 çıkarımlar güncellendi. §7 açık sorulara O-6 (kısıtlı senaryo silme) eklendi. 0302 v1.3, 0209 (Faz 4) ve 0210 (rakip kapanışı) ile senkron. |

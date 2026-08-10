@@ -14,7 +14,7 @@ const statusColors: Record<string, string> = {
   compliant: '#22c55e',
   non_compliant: '#ef4444',
   in_progress: '#eab308',
-  not_applicable: '#94a3b8',
+  not_applicable: 'var(--text-faint)',
 }
 
 const statusLabels: Record<string, string> = {
@@ -103,8 +103,8 @@ export function CompliancePanel() {
                     borderRadius: '999px',
                     fontSize: '0.8rem',
                     fontWeight: 600,
-                    background: '#eef2ff',
-                    color: '#6366f1',
+                    background: 'var(--accent-soft)',
+                    color: 'var(--accent)',
                     border: '1px solid #c7d2fe',
                   }}
                 >
@@ -158,7 +158,7 @@ export function CompliancePanel() {
               {evidence.map((item) => (
                 <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                   <td style={{ padding: '0.5rem', fontWeight: 600 }}>{item.name}</td>
-                  <td style={{ padding: '0.5rem', color: '#64748b' }}>{item.framework}</td>
+                  <td style={{ padding: '0.5rem', color: 'var(--text-muted)' }}>{item.framework}</td>
                   <td style={{ padding: '0.5rem' }}>
                     <span
                       style={{
@@ -167,14 +167,14 @@ export function CompliancePanel() {
                         borderRadius: '999px',
                         fontSize: '0.75rem',
                         fontWeight: 600,
-                        background: statusColors[item.status] ? `${statusColors[item.status]}20` : '#f1f5f9',
-                        color: statusColors[item.status] || '#64748b',
+                        background: statusColors[item.status] ? `${statusColors[item.status]}20` : 'var(--surface-hover)',
+                        color: statusColors[item.status] || 'var(--text-muted)',
                       }}
                     >
                       {statusLabels[item.status] || item.status}
                     </span>
                   </td>
-                  <td style={{ padding: '0.5rem', color: '#94a3b8', fontSize: '0.8rem' }}>
+                  <td style={{ padding: '0.5rem', color: 'var(--text-faint)', fontSize: '0.8rem' }}>
                     {new Date(item.updated_at).toLocaleDateString(dateLocale, {
                       day: 'numeric',
                       month: 'short',

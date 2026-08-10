@@ -40,43 +40,43 @@ export function AgentTracePanel({ workspaceId: _ws }: Props) {
     catch (e) { setError(e instanceof Error ? e.message : t('agenttrace.start_error')) }
   }
 
-  if (loading) return <div className="dashboard-loading">Trace'ler yükleniyor...</div>
+  if (loading) return <div className="dashboard-loading">{t('agenttrace.loading')}</div>
 
   return (
     <div className="rec-panel">
-      <div className="rec-header"><h3>🔍 Agent Tracing</h3><p className="rec-desc">Multi-step agent iş akışı takibi.</p></div>
+      <div className="rec-header"><h3>{t('agenttrace.title')}</h3><p className="rec-desc">{t('agenttrace.desc')}</p></div>
       {error && <div className="audit-error">{error}</div>}
 
       <div className="dashboard-filters">
         <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setSelectedTrace(null) }} className="filter-select">
-          <option value="">Tüm Durumlar</option>
-          <option value="running">Çalışıyor</option>
-          <option value="completed">Tamamlandı</option>
-          <option value="failed">Başarısız</option>
+          <option value="">{t('agenttrace.filter_all')}</option>
+          <option value="running">{t('agenttrace.status_running')}</option>
+          <option value="completed">{t('agenttrace.status_completed')}</option>
+          <option value="failed">{t('agenttrace.status_failed')}</option>
         </select>
-        <button className="refresh-btn" onClick={() => setShowStart(!showStart)}>{showStart ? 'İptal' : 'Yeni Trace'}</button>
+        <button className="refresh-btn" onClick={() => setShowStart(!showStart)}>{showStart ? t('agenttrace.cancel') : t('agenttrace.start_trace')}</button>
       </div>
 
       {showStart && (
-        <form onSubmit={handleStart} style={{ background: '#f8fafc', padding: '1rem', borderRadius: '10px', marginBottom: '1rem' }}>
+        <form onSubmit={handleStart} style={{ background: 'var(--surface-2)', padding: '1rem', borderRadius: '10px', marginBottom: '1rem' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <input className="notif-input" placeholder="Agent adı" value={agentName} onChange={e => setAgentName(e.target.value)} required />
-            <input className="notif-input" placeholder="Workflow adı (opsiyonel)" value={workflowName} onChange={e => setWorkflowName(e.target.value)} />
-            <button type="submit" className="audit-btn">Başlat</button>
+            <input className="notif-input" placeholder={t('agenttrace.agent_name_placeholder')} value={agentName} onChange={e => setAgentName(e.target.value)} required />
+            <input className="notif-input" placeholder={t('agenttrace.workflow_placeholder')} value={workflowName} onChange={e => setWorkflowName(e.target.value)} />
+            <button type="submit" className="audit-btn">{t('agenttrace.start_trace')}</button>
           </div>
         </form>
       )}
 
       {selectedTrace ? (
         <div>
-          <button className="link-btn" onClick={() => setSelectedTrace(null)} style={{ marginBottom: '1rem' }}>← Listeye Dön</button>
-          <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '10px', marginBottom: '1rem' }}>
+          <button className="link-btn" onClick={() => setSelectedTrace(null)} style={{ marginBottom: '1rem' }}>← {t('agenttrace.back')}</button>
+          <div style={{ background: 'var(--surface-2)', padding: '1rem', borderRadius: '10px', marginBottom: '1rem' }}>
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-              <div><strong>Agent:</strong> {selectedTrace.agent_name}</div>
-              <div><strong>Workflow:</strong> {selectedTrace.workflow_name || '-'}</div>
-              <div><strong>Durum:</strong> <span style={{ color: STATUS_COLORS[selectedTrace.status], fontWeight: 600 }}>{STATUS_LABELS[selectedTrace.status]}</span></div>
-              <div><strong>Adımlar:</strong> {selectedTrace.completed_steps}/{selectedTrace.total_steps}</div>
-              <div><strong>Süre:</strong> {selectedTrace.total_duration_ms}ms</div>
+              <div><strong>{t('agenttrace.table_agent')}:</strong> {selectedTrace.agent_name}</div>
+              <div><strong>{t('agenttrace.table_workflow')}:</strong> {selectedTrace.workflow_name || '-'}</div>
+              <div><strong>{t('agenttrace.table_status')}:</strong> <span style={{ color: STATUS_COLORS[selectedTrace.status], fontWeight: 600 }}>{STATUS_LABELS[selectedTrace.status]}</span></div>
+              <div><strong>{t('agenttrace.table_progress')}:</strong> {selectedTrace.completed_steps}/{selectedTrace.total_steps}</div>
+              <div><strong>{t('agenttrace.table_duration')}:</strong> {selectedTrace.total_duration_ms}ms</div>
             </div>
           </div>
           {selectedTrace.steps.map(s => (
@@ -88,7 +88,7 @@ export function AgentTracePanel({ workspaceId: _ws }: Props) {
                   <span className="rec-status-badge" style={{ background: STATUS_COLORS[s.status] + '20', color: STATUS_COLORS[s.status] }}>{STATUS_LABELS[s.status] || s.status}</span>
                 </div>
                 <h4 className="rec-title">{s.step_name}</h4>
-                <p className="rec-detail"><strong>Input:</strong> {s.input}<br /><strong>Output:</strong> {s.output}</p>
+                <p className="rec-detail"><strong>{t('agenttrace.input')}:</strong> {s.input}<br /><strong>{t('agenttrace.output')}:</strong> {s.output}</p>
                 <div className="rec-meta"><span className="rec-date">{s.duration_ms}ms</span></div>
               </div>
             </div>
@@ -96,24 +96,24 @@ export function AgentTracePanel({ workspaceId: _ws }: Props) {
         </div>
       ) : (
         <>
-          <div style={{ marginBottom: '0.5rem', color: '#64748b', fontSize: '0.85rem' }}>Toplam: {total} trace</div>
+          <div style={{ marginBottom: '0.5rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>{t('agenttrace.total', { count: total })}</div>
           {traces.length === 0 ? (
-            <div className="rec-empty"><div className="rec-empty-icon">🔍</div><h4>Henüz trace yok</h4></div>
+            <div className="rec-empty"><div className="rec-empty-icon">🔍</div><h4>{t('agenttrace.empty_title')}</h4></div>
           ) : (
             <div className="rec-list">
-              {traces.map(t => (
-                <div key={t.trace_id} className="rec-card" style={{ cursor: 'pointer' }} onClick={() => handleSelect(t.trace_id)}>
-                  <div className="rec-card-left"><div className="rec-severity-bar" style={{ backgroundColor: STATUS_COLORS[t.status] }} /></div>
+              {traces.map(tr => (
+                <div key={tr.trace_id} className="rec-card" style={{ cursor: 'pointer' }} onClick={() => handleSelect(tr.trace_id)}>
+                  <div className="rec-card-left"><div className="rec-severity-bar" style={{ backgroundColor: STATUS_COLORS[tr.status] }} /></div>
                   <div className="rec-card-content">
                     <div className="rec-card-header">
-                      <span className="rec-category-badge">{t.agent_name}</span>
-                      <span className="rec-status-badge" style={{ background: STATUS_COLORS[t.status] + '20', color: STATUS_COLORS[t.status] }}>{STATUS_LABELS[t.status]}</span>
+                      <span className="rec-category-badge">{tr.agent_name}</span>
+                      <span className="rec-status-badge" style={{ background: STATUS_COLORS[tr.status] + '20', color: STATUS_COLORS[tr.status] }}>{STATUS_LABELS[tr.status]}</span>
                     </div>
-                    <h4 className="rec-title">{t.workflow_name || t.agent_name}</h4>
+                    <h4 className="rec-title">{tr.workflow_name || tr.agent_name}</h4>
                     <div className="rec-meta">
-                      <span className="rec-date">{t.completed_steps}/{t.total_steps} adım</span>
-                      <span className="rec-date">{t.total_duration_ms}ms</span>
-                      <span className="rec-date">{new Date(t.started_at).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short' })}</span>
+                      <span className="rec-date">{tr.completed_steps}/{tr.total_steps} {t('agenttrace.steps_unit')}</span>
+                      <span className="rec-date">{tr.total_duration_ms}ms</span>
+                      <span className="rec-date">{new Date(tr.started_at).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short' })}</span>
                     </div>
                   </div>
                 </div>

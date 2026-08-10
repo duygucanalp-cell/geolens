@@ -76,7 +76,7 @@ export function PromptAuditPanel({ workspaceId: _ws }: Props) {
       </div>
 
       {showRun && (
-        <form onSubmit={handleRun} style={{ background: '#f8fafc', padding: '1rem', borderRadius: '10px', marginBottom: '1rem' }}>
+        <form onSubmit={handleRun} style={{ background: 'var(--surface-2)', padding: '1rem', borderRadius: '10px', marginBottom: '1rem' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <textarea
               className="notif-input"
@@ -103,19 +103,19 @@ export function PromptAuditPanel({ workspaceId: _ws }: Props) {
 
       {detail && (
         <div style={{ background: '#f0f9ff', padding: '1rem', borderRadius: '10px', marginBottom: '1rem' }}>
-          {detailLoading && <p style={{ fontSize: '0.85rem', color: '#64748b' }}>{t('common.loading')}</p>}
+          {detailLoading && <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{t('common.loading')}</p>}
           {!detailLoading && (
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
                   <strong style={{ fontSize: '1rem' }}>{t('promptaudit.detail_title')}</strong>
-                  <span className="rec-category-badge" style={{ marginLeft: '0.5rem', background: catColors[detail.category] || '#94a3b8', color: '#fff' }}>
+                  <span className="rec-category-badge" style={{ marginLeft: '0.5rem', background: catColors[detail.category] || 'var(--text-faint)', color: '#fff' }}>
                     {detail.category}
                   </span>
                 </div>
                 <button className="rec-dismiss-btn" onClick={() => { setDetail(null); setSelected(null) }}>✕</button>
               </div>
-              <p style={{ marginTop: '0.75rem', fontSize: '0.9rem', background: '#fff', padding: '0.5rem', borderRadius: '6px', border: '1px solid #e2e8f0', whiteSpace: 'pre-wrap' }}>
+              <p style={{ marginTop: '0.75rem', fontSize: '0.9rem', background: 'var(--surface)', padding: '0.5rem', borderRadius: '6px', border: '1px solid #e2e8f0', whiteSpace: 'pre-wrap' }}>
                 {detail.prompt_text}
               </p>
               <div className="rec-meta" style={{ marginTop: '0.5rem' }}>
@@ -126,7 +126,7 @@ export function PromptAuditPanel({ workspaceId: _ws }: Props) {
               {detail.findings.length > 0 && (
                 <div style={{ marginTop: '0.75rem' }}>
                   <strong style={{ fontSize: '0.85rem' }}>{t('promptaudit.findings')}</strong>
-                  <ul style={{ marginTop: '0.25rem', padding: '0 0 0 1rem', fontSize: '0.85rem', color: '#475569' }}>
+                  <ul style={{ marginTop: '0.25rem', padding: '0 0 0 1rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                     {detail.findings.map((f, i) => <li key={i}>{f}</li>)}
                   </ul>
                 </div>
@@ -158,7 +158,7 @@ export function PromptAuditPanel({ workspaceId: _ws }: Props) {
                 <div className="rec-card-header">
                   <span className="rec-category-badge">{a.category}</span>
                   <span className="rec-status-badge" style={{
-                    background: a.risk_score > 0.7 ? '#fef2f2' : a.risk_score > 0.4 ? '#fffbeb' : '#f0fdf4',
+                    background: a.risk_score > 0.7 ? 'var(--danger-bg)' : a.risk_score > 0.4 ? '#fffbeb' : 'var(--success-bg)',
                     color: a.risk_score > 0.7 ? '#ef4444' : a.risk_score > 0.4 ? '#eab308' : '#22c55e',
                   }}>
                     {t('promptaudit.risk')}: {(a.risk_score * 100).toFixed(0)}%

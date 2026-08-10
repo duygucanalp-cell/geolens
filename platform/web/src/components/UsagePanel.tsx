@@ -34,36 +34,36 @@ export function UsagePanel({ workspaceId: _ws }: Props) {
     }
   }
 
-  if (loading) return <div className="dashboard-loading">Kullanım verileri yükleniyor...</div>
-  if (error) return <div className="dashboard-error"><p>{error}</p><button onClick={loadData}>Tekrar Dene</button></div>
+  if (loading) return <div className="dashboard-loading">{t('usage.loading')}</div>
+  if (error) return <div className="dashboard-error"><p>{error}</p><button onClick={loadData}>{t('common.retry')}</button></div>
 
   return (
     <div className="monitoring-panel">
       <div className="monitoring-header">
-        <h3>📊 Kullanım Analitiği</h3>
-        <p className="monitoring-desc">API kullanım metrikleri, hata oranları ve performans.</p>
+        <h3>{t('usage.title')}</h3>
+        <p className="monitoring-desc">{t('usage.desc')}</p>
       </div>
 
       <div className="dashboard-filters">
         <select value={period} onChange={(e) => setPeriod(e.target.value as Period)} className="filter-select">
-          <option value="1d">Son 24 Saat</option>
-          <option value="7d">Son 7 Gün</option>
-          <option value="30d">Son 30 Gün</option>
-          <option value="90d">Son 90 Gün</option>
+          <option value="1d">{t('period.24h')}</option>
+          <option value="7d">{t('period.7d')}</option>
+          <option value="30d">{t('period.30d')}</option>
+          <option value="90d">{t('period.90d')}</option>
         </select>
-        <button className="refresh-btn" onClick={loadData}>Yenile</button>
+        <button className="refresh-btn" onClick={loadData}>{t('common.refresh')}</button>
       </div>
 
       {summary && (
         <div className="monitoring-quick-stats" style={{ marginBottom: '1.5rem' }}>
           <div className="quick-stat">
-            <span className="quick-stat-label">Toplam İstek</span>
-            <span style={{ fontSize: '1.5rem', fontWeight: 700, color: '#6366f1' }}>
+            <span className="quick-stat-label">{t('usage.total_requests')}</span>
+            <span style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--accent)' }}>
               {summary.total_requests}
             </span>
           </div>
           <div className="quick-stat">
-            <span className="quick-stat-label">Hata Oranı</span>
+            <span className="quick-stat-label">{t('usage.error_rate')}</span>
             <span style={{
               fontSize: '1.5rem', fontWeight: 700,
               color: summary.error_rate_pct > 5 ? '#ef4444' : summary.error_rate_pct > 1 ? '#eab308' : '#22c55e',
@@ -72,8 +72,8 @@ export function UsagePanel({ workspaceId: _ws }: Props) {
             </span>
           </div>
           <div className="quick-stat">
-            <span className="quick-stat-label">Ortalama Gecikme</span>
-            <span style={{ fontSize: '1.5rem', fontWeight: 700, color: '#6366f1' }}>
+            <span className="quick-stat-label">{t('usage.avg_latency')}</span>
+            <span style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--accent)' }}>
               {summary.avg_latency_ms.toFixed(0)}ms
             </span>
           </div>
@@ -82,15 +82,15 @@ export function UsagePanel({ workspaceId: _ws }: Props) {
 
       {summary && summary.top_endpoints.length > 0 && (
         <div style={{ marginBottom: '1.5rem' }}>
-          <h4 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.75rem', color: '#334155' }}>
-            En Çok Kullanılan Endpoint'ler
+          <h4 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.75rem', color: 'var(--text-strong)' }}>
+            {t('usage.top_endpoints')}
           </h4>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
-                <th style={{ padding: '0.5rem' }}>Endpoint</th>
-                <th style={{ padding: '0.5rem', textAlign: 'right' }}>İstek</th>
-                <th style={{ padding: '0.5rem', textAlign: 'right' }}>Ort. Gecikme</th>
+                <th style={{ padding: '0.5rem' }}>{t('usage.table_endpoint')}</th>
+                <th style={{ padding: '0.5rem', textAlign: 'right' }}>{t('usage.table_hits')}</th>
+                <th style={{ padding: '0.5rem', textAlign: 'right' }}>{t('usage.table_latency')}</th>
               </tr>
             </thead>
             <tbody>
@@ -108,17 +108,17 @@ export function UsagePanel({ workspaceId: _ws }: Props) {
 
       {metrics.length > 0 ? (
         <div>
-          <h4 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.75rem', color: '#334155' }}>
-            Son Metrikler
+          <h4 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.75rem', color: 'var(--text-strong)' }}>
+            {t('usage.recent_metrics')}
           </h4>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
-                <th style={{ padding: '0.5rem' }}>Endpoint</th>
-                <th style={{ padding: '0.5rem' }}>Method</th>
-                <th style={{ padding: '0.5rem', textAlign: 'right' }}>Durum</th>
-                <th style={{ padding: '0.5rem', textAlign: 'right' }}>Gecikme</th>
-                <th style={{ padding: '0.5rem' }}>Tarih</th>
+                <th style={{ padding: '0.5rem' }}>{t('usage.table_endpoint')}</th>
+                <th style={{ padding: '0.5rem' }}>{t('usage.table_method')}</th>
+                <th style={{ padding: '0.5rem', textAlign: 'right' }}>{t('usage.table_status')}</th>
+                <th style={{ padding: '0.5rem', textAlign: 'right' }}>{t('usage.table_latency')}</th>
+                <th style={{ padding: '0.5rem' }}>{t('usage.table_date')}</th>
               </tr>
             </thead>
             <tbody>
@@ -134,7 +134,7 @@ export function UsagePanel({ workspaceId: _ws }: Props) {
                     {m.status_code}
                   </td>
                   <td style={{ padding: '0.5rem', textAlign: 'right' }}>{m.latency_ms}ms</td>
-                  <td style={{ padding: '0.5rem', color: '#94a3b8', fontSize: '0.8rem' }}>
+                  <td style={{ padding: '0.5rem', color: 'var(--text-faint)', fontSize: '0.8rem' }}>
                     {new Date(m.recorded_at).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                   </td>
                 </tr>
@@ -145,8 +145,8 @@ export function UsagePanel({ workspaceId: _ws }: Props) {
       ) : (
         <div className="rec-empty">
           <div className="rec-empty-icon">📊</div>
-          <h4>Henüz kullanım verisi yok</h4>
-          <p>API kullanımı başladıkça metrikler burada görünecek.</p>
+          <h4>{t('usage.empty_title')}</h4>
+          <p>{t('usage.empty_desc')}</p>
         </div>
       )}
     </div>

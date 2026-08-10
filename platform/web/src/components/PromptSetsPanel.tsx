@@ -52,11 +52,11 @@ export function PromptSetsPanel({ workspaceId }: { workspaceId: string }) {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
               <strong style={{ fontSize: '1rem' }}>{selected.name}</strong>
-              {selected.description && <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.25rem' }}>{selected.description}</p>}
+              {selected.description && <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>{selected.description}</p>}
             </div>
             <button className="rec-dismiss-btn" onClick={() => setSelected(null)}>✕</button>
           </div>
-          <div style={{ marginTop: '0.75rem', background: '#fff', padding: '0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0', whiteSpace: 'pre-wrap', fontSize: '0.85rem' }}>
+          <div style={{ marginTop: '0.75rem', background: 'var(--surface)', padding: '0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0', whiteSpace: 'pre-wrap', fontSize: '0.85rem' }}>
             {selected.prompt_text}
           </div>
           <div className="rec-meta" style={{ marginTop: '0.5rem' }}>
@@ -82,7 +82,7 @@ export function PromptSetsPanel({ workspaceId }: { workspaceId: string }) {
               onClick={() => setSelected(ps)}
             >
               <div className="rec-card-left">
-                <div className="rec-severity-bar" style={{ backgroundColor: ps.is_active ? '#22c55e' : '#94a3b8' }} />
+                <div className="rec-severity-bar" style={{ backgroundColor: ps.is_active ? '#22c55e' : 'var(--text-faint)' }} />
               </div>
               <div className="rec-card-content">
                 <div className="rec-card-header">
@@ -92,7 +92,7 @@ export function PromptSetsPanel({ workspaceId }: { workspaceId: string }) {
                 <p className="rec-detail" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {ps.prompt_text}
                 </p>
-                {ps.description && <p className="rec-detail" style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{ps.description}</p>}
+                {ps.description && <p className="rec-detail" style={{ fontSize: '0.8rem', color: 'var(--text-faint)' }}>{ps.description}</p>}
               </div>
             </div>
           ))}

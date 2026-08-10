@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getBrands, getAuditFindings, triggerAudit } from '../api/client'
 import type { AuditFindingsCatalog } from '../api/client'
 import type { Brand } from '../types'
@@ -6,13 +7,6 @@ import type { Brand } from '../types'
 interface Props {
   workspaceId: string
   onStatus?: (msg: string | null) => void
-}
-
-const SEVERITY_LABELS: Record<string, string> = {
-  critical: 'Kritik',
-  high: 'Yüksek',
-  medium: 'Orta',
-  low: 'Düşük',
 }
 
 const SEVERITY_COLORS: Record<string, string> = {
@@ -23,17 +17,10 @@ const SEVERITY_COLORS: Record<string, string> = {
 }
 
 const SEVERITY_BG: Record<string, string> = {
-  critical: '#fef2f2',
+  critical: 'var(--danger-bg)',
   high: '#fff7ed',
   medium: '#fefce8',
-  low: '#f0fdf4',
-}
-
-const CATEGORY_LABELS: Record<string, string> = {
-  robots_txt: 'robots.txt Analizi',
-  bot_access: 'Bot Erişim Testi',
-  ssr: 'SSR & Meta Etiketler',
-  ssrf: 'Güvenlik Başlıkları',
+  low: 'var(--success-bg)',
 }
 
 const CATEGORY_ICONS: Record<string, string> = {
@@ -41,6 +28,20 @@ const CATEGORY_ICONS: Record<string, string> = {
   bot_access: '🔍',
   ssr: '📄',
   ssrf: '🛡️',
+}
+
+const SEVERITY_KEYS: Record<string, string> = {
+  critical: 'severity.critical',
+  high: 'severity.high',
+  medium: 'severity.medium',
+  low: 'severity.low',
+}
+
+const CATEGORY_KEYS: Record<string, string> = {
+  robots_txt: 'siteaudit.category_robots_txt',
+  bot_access: 'siteaudit.category_bot_access',
+  ssr: 'siteaudit.category_ssr',
+  ssrf: 'siteaudit.category_ssrf',
 }
 
 function flashMsg(onStatus: ((msg: string | null) => void) | undefined, msg: string, duration = 3000) {
@@ -51,6 +52,7 @@ function flashMsg(onStatus: ((msg: string | null) => void) | undefined, msg: str
 }
 
 export function SiteAuditPanel({ workspaceId, onStatus }: Props) {
+  const { t } = useTranslation()
   const [brands, setBrands] = useState<Brand[]>([])
   const [selectedBrandId, setSelectedBrandId] = useState('')
   const [findings, setFindings] = useState<AuditFindingsCatalog | null>(null)
@@ -80,12 +82,12 @@ export function SiteAuditPanel({ workspaceId, onStatus }: Props) {
     setAuditing(true)
     try {
       await triggerAudit(workspaceId, brand.id, brand.name, brand.website_url)
-      flashMsg(onStatus, 'Site denetimi tamamlandı', 3000)
+      flashMsg(onStatus, t('siteaudit.completed'), 3000)
       // Reload findings
       const data = await getAuditFindings(workspaceId, selectedBrandId)
       setFindings(data)
     } catch (err) {
-      flashMsg(onStatus, `Hata: ${err instanceof Error ? err.message : 'Denetim başarısız'}`, 5000)
+      flashMsg(onStatus, t('siteaudit.error', { error: err instanceof Error ? err.message : t('siteaudit.failed') }), 5000)
     } finally {
       setAuditing(false)
     }
@@ -101,9 +103,9 @@ export function SiteAuditPanel({ workspaceId, onStatus }: Props) {
   return (
     <div className="site-audit-panel">
       <div className="reports-section-title" style={{ marginTop: '2rem', marginBottom: '0.75rem' }}>
-        <h3 style={{ margin: 0 }}>🔍 Site Denetim Raporu</h3>
-        <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0.25rem 0 0' }}>
-          AI bot erişilebilirlik, SSR, güvenlik başlıkları ve robots.txt analizi.
+        <h3 style={{ margin: 0 }}>{t('siteaudit.title')}</h3>
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0.25rem 0 0' }}>
+          {t('siteaudit.desc')}
         </p>
       </div>
 
@@ -118,11 +120,11 @@ export function SiteAuditPanel({ workspaceId, onStatus }: Props) {
             border: '1px solid #e2e8f0',
             borderRadius: '8px',
             fontSize: '0.85rem',
-            color: '#1e293b',
-            background: '#fff',
+            color: 'var(--text)',
+            background: 'var(--surface)',
           }}
         >
-          <option value="">Marka seçin...</option>
+          <option value="">{t('siteaudit.select_brand')}</option>
           {brands.map(b => (
             <option key={b.id} value={b.id}>{b.name}</option>
           ))}
@@ -134,24 +136,24 @@ export function SiteAuditPanel({ workspaceId, onStatus }: Props) {
           className="reports-generate-btn"
           style={{ whiteSpace: 'nowrap' }}
         >
-          {auditing ? 'Denetleniyor...' : 'Denetim Başlat'}
+          {auditing ? t('siteaudit.running') : t('siteaudit.run')}
         </button>
       </div>
 
       {/* Loading */}
       {loading && (
-        <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b', fontSize: '0.85rem' }}>
-          Bulgular yükleniyor...
+        <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+          {t('siteaudit.loading')}
         </div>
       )}
 
       {/* No findings (brand selected but no audit run yet) */}
       {!loading && selectedBrandId && !findings && (
-        <div className="reports-action-card" style={{ background: '#f8fafc' }}>
+        <div className="reports-action-card" style={{ background: 'var(--surface-2)' }}>
           <div className="reports-action-icon">📋</div>
           <div className="reports-action-info">
-            <h4>Henüz Denetim Yapılmamış</h4>
-            <p>Bu marka için henüz site denetimi yapılmamış. "Denetim Başlat" butonuna tıklayarak analizi başlatın.</p>
+            <h4>{t('siteaudit.not_run_title')}</h4>
+            <p>{t('siteaudit.not_run_desc')}</p>
           </div>
         </div>
       )}
@@ -177,7 +179,7 @@ export function SiteAuditPanel({ workspaceId, onStatus }: Props) {
               color: '#fff',
               textAlign: 'center'
             }}>
-              <div style={{ fontSize: '0.7rem', opacity: 0.8, marginBottom: '0.25rem' }}>Genel Skor</div>
+              <div style={{ fontSize: '0.7rem', opacity: 0.8, marginBottom: '0.25rem' }}>{t('siteaudit.overall_score')}</div>
               <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>
                 {findings.overall_score.toFixed(0)}
               </div>
@@ -191,7 +193,7 @@ export function SiteAuditPanel({ workspaceId, onStatus }: Props) {
                 textAlign: 'center'
               }}>
                 <div style={{ fontSize: '0.7rem', opacity: 0.8, marginBottom: '0.25rem' }}>
-                  {SEVERITY_LABELS[sev]}
+                  {t(SEVERITY_KEYS[sev])}
                 </div>
                 <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>
                   {severityCount(sev)}
@@ -208,32 +210,32 @@ export function SiteAuditPanel({ workspaceId, onStatus }: Props) {
             }}>
               <div className="reports-action-icon">{CATEGORY_ICONS[cat]}</div>
               <div className="reports-action-info">
-                <h4>{CATEGORY_LABELS[cat]}</h4>
+                <h4>{t(CATEGORY_KEYS[cat])}</h4>
                 {hasIssues(cat) ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.4rem' }}>
                     {findings.catalog[cat]!.map((item, i) => (
                       <div key={i} style={{
-                        background: SEVERITY_BG[item.severity] || '#f8fafc',
+                        background: SEVERITY_BG[item.severity] || 'var(--surface-2)',
                         borderRadius: '8px',
                         padding: '0.6rem 0.8rem',
-                        border: `1px solid ${SEVERITY_COLORS[item.severity] || '#e2e8f0'}33`,
+                        border: `1px solid ${SEVERITY_COLORS[item.severity] || 'var(--border)'}33`,
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.2rem' }}>
                           <span style={{
-                            background: SEVERITY_COLORS[item.severity] || '#64748b',
+                            background: SEVERITY_COLORS[item.severity] || 'var(--text-muted)',
                             color: '#fff',
                             fontSize: '0.65rem',
                             padding: '0.1rem 0.4rem',
                             borderRadius: '4px',
                             fontWeight: 600,
                           }}>
-                            {SEVERITY_LABELS[item.severity] || item.severity}
+                            {SEVERITY_KEYS[item.severity] ? t(SEVERITY_KEYS[item.severity]) : item.severity}
                           </span>
-                          <span style={{ fontWeight: 600, fontSize: '0.85rem', color: '#1e293b' }}>
+                          <span style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text)' }}>
                             {item.title}
                           </span>
                         </div>
-                        <p style={{ margin: '0.2rem 0', fontSize: '0.78rem', color: '#475569' }}>
+                        <p style={{ margin: '0.2rem 0', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
                           {item.detail}
                         </p>
                         {item.recommendation && (
@@ -246,7 +248,7 @@ export function SiteAuditPanel({ workspaceId, onStatus }: Props) {
                   </div>
                 ) : (
                   <p style={{ fontSize: '0.8rem', color: '#22c55e' }}>
-                    ✓ Sorun bulunamadı
+                    {t('siteaudit.no_issues')}
                   </p>
                 )}
               </div>

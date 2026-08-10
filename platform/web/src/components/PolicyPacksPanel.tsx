@@ -31,22 +31,22 @@ export function PolicyPacksPanel({ workspaceId: _ws }: Props) {
     catch (e) { setError(e instanceof Error ? e.message : t('policy.update_error')) }
   }
 
-  if (loading) return <div className="dashboard-loading">Policy paketleri yükleniyor...</div>
+  if (loading) return <div className="dashboard-loading">{t('policy.loading')}</div>
 
   return (
     <div className="rec-panel">
-      <div className="rec-header"><h3>📜 Policy Packs</h3><p className="rec-desc">Uyumluluk çerçeveleri ve kontrol listeleri.</p></div>
+      <div className="rec-header"><h3>{t('policy.title')}</h3><p className="rec-desc">{t('policy.desc')}</p></div>
       {error && <div className="audit-error">{error}</div>}
 
       {selectedPack ? (
         <div>
-          <button className="link-btn" onClick={() => { setSelectedPack(null); setControls([]) }} style={{ marginBottom: '1rem' }}>← Paket Listesi</button>
-          <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '10px', marginBottom: '1rem' }}>
+          <button className="link-btn" onClick={() => { setSelectedPack(null); setControls([]) }} style={{ marginBottom: '1rem' }}>{t('policy.back')}</button>
+          <div style={{ background: 'var(--surface-2)', padding: '1rem', borderRadius: '10px', marginBottom: '1rem' }}>
             <h4 style={{ fontWeight: 600 }}>{selectedPack.name}</h4>
-            <p style={{ color: '#64748b', fontSize: '0.85rem' }}>{selectedPack.description} · v{selectedPack.version}</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{selectedPack.description} · v{selectedPack.version}</p>
           </div>
           {controls.length === 0 ? (
-            <div className="rec-empty"><h4>Henüz kontrol yok</h4></div>
+            <div className="rec-empty"><h4>{t('policy.empty_controls')}</h4></div>
           ) : (
             <div className="rec-list">
               {controls.map(c => (
@@ -74,16 +74,16 @@ export function PolicyPacksPanel({ workspaceId: _ws }: Props) {
       ) : (
         <>
           {packs.length === 0 ? (
-            <div className="rec-empty"><div className="rec-empty-icon">📜</div><h4>Henüz policy paketi yok</h4></div>
+            <div className="rec-empty"><div className="rec-empty-icon">📜</div><h4>{t('policy.empty_title')}</h4></div>
           ) : (
             <div className="rec-list">
               {packs.map(p => (
                 <div key={p.id} className="rec-card" style={{ cursor: 'pointer' }} onClick={() => handleSelectPack(p)}>
-                  <div className="rec-card-left"><div className="rec-severity-bar" style={{ backgroundColor: p.enabled ? '#6366f1' : '#94a3b8' }} /></div>
+                  <div className="rec-card-left"><div className="rec-severity-bar" style={{ backgroundColor: p.enabled ? 'var(--accent)' : 'var(--text-faint)' }} /></div>
                   <div className="rec-card-content">
                     <div className="rec-card-header">
                       <span className="rec-category-badge" style={{ fontWeight: 600 }}>{FRAMEWORK_LABELS[p.framework] || p.framework}</span>
-                      <span className="rec-status-badge" style={{ background: p.enabled ? '#dcfce7' : '#f1f5f9', color: p.enabled ? '#22c55e' : '#94a3b8' }}>{p.enabled ? t('guardrails.enabled') : t('guardrails.disabled')}</span>
+                      <span className="rec-status-badge" style={{ background: p.enabled ? 'var(--success-soft)' : 'var(--surface-hover)', color: p.enabled ? '#22c55e' : 'var(--text-faint)' }}>{p.enabled ? t('guardrails.enabled') : t('guardrails.disabled')}</span>
                     </div>
                     <h4 className="rec-title">{p.name}</h4>
                     <p className="rec-detail">{p.description}</p>

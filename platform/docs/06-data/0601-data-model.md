@@ -61,7 +61,7 @@ Girdi (ölçüm) → Ham veri (S3) → Meta (PG) → Skor (PG) → İçgörü (P
 | Tablo | Aylık Büyüme | 6 Ay Sonra | Not |
 |-------|:------------:|:----------:|-----|
 | measurement_jobs | 3.000 | 18.000 | 10 kiracı × günlük |
-| raw_responses | 9.000 | 54.000 | 3 motor × 3 tekrar |
+| raw_responses | 9.000 | 54.000 | 3 motor (MVP tabanı) × 3 tekrar |
 | scores | 9.000 | 54.000 | Her ölçümden |
 | citations | 18.000 | 108.000 | Motor başına 2-5 alıntı |
 | audit_log | 15.000 | 90.000 | API istekleri + işlemler |
@@ -81,3 +81,4 @@ Girdi (ölçüm) → Ham veri (S3) → Meta (PG) → Skor (PG) → İçgörü (P
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: veri kategorileri, akış, sahiplik, hacim tahminleri. |
+| 1.1 | 04.08.2026 | **Motor senkronu:** §5 hacim tahminlerindeki "3 motor" notu "3 motor (MVP tabanı)" olarak işaretlendi — üretimde 8 motor vardır (0308 v1.3); hacim değerleri MVP tabanına aittir. |

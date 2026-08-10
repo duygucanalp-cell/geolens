@@ -4,11 +4,11 @@
 |---|---|
 | Doküman ID | 0409 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.1 |
+| Versiyon | 1.3 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
-| Tarih | 22 Temmuz 2026 |
-| İlişkili | 0404, 0407, 0410, 0411, 0309, 0310, 0204 |
+| Tarih | 04 Ağustos 2026 |
+| İlişkili | 0404, 0407, 0410, 0411, 0308, 0309, 0310, 0204 |
 
 ---
 
@@ -69,11 +69,17 @@ Skor her motor için ayrı hesaplanır ve birleşik skor aşağıdaki gibi üret
 
 | Motor | Varsayılan Ağırlık | Gerekçe |
 |:-----:|:------------------:|---------|
-| ChatGPT | %35 | TR'de en yaygın AI motoru |
-| Gemini | %30 | Google ekosistemi |
-| Perplexity | %20 | Teknik kitle |
-| Claude | %10 | (HT1) |
-| Grok | %5 | (HT1) |
+| Perplexity | 0.30 | Tier 1, web arama |
+| ChatGPT | 0.30 | Tier 2, search grounding — TR'de en yaygın |
+| Gemini | 0.25 | Tier 1, Google Search grounding |
+| Google AI Overview | 0.10 | Tier 3, directional — Gemini vekili |
+| Claude | 0.05 | Tier 2 — HT1 üretimde |
+| Grok | 0.05 | Tier 2 — HT1 üretimde |
+| Mistral | 0.05 | Tier 2 — HT1 üretimde |
+| Copilot | 0.05 | Tier 3 — HT1 üretimde |
+| Google AI Mode | 0 (opsiyonel) | Tier 3, directional — Faz 4 üretimde |
+
+> **Kod gerçeği (v1.3):** Motor ağırlıkları 0309 §6.2 ile aynıdır. Mevcut `internal/measure/service.go` motor kırılımını `computeEngineBreakdown()` ile varlık tabanlı hesaplar (içerik varsa 75, yoksa 40); per-motor ağırlıklı ortalama tasarım hedefidir. 0308 v1.3 ile senkron: 8 motor (7 adaptör + AI Mode) üretimde.
 
 ---
 
@@ -122,3 +128,4 @@ Her skor aşağıdaki etiketleri taşır:
 | 1.0 | 22.07.2026 | İlk yayın: 4 bileşenli skor modeli, formül, motor kırılımı, skor etiketleri. |
 | 1.1 | 23.07.2026 | Devralınan AVIP Kararları eklendi: D-30 (örnekleme n=3), D-31 (anlamlılık), D-32 (devralma), D-89 (skor bileşen adları). |
 | 1.2 | 27.07.2026 | Turkcell RFP kapsamında genişletme: 7 bileşenli skor modeline geçiş (Appearance Rate, Sentiment, Competitive Visibility eklendi). Per-platform metrikler (Visibility Position, Citation Presence, Mention Frequency, Recommendation Rate, Prompt Coverage Score) eklendi. Skor etiketlerine sentiment, hallüsinasyon ve conversation replay ID eklendi. |
+| 1.3 | 04.08.2026 | **Motor senkronu:** §4 motor kırılımı 0309 §6.2 ve 0308 v1.3 ile hizalandı — 9 motor yüzeyi (8 motor: 7 adaptör + AI Mode; Google AI Overview gemini yüzeyi). Kod gerçeği notu eklendi (`computeEngineBreakdown` varlık tabanlı). |

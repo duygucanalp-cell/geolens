@@ -31,9 +31,9 @@ export function MonitoringPanel({ workspaceId: _workspaceId }: MonitoringPanelPr
       setHealthLoading(true)
       const res = await fetch('/health')
       const data = await res.json()
-      setHealthStatus(data.status === 'ok' ? '✅ Healthy' : '⚠️ Degraded')
+      setHealthStatus(data.status === 'ok' ? t('monitoring.healthy') : t('monitoring.degraded'))
     } catch {
-      setHealthStatus('❌ Unreachable')
+      setHealthStatus(t('monitoring.unreachable'))
     } finally {
       setHealthLoading(false)
     }
@@ -42,8 +42,8 @@ export function MonitoringPanel({ workspaceId: _workspaceId }: MonitoringPanelPr
   const METRICS: MetricService[] = [
     { title: 'Prometheus', value: '9090', desc: t('monitoring.metrics_desc'), icon: '📊', color: '#e6522c', url: 'http://localhost:9090' },
     { title: 'Grafana', value: '4000', desc: t('monitoring.grafana_desc'), icon: '📈', color: '#f46800', url: 'http://localhost:4000' },
-    { title: 'API Metrics', value: '/metrics', desc: t('monitoring.metrics_endpoint_desc'), icon: '🔢', color: '#6366f1' },
-    { title: 'Health Check', value: healthLoading ? '...' : (healthStatus || '/health'), desc: t('monitoring.health_desc'), icon: healthLoading ? '⏳' : (healthStatus?.startsWith('✅') ? '💚' : '❤️‍🔥'), color: healthStatus?.startsWith('✅') ? '#22c55e' : (healthStatus?.startsWith('⚠️') ? '#eab308' : '#ef4444') },
+    { title: t('monitoring.api_metrics_title'), value: '/metrics', desc: t('monitoring.metrics_endpoint_desc'), icon: '🔢', color: 'var(--accent)' },
+    { title: t('monitoring.health_title'), value: healthLoading ? '...' : (healthStatus || '/health'), desc: t('monitoring.health_desc'), icon: healthLoading ? '⏳' : (healthStatus?.startsWith('✅') ? '💚' : '❤️‍🔥'), color: healthStatus?.startsWith('✅') ? '#22c55e' : (healthStatus?.startsWith('⚠️') ? '#eab308' : '#ef4444') },
   ]
 
   const ALARM_LIST = [
@@ -60,7 +60,7 @@ export function MonitoringPanel({ workspaceId: _workspaceId }: MonitoringPanelPr
     <div className="monitoring-panel">
       <div className="monitoring-header">
         <h3>{t('monitoring.title')}</h3>
-        <p className="monitoring-desc">Prometheus metrik altyapısı ile API, kuyruk ve motor performansını izleyin.</p>
+        <p className="monitoring-desc">{t('monitoring.desc')}</p>
       </div>
 
       {/* Service Cards */}
@@ -90,30 +90,30 @@ export function MonitoringPanel({ workspaceId: _workspaceId }: MonitoringPanelPr
 
       {/* Quick Stats */}
       <div className="monitoring-section">
-        <h4>📊 Hızlı Metrikler</h4>
+        <h4>{t('monitoring.quick_metrics')}</h4>
         <div className="monitoring-quick-stats">
           <div className="quick-stat">
-            <span className="quick-stat-label">API Metrikleri</span>
+            <span className="quick-stat-label">{t('monitoring.api_metrics')}</span>
             <ul className="quick-stat-list">
-              <li><code>geolens_http_requests_total</code> — Toplam istek sayısı</li>
-              <li><code>geolens_http_request_duration_seconds</code> — İstek süresi dağılımı</li>
-              <li><code>geolens_http_requests_in_flight</code> — Anlık işlenen istek</li>
+              <li><code>geolens_http_requests_total</code> — {t('monitoring.total_requests_desc')}</li>
+              <li><code>geolens_http_request_duration_seconds</code> — {t('monitoring.request_duration_desc')}</li>
+              <li><code>geolens_http_requests_in_flight</code> — {t('monitoring.in_flight_desc')}</li>
             </ul>
           </div>
           <div className="quick-stat">
-            <span className="quick-stat-label">Motor Metrikleri</span>
+            <span className="quick-stat-label">{t('monitoring.engine_metrics')}</span>
             <ul className="quick-stat-list">
-              <li><code>geolens_engine_calls_total</code> — Motor çağrı sayısı</li>
-              <li><code>geolens_engine_calls_failed_total</code> — Başarısız çağrı</li>
-              <li><code>geolens_engine_call_duration_seconds</code> — Çağrı süresi</li>
+              <li><code>geolens_engine_calls_total</code> — {t('monitoring.engine_total_desc')}</li>
+              <li><code>geolens_engine_calls_failed_total</code> — {t('monitoring.engine_failed_desc')}</li>
+              <li><code>geolens_engine_call_duration_seconds</code> — {t('monitoring.engine_duration_desc')}</li>
             </ul>
           </div>
           <div className="quick-stat">
-            <span className="quick-stat-label">Kuyruk Metrikleri</span>
+            <span className="quick-stat-label">{t('monitoring.queue_metrics')}</span>
             <ul className="quick-stat-list">
-              <li><code>geolens_queue_messages_produced_total</code> — Üretilen mesaj</li>
-              <li><code>geolens_queue_messages_consumed_total</code> — Tüketilen mesaj</li>
-              <li><code>geolens_queue_depth</code> — Kuyruk derinliği</li>
+              <li><code>geolens_queue_messages_produced_total</code> — {t('monitoring.queue_produced_desc')}</li>
+              <li><code>geolens_queue_messages_consumed_total</code> — {t('monitoring.queue_consumed_desc')}</li>
+              <li><code>geolens_queue_depth</code> — {t('monitoring.queue_depth_desc')}</li>
             </ul>
           </div>
         </div>

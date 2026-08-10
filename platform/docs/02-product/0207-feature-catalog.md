@@ -4,10 +4,10 @@
 |---|---|
 | Doküman ID | 0207 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.3 |
+| Versiyon | 1.5 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Product |
-| Tarih | 27 Temmuz 2026 |
+| Tarih | 03 Ağustos 2026 |
 | İlişkili | 0204, 0205, 0206, 0004, 0301-0312, **0419** |
 
 ---
@@ -55,7 +55,7 @@ Her özellik aşağıdaki alanlarla kaydedilir:
 | FR-A3 | Oturum yönetimi | Güvenli giriş/çıkış, parola sıfırlama akışı | 🟢 | MVP | Tümü |
 | FR-A4 | SSO/SAML | Kurumsal tek oturum açma (SAML/SSO) | 🔴 | Kurumsal | Enterprise |
 | FR-A5 | Paket hakları | Sunucu tarafında hak denetimi, kapsam dışı işlev çağrıları reddedilir | 🟢 | MVP | Tümü |
-| FR-A6 | Self-serve yükseltme | Paket yükseltme akışı, ödeme altyapısı | 🔴 | HT2 | Tümü |
+| FR-A6 | Self-serve yükseltme | Paket yükseltme akışı, ödeme altyapısı | 🟢 | HT2 | Tümü |
 
 ### 3.2 Yapılandırma ve Kurulum
 
@@ -87,8 +87,8 @@ Her özellik aşağıdaki alanlarla kaydedilir:
 | FR-D2 | Alıntı/kaynak analizi | Alıntı listesi, kaynak sayfaya tıklanabilir bağlantı | 🟢 | MVP | Tümü |
 | FR-D3 | Rakip kıyası | Tanımlı rakiplerle temel skor karşılaştırması | 🟡 | MVP (dar.) | Pro+ |
 | FR-D4 | Zaman serisi | Skor ve görünürlük zaman serisi grafiği | 🟢 | MVP | Tümü |
-| FR-D5 | Benchmark bağlamı | Anonim toplulaştırılmış sektör kıyası (≥5 kiracı) | 🔴 | HT2 | Business+ |
-| FR-D6 | Çok müşteri panoraması | Ajans görünümünde tüm müşterilerin grafik panoraması | 🔴 | HT1 | Business |
+| FR-D5 | Benchmark bağlamı | Anonim toplulaştırılmış sektör kıyası (≥5 kiracı) | 🟢 | HT2 | Business+ |
+| FR-D6 | Çok müşteri panoraması | Ajans görünümünde tüm müşterilerin grafik panoraması | 🟢 | HT1 | Business |
 | **FR-D7** | **Sentiment/algı skoru** | AI yanıtlarındaki duygu durumu tespiti | **🟢** | **MVP** | **Tümü** |
 | **FR-D8** | **Hallüsinasyon tespiti** | AI motorlarının yanlış bilgi üretimini işaretleme | **🟢** | **MVP** | **Tümü** |
 | **FR-D9** | **Per-platform metrikler** | Visibility Position, Citation Presence, Mention Frequency, Recommendation Rate per motor | **🟢** | **MVP** | **Tümü** |
@@ -104,7 +104,7 @@ Her özellik aşağıdaki alanlarla kaydedilir:
 | FR-E1 | Öneri üretimi | Kanıt derecesi etiketli öneriler (deneysel/korelasyonel/denenebilir) | 🟡 | MVP (dar.) | Tümü |
 | FR-E2 | Politika filtresi | Motor politikalarına aykırı taktikler öneri hattında filtrelenir | 🟢 | MVP | Tümü |
 | FR-E3 | Öneri işaretleme | Öneriler uygulandı/reddedildi olarak işaretlenebilir | 🟢 | MVP | Tümü |
-| FR-E4 | Öneri-etki takibi | Uygulanan önerinin sonraki ölçümlerdeki etkisinin işaretli karşılaştırması | 🔴 | HT1 | Pro+ |
+| FR-E4 | Öneri-etki takibi | Uygulanan önerinin sonraki ölçümlerdeki etkisinin işaretli karşılaştırması | 🟢 | HT1 | Pro+ |
 | **FR-E5** | **Content Gap Analizi** | AI'nın sektörel sorularda eksik bulduğu içeriklerin tespiti | **🟢** | **MVP** | **Pro+** |
 | **FR-E6** | **GEO içerik önerileri** | Topic Cluster, FAQ, Entity, semantik/LSI optimizasyon önerileri | **🟢** | **MVP** | **Pro+** |
 | **FR-E7** | **Teknik GEO önerileri** | Structured Data/Schema, Knowledge Graph, Entity optimizasyonu | **🟡** | **MVP (dar.)** | **Business** |
@@ -117,7 +117,7 @@ Her özellik aşağıdaki alanlarla kaydedilir:
 | FR-F2 | Uyarı ayarları | Uyarı eşikleri ve kanal yapılandırması | 🟡 | MVP (dar.) | Pro+ |
 | FR-F3 | Haftalık e-posta özeti | Otomatik haftalık özet e-postası, panoya derin bağlantılar | 🟢 | MVP | Tümü |
 | FR-F5 | Zamanlanmış rapor | Raporların zamanlanmış periyodik üretimi | 🟡 | MVP (dar.) | Business |
-| FR-F6 | REST API erişimi | Okuma amaçlı `/public/v1` REST API, API anahtarı ile | 🔴 | HT1 | Business+ |
+| FR-F6 | REST API erişimi | Okuma amaçlı `/public/v1` REST API, API anahtarı ile | 🟢 | HT1 | Business+ |
 | FR-F7 | CSV/PDF dışa aktarım | Skor ve alıntı verilerinin temel CSV/PDF dışa aktarımı | 🟢 | MVP | Tümü |
 | **FR-F8** | **Executive Dashboard** | AI Visibility Score, SOV, Citation Share, Competitive Position, Trend, Visibility Growth | **🟢** | **MVP** | **Tümü** |
 | **FR-F9** | **Operasyonel Dashboard** | Prompt/platform/citation/rakip/içerik fırsat/trend analizi | **🟢** | **MVP** | **Pro+** |
@@ -130,14 +130,14 @@ Her özellik aşağıdaki alanlarla kaydedilir:
 | ID | Özellik | Açıklama | MVP | Pencere | Paket |
 |:--:|---------|----------|:---:|:-------:|:-----:|
 | **FR-G1** | **Ajans çalışma alanı** | **Müşteri başına ayrık, izole marka/prompt/rapor alanı** | **🟢** | **MVP** | **Business** |
-| FR-G3 | Müşteri arşivleme | Çalışma alanı arşivleme ve devretme | 🔴 | HT1 | Business |
+| FR-G3 | Müşteri arşivleme | Çalışma alanı arşivleme ve devretme | 🟢 | HT1 | Business |
 
 ### 3.8 Yönetim
 
 | ID | Özellik | Açıklama | MVP | Pencere | Paket |
 |:--:|---------|----------|:---:|:-------:|:-----:|
 | FR-H1 | Kota görünürlüğü | Kullanım ve kota durumunun kullanıcıya gösterilmesi | 🟢 | MVP | Tümü |
-| FR-H2 | Denetim izi | Yöneticiye görüntülenebilir ve dışa aktarılabilir denetim kaydı | 🔴 | HT2 | Business+ |
+| FR-H2 | Denetim izi | Yöneticiye görüntülenebilir ve dışa aktarılabilir denetim kaydı | 🟢 | HT2 | Business+ |
 
 ### 3.9 Güvenlik, Uyum ve Altyapı (NFR)
 
@@ -170,11 +170,11 @@ Her özellik aşağıdaki alanlarla kaydedilir:
 | Gemini (Google grounding) | 2 | 🟢 | MVP | `official_proxy` |
 | Perplexity (Sonar) | 1 | 🟢 | MVP | `direct` |
 | Google AI Overview | 3 | 🟢 | MVP | `directional` (Gemini vekili) |
-| Google AI Mode | 3 | 🔴 | HT1 | `directional` |
-| Claude (API) | 2 | 🔴 | HT1 | `official_proxy` |
-| Grok (API) | 2 | 🔴 | HT1 | `official_proxy` |
-| Mistral | 2 | 🔴 | HT1 | `official_proxy` |
-| Copilot | 3 | 🔴 | HT1 | `directional` |
+| Google AI Mode | 3 | 🟢 | HT1 | `directional` |
+| Claude (API) | 2 | 🟢 | HT1 | `official_proxy` |
+| Grok (API) | 2 | 🟢 | HT1 | `official_proxy` |
+| Mistral | 2 | 🟢 | HT1 | `official_proxy` |
+| Copilot | 3 | 🟢 | HT1 | `directional` |
 
 ---
 
@@ -182,17 +182,17 @@ Her özellik aşağıdaki alanlarla kaydedilir:
 
 | Pencere | FR | NFR | Toplam |
 |:-------:|:--:|:---:|:------:|
-| Pencere | FR | NFR | Toplam |
-|:-------:|:--:|:---:|:------:|
-| **MVP** (Tam) | 31 | 15 | 46 |
-| **MVP** (Daraltılmış) | 8 | — | 8 |
-| **HT1** | 8 | — | 8 |
+| **MVP** (Tam) | 39 | 15 | 54 |
+| **MVP** (Daraltılmış) | 9 | — | 9 |
+| **HT1** | 4 | — | 4 |
 | **HT2** | 3 | 1 | 4 |
 | **Kurumsal** | 1 | — | 1 |
 | **Ufuk** | — | — | — |
-| **Toplam** | **51** | **16** | **67** |
+| **Toplam** | **56** | **16** | **72** |
 
-> Not: HT1 sayısı Google AI Mode ve Mistral motorlarıyla 7'den 8'e yükseldi. Toplam özellik sayısı 74'e (58 FR + 16 NFR) çıktı.
+> Not: Katalog, Turkcell RFP genişletmesi dahil **56 FR + 16 NFR = 72 benzersiz özellik** içerir. §3.10, RFP eklemelerini toplu gösterir; bu listedeki özelliklerin çoğu §3.3-§3.6'da da kayıtlı olduğundan özet yalnızca benzersiz seti sayar.
+
+> Not (03.08.2026): Tüm HT1 kalemleri (FR-D6, FR-E4, FR-F6, FR-G3) ve HT2 kalan PRD kalemleri (FR-D5, FR-A6, FR-H2) kod seviyesinde tamamlanmıştır. 0206 §4.2'deki 9 daraltılmış kapsam genişletmesi (FR-B4, FR-B7, FR-B8, FR-D3, FR-D11, FR-E1, FR-E7, FR-F2, FR-F5) da HT1'de kod seviyesine çıkmıştır; katalogda MVP (dar.) durumu tarihsel olarak korunmaktadır. Motor matrisindeki tüm 8 motor üretim kayıtlarında aktiftir — Google AI Mode (`google_ai_mode`) 03.08.2026'da implemente edildi. FR-A6'nın e-Fatura/e-Arşiv ve vergi hesaplama alt kalemleri de 03.08.2026'da tamamlandı (KDV hesaplama, mock UBL-TR e-Fatura/e-Arşiv adapter'ı, Türkçe fatura PDF şablonu; gerçek GİB entegrasyonu üretim kimlik bilgisi gerektirir). 0206 §4-§5 ile senkron.
 
 > Not: NFR-13 (benchmark gizliliği) FR-D5 MVP dışı olduğu için pasiftir; teknik olarak MVP'de kodlanır ancak çalışma zamanında etkisizdir. Toplam 16 NFR'den 15'i MVP'de aktif, 1'i (NFR-13) HT2'de pasif durumdadır.
 
@@ -261,7 +261,7 @@ Bu katalog aşağıdaki amaçlarla kullanılır:
 
 | Amaç | Nasıl Kullanılır |
 |------|-----------------|
-| **Faz 3 mimari tasarım** (0301-0311) | MVP özellikleri (42 kalem) öncelikli implementasyon seti; her FR/NFR mimari kararı yönlendirir |
+| **Faz 3 mimari tasarım** (0301-0311) | MVP özellikleri (63 kalem: 54 tam + 9 daraltılmış) öncelikli implementasyon seti; her FR/NFR mimari kararı yönlendirir |
 | **Sprint planlama** (0401) | MVP Tam → MVP Daraltılmış → HT1 sırası; bağımlılıklar sprint backlog'una yansıtılır |
 | **Test stratejisi** (0404) | Her FR için en az bir test senaryosu; FR-C5, FR-G1 kritik yol |
 | **Pilot planlama** (0205 §7) | Pilot kiracılara hangi özelliklerin açılacağı paket haklarına göre belirlenir |
@@ -271,11 +271,12 @@ Bu katalog aşağıdaki amaçlarla kullanılır:
 
 ## 8. GeoLens İçin Çıkarımlar
 
-1. **MVP'de 42 özellik tam, 5 özellik daraltılmış.** Hiçbir Çekirdek gereksinim tamamen dışarıda değildir. Daraltılmış 5 özellik HT1'de genişletilir.
+1. **MVP'de 54 özellik tam, 9 özellik daraltılmış.** Hiçbir Çekirdek gereksinim tamamen dışarıda değildir. Daraltılmış 9 özellik HT1'de genişletilmiştir.
 2. **Ajans özelliği (FR-G1) Business paketinde kilitlenir.** Bu, ajansın çalışma alanına erişimini lisanslar; B2B2B çarpanı Business paketinin gelir omurgasını oluşturur.
 3. **Fidelite etiketi (FR-C5) tüm paketlerde zorunludur.** Temel ürün vaadi olan fidelite, ücretsiz kademede bile kısıtlanmaz — bu güven inşasının olmazsa olmazıdır.
 4. **Specification bağlantısı:** FR-C4, FR-C5, FR-C6, FR-C7 skorlama özellikleri GAVF standardına uygun üretilir.
 5. **Katalog, Faz 3 dokümanlarının girdisidir.** 0301 (System Architecture) her özellik için bir mimari bileşen atar. Test stratejisi (0404) her FR için test yöntemi tanımlar.
+6. **HT1/HT2 kapanışı (03.08.2026):** HT1 (FR-D6, FR-E4, FR-F6, FR-G3) ve HT2 kalan PRD kalemleri (FR-D5, FR-A6, FR-H2) kod seviyesinde mevcuttur. Tüm 8 motor yüzeyi üretim kayıtlarında aktiftir (Google AI Mode `google_ai_mode` dahil). FR-A6'nın e-Fatura/e-Arşiv ve vergi hesaplama alt kalemleri de kod seviyesinde tamamlanmıştır (KDV hesaplama, mock UBL-TR e-Fatura/e-Arşiv adapter'ı, Türkçe fatura PDF şablonu; gerçek GİB entegrasyonu üretim kimlik bilgisi gerektirir — `EFATURA_MODE` ile mock/gib arasında seçim yapılır). 0206 §4-§5 ile senkronize edilmiştir.
 
 ---
 
@@ -317,3 +318,5 @@ Bu katalog aşağıdaki amaçlarla kullanılır:
 | 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-07 (self-serve), D-80 (MVP motorlar), D-61 (API), D-26 (grafik), D-16 (SendGrid). Devralınan Kararlar eklendi. |
 | 1.2 | 27.07.2026 | Turkcell RFP kapsamında 18 yeni özellik eklendi: FR-B6 (LLM Bot), FR-B7 (schema), FR-B8 (SEO entegrasyonları), FR-D7-D13 (sentiment, hallüsinasyon, per-platform, competitive visibility, competitive gap, conversation replay, response archive), FR-E5-E7 (content gap, GEO içerik, teknik GEO), FR-F8-F12 (dashboard, otomatik raporlama, Excel export, alerting). Toplam özellik sayısı 56'dan 74'e yükseldi. Pencere dağılımı güncellendi. |
 | 1.3 | 27.07.2026 | FR-D11 (Competitive Gap Analysis) metodoloji referansı güncellendi: 0419 dokümanına bağlandı. İlişkili alanına 0419 ve 0312 eklendi. Kaynaklar güncellendi. |
+| 1.4 | 03.08.2026 | **HT1/HT2 kapanış senkronu:** HT1 kalemleri (FR-D6, FR-E4, FR-F6, FR-G3) ve HT2 kalan PRD kalemleri (FR-D5, FR-A6, FR-H2) kod seviyesinde tamamlandığı için 🔴 → 🟢 işaretlendi. §4 motor destek matrisi güncellendi: Google AI Mode (`google_ai_mode`) implemente edilip Claude, Grok, Mistral, Copilot ile birlikte 🟢 aktif — tüm 8 motor üretim kayıtlarında (aiModeAdapter + WithContext override + 3 entrypoint). §5 pencere dağılımı yeniden sayıldı ve başlık tekrarı giderildi: 56 FR + 16 NFR = 72 benzersiz özellik (MVP Tam 39/15, MVP dar 9, HT1 4, HT2 3/1, Kurumsal 1); hatalı "74 (58 FR)" notu düzeltildi. 9 daraltılmış kapsam genişletmesinin (FR-B4, FR-B7, FR-B8, FR-D3, FR-D11, FR-E1, FR-E7, FR-F2, FR-F5) HT1'de kod seviyesine çıktığı not eklendi. §7 "42 kalem" ve §8 "42 tam / 5 daraltılmış" ifadeleri güncel sayılarla düzeltildi. FR-A6'nın e-Fatura/vergi alt kalemleri açık olarak not edildi. 0206 §4-§5 ile senkronize edildi. |
+| 1.5 | 03.08.2026 | **FR-A6 TR-özel kapanışı:** e-Fatura/e-Arşiv ve vergi hesaplama alt kalemleri kod seviyesinde tamamlandı — migration 046 (KDV/GİB alanları), `internal/billing/tax.go` (KDV hesaplama), `internal/billing/efatura.go` (mock UBL-TR e-Fatura/e-Arşiv adapter'ı), yeni endpoint'ler (fatura detayı, e-Fatura gönderim, UBL-TR XML ve Türkçe fatura PDF indirme), `internal/pdf/invoice.go` Türkçe fatura şablonu, BillingPanel frontend güncellemesi. Gerçek GİB entegrasyonu üretim kimlik bilgisi gerektirdiğinden `EFATURA_MODE` (mock/gib) ile seçilir. FR-A6 "açık" notları kaldırıldı. |

@@ -4,11 +4,11 @@
 |---|---|
 | Doküman ID | 0309 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.2 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Engineering |
-| Tarih | 25 Temmuz 2026 |
-| İlişkili | 0306, 0409, 0410, 0411, 0302, 0606, 0204 |
+| Tarih | 04 Ağustos 2026 |
+| İlişkili | 0306, 0409, 0410, 0411, 0302, 0606, 0204, 0308 |
 
 ---
 
@@ -141,13 +141,16 @@ Her motorun skora katkısı ayrı ayrı hesaplanır:
 | Perplexity | 0.30 | Tier 1, web arama |
 | ChatGPT | 0.30 | Tier 2, search grounding — TR'de en yaygın |
 | Gemini | 0.25 | Tier 1, Google Search grounding |
-| Google AI Overview | 0.10 | Tier 3, directional — MVP'de Gemini vekili |
-| Claude | 0.05 | Tier 2 — HT1 adayı |
-| Grok | 0 — (HT1) | Tier 2 — HT1 adayı |
-| Mistral | 0 — (HT1) | Tier 2 — Avrupa pazarı stratejik |
-| Copilot | 0 — (HT1) | Tier 3 — HT1 adayı |
+| Google AI Overview | 0.10 | Tier 3, directional — Gemini vekili |
+| Claude | 0.05 | Tier 2 — HT1 üretimde |
+| Grok | 0.05 | Tier 2 — HT1 üretimde |
+| Mistral | 0.05 | Tier 2 — HT1 üretimde |
+| Copilot | 0.05 | Tier 3 — HT1 üretimde |
+| Google AI Mode | 0 (opsiyonel) | Tier 3, directional — Faz 4 üretimde |
 
-Not: Google AI Overview ağırlığı başlangıçta düşük tutulmuştur çünkü Kademe 3 (directional) ölçümüdür. Doğrulama verisi toplandıkça ağırlık artırılabilir.
+Not: Google AI Overview ve Google AI Mode ağırlıkları başlangıçta düşük/tutulmuştur çünkü Kademe 3 (directional) ölçümüdür. Doğrulama verisi toplandıkça ağırlık artırılabilir.
+
+> **Kod gerçeği (v1.2):** Mevcut `internal/measure/service.go` içinde motor kırılımı `computeEngineBreakdown()` ile **varlık tabanlı** hesaplanır (içerik varsa 75, yoksa 40; aynı motorun örnekleri ortalamalanır). Yukarıdaki motor ağırlıklı ortalama, panel düzeyinde yapılandırılabilir tasarım hedefidir; henüz per-motor ağırlıklı `weighted_average` kodlanmamıştır. 0308 ile senkron: 8 motor (7 adaptör + AI Mode) üretimde.
 
 ---
 
@@ -232,3 +235,4 @@ Hallüsinasyon tespiti için AI yanıtı markanın doğrulanmış bilgileriyle k
 |----------|-------|------------|
 | 1.0 | 25.07.2026 | İlk yayın: skor hesaplama, GA, fidelite, determinizm, motor kırılımı, kalibrasyon |
 | 1.1 | 27.07.2026 | Turkcell RFP kapsamında genişletme: Motor ağırlıkları güncellendi (Google AI Overview, Claude, Grok, Mistral, Copilot). Yeni skor bileşenleri eklendi: Sentiment skoru, Competitive Gap (visibility/citation/content/topic/prompt gap), Hallüsinasyon tespiti. Hata kodlarına SCORE_006-SCORE_007 eklendi. |
+| 1.2 | 04.08.2026 | **Motor senkronu:** §6.2 motor ağırlık tablosu 0308 v1.3 ile hizalandı — Google AI Mode eklendi; Claude/Grok/Mistral/Copilot durumları "HT1 adayı" → "HT1 üretimde" olarak güncellendi. Kod gerçeği notu eklendi: motor kırılımı `computeEngineBreakdown()` (varlık tabanlı 40/75 heuristiği) ile hesaplanır; per-motor ağırlıklı ortalama tasarım hedefidir. |

@@ -4,10 +4,10 @@
 |---|---|
 | Doküman ID | 0301 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.1 |
+| Versiyon | 1.2 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
-| Tarih | 22 Temmuz 2026 |
+| Tarih | 03 Ağustos 2026 |
 | İlişkili | 0006, 0204, 0302, 0303, 0304, 0305, 0306 |
 
 ---
@@ -138,7 +138,7 @@ Her kavram, ürün yaşam döngüsünde belirli bir olgunluk düzeyine ulaşır:
 |--------|:---------:|:---:|:---:|:----:|
 | AI Görünürlük | ✅ Temel | ✅ | ✅ | ✅ Gelişmiş |
 | Panel | ✅ | ✅ | ✅ | ✅ |
-| Motor Kademesi | ✅ 3 motor | ✅ 6 motor | ✅ | ✅ Yeni yüzeyler |
+| Motor Kademesi | ✅ 3 motor | ✅ 6 motor | ✅ 8 motor | ✅ Yeni yüzeyler |
 | Fidelite Etiketi | ✅ Zorunlu | ✅ | ✅ | ✅ |
 | Alıntı | ✅ Temel | ✅ Derin | ✅ | ✅ |
 | Calculation Run | ✅ Değiştirilemez | ✅ | ✅ | ✅ |
@@ -209,3 +209,4 @@ Her kavram, ürün yaşam döngüsünde belirli bir olgunluk düzeyine ulaşır:
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: GeoLens çekirdek kavramları, 4 katmanlı hiyerarşi, 10 temel kavram tanımı, kavram ilişkileri, olgunluk modeli, FR/NFR bağları. 0204/0207/0102'den türetilmiştir. |
 | 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-53 (walking skeleton), D-72 (worker), D-73 (kilit). Devralınan Kararlar eklendi. |
+| 1.2 | 03.08.2026 | Motor sayısı senkronu: HT2 kolonundaki motor kademesi "6 motor" → "8 motor" (7 adaptör + AI Mode) olarak güncellendi. |

@@ -106,6 +106,10 @@ func main() {
 	geminiAdapter := gemini.NewAdapter(cfg.GeminiAPIKey, saver)
 	engines.Register(geminiAdapter)
 
+	// Google AI Overview + Google AI Mode (Kademe 3 — directional) — FR-B6 HT2 genişletmesi
+	engines.Register(geminiAdapter.WithAIOverview("", ""))
+	engines.Register(geminiAdapter.WithAIMode("", ""))
+
 	// Claude / Anthropic (Kademe 2)
 	claudeAdapter := claude.NewAdapter(cfg.ClaudeAPIKey, saver)
 	engines.Register(claudeAdapter)

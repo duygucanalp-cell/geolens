@@ -97,14 +97,14 @@ export function RecommendationsPanel({ workspaceId, brands }: Props) {
   }, [actionError])
 
   if (loading) {
-    return <div className="rec-loading">Öneriler yükleniyor...</div>
+    return <div className="rec-loading">{t('rec.loading')}</div>
   }
 
   if (error) {
     return (
       <div className="rec-error">
         <p>{error}</p>
-        <button className="rec-retry-btn" onClick={loadRecommendations}>Tekrar Dene</button>
+        <button className="rec-retry-btn" onClick={loadRecommendations}>{t('rec.retry')}</button>
       </div>
     )
   }
@@ -112,9 +112,9 @@ export function RecommendationsPanel({ workspaceId, brands }: Props) {
   return (
     <div className="rec-panel">
       <div className="rec-header">
-        <h3>AI Önerileri</h3>
+        <h3>{t('rec.title')}</h3>
         <p className="rec-desc">
-          Markalarınızın AI görünürlük performansına göre oluşturulmuş eyleme dönüştürülebilir öneriler.
+          {t('rec.desc')}
         </p>
       </div>
 
@@ -131,15 +131,15 @@ export function RecommendationsPanel({ workspaceId, brands }: Props) {
         <div className="rec-summary">
           <div className="rec-summary-card critical">
             <span className="rec-summary-value">{summary.critical}</span>
-            <span className="rec-summary-label">Kritik</span>
+            <span className="rec-summary-label">{t('rec.summary_critical')}</span>
           </div>
           <div className="rec-summary-card high">
             <span className="rec-summary-value">{summary.high}</span>
-            <span className="rec-summary-label">Yüksek</span>
+            <span className="rec-summary-label">{t('rec.summary_high')}</span>
           </div>
           <div className="rec-summary-card total">
             <span className="rec-summary-value">{summary.total}</span>
-            <span className="rec-summary-label">Toplam</span>
+            <span className="rec-summary-label">{t('rec.summary_total')}</span>
           </div>
         </div>
       )}
@@ -152,7 +152,7 @@ export function RecommendationsPanel({ workspaceId, brands }: Props) {
             onChange={(e) => setFilterBrand(e.target.value)}
             className="filter-select"
           >
-            <option value="all">Tüm Markalar</option>
+            <option value="all">{t('rec.filter_all_brands')}</option>
             {brands.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.name}
@@ -166,10 +166,9 @@ export function RecommendationsPanel({ workspaceId, brands }: Props) {
       {filtered.length === 0 && (
         <div className="rec-empty">
           <div className="rec-empty-icon">💡</div>
-          <h4>Henüz öneri yok</h4>
+          <h4>{t('rec.empty_title')}</h4>
           <p>
-            Skorlar oluştukça ve denetimler tamamlandıkça burada AI görünürlüğünüzü
-            iyileştirecek öneriler görünecek.
+            {t('rec.empty_desc')}
           </p>
         </div>
       )}
@@ -185,7 +184,7 @@ export function RecommendationsPanel({ workspaceId, brands }: Props) {
               {/* Severity indicator */}
               <div
                 className="rec-severity-bar"
-                style={{ backgroundColor: SEVERITY_COLORS[rec.severity] || '#94a3b8' }}
+                style={{ backgroundColor: SEVERITY_COLORS[rec.severity] || 'var(--text-faint)' }}
               />
             </div>
             <div className="rec-card-content">
@@ -193,8 +192,8 @@ export function RecommendationsPanel({ workspaceId, brands }: Props) {
                 <span
                   className="rec-severity-badge"
                   style={{
-                    color: SEVERITY_COLORS[rec.severity] || '#94a3b8',
-                    borderColor: SEVERITY_COLORS[rec.severity] || '#94a3b8',
+                    color: SEVERITY_COLORS[rec.severity] || 'var(--text-faint)',
+                    borderColor: SEVERITY_COLORS[rec.severity] || 'var(--text-faint)',
                   }}
                 >
                   {t(SEVERITY_LABELS[rec.severity]) || rec.severity}
@@ -203,11 +202,11 @@ export function RecommendationsPanel({ workspaceId, brands }: Props) {
                   {t(CATEGORY_LABELS[rec.category]) || rec.category}
                 </span>
                 {rec.brand_id && brandMap.has(rec.brand_id) && (
-                  <span className="rec-brand-badge" style={{ backgroundColor: '#eef2ff', color: '#6366f1' }}>
+                  <span className="rec-brand-badge" style={{ backgroundColor: 'var(--accent-soft)', color: 'var(--accent)' }}>
                     {brandMap.get(rec.brand_id)}
                   </span>
                 )}
-                {rec.applied && <span className="rec-status-badge applied">Uygulandı</span>}
+                {rec.applied && <span className="rec-status-badge applied">{t('rec.applied')}</span>}
               </div>
               <h4 className="rec-title">{rec.title}</h4>
               <p className="rec-detail">{rec.detail}</p>
@@ -218,11 +217,11 @@ export function RecommendationsPanel({ workspaceId, brands }: Props) {
                       className="rec-confidence-fill"
                       style={{
                         width: `${rec.score}%`,
-                        backgroundColor: rec.score > 80 ? '#22c55e' : rec.score > 50 ? '#eab308' : '#94a3b8',
+                        backgroundColor: rec.score > 80 ? '#22c55e' : rec.score > 50 ? '#eab308' : 'var(--text-faint)',
                       }}
                     />
                   </div>
-                  <span className="rec-confidence-label">%{Math.round(rec.score)} güven</span>
+                  <span className="rec-confidence-label">{t('rec.confidence', { score: Math.round(rec.score) })}</span>
                 </div>
                 <span className="rec-date">
                   {new Date(rec.created_at).toLocaleDateString(dateLocale, {
@@ -240,7 +239,7 @@ export function RecommendationsPanel({ workspaceId, brands }: Props) {
                   className="rec-apply-btn"
                   onClick={() => handleApply(rec.id)}
                   disabled={actionInProgress === rec.id}
-                  title="Uygulandı olarak işaretle"
+                  title={t('rec.apply')}
                 >
                   ✓
                 </button>
@@ -248,7 +247,7 @@ export function RecommendationsPanel({ workspaceId, brands }: Props) {
                   className="rec-dismiss-btn"
                   onClick={() => handleDismiss(rec.id)}
                   disabled={actionInProgress === rec.id}
-                  title="Öneriyi gizle"
+                  title={t('rec.dismiss')}
                 >
                   ✕
                 </button>

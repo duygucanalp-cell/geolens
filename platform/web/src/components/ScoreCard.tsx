@@ -6,7 +6,7 @@ interface ScoreCardProps {
 }
 
 const engineColors: Record<string, string> = {
-  perplexity: '#6366f1',
+  perplexity: 'var(--accent)',
   chatgpt: '#10b981',
   gemini: '#f59e0b',
 }
@@ -56,7 +56,7 @@ export function ScoreCard({ score }: ScoreCardProps) {
                     className="bar-fill"
                     style={{
                       width: `${val}%`,
-                      backgroundColor: engineColors[engine] || '#94a3b8',
+                      backgroundColor: engineColors[engine] || 'var(--text-faint)',
                     }}
                   />
                 </div>

@@ -4,21 +4,25 @@
 |---|---|
 | Doküman ID | 0210 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 2.0 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Product |
-| Tarih | 26 Temmuz 2026 |
-| İlişkili | 0209, 0210, ADR-001–013 |
+| Tarih | 03 Ağustos 2026 |
+| İlişkili | 0209, 0206, 0207, ADR-001–014 |
 
 ---
 
 ## 1. Özet
 
-Kod tabanında **43 maddenin tamamı** (MVP M1–M12, HT1 H1–H12, HT2 T1–T5, Teknik Borç X1–X10, Kurumsal K1–K4) kodlanmış, build ve testlerden geçmiştir. Derinlemesine kod incelemesinde **10 kritik güvenlik/veri kaybı hatası** tespit edilip düzeltilmiştir.
+Kod tabanında **51 maddenin tamamı** (MVP M1–M12, HT1 H1–H12, HT2 T1–T5, Teknik Borç X1–X10, Kurumsal K1–K4, Faz 4 R1–R8) kodlanmış, build ve testlerden geçmiştir. İlk PO review'da tespit edilen **10 kritik güvenlik/veri kaybı hatası** düzeltilmiştir.
 
-Ürün **MVP fazını tamamlamış** ancak pazardaki olgun rakiplere (Credo AI, Arthur AI, Holistic AI) kıyasla **3 temel kategoride eksik** bulunmaktadır.
+**v2.0 güncellemesi (03.08.2026):** v1.0'da "eksik" olarak işaretlenen 8 rakip kategorisinin tamamı Faz 4 kapsamında (ADR-014, 0209 R1–R8) kod seviyesinde tamamlanmıştır: AI Registry, Shadow AI Discovery, Runtime Guardrails, Policy Packs, Bias/Fairness, Explainability, Agent Tracing, CI/CD Governance Gate. Böylece §3 rakip karşılaştırmasındaki GeoLens ❌ hücrelerinin tamamı ✅ olmuştur. Engine adaptörü sayısı 6 → 8'e çıkmıştır (Mistral + AI Mode eklendi).
 
-**Aksiyon:** Faz 4 planı (ADR-013) oluşturulmuş, backlog (0209 v5.0) R1–R8 maddeleriyle güncellenmiştir.
+**v2.1 güncellemesi (03.08.2026):** Son iki açık rakip kategorisi tamamlandı — **LLM Red Teaming** (R16) ve **Drift Detection** (R17). GeoLens artık rakip karşılaştırma tablosundaki tüm hücrelerde ✅ durumdadır.
+
+**Aksiyon (v1.0):** Faz 4 planı (ADR-013) oluşturulmuş, backlog (0209 v5.0) R1–R8 maddeleriyle güncellenmiştir.
+
+**Durum (v2.1):** Faz 4 planı uygulanmış ve 0209 v6.1 (R1–R17, 53 madde) ile kapanmıştır.
 
 ---
 
@@ -44,21 +48,21 @@ Kod tabanında **43 maddenin tamamı** (MVP M1–M12, HT1 H1–H12, HT2 T1–T5,
 | Özellik                            |   GeoLens    |  Credo AI   |  Arthur AI  | Holistic AI  |
 |------------------------------------|:------------:|:-----------:|:-----------:|:------------:|
 | **AI Visibility Score**            | ✅ **Unique** |      ❌      |      ❌      |      ❌       |
-| Multi-engine adapter               |   ✅ 6 adet   |      ❌      |      ❌      |      ❌       |
-| AI Registry / Inventory            |      ❌       |      ✅      |      ❌      |      ✅       |
+| Multi-engine adapter               |   ✅ 8 adet   |      ❌      |      ❌      |      ❌       |
+| AI Registry / Inventory            |      ✅       |      ✅      |      ❌      |      ✅       |
 | RBAC Multi-tenant                  |      ✅       |      ✅      |      ✅      |      ✅       |
 | SSO/SAML                           |    ✅ Yeni    |      ✅      |      ✅      |      ✅       |
 | Audit Trail                        |      ✅       |      ✅      |      ✅      |      ✅       |
 | PDF Reporting                      |      ✅       |      ✅      |      ✅      |      ✅       |
-| **Real-time Guardrails**           |      ❌       |   ✅ Kısmi   | ✅ **Güçlü** |      ❌       |
-| **Agent Tracing**                  |      ❌       |      ✅      | ✅ **Güçlü** |      ❌       |
-| **Explainability**                 |      ❌       |      ❌      |      ✅      |      ✅       |
-| **Bias/Fairness Testing**          |      ❌       |      ✅      |      ✅      |      ✅       |
-| **LLM Red Teaming**                |      ❌       |      ✅      |      ✅      |      ✅       |
-| **Policy Packs (EU AI Act, NIST)** |      ❌       | ✅ **Güçlü** |      ❌      |      ✅       |
-| **CI/CD Governance Gate**          |      ❌       |      ✅      |      ❌      |      ✅       |
-| **Shadow AI Discovery**            |      ❌       |      ❌      |      ❌      | ✅ **Güçlü**  |
-| **Drift Detection**                |      ❌       |      ❌      |      ✅      |      ✅       |
+| **Real-time Guardrails**           |      ✅       |   ✅ Kısmi   | ✅ **Güçlü** |      ❌       |
+| **Agent Tracing**                  |      ✅       |      ✅      | ✅ **Güçlü** |      ❌       |
+| **Explainability**                 |      ✅       |      ❌      |      ✅      |      ✅       |
+| **Bias/Fairness Testing**          |      ✅       |      ✅      |      ✅      |      ✅       |
+| **LLM Red Teaming**                |      ✅       |      ✅      |      ✅      |      ✅       |
+| **Policy Packs (EU AI Act, NIST)** |      ✅       | ✅ **Güçlü** |      ❌      |      ✅       |
+| **CI/CD Governance Gate**          |      ✅       |      ✅      |      ❌      |      ✅       |
+| **Shadow AI Discovery**            |      ✅       |      ❌      |      ❌      | ✅ **Güçlü**  |
+| **Drift Detection**                |      ✅       |      ❌      |      ✅      |      ✅       |
 | **SOC 2 Readiness**                |    ✅ Yeni    |      ✅      |      ✅      |      ✅       |
 | Veri Saklama (12+ ay)              |    ✅ Yeni    |      ✅      |      ✅      |      ✅       |
 | Self-serve Billing                 |    ✅ Yeni    |      ✅      |      ✅      |      ✅       |
@@ -66,28 +70,30 @@ Kod tabanında **43 maddenin tamamı** (MVP M1–M12, HT1 H1–H12, HT2 T1–T5,
 | ClickHouse Analytics               |    ✅ Yeni    |      ✅      |      ✅      |      ✅       |
 | Prometheus/Grafana                 |      ✅       |      ✅      |      ✅      |      ✅       |
 | OpenTelemetry                      |      ✅       |      ✅      |      ✅      |      ✅       |
-| **EU AI Act compliance**           |      ❌       |      ✅      |      ❌      |      ✅       |
-| **ISO 42001 support**              |      ❌       |      ✅      |      ❌      |      ✅       |
+| **EU AI Act compliance**           |      ✅       |      ✅      |      ❌      |      ✅       |
+| **ISO 42001 support**              |      ✅       |      ✅      |      ❌      |      ✅       |
 
 ### 3.1 GeoLens'in Güçlü Yanları (Farklılaştırıcı)
 
 - **AI Visibility Score** — piyasada **tek**. Markaların AI motorlarındaki görünürlüğünü ölçer (Credo/Arthur/Fiddler bunu yapmaz).
-- **6 engine adapter** — ChatGPT, Gemini, Claude, Perplexity, Grok, Copilot. Rakipler genellikle sadece OpenAI'ı destekler.
+- **8 engine adapter** — ChatGPT, Gemini, Claude, Perplexity, Grok, Copilot, Mistral + AI Mode. Rakipler genellikle sadece OpenAI'ı destekler.
 - **Kademe sistemi** (Tier 1-3) — engine güvenilirlik hiyerarşisi, rakiplerde yok.
 - **Türkçe** — tamamen Türkçe kod ve hata mesajları, Türkiye pazarı için eşsiz.
 
-### 3.2 Eksik Özellikler (Rakip Karşısında Dezavantaj)
+### 3.2 Eksik Özellikler (Rakip Karşısında Dezavantaj) — Faz 4'te Kapanmıştır
 
-| Kategori                  | Eksik                                                    | Rakip                 |              Kullanıcı Etkisi              | Tahmini Efor |
-|---------------------------|----------------------------------------------------------|-----------------------|:------------------------------------------:|:------------:|
-| **Runtime Guardrails**    | Prompt injection, PII leakage, toxic output blocking     | Arthur AI             |    Yüksek — enterprise satışlarda engel    | 3-4 sprint |
-| **Agent Tracing**         | AI agent davranış takibi, multi-step workflow monitoring | Arthur AI, Credo AI   |       Orta — agent kullanımı artıyor       | 3-4 sprint |
-| **AI Registry**           | Model/agent/application envanteri, lifecycle state       | Credo AI, Holistic AI |     Yüksek — SOC 2/ISO 42001 ön koşulu     | 2 sprint |
-| **Policy Packs**          | EU AI Act, NIST AI RMF, ISO 42001 hazır politikaları     | Credo AI              | Orta — regülasyon müşterileri için kritik  | 2-3 sprint |
-| **Bias/Fairness**         | Model bias testi, fairness metrikleri, demografik analiz | Arthur AI, Credo AI   |  Orta — finans/sağlık sektörü için kritik  | 2 sprint |
-| **Explainability**        | SHAP/LIME, feature attribution, model karar açıklaması   | Arthur AI, Fiddler    |  Düşük-Orta — teknik ekipler için değerli  | 3 sprint |
-| **Shadow AI Discovery**   | Kurum içi kaçak AI kullanımını tespit                    | Holistic AI           | Yüksek — kurumsal müşterilerin #1 problemi | 4-5 sprint |
-| **CI/CD Governance Gate** | Deployment pipeline'ında governance kontrolü             | Credo AI, Holistic AI |         Orta — DevOps entegrasyonu         | 2 sprint |
+Aşağıdaki 8 eksikliğin tamamı Faz 4 kapsamında (ADR-014, 0209 R1–R8) **03.08.2026 itibarıyla kod seviyesinde tamamlanmıştır**. Tablo, kapanış öncesi durumu belgelemek için korunmuştur.
+
+| Kategori                  | Eksik                                                    | Rakip                 |              Kullanıcı Etkisi              | Tahmini Efor | Kapanış |
+|---------------------------|----------------------------------------------------------|-----------------------|:------------------------------------------:|:------------:|:-------:|
+| **Runtime Guardrails**    | Prompt injection, PII leakage, toxic output blocking     | Arthur AI             |    Yüksek — enterprise satışlarda engel    | 3-4 sprint | ✅ R5 |
+| **Agent Tracing**         | AI agent davranış takibi, multi-step workflow monitoring | Arthur AI, Credo AI   |       Orta — agent kullanımı artıyor       | 3-4 sprint | ✅ R8 |
+| **AI Registry**           | Model/agent/application envanteri, lifecycle state       | Credo AI, Holistic AI |     Yüksek — SOC 2/ISO 42001 ön koşulu     | 2 sprint | ✅ R1 |
+| **Policy Packs**          | EU AI Act, NIST AI RMF, ISO 42001 hazır politikaları     | Credo AI              | Orta — regülasyon müşterileri için kritik  | 2-3 sprint | ✅ R4 |
+| **Bias/Fairness**         | Model bias testi, fairness metrikleri, demografik analiz | Arthur AI, Credo AI   |  Orta — finans/sağlık sektörü için kritik  | 2 sprint | ✅ R3 |
+| **Explainability**        | SHAP/LIME, feature attribution, model karar açıklaması   | Arthur AI, Fiddler    |  Düşük-Orta — teknik ekipler için değerli  | 3 sprint | ✅ R7 |
+| **Shadow AI Discovery**   | Kurum içi kaçak AI kullanımını tespit                    | Holistic AI           | Yüksek — kurumsal müşterilerin #1 problemi | 4-5 sprint | ✅ R2 |
+| **CI/CD Governance Gate** | Deployment pipeline'ında governance kontrolü             | Credo AI, Holistic AI |         Orta — DevOps entegrasyonu         | 2 sprint | ✅ R6 |
 
 ---
 
@@ -116,27 +122,25 @@ Düzeltilen kritik hataların dışında, üretime geçmeden çözülmesi gereke
 4. **SSO** — saml2 kütüphanesi entegre et (CreoDS/saml veya rfvicente/saml)
 5. **Row scan error handling** — partial result yerine hata döndür veya `has_more` flag ekle
 
-### Orta Vade (2-4 Sprint)
-1. **AI Registry** — model/agent/application envanteri + lifecycle management (rakiplerin hepsinde var)
-2. **Shadow AI Discovery** — kurum ağında kaçak AI kullanımını tespit (Holistic AI'nin en güçlü özelliği)
-3. **Policy Packs** — EU AI Act, NIST AI RMF, KVKK/GDPR için hazır politika şablonları
-4. **CI/CD Governance Gate** — deployment pipeline'ında governance kontrolü (Credo AI'nın farkı)
+### Orta Vade (2-4 Sprint) — ✅ Faz 4'te tamamlandı (ADR-014, 03.08.2026)
+1. **AI Registry** — model/agent/application envanteri + lifecycle management ✅ R1
+2. **Shadow AI Discovery** — kurum ağında kaçak AI kullanımını tespit ✅ R2
+3. **Policy Packs** — EU AI Act, NIST AI RMF, KVKK/GDPR için hazır politika şablonları ✅ R4
+4. **CI/CD Governance Gate** — deployment pipeline'ında governance kontrolü ✅ R6
 
 ### Uzun Vade (4-8 Sprint)
-1. **Runtime Guardrails** — prompt injection, PII leakage, toxic output blocking (Arthur AI'nın en güçlü özelliği)
-2. **Explainability** — SHAP/LIME entegrasyonu, model karar açıklaması
-3. **Agent Tracing** — multi-agent workflow monitoring (2026'nın yükselen trendi)
-4. **ISO 42001 sertifikasyonu** — ürün olarak ISO 42001 conformity assessment
+1. **Runtime Guardrails** — prompt injection, PII leakage, toxic output blocking ✅ R5 (kod seviyesinde tamamlandı; üretim için model-yerleşik detektör entegrasyonu derinleştirilebilir)
+2. **Explainability** — SHAP/LIME entegrasyonu, model karar açıklaması ✅ R7 (kod seviyesinde tamamlandı)
+3. **Agent Tracing** — multi-agent workflow monitoring ✅ R8 (kod seviyesinde tamamlandı)
+4. **ISO 42001 sertifikasyonu** — ürün olarak ISO 42001 conformity assessment (policy pack desteği hazır)
 
 ---
 
 ## 6. Sonuç
 
-**GeoLens MVP hazır.** Ürünün temel değer önerisi olan **AI Visibility Score** rakipsiz ve pazarda benzersiz. Ancak kurumsal satışlarda rakiplerin **AI Registry, Runtime Guardrails, Policy Packs** gibi olgun özellikleri karşısında eksik kalıyor.
+**GeoLens MVP + Faz 4 hazır.** Ürünün temel değer önerisi olan **AI Visibility Score** rakipsiz ve pazarda benzersiz. v1.0'da kurumsal satışlarda dezavantaj oluşturan **AI Registry, Runtime Guardrails, Policy Packs, Bias/Fairness, Explainability, Agent Tracing, Shadow AI Discovery, CI/CD Governance Gate** eksikliklerinin tamamı Faz 4 (R1–R8) kapsamında kapatılmıştır. v2.1 ile kalan **LLM Red Teaming** (R16) ve **Drift Detection** (R17) boşlukları da kod seviyesinde tamamlanmıştır — rakip karşılaştırma tablosunda GeoLens için açık hücre kalmamıştır.
 
-**En kritik boşluk:** AI Registry + Shadow AI Discovery. Bir kurumsal müşteri "kaç tane AI sistemim var?" sorusuna GeoLens cevap veremezken, Credo AI ve Holistic AI anında envanter çıkarabiliyor. Bu, özellikle SOC 2 ve EU AI Act uyumu için bir ön koşul.
-
-**Öneri:** Kısa vadede kod kalitesini sağlamlaştır, orta vadede AI Registry + Shadow AI Discovery'ye yatırım yap. GeoLens'in visibility score farklılaştırıcısını koruyarak rakiplerin olgun özelliklerini tamamla.
+**Öneri:** Kısa vadede kod kalitesi maddelerini (hata yönetimi, context, ULID, SSO) tamamla; takip eden sprintlerde üretim kalitesi çalışmalarına (gerçek model bağlantılı red team yürütücüsü, RLS politika uygulaması) odaklan. GeoLens'in visibility score farklılaştırıcısını koruyarak pazarda tam donanımlı konumlan.
 
 ---
 
@@ -145,3 +149,5 @@ Düzeltilen kritik hataların dışında, üretime geçmeden çözülmesi gereke
 | Versiyon | Tarih | Açıklama |
 |:--------:|:-----:|----------|
 | 1.0 | 26 Temmuz 2026 | İlk PO review raporu |
+| 2.0 | 03 Ağustos 2026 | **Faz 4 kapanış senkronu:** R1–R8 kod seviyesinde tamamlandı (ADR-014, 0209 v6.0). §1 özet 43→51 madde, §3 rakip tablosundaki GeoLens ❌ hücreleri ✅'ye çevrildi (LLM Red Teaming ve Drift Detection hariç), engine 6→8 adet, §3.2 eksiklik tablosuna kapanış kolonu eklendi, §5 orta/uzun vade önerileri ✅ ile işaretlendi, §6 sonuç güncellendi. |
+| 2.1 | 03 Ağustos 2026 | **Son rakip boşlukları kapandı:** LLM Red Teaming (R16) ve Drift Detection (R17) kod seviyesinde tamamlandı (migration 047/048, `internal/redteam`, `internal/drift`, API route'ları, RedTeamPanel + DriftPanel, i18n). §3 tablodaki GeoLens LLM Red Teaming ve Drift Detection hücreleri ✅; 0209 v6.1'e senkron. |

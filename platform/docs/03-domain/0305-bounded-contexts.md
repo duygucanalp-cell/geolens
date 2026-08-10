@@ -4,17 +4,17 @@
 |---|---|
 | Doküman ID | 0305 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.2 |
+| Versiyon | 1.3 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
-| Tarih | 28 Temmuz 2026 |
-| İlişkili | 0302, 0303, 0304, 0301, 0306, 0309, 0310, 0312, 0403, 0511, 0416, 0417, 0418, 0419 |
+| Tarih | 04 Ağustos 2026 |
+| İlişkili | 0302, 0303, 0304, 0301, 0306, 0309, 0310, 0312, 0403, 0511, 0209, 0210, 0416, 0417, 0418, 0419 |
 
 ---
 
 ## 1. Amaç
 
-Bu doküman, GeoLens Platform'un sınırlı bağlamlarını (bounded contexts) ve bu bağlamlar arasındaki iletişim kalıplarını tanımlar. 0302 Domain Model'deki bağlam haritasının modül düzeyine indirgenmiş halidir. Her bağlamın sorumluluğu, diğer bağlamlarla ilişkisi, paylaştığı veri ve kullandığı iletişim kalıbı bu dokümanda sabitlenir.
+Bu doküman, GeoLens Platform'un sınırlı bağlamlarını (bounded contexts) ve bu bağlamlar arasındaki iletişim kalıplarını tanımlar. 0302 Domain Model'deki bağlam haritasının modül düzeyine indirgenmiş halidir. Her bağlamın sorumluluğu, diğer bağlamlarla ilişkisi, paylaştığı veri ve kullandığı iletişim kalıbı bu dokümanda sabitlenir. HT1 genişletmesi (v1.2) BC7-BC10'u, Faz 4 + HT2 genişletmesi (v1.3) BC11-BC13'ü kapsar (0302 v1.3 ile senkron).
 
 > **Tasarım filtresi bağlantısı:** Bu doküman **F2** (ölçek — bağlam sınırları modüler monoliti çamurlaşmadan korur) ve **F4** (bakım — net bağlam sınırları ekip paralel çalışmasını mümkün kılar) filtrelerine kanıt sağlar.
 
@@ -49,7 +49,18 @@ Bu doküman, GeoLens Platform'un sınırlı bağlamlarını (bounded contexts) v
             └─►│ BC5 · Delivery   │  │ BC7 · Archive    │
                │ (bildirim, rapor)│  │ (S3 arşiv)       │
                └──────────────────┘  └──────────────────┘
+                                  │
+                 ┌────────────────┼─────────────────┐
+                 ▼                ▼                 ▼
+        ┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐
+        │ BC11 · AI Gov    │ │ BC12 · AI Ops    │ │ BC13 · Billing   │
+        │ (registry,       │ │ (incident, drift,│ │ (fatura, KDV,    │
+        │  guardrail,      │ │  cost, usage)    │ │  e-Fatura)       │
+        │  redteam)        │ │                  │ │                  │
+        └──────────────────┘ └──────────────────┘ └──────────────────┘
 ```
+
+> BC11-BC13, BC1'den kiracı bağlamını alan Faz 4 (0209 R1–R17) ve HT2 (FR-A6) bağlamlarıdır. BC11 kural ihlalleri BC12 olay kaydına, BC13 dış webhook (Stripe/GİB) olaylarıyla beslenir.
 
 ---
 
@@ -166,6 +177,39 @@ Bu doküman, GeoLens Platform'un sınırlı bağlamlarını (bounded contexts) v
 | **Veri paylaşımı** | Sentiment skoru, hallüsinasyon işaretleri, gap raporları, gap önerileri (BC4 ve UI'ya) |
 | **Bağımlılık** | BC1 (tenant), BC3 (ham yanıt ve skor), BC6 (denetim izi — export), platform/db |
 
+### 3.11 BC11 · AI Governance (Yapay Zekâ Yönetişimi) — Faz 4
+
+| Alan | Değer |
+|------|-------|
+| **Sorumluluk** | AI envanteri, risk değerlendirmesi, kaçak AI taraması, guardrail kuralları, politika paketleri, önyargı testi, CI/CD kapısı, açıklanabilirlik, ajan izleme, kırmızı takım (R1–R8, R16) |
+| **Toplam kökleri** | Envanter Varlığı, Kaçak AI Taraması, Guardrail Kuralı, Politika Paketi, Önyargı Testi, CI/CD Kapı Denetimi, Açıklama Sonucu, Ajan İzi, Kırmızı Takım Senaryosu, Kırmızı Takım Koşusu |
+| **Dışa açık yüzey** | RegistryService, DiscoveryService, GuardrailService, PolicyService, BiasService, GateService, ExplainService, AgentService, RedTeamService |
+| **İletişim kalıbı** | Senkron (handler, doğrudan DB) + Asenkron (kural ihlalleri → BC12 incident, BC5 alert) |
+| **Veri paylaşımı** | Envanter, risk sınıfı, guardrail değerlendirmeleri, savunma skoru (BC12 ve UI'ya) |
+| **Bağımlılık** | BC1 (tenant), platform/db |
+
+### 3.12 BC12 · AI Operations (Yapay Zekâ Operasyonları) — Faz 4
+
+| Alan | Değer |
+|------|-------|
+| **Sorumluluk** | Prompt denetimi, model kıyaslaması, maliyet/kullanım analitiği, optimizasyon önerileri, versiyon takibi, olay yönetimi, sapma tespiti (R9–R15, R17) |
+| **Toplam kökleri** | Prompt Denetimi, Model Kıyaslaması, Maliyet Kaydı, Kullanım Ölçümü, Optimizasyon Önerisi, Versiyon Kaydı, Olay Kaydı, Sapma Gözlemi, Sapma Uyarısı |
+| **Dışa açık yüzey** | PromptAuditService, BenchmarkService, CostService, UsageService, OptimizeService, VersionService, IncidentService, DriftService |
+| **İletişim kalıbı** | Senkron (handler) + Fan-in (BC11 kural ihlalleri → olay kaydı) |
+| **Veri paylaşımı** | Olay kaydı, sapma uyarısı, maliyet/kullanım özetleri (BC5 alert ve UI'ya) |
+| **Bağımlılık** | BC1 (tenant), BC11 (envanter olayları), platform/db |
+
+### 3.13 BC13 · Billing (Faturalama) — HT2
+
+| Alan | Değer |
+|------|-------|
+| **Sorumluluk** | Stripe faturaları, KDV hesaplama, e-Fatura/e-Arşiv (GİB) gönderimi, fatura görüntüleme/indirme (FR-A6) |
+| **Toplam kökleri** | Fatura (BillingInvoice), Stripe Müşterisi (StripeCustomer) |
+| **Dışa açık yüzey** | BillingService, InvoiceRepository, StripeWebhookHandler, EInvoiceService |
+| **İletişim kalıbı** | Asenkron (dış webhook: Stripe/GİB) + Senkron (UI sorgulama) |
+| **Veri paylaşımı** | Fatura meta verisi, GİB durumu, KDV özeti (UI'ya) |
+| **Bağımlılık** | BC1 (tenant/paket hakları), Stripe API, platform/db (RLS, ADR-004) |
+
 ---
 
 ## 4. Bağlamlar Arası İletişim Kalıpları
@@ -176,6 +220,8 @@ Bu doküman, GeoLens Platform'un sınırlı bağlamlarını (bounded contexts) v
 | **Asenkron (Olay)** | BC3 → BC4 (skor hazır), BC3 → BC5 (değişim), BC3 → BC7 (arşivle), BC3 → BC8 (snapshot), BC3 → BC10 (analiz), BC4 → BC5 (öneri) | Outbox → Redis Streams |
 | **Worker (periyodik)** | BC9 (SEO — 6 saatte bir SC/GA4 sync) | Zamanlanmış worker (scheduler) |
 | **Fan-in** | Tümü → BC6 (denetim/kota); BC10 → BC4 (gap sonuçları) | AuditWriter arayüzü (senkron, D5); gap sonuçları asenkron |
+| **Fan-in (iç olay)** | BC11 (guardrail/gate/bias ihlalleri) → BC12 (incident) | Asenkron (olay) veya handler yazımı (Faz 4) |
+| **Webhook (dış)** | BC13 (Stripe/GİB) → fatura senkronu | Dış olay dinleyicisi (webhook endpoint) |
 | **CQRS** | BC3'ten okuma (senkron API), yazma (asenkron olay); BC10 analiz okuma (senkron), yazma (worker) | API okuma, worker yazma |
 
 **Kural:** İki bağlam arasında asenkron iletişim yeterliyse senkron bağımlılık eklenmez. MVP'de ölçüm okuma işlemleri senkrondur; yazma işlemleri asenkrondur.
@@ -200,6 +246,13 @@ Bu doküman, GeoLens Platform'un sınırlı bağlamlarını (bounded contexts) v
 | SEO verisi (SC/GA4) | BC9 | UI (SEODataPanel) |
 | sentiment skoru | BC10 | UI (sentiment dashboard) |
 | gap analizi | BC10 | BC4 (öneri), UI (competitive dashboard) |
+| envanter kaydı | BC11 | BC12 (incident entity_id, benchmark), UI (registry panel) |
+| guardrail değerlendirmesi | BC11 | BC11 (redteam savunma), BC12 (incident kaynağı) |
+| savunma skoru | BC11 | UI (RedTeamPanel), BC12 (incident) |
+| olay kaydı | BC12 | BC5 (notify), UI (incident panel) |
+| sapma uyarısı | BC12 | BC5 (alert), UI (drift panel) |
+| fatura meta verisi | BC13 | UI (BillingPanel) |
+| GİB durumu | BC13 | UI (fatura görünümü) |
 
 > **Kural:** Paylaşılan veri yalnız DTO (Data Transfer Object) olarak taşınır. Sahip bağlamın iç tipine doğrudan erişilmez.
 
@@ -209,7 +262,7 @@ Bu doküman, GeoLens Platform'un sınırlı bağlamlarını (bounded contexts) v
 
 | # | Kural | Uygulama |
 |:-:|-------|----------|
-| S1 | Her bağlam kendi veritabanı tablo kümesine sahiptir (şema önekli) | `identity.*`, `config.*`, `measure.*`, `insight.*`, `delivery.*`, `gov.*`, `archive.*`, `replay.*`, `seo.*`, `analysis.*`, `technicalgeo.*`, `contentgeo.*` |
+| S1 | Her bağlam kendi veritabanı tablo kümesine sahiptir (şema önekli) | `identity.*`, `config.*`, `measure.*`, `insight.*`, `delivery.*`, `governance.*`, `archive.*`, `replay.*`, `seo.*`, `analysis.*`, `technical.*`, `content.*`, `registry.*`, `discovery.*`, `guardrail.*`, `policy.*`, `bias.*`, `gate.*`, `explain.*`, `agent.*`, `redteam.*`, `prompt.*`, `benchmark.*`, `cost.*`, `usage.*`, `optimize.*`, `version.*`, `incident.*`, `drift.*`, `billing.*` |
 | S2 | Bağlamlar arası doğrudan veritabanı erişimi yasaktır | Tüm erişim bağlam API'si üzerinden |
 | S3 | Bağlam içi tipler internal/ altında saklanır; dışa yalnız api.go açılır | Go derleyici zorlaması |
 | S4 | Döngüsel bağımlılık yasaktır | 0403 lint kapısı (depguard) |
@@ -232,6 +285,11 @@ Bu doküman, GeoLens Platform'un sınırlı bağlamlarını (bounded contexts) v
 | **BC8 · Replay** | — | ✅ **Snapshot + karşılaştırma** | ✅ Diff derinleştirme | ✅ |
 | **BC9 · SEO** | — | ✅ **SC + GA4 bağlantısı** | ✅ Worker sertleştirme | ✅ Çoklu platform |
 | **BC10 · Audit & Analysis** | — | ✅ **Sentiment, hallucination, gap** | ✅ Transformer model, topic derin | ✅ |
+| **BC11 · AI Governance** | — | ✅ **Faz 4 (R1–R8, R16)** | ✅ Derinleştirme | ✅ Kurumsal entegrasyon |
+| **BC12 · AI Operations** | — | ✅ **Faz 4 (R9–R15, R17)** | ✅ Worker sertleştirme | ✅ Tahmin/otel |
+| **BC13 · Billing** | — | — | ✅ **FR-A6 (Stripe + KDV + e-Fatura)** | ✅ GİB gerçek entegrasyonu |
+
+> **Faz 4 notu:** BC11/BC12, 0209 backlog kapsamında (R1–R17) 03.08.2026 itibarıyla kodlanmıştır; HT1/HT2 takviminden bağımsız bir çalışma kolu olarak yürütülmüştür (0210 ile kapanmıştır). BC13 (FR-A6) HT2'de gerçek GİB entegrasyonu gerektirir; şu an mock/sandbox modda çalışır.
 
 ---
 
@@ -249,6 +307,9 @@ Bu doküman, GeoLens Platform'un sınırlı bağlamlarını (bounded contexts) v
 | **BC8 · Replay** | **internal/replay** | **Siz (TL+CEO)** |
 | **BC9 · SEO** | **internal/seo** | **Backend #1** |
 | **BC10 · Audit & Analysis** | **internal/sentiment, internal/competitive** | **Siz (TL+CEO)** |
+| **BC11 · AI Governance** | **internal/registry, internal/discovery, internal/guardrail, internal/policy, internal/bias, internal/gate, internal/explain, internal/agent, internal/redteam** | **Siz (TL+CEO)** |
+| **BC12 · AI Operations** | **internal/prompt, internal/benchmark, internal/cost, internal/usage, internal/optimize, internal/version, internal/incident, internal/drift** | **Backend #1** |
+| **BC13 · Billing** | **internal/billing** | **Backend #2** |
 | engines | internal/engines | Siz (TL+CEO) |
 | platform | internal/platform, internal/apikey (HT1) | Backend #1 |
 
@@ -264,6 +325,10 @@ Bu doküman, GeoLens Platform'un sınırlı bağlamlarını (bounded contexts) v
 6. **BC9 (SEO), harici bir API'ye bağlanan tek bağlamdır.** OAuth2 token yönetimi ve periyodik senkronizasyon, diğer bağlamlardan farklı bir worker kalıbı gerektirir.
 7. **0306 (API Design)** her bağlamın dışa açık yüzeyini OpenAPI sözleşmesine dönüştürür.
 8. **0403 (CI/CD)** bağlam sınırı ihlallerini lint ile CI kapısında yakalar.
+9. **Faz 4 genişletmesi (v1.3):** bağlam sayısı 10'dan 13'e çıktı (BC11 AI Governance, BC12 AI Operations, BC13 Billing). Yeni bağlamlar mevcut sınır korumalarını (S1-S6) ve ULID/kiracı kurallarını aynen kullanır.
+10. **BC13 dış webhook bağlamıdır:** Stripe/GİB olaylarıyla beslenir; outbox yerine webhook dinleyicisi kullanır (0304 O-5 gerekçesiyle aynı).
+11. **BC11 → BC12 olay bağı:** guardrail/gate/bias ihlalleri BC12 olay kaydına kaynak olur; 0304 v1.3 olay kataloğuyla senkrondur.
+12. **İzolasyon farkı:** BC13 (billing) RLS ile (ADR-004), BC11/BC12 handler WHERE koşuluyla kiracı izolasyonu sağlar — 0302 v1.3 §9.9 ile senkron.
 
 ---
 
@@ -275,6 +340,7 @@ Bu doküman, GeoLens Platform'un sınırlı bağlamlarını (bounded contexts) v
 | O-2 | Benchmark (HT2) ayrı bağlam mı, BC4 altı mı? | ⏳ Ön hipotez: BC4 alt paketi. AVIP D-64 (measure/calc) ile uyumlu. |
 | O-3 | BC7 (Archive) retention policy otomasyonu — hangi eşikte hangi aksiyon? | ⏳ HT2 öncesi kararlaştırılacak. RetentionPolicy entity tasarım aşamasında. |
 | O-4 | BC9 (SEO) — birden fazla Google hesabı bağlanabilir mi? (Örn: farklı SC property'leri) | ⏳ Şu an workspace başına bir bağlantı. HT2'de değerlendirilecek. |
+| O-5 | BC11/BC12 Faz 4 bağlamları RLS mi, handler WHERE mi kullanmalı? | ⏳ Mevcut karar: handler WHERE (Faz 4); BC13 RLS (ADR-004). 0302 v1.3 §9.9'da dokümante edildi. |
 
 ### Devralınan AVIP Kararları
 
@@ -303,3 +369,4 @@ Bu doküman, GeoLens Platform'un sınırlı bağlamlarını (bounded contexts) v
 | 1.0 | 22.07.2026 | İlk yayın: 6 bağlam tanımı, bağlam haritası, iletişim kalıpları (senkron/asenkron/fan-in), paylaşılan veri, sınır korumaları, olgunluk düzeyleri, CODEOWNERS eşlemesi. 0302/0303/0304'ten türetilmiştir. |
 | 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-64 (hesap motoru), D-65 (engines modülü), D-66 (SPA monorepo), D-67 (lint). Devralınan Kararlar eklendi. |
 | 1.2 | 28.07.2026 | **HT1 bağlam genişletmesi:** 4 yeni bağlam (BC7 Archive, BC8 Replay, BC9 SEO, BC10 Audit & Analysis) eklendi. Bağlam haritası diyagramı, iletişim kalıpları, shared kernel, sınır korumaları, olgunluk düzeyleri, CODEOWNERS, çıkarımlar ve açık sorular güncellendi. |
+| 1.3 | 04.08.2026 | **Faz 4 ve HT2 bağlam genişletmesi:** 3 yeni bağlam eklendi — BC11 AI Governance (R1–R8, R16), BC12 AI Operations (R9–R15, R17), BC13 Billing (FR-A6). Bağlam haritası diyagramı güncellendi (BC11/BC12/BC13 alt satır). İletişim kalıplarına "Fan-in (iç olay)" ve "Webhook (dış)" eklendi. Shared kernel 8 yeni veri satırıyla genişletildi. S1 şema listesine 18 yeni şema eklendi ve `gov.*` → `governance.*` düzeltildi. Olgunluk tablosuna BC11-BC13 ve Faz 4 notu eklendi. CODEOWNERS 3 yeni satır. Çıkarımlar (9-12) ve açık sorulara O-5 (izolasyon stratejisi) eklendi. 0302 v1.3, 0209 (Faz 4) ve 0210 (rakip kapanışı) ile senkron. |

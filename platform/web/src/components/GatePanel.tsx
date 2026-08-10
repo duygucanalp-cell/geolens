@@ -47,28 +47,28 @@ export function GatePanel({ workspaceId: _ws }: Props) {
   return (
     <div className="rec-panel">
       <div className="rec-header">
-        <h3>🚧 CI/CD Governance Gate</h3>
-        <p className="rec-desc">AI deployment öncesi governance kontrol noktası.</p>
+        <h3>{t('gate.title')}</h3>
+        <p className="rec-desc">{t('gate.desc')}</p>
       </div>
       {error && <div className="audit-error">{error}</div>}
 
-      <form onSubmit={handleCheck} style={{ background: '#f8fafc', padding: '1rem', borderRadius: '10px', marginBottom: '1rem' }}>
+      <form onSubmit={handleCheck} style={{ background: 'var(--surface-2)', padding: '1rem', borderRadius: '10px', marginBottom: '1rem' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <input className="notif-input" style={{ flex: 1 }} placeholder="Entity ID veya adı" value={entityId} onChange={e => setEntityId(e.target.value)} required />
+            <input className="notif-input" style={{ flex: 1 }} placeholder={t('gate.entity_placeholder')} value={entityId} onChange={e => setEntityId(e.target.value)} required />
             <select value={entityType} onChange={e => setEntityType(e.target.value)} className="filter-select">
-              <option value="model">Model</option><option value="agent">Agent</option><option value="application">Uygulama</option>
+              <option value="model">{t('gate.type_model')}</option><option value="agent">{t('gate.type_agent')}</option><option value="application">{t('gate.type_application')}</option>
             </select>
             <select value={targetEnv} onChange={e => setTargetEnv(e.target.value)} className="filter-select">
-              <option value="development">Development</option><option value="staging">Staging</option><option value="production">Production</option>
+              <option value="development">{t('gate.env_development')}</option><option value="staging">{t('gate.env_staging')}</option><option value="production">{t('gate.env_production')}</option>
             </select>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button type="submit" className="audit-btn" disabled={loading}>
-              {loading ? t('gate.checking') : 'Gate Check'}
+              {loading ? t('gate.checking') : t('gate.check')}
             </button>
             <button type="button" className="refresh-btn" onClick={loadHistory} disabled={!entityId.trim()}>
-              {showHistory ? t('gate.hide_history') : 'Geçmiş'}
+              {showHistory ? t('gate.hide_history') : t('gate.show_history')}
             </button>
           </div>
         </div>
@@ -79,18 +79,18 @@ export function GatePanel({ workspaceId: _ws }: Props) {
         <div style={{ marginBottom: '1.5rem' }}>
           <div style={{
             textAlign: 'center', padding: '1.5rem', borderRadius: '12px', marginBottom: '1rem',
-            background: checkResult.decision === 'approved' ? '#f0fdf4' : checkResult.decision === 'flagged' ? '#fefce8' : '#fef2f2',
+            background: checkResult.decision === 'approved' ? 'var(--success-bg)' : checkResult.decision === 'flagged' ? '#fefce8' : 'var(--danger-bg)',
           }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>
               {checkResult.decision === 'approved' ? '✅' : checkResult.decision === 'flagged' ? '⚠️' : '🔴'}
             </div>
-            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: DECISION_COLORS[checkResult.decision] || '#64748b' }}>
+            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: DECISION_COLORS[checkResult.decision] || 'var(--text-muted)' }}>
               {DECISION_LABELS[checkResult.decision] || checkResult.decision}
             </div>
-            <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.25rem' }}>
-              {checkResult.passed}/{checkResult.total} check geçti
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+              {t('gate.checks_passed', { passed: checkResult.passed, total: checkResult.total })}
             </div>
-            <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-faint)', marginTop: '0.25rem' }}>
               {checkResult.entity_type} · {checkResult.target_env}
             </div>
           </div>
@@ -100,13 +100,13 @@ export function GatePanel({ workspaceId: _ws }: Props) {
             {(checkResult.checks || []).map((c: any, i: number) => (
               <div key={i} style={{
                 display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem',
-                background: c.passed ? '#f0fdf4' : c.passed === false ? '#fef2f2' : '#f8fafc',
+                background: c.passed ? 'var(--success-bg)' : c.passed === false ? 'var(--danger-bg)' : 'var(--surface-2)',
                 borderRadius: '8px',
               }}>
                 <span style={{ fontSize: '1.1rem' }}>{c.passed ? '✅' : '❌'}</span>
                 <div style={{ flex: 1 }}>
                   <strong style={{ fontSize: '0.85rem' }}>{c.name}</strong>
-                  <p style={{ fontSize: '0.78rem', color: '#64748b' }}>{c.details}</p>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{c.details}</p>
                 </div>
               </div>
             ))}
@@ -117,23 +117,23 @@ export function GatePanel({ workspaceId: _ws }: Props) {
       {/* History */}
       {showHistory && (
         <div>
-          <h4 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.75rem', color: '#334155' }}>
-            Gate Geçmişi ({historyItems.length})
+          <h4 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.75rem', color: 'var(--text-strong)' }}>
+            {t('gate.history_title')} ({historyItems.length})
           </h4>
           {historyItems.length === 0 ? (
-            <div className="rec-empty"><div className="rec-empty-icon">📋</div><h4>Henüz geçmiş kaydı yok</h4></div>
+            <div className="rec-empty"><div className="rec-empty-icon">📋</div><h4>{t('gate.empty_history')}</h4></div>
           ) : (
             <div className="rec-list">
               {historyItems.map((item: any, i: number) => (
                 <div key={item.id || i} className="rec-card">
                   <div className="rec-card-left">
-                    <div className="rec-severity-bar" style={{ backgroundColor: DECISION_COLORS[item.decision] || '#94a3b8' }} />
+                    <div className="rec-severity-bar" style={{ backgroundColor: DECISION_COLORS[item.decision] || 'var(--text-faint)' }} />
                   </div>
                   <div className="rec-card-content">
                     <div className="rec-card-header">
                       <span className="rec-status-badge" style={{
                         background: (DECISION_COLORS[item.decision] || '#94a3b8') + '20',
-                        color: DECISION_COLORS[item.decision] || '#64748b',
+                        color: DECISION_COLORS[item.decision] || 'var(--text-muted)',
                       }}>
                         {DECISION_LABELS[item.decision] || item.decision}
                       </span>
@@ -158,8 +158,8 @@ export function GatePanel({ workspaceId: _ws }: Props) {
       {!checkResult && !showHistory && (
         <div className="rec-empty">
           <div className="rec-empty-icon">🚧</div>
-          <h4>Henüz kontrol yapılmadı</h4>
-          <p>AI varlığınızı production'a göndermeden önce governance kontrolünden geçirin.</p>
+          <h4>{t('gate.empty_title')}</h4>
+          <p>{t('gate.empty_desc')}</p>
         </div>
       )}
     </div>

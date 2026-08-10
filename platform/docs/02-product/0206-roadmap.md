@@ -115,7 +115,7 @@ HT1'de kod seviyesine çıkamamış son 3 FR'nin kapatılması.
 | Kalem | FR | Değer Gerekçesi | Bağımlılık |
 |-------|:--:|-----------------|------------|
 | **Benchmark bağlamı** | FR-D5 | P2 çerçeveleme ihtiyacı. Kategori farklılaştırıcısı. Anonim toplulaştırılmış benchmark ile müşterilere sektör ortalaması görünürlük sağlanır. | ≥5 kiracı eşiği + differential privacy yöntemi + NFR-13 gizlilik kuralı |
-| **Self-serve ödeme UI** | FR-A6 | P4/P2 hunisinin sürtünmesiz dönüşümü. Stripe entegrasyonu tam; self-serve UI (paket yükseltme, fatura görüntüleme, kredi kartı yönetimi) eksik. | Ödeme sağlayıcı kararı (Stripe mevcut) + vergi/fatura altyapısı (TR özel) |
+| **Self-serve ödeme UI** | FR-A6 | ✅ HT2'de tamamlandı (03.08.2026): Stripe checkout/webhook/portal, fatura listesi, BillingPanel UI, e-Fatura/e-Arşiv (mock UBL-TR), KDV hesaplama, Türkçe fatura PDF şablonu. Gerçek GİB entegrasyonu üretim kimlik bilgisi gerektirir (`EFATURA_MODE`). | Stripe (mevcut) + vergi/fatura altyapısı (TR özel) — kod seviyesinde kapandı |
 | **Google AI Mode** | FR-B6 (genişletme) | Kademe 3 (directional). Gemini proxy üzerinden AI Mode endpoint desteği. Maliyet/kararlılık değerlendirmesi HT1 verisiyle yapılır. | Gemini adapter mevcut; AI Mode endpoint ayrı API çağrısı gerektirir |
 
 #### Detay: Benchmark Bağlamı (FR-D5)

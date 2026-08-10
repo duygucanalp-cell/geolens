@@ -4,11 +4,11 @@
 |---|---|
 | Doküman ID | 0306 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.1 |
+| Versiyon | 1.2 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
-| Tarih | 22 Temmuz 2026 |
-| İlişkili | 0302, 0303, 0305, 0309, 0310, 0204 |
+| Tarih | 04 Ağustos 2026 |
+| İlişkili | 0302, 0303, 0305, 0309, 0310, 0204, 0209, 0210 |
 
 ---
 
@@ -188,6 +188,186 @@ Bu doküman, GeoLens Platform'daki alan hizmetlerini (domain services) tanımlar
 | **Çıktı** | Benchmark istatistiği (ortalama, medyan, çeyreklik) |
 | **Not** | NFR-13: ≥5 kiracı eşiği. HT2'de devreye girer |
 
+### 3.6 Yönetişim Hizmetleri (BC11 · AI Governance — Faz 4)
+
+#### RegistryService (BC11 · AI Governance)
+
+| Alan | Değer |
+|------|-------|
+| **Sorumluluk** | Envanter varlığı CRUD, yaşam döngüsü geçişleri, risk sınıfı yönetimi |
+| **Girdi** | Varlık tanımı (tür, sürüm, sağlayıcı) |
+| **Çıktı** | RegistryEntity; RegistryEntityRegistered olayı |
+| **Kullanım** | Yönetici API; gate ve explain hizmetlerine kaynak |
+| **Not** | Risk sınıfı enum ile sınırlı; değerlendirmeler yalnız ekle (0303 §3.20) |
+
+#### DiscoveryService (BC11 · AI Governance)
+
+| Alan | Değer |
+|------|-------|
+| **Sorumluluk** | Kaçak AI taraması başlatır; bulguları envantere aday gösterir |
+| **Girdi** | Tarama türü, sağlayıcı kapsamı |
+| **Çıktı** | Tarama + bulgular; DiscoveryScanCompleted olayı |
+| **Not** | Bulgu risk düzeyine göre RegistryEntity adayı |
+
+#### GuardrailService (BC11 · AI Governance)
+
+| Alan | Değer |
+|------|-------|
+| **Sorumluluk** | Prompt/yanıtı aktif kurallara karşı değerlendirir; eşleşmede aksiyon uygular |
+| **Girdi** | Prompt, yanıt |
+| **Çıktı** | Değerlendirme (eşleşme + aksiyon); GuardrailViolation olayı |
+| **Not** | I17: aksiyon yalnız eşleşen kuralda; block/flag/log (0303 §3.22) |
+
+#### PolicyPackService (BC11 · AI Governance)
+
+| Alan | Değer |
+|------|-------|
+| **Sorumluluk** | Çerçeve paketini uygular/seed'ler; uyum yüzdesini kontrollerden türetir |
+| **Girdi** | Çerçeve (EU AI Act/NIST AI RMF/ISO 42001/KVKK) |
+| **Çıktı** | Paket + kontroller; PolicyPackApplied olayı |
+| **Not** | I21: kiracı × çerçeve tekil; uyum yüzdesi kontrol durumlarından hesaplanır |
+
+#### BiasTestService (BC11 · AI Governance)
+
+| Alan | Değer |
+|------|-------|
+| **Sorumluluk** | Metrik tipine göre adillik skoru ve önyargı işareti hesaplar |
+| **Girdi** | Model, metrik tipi, test verisi |
+| **Çıktı** | BiasTest (fairness_score, max_gap); BiasTestCompleted olayı |
+| **Not** | 4/5 kuralı; has_bias true olduğunda incident adayı |
+
+#### GateService (BC11 · AI Governance)
+
+| Alan | Değer |
+|------|-------|
+| **Sorumluluk** | Deployment öncesi risk + politika + envanter + dökümantasyon denetimini toplar; karar üretir |
+| **Girdi** | Envanter varlığı, hedef ortam, sürüm |
+| **Çıktı** | GateCheck (onaylandı/engelli); GateCheckDecision olayı |
+| **Kullandığı hizmetler** | RegistryService, PolicyPackService |
+| **Not** | Yalnız ekle denetim geçmişi (0303 §3.25) |
+
+#### ExplainService (BC11 · AI Governance)
+
+| Alan | Değer |
+|------|-------|
+| **Sorumluluk** | SHAP bazlı özellik önemleri ve yorum metni üretir |
+| **Girdi** | Envanter varlığı, tahmin |
+| **Çıktı** | ExplainResult (base_value, feature_importance) |
+| **Not** | Envanter varlığına bağlı; yalnız ekle |
+
+#### AgentTraceService (BC11 · AI Governance)
+
+| Alan | Değer |
+|------|-------|
+| **Sorumluluk** | Multi-step ajan iş akışını izler; adım durumlarını toplar |
+| **Girdi** | Trace başlatma, adım güncellemeleri |
+| **Çıktı** | AgentTrace + AgentStep; AgentTraceCompleted olayı |
+| **Not** | Adım durumları iz durumunu türetir (0303 §3.27) |
+
+#### RedTeamService (BC11 · AI Governance)
+
+| Alan | Değer |
+|------|-------|
+| **Sorumluluk** | Saldırı senaryolarını hedef prompt'a uygular; savunma skoru hesaplar |
+| **Girdi** | Senaryo listesi, hedef prompt, aktif guardrail kuralları |
+| **Çıktı** | RedTeamRun + sonuçlar; RedTeamRunCompleted olayı |
+| **Kullandığı hizmetler** | GuardrailService (desen eşleşmesi) |
+| **Not** | I18: defense_score = passed/total × 100 (0303 §3.29) |
+
+### 3.7 Operasyon Hizmetleri (BC12 · AI Operations — Faz 4)
+
+#### PromptAuditService (BC12 · AI Operations)
+
+| Alan | Değer |
+|------|-------|
+| **Sorumluluk** | Prompt kalite ve uygunluk denetimi |
+| **Girdi** | Prompt, motor |
+| **Çıktı** | PromptAudit (status, score, issues); yalnız ekle |
+| **Not** | Durum geçti/işaretli/kaldı |
+
+#### BenchmarkService (BC12 · AI Operations)
+
+| Alan | Değer |
+|------|-------|
+| **Sorumluluk** | Model/motor performans kıyaslaması kaydeder |
+| **Girdi** | Model, motor, metrikler |
+| **Çıktı** | ModelBenchmark; yalnız ekle |
+| **Not** | R10 (benchmark.models); BC4'teki anonim BenchmarkStat (industry_stats) ile karıştırılmaz |
+
+#### CostAnalyticsService (BC12 · AI Operations)
+
+| Alan | Değer |
+|------|-------|
+| **Sorumluluk** | Motor/model bazlı maliyet kayıtlarını toplar ve analiz eder |
+| **Girdi** | İşlem türü, token, maliyet |
+| **Çıktı** | CostEntry; maliyet özetleri |
+| **Not** | I22: yalnız ekle telemetri |
+
+#### UsageAnalyticsService (BC12 · AI Operations)
+
+| Alan | Değer |
+|------|-------|
+| **Sorumluluk** | API kullanım ölçümlerini toplar |
+| **Girdi** | Uç nokta, yöntem, durum, gecikme |
+| **Çıktı** | UsageMetric; kullanım özetleri |
+| **Not** | I22: yalnız ekle telemetri |
+
+#### OptimizationService (BC12 · AI Operations)
+
+| Alan | Değer |
+|------|-------|
+| **Sorumluluk** | Görünürlük optimizasyon önerileri üretir |
+| **Girdi** | Skor, benchmark, maliyet verisi |
+| **Çıktı** | OptimizationRecommendation (impact/effort) |
+| **Not** | Durum bekliyor/uygulandı/görmezden gelindi |
+
+#### VersionTrackingService (BC12 · AI Operations)
+
+| Alan | Değer |
+|------|-------|
+| **Sorumluluk** | Model/motor/prompt seti sürüm değişikliklerini kaydeder |
+| **Girdi** | Varlık türü, eski/yeni sürüm |
+| **Çıktı** | VersionEntry; VersionEntryCreated olayı |
+| **Not** | Yalnız ekle denetim kaydı |
+
+#### IncidentService (BC12 · AI Operations)
+
+| Alan | Değer |
+|------|-------|
+| **Sorumluluk** | AI olaylarını açar/kapatır; durum makinesini yönetir |
+| **Girdi** | Kaynak olay (guardrail/gate/bias/drift) veya manüel |
+| **Çıktı** | IncidentEvent; IncidentOpened/Resolved olayları |
+| **Not** | Durum: açık → soruşturmada → hafifletildi → çözüldü → kapandı |
+
+#### DriftAnalysisService (BC12 · AI Operations)
+
+| Alan | Değer |
+|------|-------|
+| **Sorumluluk** | Metrik sapmasını Z-skoru ile ölçer; eşik aşımında uyarı üretir |
+| **Girdi** | Gözlemler, eşik |
+| **Çıktı** | DriftAlert; DriftAlertTriggered olayı |
+| **Not** | I19: <4 gözlemde sonuç yok; eşik aşımı olay kaydına aday |
+
+### 3.8 Faturalama Hizmetleri (BC13 · Billing — HT2)
+
+#### BillingService (BC13 · Billing)
+
+| Alan | Değer |
+|------|-------|
+| **Sorumluluk** | Stripe webhook olaylarını fatura kaydına senkronize eder |
+| **Girdi** | Stripe olayı (invoice.created/paid/voided) |
+| **Çıktı** | BillingInvoice; InvoiceCreated/Paid/Voided olayları |
+| **Not** | RLS koruması (ADR-004); kuruş ve KDV alanları I20 |
+
+#### EInvoiceService (BC13 · Billing)
+
+| Alan | Değer |
+|------|-------|
+| **Sorumluluk** | KDV hesaplar; e-Fatura/e-Arşiv UBL-TR belgesi üretir ve GİB'e iletir |
+| **Girdi** | BillingInvoice, müşteri bilgileri |
+| **Çıktı** | GİB durumu (pending/accepted/rejected); EInvoiceSent olayı |
+| **Not** | I20: izinli KDV {0, 1, 10, 20}; üretim dışı ortamda mock mod |
+
 ---
 
 ## 4. Hizmet-Bağlam Eşlemesi
@@ -209,6 +389,25 @@ Bu doküman, GeoLens Platform'daki alan hizmetlerini (domain services) tanımlar
 | SiteAuditService | BC3 Measure | Doğrulama | 🟡 (daraltılmış) |
 | ExportService | BC5 Delivery | Dönüşüm | ✅ |
 | BenchmarkAggregationService | BC4 Insight | Dönüşüm | 🔴 (HT2) |
+| RegistryService | BC11 AI Governance | Üretim | ✅ (Faz 4) |
+| DiscoveryService | BC11 AI Governance | Koordinasyon | ✅ (Faz 4) |
+| GuardrailService | BC11 AI Governance | Doğrulama | ✅ (Faz 4) |
+| PolicyPackService | BC11 AI Governance | Üretim | ✅ (Faz 4) |
+| BiasTestService | BC11 AI Governance | Doğrulama | ✅ (Faz 4) |
+| GateService | BC11 AI Governance | Doğrulama | ✅ (Faz 4) |
+| ExplainService | BC11 AI Governance | Üretim | ✅ (Faz 4) |
+| AgentTraceService | BC11 AI Governance | Koordinasyon | ✅ (Faz 4) |
+| RedTeamService | BC11 AI Governance | Koordinasyon | ✅ (Faz 4) |
+| PromptAuditService | BC12 AI Operations | Doğrulama | ✅ (Faz 4) |
+| BenchmarkService | BC12 AI Operations | Dönüşüm | ✅ (Faz 4) |
+| CostAnalyticsService | BC12 AI Operations | Dönüşüm | ✅ (Faz 4) |
+| UsageAnalyticsService | BC12 AI Operations | Dönüşüm | ✅ (Faz 4) |
+| OptimizationService | BC12 AI Operations | Üretim | ✅ (Faz 4) |
+| VersionTrackingService | BC12 AI Operations | Üretim | ✅ (Faz 4) |
+| IncidentService | BC12 AI Operations | Koordinasyon | ✅ (Faz 4) |
+| DriftAnalysisService | BC12 AI Operations | Doğrulama | ✅ (Faz 4) |
+| BillingService | BC13 Billing | Koordinasyon | 🟡 (HT2, mock) |
+| EInvoiceService | BC13 Billing | Dönüşüm | 🟡 (HT2, mock) |
 
 ---
 
@@ -232,6 +431,19 @@ RecommendationService
 AlertEvaluationService
   ├── AlertRuleRepository
   └── StatisticalSignificanceTest
+
+RedTeamService
+  ├── GuardrailService (desen eşleşmesi)
+  └── RedTeamCaseRepository
+
+GateService
+  ├── RegistryService (risk sınıfı)
+  ├── PolicyPackService (uyum yüzdesi)
+  └── GateCheckRepository
+
+DriftAnalysisService
+  ├── DriftObservationRepository
+  └── threshold (parametre)
 ```
 
 > **Kural:** Hizmetler durumsuzdur (stateless). Tüm durum, bağlı oldukları repository'lerde saklanır.
@@ -240,12 +452,15 @@ AlertEvaluationService
 
 ## 6. GeoLens İçin Çıkarımlar
 
-1. **15 alan hizmeti** tanımlanmıştır. 12'si MVP'de tam, 2'si daraltılmış, 1'i HT2'de devreye girer.
+1. **34 alan hizmeti** tanımlanmıştır: 15 çekirdek (MVP/HT1) + 19 Faz 4/HT2 (BC11: 9, BC12: 8, BC13: 2). 12 çekirdek hizmet MVP'de tamdır; Faz 4 hizmetleri 0209 kapsamında kodlanmıştır.
 2. **ScoringService ve FidelityService** GeoLens'in en kritik algoritmik farklılaştırıcılarıdır. Detaylı tasarım 0309'da (Scoring Engine) yapılır.
 3. **MeasurementOrchestrator** en karmaşık koordinasyon hizmetidir: üç motor çağrısı, hata yönetimi, kısmi sonuç, skorlama zinciri.
 4. **PolicyFilterService** motor politikalarına uyumu garanti eder. Bu hizmet olmadan hiçbir öneri kullanıcıya gösterilmez (I7, FR-E2).
 5. **Hizmetler durumsuzdur.** Ölçekleme için worker replika sayısı artırılabilir; hizmetler arasında paylaşılan durum yoktur.
 6. **0309 (Scoring Engine)** ScoringService ve FidelityService'in algoritmik detayını verir.
+7. **Faz 4 hizmetleri senkron handler tabanlıdır** (0304 O-6); GuardrailService, GateService, DriftAnalysisService ve RedTeamService yönetişim/operasyon bağlamlarının algoritmik kalbidir.
+8. **RedTeamService → GuardrailService bağımlılığı** savunma testini gerçek kural tabanına dayandırır; savunma skoru gerçek eşleşme oranından türetilir (I18).
+9. **BillingService/EInvoiceService (BC13)** dış webhook ve GİB entegrasyonuyla beslenir; mock mod üretim mühürü gerektirir (FR-A6).
 
 ---
 
@@ -256,6 +471,7 @@ AlertEvaluationService
 | O-1 | BenchmarkAggregationService anonimleştirme yöntemi | ⏳ HT2'de karara bağlanır; NFR-13. |
 | O-2 | StatisticalSignificanceTest eşik değerleri | ⏳ 0309 ile kalibre edilecek. AVIP D-31 (anlamlılık eşikleri) devralındı. |
 | O-3 | Öneri-etki takibi hizmet modeli | ⏳ Ön hipotez: RecommendationService'e ek (HT1). |
+| O-4 | Faz 4 hizmetleri (guardrail, gate, drift, redteam) senkron handler olarak mı, worker olarak mı çalışmalı? | ⏳ Mevcut karar: senkron handler (doğrudan DB). Asenkronlaştırma 0304 O-6 ile birlikte değerlendirilir. |
 
 ### Devralınan AVIP Kararları
 
@@ -283,3 +499,4 @@ AlertEvaluationService
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: 15 alan hizmeti, 5 sınıf (skorlama/koordinasyon/üretim/doğrulama/dönüşüm), hizmet kataloğu, bağlam eşlemesi, bağımlılık grafiği. 0302-0305'ten türetilmiştir. |
+| 1.2 | 04.08.2026 | **Faz 4 ve HT2 hizmet genişletmesi:** 19 yeni alan hizmeti eklendi — BC11 (RegistryService, DiscoveryService, GuardrailService, PolicyPackService, BiasTestService, GateService, ExplainService, AgentTraceService, RedTeamService), BC12 (PromptAuditService, BenchmarkService, CostAnalyticsService, UsageAnalyticsService, OptimizationService, VersionTrackingService, IncidentService, DriftAnalysisService), BC13 (BillingService, EInvoiceService). Toplam hizmet sayısı 15'ten 34'e çıktı. §4 bağlam eşlemesi, §5 bağımlılık grafiği (RedTeam→Guardrail, Gate→Registry+Policy) ve §6 çıkarımlar güncellendi. Açık sorulara O-4 (Faz 4 senkron/worker) eklendi. 0302 v1.3, 0209 (Faz 4) ve 0210 (rakip kapanışı) ile senkron. |

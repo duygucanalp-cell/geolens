@@ -71,6 +71,10 @@ func main() {
 	geminiAdapter := gemini.NewAdapter(cfg.GeminiAPIKey, nil)
 	engines.Register(geminiAdapter)
 
+	// Google AI Overview + Google AI Mode (Kademe 3 — directional) — FR-B6 HT2 genişletmesi
+	engines.Register(geminiAdapter.WithAIOverview("", ""))
+	engines.Register(geminiAdapter.WithAIMode("", ""))
+
 	slog.Info("motor kayıt defteri hazır", "engine_count", engines.Count(), "engines", engines.List())
 
 	ctx, cancel := context.WithCancel(context.Background())

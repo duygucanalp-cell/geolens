@@ -4,11 +4,11 @@
 |---|---|
 | Doküman ID | 0300 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Engineering |
-| Tarih | 25 Temmuz 2026 |
-| İlişkili | 0301–0311, 0000, 0501, ADR-001 |
+| Tarih | 03 Ağustos 2026 |
+| İlişkili | 0301–0312, 0000, 0501, ADR-001 |
 
 ---
 
@@ -33,6 +33,7 @@ Bu doküman, GeoLens Platform'un domain katmanı dokümantasyonunun kapsamını 
 | 0309 | Hesap Motoru | Skor hesaplama, GA, fidelite, determinizm |
 | 0310 | Domain Güvenlik | RLS, IAM, sır yönetimi |
 | 0311 | Gözlemlenebilirlik | Metrik kataloğu, alarmlar, panolar |
+| 0312 | Conversation Replay & Archive | AI yanıt anlık görüntüsü, tarihsel arşiv |
 
 ---
 
@@ -54,3 +55,4 @@ Bu doküman, GeoLens Platform'un domain katmanı dokümantasyonunun kapsamını 
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 25.07.2026 | İlk yayın: domain kapsamı ve bağlam haritası |
+| 1.1 | 03.08.2026 | 0312 (Conversation Replay & Archive) indeks tablosuna ve İlişkili alanına eklendi |

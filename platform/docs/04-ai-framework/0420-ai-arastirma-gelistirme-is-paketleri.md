@@ -4,10 +4,10 @@
 |------|-------|
 | Doküman ID | 0420 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Product |
-| Tarih | 29 Temmuz 2026 |
+| Tarih | 04 Ağustos 2026 |
 | İlişkili | Bu doküman bağımsızdır. İçinde atıf yapılan tüm kavramlar aşağıda açıklanmıştır. |
 
 ---
@@ -482,7 +482,7 @@ Sektörde "AI Visibility" dendiğinde akla gelen ilk isim GeoLens olmalı. White
 
 | Çıktı | Yazılımda Nasıl Kullanılır | Örnek | Ne İşe Yarar |
 |-------|----------------------------|-------|-------------|
-| Whitepaper | GeoLens'in metodolojisini anlatan akademik doküman. Açık standart olarak herkesin erişimine açılır. Potansiyel müşterilere "AI Visibility ölçümü nasıl yapılır?" sorusunun cevabı olarak gönderilir. Yatırımcı sunumlarında referans gösterilir. | **Whitepaper içindekiler:** 1. Giriş — AI çağında marka görünürlüğü sorunu 2. Literatür taraması — 30+ akademik kaynak 3. AI Visibility Framework — metodoloji 4. Visibility Index — matematiksel model 5. Pilot çalışma — 100 marka, 7 motor, 3 sektör 6. Sonuç — GeoLens'in konumu → Satış ekibi müşteriye "Şu whitepaper'ı okuyun, sonra konuşalım" der. | Sektörde düşünce liderliği, açık standart |
+| Whitepaper | GeoLens'in metodolojisini anlatan akademik doküman. Açık standart olarak herkesin erişimine açılır. Potansiyel müşterilere "AI Visibility ölçümü nasıl yapılır?" sorusunun cevabı olarak gönderilir. Yatırımcı sunumlarında referans gösterilir. | **Whitepaper içindekiler:** 1. Giriş — AI çağında marka görünürlüğü sorunu 2. Literatür taraması — 30+ akademik kaynak 3. AI Visibility Framework — metodoloji 4. Visibility Index — matematiksel model 5. Pilot çalışma — 100 marka, 8 motor, 3 sektör 6. Sonuç — GeoLens'in konumu → Satış ekibi müşteriye "Şu whitepaper'ı okuyun, sonra konuşalım" der. | Sektörde düşünce liderliği, açık standart |
 | Konferans Sunumu | BrightonSEO, SearchLove, AI Summit gibi konferanslarda sunulmak üzere hazırlanır. 15-20 slayt, CFP submission özetiyle birlikte teslim edilir. Sunumda GeoLens'in bulguları, metodolojisi ve sektöre katkısı anlatılır. Son slayt demo daveti içerir → lead toplama. | **BrightonSEO CFP:** Başlık: *"AI Visibility: How to Measure Your Brand in ChatGPT, Gemini, and Claude"* → **İçerik:** "500 markayı 7 AI motorunda test ettik. İşte bulgular: ChatGPT'de geçme oranı %X, Gemini'de %Y..." → **Sonuç:** "GeoLens ile siz de ölçün → geolens.ai" → **Hedef:** 50+ lead. | Konferanslarda sunum → potansiyel müşteri lead'i |
 | Blog Serisi | GeoLens web sitesinde yayınlanmak üzere 4-6 blog yazısı. SEO anahtar kelimeleriyle optimize edilir: "AI visibility", "GEO nedir", "ChatGPT marka görünürlüğü" vb. Organik trafik çeker. Her yazının sonunda CTA butonu: "Markanızın AI görünürlüğünü ölçün →" | **Blog yazısı #1:** *"AI Visibility Nedir ve Neden Önemlidir?"* → Hedef anahtar kelime: "AI visibility" → Aylık arama hacmi: 2400 → **İçerik:** "AI motorları (ChatGPT, Gemini...) markanızdan nasıl bahsediyor? İşte ölçüm yöntemi..." → **CTA:** "Ücretsiz AI Visibility raporunuzu alın" → **Hedef:** Ayda 5000 organik ziyaretçi, %5 dönüşüm = 250 lead. | Organik trafik, "AI Visibility" aramalarında GeoLens |
 
@@ -531,3 +531,4 @@ Eşzamanlı:   İP-10 Whitepaper (İP-06/08 sonuçlarıyla)
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 29.07.2026 | İlk yayın: 10 iş paketi, takvim, değerlendirme kriterleri. |
+| 1.1 | 04.08.2026 | **Motor senkronu:** Whitepaper pilot çalışma açıklaması "7 motor" → "8 motor" olarak güncellendi — 0308 v1.3 ile hizalı. |

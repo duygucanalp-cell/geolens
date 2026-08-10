@@ -4,11 +4,11 @@
 |---|---|
 | Doküman ID | 0511 (Faz 3 Açılışı — 0301 referansı) |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Engineering |
-| Tarih | 28 Temmuz 2026 |
-| İlişkili | 0501, 0502, 0506, 0205, 0206, 0416, 0417, 0418, 0419, 0301, 0302, 0305, 0308, 0309 |
+| Tarih | 04 Ağustos 2026 |
+| İlişkili | 0501, 0502, 0503, 0506, 0205, 0206, 0301, 0302, 0304, 0305, 0307, 0308, 0309, 0416, 0417, 0418, 0419 |
 
 ---
 
@@ -422,16 +422,18 @@ audit_trail:
 | **audit** | q:audit | Site denetimi (FR-B4) | ✅ Yeni |
 | **sentiment** | q:sentiment | Duygu analizi + hallüsinasyon (FR-D7, FR-D8) | ✅ Yeni |
 | **gap** | q:gap | Competitive gap analizi (FR-D11) | ✅ Yeni |
-| **seo-sc** | q:seo-sc | Search Console veri senkronizasyonu (FR-B8) | ✅ Yeni |
-| **seo-ga4** | q:seo-ga4 | GA4 veri senkronizasyonu (FR-B8) | ✅ Yeni |
+| **replay** | q:replay | Conversation replay snapshot (FR-D12) | ✅ Yeni |
+| **archive** | q:archive | Response archive kaydı (FR-D13) | ✅ Yeni |
+| **technical-geo** | q:technical-geo | Teknik GEO analizi — bot/schema (FR-E7, FR-B7) | ✅ Yeni |
+| **content-geo** | q:content-geo | Content GEO analizi — gap/hub (FR-E5, FR-E6) | ✅ Yeni |
 | **report** | q:report | PDF rapor üretimi, white-label | ✅ Mevcuttu (MVP) |
 | **notify** | q:notify | Uyarı iletimi, e-posta özeti | ✅ Mevcuttu (MVP) |
 
-**Worker başlangıç komutu:**
+> **Kod gerçeği (v1.1):** Worker tek bir ikilidir (`cmd/worker`); ayrı `--profile` bayrağı yoktur. Tüm akışlar (q:measure + 6 analiz akışı) aynı worker içinde, aynı consumer group adıyla (`cfg.ConsumerGroup`) işlenir. SEO senkronu (Search Console/GA4) Redis Stream **kullanmaz**; worker içindeki ticker/zamanlayıcı ile çalışır. Stream sabitleri `platform/queue/outbox.go` (0307 §2.1) kaynak alınır.
+
+**Worker başlangıcı:**
 ```bash
-./cmd/worker --profile sentiment --concurrency 2
-./cmd/worker --profile seo-sc --concurrency 1
-./cmd/worker --profile gap --concurrency 1
+./cmd/worker --consumer-group measure-workers   # tek işlem, tüm akışlar
 ```
 
 ### 5.1 Sentiment Worker İş Akışı
@@ -446,25 +448,29 @@ q:sentiment → XREADGROUP → load_measurement_results →
   store_analysis(analysis.hallucination_results)
 ```
 
-### 5.2 SEO Worker İş Akışı
+### 5.2 SEO Veri Senkronu
+
+SEO senkronu Redis Stream kullanmaz; `cmd/worker` içinde ticker/zamanlayıcı tabanlıdır:
 
 ```
-SC Worker:
-  q:seo-sc → her 6 saatte bir:
+SC Senkronu (ticker):
+  her 6 saatte bir:
     for each active SEOConnection(platform='search_console'):
       refresh_token_if_expired()
       fetch_search_analytics(property, start_date, end_date)
       store(seo.search_console_data)
       update_last_sync()
 
-GA4 Worker:
-  q:seo-ga4 → her 6 saatte bir:
+GA4 Senkronu (ticker):
+  her 6 saatte bir:
     for each active SEOConnection(platform='ga4'):
       refresh_token_if_expired()
       fetch_ga4_report(property, date_range)
-      store(data.ga4_data)
+      store(seo.ga4_data)
       update_last_sync()
 ```
+
+> **Not (v1.1):** q:seo-sc / q:seo-ga4 stream'leri kodda yoktur (0304 §7.5). SEO veri toplama ticker tabanlıdır; analiz akışları yalnızca yukarıdaki 6 stream'den oluşur.
 
 ### 5.3 Gap Worker İş Akışı
 
@@ -552,10 +558,10 @@ q:gap → XREADGROUP → after measurement completes:
 | `seo.search_console_data` | `seo` | Google Search Console sorgu verileri |
 | `seo.ga4_data` | `data` | GA4 analytics verileri |
 | `seo.connections` | `seo` | SEO bağlantı yönetimi (OAuth2 token) |
-| `technicalgeo.bot_access` | `technicalgeo` | LLM bot erişim kayıtları |
-| `technicalgeo.schema_analysis` | `technicalgeo` | Schema.org kullanım analizi |
-| `contentgeo.content_gaps` | `contentgeo` | Content gap tespit sonuçları |
-| `contentgeo.topic_clusters` | `contentgeo` | Topic cluster önerileri |
+| `technical.bot_access` | `technical` | LLM bot erişim kayıtları |
+| `technical.schema_analysis` | `technical` | Schema.org kullanım analizi |
+| `content.content_gaps` | `content` | Content gap tespit sonuçları |
+| `content.topic_clusters` | `content` | Topic cluster önerileri |
 | `audit.sso_configs` | `audit` | SSO/SAML yapılandırmaları |
 | `audit.alert_rules` | `audit` | Kullanıcı tanımlı alert kuralları |
 | `audit.alert_history` | `audit` | Tetiklenen uyarı geçmişi |
@@ -566,8 +572,8 @@ q:gap → XREADGROUP → after measurement completes:
 |:----:|------------|
 | `analysis` | Duygu analizi, hallüsinasyon, competitive gap, replay, archive |
 | `seo` | SEO entegrasyon verileri (SC, GA4) |
-| `technicalgeo` | LLM bot izleme, schema analizi |
-| `contentgeo` | Content gap, topic cluster, entity analizi |
+| `technical` | LLM bot izleme, schema analizi |
+| `content` | Content gap, topic cluster, entity analizi |
 | `audit` | SSO yapılandırmaları, alert kural ve geçmişi |
 
 ---
@@ -581,23 +587,24 @@ scheduler → q:measure → worker(measure) →
   engines.execute(prompt) → raw_response → 
     ├── S3 (ham yanıt arşivi)
     ├── score (hesaplama)
-    ├── q:sentiment → worker(sentiment) → 
+    ├── q:sentiment → 
     │   ├── sentiment score (analysis.sentiment_scores)
-    │   └── hallucination (analysis.hallucination_results)
-    ├── replay capture (analysis.replay_snapshots)
-    ├── archive entry (analysis.archive_entries)
-    └── q:gap → worker(gap) →
-        └── competitive gap (analysis.competitive_gaps)
+    │   └── hallucination (analysis.hallucination_flags)
+    ├── replay snapshot (replay.conversation_snapshots)
+    ├── archive entry (archive.response_entries)
+    ├── q:gap → competitive gap (competitive.gap_snapshots)
+    ├── q:technical-geo → bot/schema (technical.*)
+    └── q:content-geo → gap/hub (content.*)
 ```
 
 ### 8.2 SEO Veri Akışı
 
 ```
-Google Search Console API ←→ worker(seo-sc) ←→ seo.search_console_data
-                                      ↓
-Google Analytics Data API ←→ worker(seo-ga4) ←→ data.ga4_data
-                                      ↓
-                      Web UI (SEODataPanel) ile görüntüleme
+Google Search Console API ←→ worker (ticker) ←→ seo.search_console_data
+                                          ↓
+Google Analytics Data API ←→ worker (ticker) ←→ seo.ga4_data
+                                          ↓
+                          Web UI (SEODataPanel) ile görüntüleme
 ```
 
 ### 8.3 Site Denetim Akışı
@@ -680,28 +687,28 @@ internal/apikey ─────────→ identity + auth (API key doğrula
 |:---------:|:----:|:-----:|------------|
 | **API** | `geolens-api` | 2+ replika | PostgreSQL, Redis |
 | **Scheduler** | `geolens-scheduler` | 1 replika | PostgreSQL, Redis |
-| **Worker (measure)** | `geolens-worker` | 2+ replika | PostgreSQL, Redis, S3, Engines API |
-| **Worker (sentiment)** | `geolens-worker --profile sentiment` | 1+ replika | PostgreSQL |
-| **Worker (gap)** | `geolens-worker --profile gap` | 1 replika | PostgreSQL |
-| **Worker (audit)** | `geolens-worker --profile audit` | 1 replika | Harici HTTP |
-| **Worker (seo-sc)** | `geolens-worker --profile seo-sc` | 1 replika | Google API |
-| **Worker (seo-ga4)** | `geolens-worker --profile seo-ga4` | 1 replika | Google API |
-| **Worker (report)** | `geolens-worker --profile report` | 1 replika | S3 |
-| **Worker (notify)** | `geolens-worker --profile notify` | 1 replika | SendGrid, Slack API |
+| **Worker** | `geolens-worker` | 2+ replika | PostgreSQL, Redis, S3, Engines API |
 | **Frontend** | `geolens-web` | 1+ replika | API |
+
+> **Kod gerçeği (v1.1):** Worker tek bir konteynerdir; q:measure + 6 analiz akışını + SEO ticker'ı aynı süreçte işler. Ayrı profile konteynerleri yoktur.
 
 ### 10.2 Redis Stream Yapılandırması
 
 | Stream | Consumer Group | Worker Profili |
 |:------:|:--------------:|:--------------:|
-| `q:measure` | `measure-workers` | measure |
-| `q:audit` | `audit-workers` | audit |
-| `q:sentiment` | `sentiment-workers` | sentiment |
-| `q:gap` | `gap-workers` | gap |
-| `q:seo-sc` | `seo-sc-workers` | seo-sc |
-| `q:seo-ga4` | `seo-ga4-workers` | seo-ga4 |
-| `q:report` | `report-workers` | report |
-| `q:notify` | `notify-workers` | notify |
+| `q:measure` | `measure-workers` | worker (ana döngü) |
+| `q:audit` | `measure-workers` | worker |
+| `q:sentiment` | `measure-workers` | worker (analiz) |
+| `q:replay` | `measure-workers` | worker (analiz) |
+| `q:archive` | `measure-workers` | worker (analiz) |
+| `q:gap` | `measure-workers` | worker (analiz) |
+| `q:technical-geo` | `measure-workers` | worker (analiz) |
+| `q:content-geo` | `measure-workers` | worker (analiz) |
+| `q:report` | `measure-workers` | worker |
+| `q:notify` | `measure-workers` | worker |
+| `q:dead` | — | DLQ (manuel) |
+
+> **Not (v1.1):** Kodda tüm akışlar aynı consumer group adını paylaşır (`cfg.ConsumerGroup`); per-stream ayrı grup/worker tasarımı uygulanmamıştır. q:seo-sc / q:seo-ga4 yoktur.
 
 ---
 
@@ -795,9 +802,9 @@ internal/apikey ─────────→ identity + auth (API key doğrula
 ## 14. GeoLens İçin Çıkarımlar
 
 1. **HT1 mimarisi 4 yeni bounded context ve 8 yeni alt modül eklemiştir.** Bu genişleme, 0502'deki bağımlılık kurallarına (D1–D7) ek olarak P6–P10 ilkelerini getirmiştir.
-2. **Worker profili 3'ten 8'e çıkmıştır.** Her yeni analiz bileşeni (sentiment, gap, audit, seo-sc, seo-ga4) ayrı bir Redis Stream consumer grubuyla çalışır. Bu, ölçeklenebilirlik ve izolasyon sağlar ancak operasyonel yükü artırır.
+2. **Worker tek süreçtir; stream seti genişlemiştir.** q:measure + 6 analiz akışı (sentiment, replay, archive, gap, technical-geo, content-geo) + report/notify/audit aynı worker içinde işlenir; SEO senkronu ticker tabanlıdır. Per-stream ayrı worker profili tasarımı uygulanmamıştır (0307 §2.1).
 3. **API yüzeyi 25+ yeni uçla genişlemiştir.** Public API (salt okunur) ayrı bir routing katmanında sunulur. İç API'de tüm yeni uçlar mevcut middleware zincirinden (auth → tenant → RBAC → entitlement) geçer.
-4. **Veritabanı şema sayısı 5'ten 9'a çıkmıştır** (`analysis`, `seo`, `technicalgeo`, `contentgeo` yeni şemalar). Tüm şemalar RLS politikasıyla korunur.
+4. **Veritabanı şema sayısı artmıştır.** HT1 eklemeleri `analysis`, `seo`, `technical`, `content`, `competitive`, `replay`, `archive` şemalarını getirmiştir; Faz 4'te `registry`, `guardrail`, `policy`, `bias`, `gate`, `explain`, `agent`, `redteam`, `prompt`, `benchmark`, `cost`, `usage`, `optimize`, `version`, `incident`, `drift`, `billing` ile 30+ şemaya ulaşmıştır (0305 §9.12). RLS, tenant izole tablolarda uygulanır; BC11/BC12 şemaları handler WHERE kullanır (0310 v1.1).
 5. **Gözlemlenebilirlik 15+ yeni metrik ve 7+ yeni alarmla genişlemiştir.** Her worker profili kendi metriklerini Prometheus'a yazar.
 6. **Bu doküman Faz 3'ün açılışıdır.** Sıradaki Faz 3 dokümanları: `03-domain/0302` (Domain Model güncelleme — BC7–BC10 yeni entity'leri), `03-domain/0305` (Bağlam Haritası güncelleme — BC7–BC10 ekleme), `03-domain/0308` (AI Bağlayıcıları güncelleme — yeni adapter'lar). Mevcut domain dokümanları HT1 genişletmesini yansıtacak şekilde güncellenecektir.
 
@@ -830,3 +837,4 @@ internal/apikey ─────────→ identity + auth (API key doğrula
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 28.07.2026 | İlk yayın: HT1 Sistem Mimarisi dokümanı. Faz 3 açılışı. 10 tasarım ilkesi (P1–P10), 4 yeni bounded context (BC7–BC10), 8 alt modül, 8 worker profili, 25+ yeni API ucu, 15+ yeni metrik, 7+ yeni alarm. Tüm HT1 bileşenlerinin mimari kararları, veri akışları ve bağımlılıkları tanımlanmıştır. |
+| 1.1 | 04.08.2026 | **Kod gerçeği senkronu:** Worker profili tasarımı gerçek uygulamayla hizalandı — tek `cmd/worker` süreci, ayrı `--profile` yok, tüm akışlar aynı consumer group'u paylaşır. §5 tablosu gerçek analiz akışlarıyla (replay, archive, technical-geo, content-geo) güncellendi; q:seo-sc/q:seo-ga4 kaldırıldı (SEO senkronu ticker tabanlı, 0304 §7.5). §8.1/§8.2/§10.1/§10.2 ve §14 notları güncellendi. Şema adları düzeltildi (`technical`, `content`; `technicalgeo`/`contentgeo` yok) ve Faz 4 şema genişlemesi not edildi. 0307 §2.1, 0304, 0310 ile hizalı. |

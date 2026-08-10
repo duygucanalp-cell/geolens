@@ -84,11 +84,11 @@ export function SentimentPanel({ workspaceId: ws }: Props) {
             <span className="rec-summary-value">{summary.total}</span>
             <span className="rec-summary-label">{t('sentiment.total')}</span>
           </div>
-          <div className="rec-summary-card" style={{ background: '#f0fdf4' }}>
+          <div className="rec-summary-card" style={{ background: 'var(--success-bg)' }}>
             <span className="rec-summary-value" style={{ color: SENTIMENT_COLOR.positive }}>{summary.positive}</span>
             <span className="rec-summary-label">{t('sentiment.positive')}</span>
           </div>
-          <div className="rec-summary-card" style={{ background: '#fef2f2' }}>
+          <div className="rec-summary-card" style={{ background: 'var(--danger-bg)' }}>
             <span className="rec-summary-value" style={{ color: SENTIMENT_COLOR.negative }}>{summary.negative}</span>
             <span className="rec-summary-label">{t('sentiment.negative')}</span>
           </div>
@@ -100,7 +100,7 @@ export function SentimentPanel({ workspaceId: ws }: Props) {
       )}
 
       {/* Analyze form */}
-      <form onSubmit={handleAnalyze} style={{ background: '#f8fafc', padding: '1rem', borderRadius: '10px', marginBottom: '1rem' }}>
+      <form onSubmit={handleAnalyze} style={{ background: 'var(--surface-2)', padding: '1rem', borderRadius: '10px', marginBottom: '1rem' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <textarea
             className="notif-input"
@@ -120,22 +120,22 @@ export function SentimentPanel({ workspaceId: ws }: Props) {
 
       {/* Last analysis result */}
       {lastResult && (
-        <div style={{ background: '#f0fdf4', padding: '1rem', borderRadius: '10px', marginBottom: '1rem' }}>
+        <div style={{ background: 'var(--success-bg)', padding: '1rem', borderRadius: '10px', marginBottom: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <span style={{ fontSize: '1.5rem' }}>{SENTIMENT_EMOJI[lastResult.sentiment]}</span>
             <div style={{ flex: 1 }}>
               <strong style={{ color: SENTIMENT_COLOR[lastResult.sentiment] }}>
                 {t(`sentiment.${lastResult.sentiment}`)}
               </strong>
-              <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.2rem' }}>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
                 {t('sentiment.confidence')}: {(lastResult.confidence * 100).toFixed(1)}%
               </p>
             </div>
-            <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-faint)' }}>
               {new Date(lastResult.analyzed_at).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>
-          <p style={{ fontSize: '0.85rem', color: '#475569', marginTop: '0.5rem', fontStyle: 'italic' }}>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.5rem', fontStyle: 'italic' }}>
             &ldquo;{lastResult.text.length > 120 ? lastResult.text.slice(0, 120) + '…' : lastResult.text}&rdquo;
           </p>
         </div>
@@ -161,17 +161,17 @@ export function SentimentPanel({ workspaceId: ws }: Props) {
               </div>
               <div className="rec-card-content">
                 <div className="rec-card-header">
-                  <span className="rec-category-badge" style={{ background: '#f1f5f9' }}>
+                  <span className="rec-category-badge" style={{ background: 'var(--surface-hover)' }}>
                     {SENTIMENT_EMOJI[r.sentiment]} {t(`sentiment.${r.sentiment}`)}
                   </span>
                   <span className="rec-status-badge" style={{
-                    background: r.sentiment === 'positive' ? '#f0fdf4' : r.sentiment === 'negative' ? '#fef2f2' : '#fefce8',
+                    background: r.sentiment === 'positive' ? 'var(--success-bg)' : r.sentiment === 'negative' ? 'var(--danger-bg)' : '#fefce8',
                     color: SENTIMENT_COLOR[r.sentiment],
                   }}>
                     {(r.confidence * 100).toFixed(0)}%
                   </span>
                 </div>
-                <p className="rec-title" style={{ fontSize: '0.85rem', fontWeight: 400, color: '#475569', lineHeight: 1.4 }}>
+                <p className="rec-title" style={{ fontSize: '0.85rem', fontWeight: 400, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
                   {r.text.length > 180 ? r.text.slice(0, 180) + '…' : r.text}
                 </p>
                 <div className="rec-meta">

@@ -4,11 +4,11 @@
 |---|---|
 | Doküman ID | 0416 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.3 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Product |
-| Tarih | 27 Temmuz 2026 |
-| İlişkili | 0401–0415, 0205 (MVP), 0206 (Roadmap), 0207 (Feature Catalog), project-plan |
+| Tarih | 04 Ağustos 2026 |
+| İlişkili | 0401–0415, 0205 (MVP), 0206 (Roadmap), 0207 (Feature Catalog), 0308, project-plan |
 
 ---
 
@@ -36,7 +36,7 @@ Böylece her paketin sonunda ölçülebilir bir artefakt üretilir ve doğrudan 
 | Kritiklik | ⭐⭐⭐⭐⭐ |
 
 **Araştırma Soruları:**
-- ChatGPT, Gemini, Claude, Copilot, Perplexity, Grok hangi davranışsal farklılıkları gösteriyor?
+- ChatGPT, Gemini, Claude, Copilot, Perplexity, Grok, Mistral, Google AI Overview/AI Mode hangi davranışsal farklılıkları gösteriyor?
 - Citation mekanizmaları motorlar arasında nasıl farklılaşıyor?
 - Brand recommendation hangi koşullarda tetikleniyor?
 - AI Search trendleri hangi yönde evriliyor?
@@ -44,12 +44,12 @@ Böylece her paketin sonunda ölçülebilir bir artefakt üretilir ve doğrudan 
 **Teslimatlar:**
 
 **1. AI Visibility Landscape Report**
-- Her AI motoru (ChatGPT, Gemini, Claude, Copilot, Perplexity, Grok) için: cevap yapısı, citation davranışı, recommendation eğilimi, gecikme profili, dil desteği
+- Her AI motoru (ChatGPT, Gemini, Claude, Copilot, Perplexity, Grok, Mistral, Google AI Overview/AI Mode) için: cevap yapısı, citation davranışı, recommendation eğilimi, gecikme profili, dil desteği
 - Ekran görüntüleri ve örnek cevaplarla desteklenmiş 10+ senaryo analizi
 - Motor bazında güçlü/zayıf yönler matrisi
 
 **2. AI Platform Comparison Matrix**
-- 6 motor × 15 kriter karşılaştırma tablosu (citation doğruluğu, marka tanıma, güncellik, maliyet, hız, vs.)
+- 8 motor × 15 kriter karşılaştırma tablosu (citation doğruluğu, marka tanıma, güncellik, maliyet, hız, vs.)
 - Her kriter için puanlama (1-5) ve ağırlıklandırma
 - Radar grafiği ve sıralama
 
@@ -467,7 +467,7 @@ Böylece her paketin sonunda ölçülebilir bir artefakt üretilir ve doğrudan 
 | Kritiklik | ⭐⭐⭐⭐☆ |
 
 **Araştırma Soruları:**
-- ChatGPT, Gemini, Claude, Copilot, Perplexity, Grok — doğruluk, gecikme, citation kalitesi açısından nasıl sıralanıyor?
+- ChatGPT, Gemini, Claude, Copilot, Perplexity, Grok, Mistral, Google AI Overview/AI Mode — doğruluk, gecikme, citation kalitesi açısından nasıl sıralanıyor?
 - Maliyet/performans optimizasyonu hangi motorları önceliyor?
 
 **Teslimatlar:**
@@ -760,3 +760,4 @@ Her iş paketi için teslimat kalitesi şu kriterlerle değerlendirilir:
 | 1.0 | 27.07.2026 | İlk yayın: 15 iş paketi, kod/doküman haritası, bağımlılık grafiği, öncelik sırası. |
 | 1.1 | 27.07.2026 | "Ne İşe Yarar" sütunu eklendi — her teslimatın hangi ürün özelliğini mümkün kıldığı belirtildi. |
 | 1.2 | 27.07.2026 | Teslimat içerikleri detaylandırıldı — her teslimatın içinde hangi bölümlerin olacağı, hangi soruları cevaplayacağı tanımlandı. |
+| 1.3 | 04.08.2026 | **Motor senkronu:** Landscape Report ve Comparison Matrix motor listesi 8 motora güncellendi (Mistral + Google AI Overview/AI Mode eklendi) — 0308 v1.3 ile hizalı. |

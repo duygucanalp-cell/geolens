@@ -75,11 +75,11 @@ export function HallucinationPanel({ workspaceId }: Props) {
           <span className="rec-summary-value">{totalFlags}</span>
           <span className="rec-summary-label">{t('hallucination.total')}</span>
         </div>
-        <div className="rec-summary-card" style={{ background: verifiedCount > 0 ? '#f0fdf4' : '#f8fafc' }}>
+        <div className="rec-summary-card" style={{ background: verifiedCount > 0 ? 'var(--success-bg)' : 'var(--surface-2)' }}>
           <span className="rec-summary-value" style={{ color: '#22c55e' }}>{verifiedCount}</span>
           <span className="rec-summary-label">{t('hallucination.verified')}</span>
         </div>
-        <div className="rec-summary-card" style={{ background: totalFlags - verifiedCount > 0 ? '#fef2f2' : '#f0fdf4' }}>
+        <div className="rec-summary-card" style={{ background: totalFlags - verifiedCount > 0 ? 'var(--danger-bg)' : 'var(--success-bg)' }}>
           <span className="rec-summary-value" style={{ color: totalFlags - verifiedCount > 0 ? '#ef4444' : '#22c55e' }}>
             {totalFlags - verifiedCount}
           </span>
@@ -91,7 +91,7 @@ export function HallucinationPanel({ workspaceId }: Props) {
         <button className="refresh-btn" onClick={loadFlags}>{t('hallucination.refresh')}</button>
       </div>
 
-      <form onSubmit={handleDetect} style={{ background: '#f8fafc', padding: '1rem', borderRadius: '10px', marginBottom: '1rem' }}>
+      <form onSubmit={handleDetect} style={{ background: 'var(--surface-2)', padding: '1rem', borderRadius: '10px', marginBottom: '1rem' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <textarea
             className="notif-input"
@@ -108,15 +108,15 @@ export function HallucinationPanel({ workspaceId }: Props) {
       </form>
 
       {detectResult && (
-        <div style={{ background: detectResult.confidence > 0.7 ? '#fef2f2' : '#f0fdf4', padding: '1rem', borderRadius: '10px', marginBottom: '1rem' }}>
+        <div style={{ background: detectResult.confidence > 0.7 ? 'var(--danger-bg)' : 'var(--success-bg)', padding: '1rem', borderRadius: '10px', marginBottom: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
             <span style={{ fontSize: '1.5rem' }}>{detectResult.confidence > 0.7 ? '🔴' : '✅'}</span>
             <div>
               <strong>{detectResult.confidence > 0.7 ? t('hallucination.result_detected') : t('hallucination.result_clean')}</strong>
-              <p style={{ fontSize: '0.85rem', color: '#64748b' }}>{t('hallucination.confidence')}: {(detectResult.confidence * 100).toFixed(0)}%</p>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{t('hallucination.confidence')}: {(detectResult.confidence * 100).toFixed(0)}%</p>
             </div>
           </div>
-          <p style={{ fontSize: '0.85rem', color: '#475569' }}>{detectResult.detail}</p>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{detectResult.detail}</p>
         </div>
       )}
 
@@ -137,7 +137,7 @@ export function HallucinationPanel({ workspaceId }: Props) {
                 <div className="rec-card-header">
                   <span className="rec-category-badge">{flag.flag_type}</span>
                   <span className="rec-status-badge" style={{
-                    background: flag.is_verified ? '#dcfce7' : '#fef2f2',
+                    background: flag.is_verified ? 'var(--success-soft)' : 'var(--danger-bg)',
                     color: flag.is_verified ? '#22c55e' : '#ef4444',
                   }}>
                     {flag.is_verified ? t('hallucination.tag_verified') : t('hallucination.tag_unverified')}
@@ -149,7 +149,7 @@ export function HallucinationPanel({ workspaceId }: Props) {
                   <span className="rec-confidence-label">{t('hallucination.confidence')}: {(flag.confidence * 100).toFixed(0)}%</span>
                   <span className="rec-date">{new Date(flag.created_at).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short' })}</span>
                 </div>
-                {flag.detail && <p className="rec-detail" style={{ marginTop: '0.3rem', fontSize: '0.8rem', color: '#64748b' }}>{flag.detail}</p>}
+                {flag.detail && <p className="rec-detail" style={{ marginTop: '0.3rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>{flag.detail}</p>}
               </div>
               <div className="rec-card-actions">
                 {!flag.is_verified && (

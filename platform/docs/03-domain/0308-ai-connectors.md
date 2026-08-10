@@ -4,11 +4,11 @@
 |---|---|
 | Doküman ID | 0308 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.2 |
+| Versiyon | 1.3 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
-| Tarih | 28 Temmuz 2026 |
-| İlişkili | ADR-005, 0505, 0305, 0206, 0511, engine/ |
+| Tarih | 04 Ağustos 2026 |
+| İlişkili | ADR-005, 0505, 0305, 0206, 0207, 0210, 0301, 0511, engine/ |
 
 ---
 
@@ -17,6 +17,8 @@
 Bu doküman, GeoLens'in AI motor bağdaştırıcı (adapter) mimarisini tanımlar. Bağdaştırıcı sözleşmesi, hata sınıfları, dayanıklılık mekanizmaları, tüm motor bağdaştırıcılarının detaylı özellikleri ve yeni motor ekleme sürecini kapsar.
 
 > **HT1 kapsamı:** MVP'deki 3 çekirdek motor (Perplexity, ChatGPT, Gemini) üzerine HT1'de 5 yeni motor eklenmiştir: Claude (Kademe 2), Grok (Kademe 2), Copilot (Kademe 3), Mistral (Kademe 2), Google AI Overview (Kademe 3). Toplam **8 AI yüzeyi** üretimdedir.
+
+> **Faz 4 kapanışı (03.08.2026):** Google AI Mode (`google_ai_mode`) implemente edilmiştir — 7 adaptör paketi + AI Mode = **8 motor** üretim kayıtlarında aktiftir (bkz. §3.1). Google AI Overview, `gemini` paketinin ikinci yüzeyi (Kademe 3) olarak varlığını sürdürür; böylece fidelity etiketlerinde 9 ayrı engine yüzeyi üretimdedir. 0207 feature-catalog §4 ve 0210 ile senkron.
 
 ---
 
@@ -86,8 +88,9 @@ Tüm adapter'lar, API anahtarı boş veya `"mock"` olduğunda gerçekçi sahte y
 | **Grok** | `engine/grok/` | 2 (official_proxy) | `TierOfficialProxy` | xAI Chat Completions API | grok-3-latest | Orta | ✅ **HT1** |
 | **Copilot** | `engine/copilot/` | 3 (directional) | `TierDirectional` | Microsoft Copilot Chat API | copilot-gpt-4o | Düşük | ✅ **HT1** |
 | **Mistral** | `engine/mistral/` | 2 (official_proxy) | `TierOfficialProxy` | Mistral Chat Completions API | mistral-large-latest | Düşük-Orta | ✅ **HT1** |
+| **Google AI Mode** | `engine/gemini/` (aiModeAdapter) | 3 (directional) | `TierDirectional` | Gemini generateContent (AI Mode yüzeyi) | gemini-3.5-pro | Değişken | ✅ **Faz 4** |
 
-> **Not:** Google AI Mode (Kademe 3) HT1'de kodlanmamıştır. Gemini adapter üzerinden AI Mode endpoint desteği HT2 planındadır (bkz. §6).
+> **Not:** Google AI Overview ve Google AI Mode, `gemini` adaptör paketinin ayrı wrapper'larıdır (`aiOverviewAdapter`, `aiModeAdapter`); ayrı dizin kullanmazlar. Motor sayısı hesabı (7 adaptör paketi + AI Mode = 8 motor) 0207 §4 ve 0210 ile aynıdır.
 
 ### 3.2 Perplexity (MVP — Kademe 1)
 
@@ -193,6 +196,19 @@ Tüm adapter'lar, API anahtarı boş veya `"mock"` olduğunda gerçekçi sahte y
 | **S3 kaydı** | Her başarılı yanıt sonrası S3'e kayıt (storage varsa) |
 | **Detay** | `engine/mistral/adapter.go` |
 
+### 3.10 Google AI Mode (Faz 4 — Kademe 3)
+
+| Özellik | Değer |
+|---------|-------|
+| **Adapter** | `aiModeAdapter` — Gemini adapter'ını saran Kademe 3 wrapper |
+| **Mekanizma** | Standart Gemini `Execute()` çağrılır; yanıt `Tier`, `EngineName` ve `FidelityLabel` alanları AI Mode etiketiyle override edilir |
+| **Fidelity** | `"Kademe 3 · google_ai_mode · gemini-3.5-pro (official_proxy/directional)"` |
+| **Kademe gerekçesi** | Google AI Mode'un programatik erişimi yoktur; Gemini vekili ile proxy'lenir (AI Overview ile aynı desen) |
+| **Kullanım** | `adapter.WithAIMode(tenantID, workspaceID).Execute(ctx, prompt)` |
+| **WithContext davranışı** | `WithContext()` override edilir; aksi halde embedded `Adapter` yöntemi wrapper'ı düşürüp Kademe 1 gemini'ye geri döner |
+| **Risk** | Maliyet/kararlılık değerlendirmesi 0207 §5.2.3 kriterleriyle yürütülür |
+| **Detay** | `engine/gemini/adapter.go` — `WithAIMode()` ve `aiModeAdapter` struct |
+
 ---
 
 ## 4. Hata Sınıfları ve Dayanıklılık
@@ -233,19 +249,7 @@ Bu 8 adım, Tip 2 karardır (mimari değişiklik gerektirmez, 0007 süreciyle y�
 
 ## 6. HT2 Planı
 
-### 6.1 Google AI Mode
-
-Google AI Mode (Kademe 3, directional), Gemini API üzerinden özel bir endpoint ile proxy'lenecektir. Gemini adapter'da `WithAIMode()` metodu eklenmesi, `aiModeAdapter` ile `aiOverviewAdapter`'a benzer bir pattern izlenmesi planlanmaktadır.
-
-| Özellik | Plan |
-|---------|------|
-| **Adapter** | `aiModeAdapter` — Gemini adapter wrapper'ı |
-| **Endpoint** | `generateContent?alt=sse` (SSE stream) |
-| **Kademe** | 3 (directional) |
-| **Fidelity** | `"Kademe 3 · google_ai_mode · gemini-3.5-pro (directional)"` |
-| **Risk** | Maliyet/kararlılık değerlendirmesi HT1 verisiyle yapılır |
-
-### 6.2 Claude/Grok/Copilot/Mistral Üretim Sertleştirme
+### 6.1 Claude/Grok/Copilot/Mistral Üretim Sertleştirme
 
 | Alan | HT2 Hedefi |
 |------|------------|
@@ -255,7 +259,7 @@ Google AI Mode (Kademe 3, directional), Gemini API üzerinden özel bir endpoint
 | **Multi-model desteği** | Her motor için alternatif model (sonar-pro → sonar-large, claude-sonnet → claude-opus) |
 | **Le Chat yüzeyi** | Mistral Le Chat API (opsiyonel, maliyet değerlendirmesi sonrası) |
 
-### 6.3 Mistral — Bölgesel Öncelik
+### 6.2 Mistral — Bölgesel Öncelik
 
 Mistral adapter, AB pazarı açılımında stratejik öneme sahiptir. HT2'de:
 - Mistral API'nin AB merkezli veri merkezi seçeneği değerlendirilecek
@@ -275,6 +279,7 @@ Her adapter, `Execute()` sonucunda şu formatta bir fidelity etiketi döndürür
 "Kademe 1 · perplexity · sonar-pro (direct)"
 "Kademe 2 · claude · claude-sonnet-4 (official_proxy)"
 "Kademe 3 · google_ai_overview · gemini-3.5-pro (official_proxy/directional)"
+"Kademe 3 · google_ai_mode · gemini-3.5-pro (official_proxy/directional)"
 "Kademe 2 · mistral · mistral-large-latest (mock)"  // Mock modu
 ```
 
@@ -289,3 +294,4 @@ Mock modunda `(mock)` ibaresi eklenir. Bu, geliştirme/demo ortamında üretilen
 | 1.0 | 25.07.2026 | İlk yayın: adapter sözleşmesi, hata sınıfları, ekleme süreci |
 | 1.1 | 27.07.2026 | Turkcell RFP kapsamında yeni motorlar eklendi: Google AI Overview (Tier 3), Google AI Mode (Tier 3), Mistral (Tier 2). Motor tablosu güncellendi. |
 | 1.2 | 28.07.2026 | **HT1 motor genişletmesi:** 5 yeni adapter eklendi (Claude, Grok, Copilot, Mistral, Google AI Overview). Toplam 8 AI yüzeyi. Her adapter için detaylı özellik tabloları (API, model, timeout, alıntı mekanizması, hata yönetimi, mock modu). WithContext deseni, RawSaver entegrasyonu ve mock modu dokümante edildi. Hata sınıfları genişletildi (ErrAuthFailed 403, ErrMockMode, ErrEmptyResponse). Yeniden deneme politikası eklendi. Motor ekleme süreci 4'ten 8 adıma çıkarıldı. HT2 planı (Google AI Mode, sertleştirme, Mistral bölgesel) eklendi. Fidelity etiket formatı standardize edildi. |
+| 1.3 | 04.08.2026 | **Faz 4 motor senkronu:** Google AI Mode (`google_ai_mode`) HT2 planından (§6.1) üretime taşındı — `WithAIMode()` + `aiModeAdapter` `engine/gemini/adapter.go` içinde implemente edildi (Kademe 3, `official_proxy/directional` etiketi, `WithContext` override'ı wrapper'ı korur). §3.1 motor tablosuna Google AI Mode satırı eklendi; yeni §3.10 detay bölümü yazıldı. Motor sayısı 0207 §4/0210/0301 ile hizalandı: 7 adaptör paketi + AI Mode = 8 motor (Google AI Overview gemini yüzeyi olarak 9. fidelity etiketi). §7 örnekleri genişletildi. |

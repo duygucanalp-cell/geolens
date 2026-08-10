@@ -4,11 +4,11 @@
 |---|---|
 | Doküman ID | 0312 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Engineering |
-| Tarih | 27 Temmuz 2026 |
-| İlişkili | 0302, 0304, 0307, 0308, 0309, 0501, 0506, 0601, 0605, 0204, 0205, 0207, **docs/AI_Visibility_Generative_Search_Intelligence_Platform.md** |
+| Tarih | 04 Ağustos 2026 |
+| İlişkili | 0302, 0304, 0307, 0308, 0309, 0501, 0506, 0601, 0605, 0204, 0205, 0207, internal/replay, internal/archive, **docs/AI_Visibility_Generative_Search_Intelligence_Platform.md** |
 
 ---
 
@@ -317,7 +317,7 @@ GET    /v1/archive/changelog               — AI cevap değişim günlüğü (z
 
 Tüm olaylar, 0304'te tanımlanan **transactional outbox pattern** ile taşınır:
 
-1. Olay üretimi → `governance.event_outbox` tablosuna yazılır (aynı PG işleminde)
+1. Olay üretimi → `public.event_outbox` tablosuna yazılır (aynı PG işleminde)
 2. Outbox dağıtıcısı (platform/queue) → pending kayıtları okur (SKIP LOCKED)
 3. Redis Streams kuyruğuna yazar (`q:replay`, `q:archive`)
 4. Tüketici (worker) kuyruktan okur ve işler
@@ -417,73 +417,51 @@ Archive görünümü aşağıdaki bileşenleri içerir:
 
 ### 11.1 Veritabanı Migration'ları
 
-Migration dosya adları mevcut sıradaki son migration'ın (`036_incident_management.sql`) ardından gelir:
+> **Kod gerçeği (v1.1, 04.08.2026):** Replay/Archive şemaları **`038_conversation_replay.sql`** migration'ı ile yayındadır (Faz 4). Aşağıdaki ilk tasarım planı (037/038 dosya adları ve detaylı kolon seti) hayata geçirilmemiştir; shipped migration sadeleştirilmiş bir şemaya sahiptir.
+
+Shipped migration `038_conversation_replay.sql`:
 
 ```sql
--- 037_conversation_replay.sql
+-- 038_conversation_replay.sql
+CREATE SCHEMA IF NOT EXISTS replay;
+CREATE SCHEMA IF NOT EXISTS archive;
 
 CREATE TABLE replay.conversation_snapshots (
-    replay_id          TEXT PRIMARY KEY,  -- ULID
-    measurement_job_id TEXT NOT NULL REFERENCES measure.measurement_jobs(job_id),
-    raw_response_id    TEXT NOT NULL REFERENCES measure.raw_responses(response_id),
-    workspace_id       TEXT NOT NULL,
-    engine_name        TEXT NOT NULL,
+    id                 TEXT PRIMARY KEY,            -- ULID
+    brand_id           TEXT NOT NULL REFERENCES config.brands(id),
     prompt_text        TEXT NOT NULL,
-    response_content   TEXT NOT NULL,
-    response_snapshot_s3_key TEXT NOT NULL,
-    citations          JSONB NOT NULL DEFAULT '[]',
-    fidelity_label     TEXT NOT NULL,
-    sentiment_score    REAL,
-    created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    content_hash       TEXT NOT NULL,
-    tenant_id          TEXT NOT NULL
+    engine_name        TEXT NOT NULL,
+    response_preview   TEXT NOT NULL,               -- İlk 500 karakter
+    response_full      TEXT,                        -- Tam yanıt (opsiyonel)
+    content_hash       TEXT NOT NULL,               -- SHA-256
+    s3_ref             TEXT,                        -- S3 tam metin referansı
+    measurement_job_id TEXT REFERENCES measure.measurement_jobs(id),
+    raw_response_id    TEXT,
+    tenant_id          TEXT NOT NULL,
+    workspace_id       TEXT NOT NULL,
+    created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
--- RLS
-ALTER TABLE replay.conversation_snapshots ENABLE ROW LEVEL SECURITY;
-CREATE POLICY tenant_isolation ON replay.conversation_snapshots
-    USING (tenant_id = current_setting('app.tenant_id')::text);
-
--- İndexler
-CREATE INDEX idx_snapshots_job ON replay.conversation_snapshots(measurement_job_id);
-CREATE INDEX idx_snapshots_tenant_created ON replay.conversation_snapshots(tenant_id, created_at DESC);
-CREATE INDEX idx_snapshots_engine ON replay.conversation_snapshots(engine_name);
-
-
--- 038_response_archive.sql
+-- RLS: tenant_isolation (tenant_id) + indexler (brand_id, tenant_id, content_hash)
 
 CREATE TABLE archive.response_entries (
-    archive_id           TEXT PRIMARY KEY,  -- ULID
-    prompt_set_id        TEXT NOT NULL REFERENCES config.prompt_sets(prompt_set_id),
-    prompt_text          TEXT NOT NULL,
-    engine_name          TEXT NOT NULL,
-    version              INT NOT NULL,
-    replay_id            TEXT NOT NULL REFERENCES replay.conversation_snapshots(replay_id),
-    previous_version_id  TEXT REFERENCES archive.response_entries(archive_id),
-    diff_summary         JSONB,
-    has_content_change   BOOLEAN NOT NULL DEFAULT FALSE,
-    has_citation_change  BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    tenant_id            TEXT NOT NULL,
-    
-    UNIQUE(prompt_set_id, engine_name, version)
+    id                TEXT PRIMARY KEY,             -- ULID
+    brand_id          TEXT NOT NULL REFERENCES config.brands(id),
+    engine_name       TEXT NOT NULL,
+    prompt_text       TEXT NOT NULL DEFAULT '',
+    response_preview  TEXT NOT NULL,                -- İlk 1000 karakter
+    response_full     TEXT NOT NULL,
+    version           INT NOT NULL DEFAULT 1,
+    content_hash      TEXT NOT NULL,
+    s3_ref            TEXT,
+    tenant_id         TEXT NOT NULL,
+    workspace_id      TEXT NOT NULL,
+    created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(brand_id, engine_name, version)
 );
-
--- Not: version alanı her yeni kayıt için MAX(version) + 1 olarak hesaplanır.
--- Aynı prompt_set_id + engine_name kombinasyonu için mevcut en yüksek version
--- sorgulanır ve bir artırılır. İlk kayıt için version = 1.
+-- RLS: tenant_isolation (tenant_id) + indexler (brand_id/engine/version, tenant_id)
 ```
 
--- RLS
-ALTER TABLE archive.response_entries ENABLE ROW LEVEL SECURITY;
-CREATE POLICY tenant_isolation ON archive.response_entries
-    USING (tenant_id = current_setting('app.tenant_id')::text);
-
--- İndexler
-CREATE INDEX idx_archive_prompt_engine ON archive.response_entries(prompt_set_id, engine_name, version DESC);
-CREATE INDEX idx_archive_tenant_created ON archive.response_entries(tenant_id, created_at DESC);
-CREATE INDEX idx_archive_changes ON archive.response_entries(tenant_id, has_content_change, has_citation_change);
-```
+> **Tasarım-uygulama farkı:** Bu dokümanın §4.1/§4.2 veri modelindeki `replay_id` (→ `id`), `response_snapshot_s3_key` (→ `s3_ref`), `prompt_set_id` (→ `brand_id`), `citations`, `fidelity_label`, `sentiment_score`, `diff_summary`, `has_content_change/has_citation_change`, `previous_version_id` alanları ilk migration'da yer almaz. Diff (`internal/replay.DiffResult`: has_changed + changes) iki snapshot okunarak talep üzerine hesaplanır. `018_archive.sql` (workspace/brand `archived_at`) bu özellikle ilgisizdir; `037_sentiment_hallucination.sql` sentiment/hallüsinasyon şemasıdır.
 
 ### 11.2 Worker Profili Genişletmesi
 
@@ -563,3 +541,4 @@ Güncellenmiş Ölçüm Hattı:
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 27.07.2026 | İlk yayın: Conversation Replay (FR-D12) ve Response Archive (FR-D13) mimari tasarımı. Kavramlar, veri modeli, API tasarımı, domain events, alerting entegrasyonu, migration planı, güvenlik ve KVKK/GDPR uyumu. Turkcell RFP gereksinimlerini karşılar. |
+| 1.1 | 04.08.2026 | **Kod gerçeği senkronu:** §7.1 olay taşıma şeması `governance.event_outbox` → `public.event_outbox` düzeltildi. §11.1 migration planı shipped `038_conversation_replay.sql` ile yenilendi (replay+archive şemaları; sadeleştirilmiş kolon seti). Tasarım-uygulama farkı notu eklendi: §4.1/§4.2'deki detaylı kolonların ilk migration'da olmadığı, diff'in talep üzerine `internal/replay.DiffResult` ile hesaplandığı belirtildi. `018_archive.sql`'in ilgisiz olduğu netleştirildi. |

@@ -91,21 +91,21 @@ export function BenchmarkPanel({ workspaceId: _ws }: Props) {
     return sortAsc ? ' ▲' : ' ▼'
   }
 
-  if (loading) return <div className="dashboard-loading">Model kıyaslamaları yükleniyor...</div>
-  if (error) return <div className="dashboard-error"><p>{error}</p><button onClick={loadData}>Tekrar Dene</button></div>
+  if (loading) return <div className="dashboard-loading">{t('benchmark.loading')}</div>
+  if (error) return <div className="dashboard-error"><p>{error}</p><button onClick={loadData}>{t('common.retry')}</button></div>
 
   return (
     <div className="monitoring-panel">
       <div className="monitoring-header">
-        <h3>🧪 Model Kıyaslama</h3>
-        <p className="monitoring-desc">AI modellerini standart benchmark'lar ile test et ve karşılaştır.</p>
+        <h3>{t('benchmark.title')}</h3>
+        <p className="monitoring-desc">{t('benchmark.desc')}</p>
       </div>
 
       {/* Run Benchmark Form */}
       <form onSubmit={handleRun} className="dashboard-filters" style={{ flexWrap: 'wrap', gap: '0.5rem' }}>
         <input
           type="text"
-          placeholder="Model adı (örn: gpt-4)"
+          placeholder={t('benchmark.model_placeholder')}
           value={formModel}
           onChange={(e) => setFormModel(e.target.value)}
           className="filter-select"
@@ -114,14 +114,14 @@ export function BenchmarkPanel({ workspaceId: _ws }: Props) {
         />
         <input
           type="text"
-          placeholder="Benchmark adı (opsiyonel)"
+          placeholder={t('benchmark.name_placeholder')}
           value={formBenchmark}
           onChange={(e) => setFormBenchmark(e.target.value)}
           className="filter-select"
           style={{ flex: '1 1 200px' }}
         />
         <button type="submit" className="refresh-btn" disabled={submitting || !formModel.trim()}>
-          {submitting ? 'Çalıştırılıyor...' : 'Benchmark Çalıştır'}
+          {submitting ? t('benchmark.running') : t('benchmark.run')}
         </button>
       </form>
 
@@ -133,7 +133,7 @@ export function BenchmarkPanel({ workspaceId: _ws }: Props) {
             onClick={() => setShowCompare((prev) => !prev)}
             style={{ marginBottom: '0.5rem' }}
           >
-            {showCompare ? 'Karşılaştırmayı Gizle' : 'Model Karşılaştırması'}
+            {showCompare ? t('benchmark.hide_compare') : t('benchmark.compare')}
           </button>
         </div>
       )}
@@ -141,13 +141,13 @@ export function BenchmarkPanel({ workspaceId: _ws }: Props) {
       {/* Comparison Table */}
       {showCompare && comparison && (
         <div style={{ marginBottom: '1.5rem', overflowX: 'auto' }}>
-          <h4 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.75rem', color: '#334155' }}>
-            Model Karşılaştırması
+          <h4 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.75rem', color: 'var(--text-strong)' }}>
+            {t('benchmark.compare')}
           </h4>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
-                <th style={{ padding: '0.5rem' }}>Metrik</th>
+                <th style={{ padding: '0.5rem' }}>{t('benchmark.col_metrics')}</th>
                 {comparison.models.map((m) => (
                   <th key={m} style={{ padding: '0.5rem', textAlign: 'right' }}>{m}</th>
                 ))}
@@ -175,8 +175,8 @@ export function BenchmarkPanel({ workspaceId: _ws }: Props) {
       {/* Benchmarks List */}
       {sortedBenchmarks.length > 0 ? (
         <div>
-          <h4 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.75rem', color: '#334155' }}>
-            Geçmiş Kıyaslamalar
+          <h4 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.75rem', color: 'var(--text-strong)' }}>
+            {t('benchmark.history')}
           </h4>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
             <thead>
@@ -185,26 +185,26 @@ export function BenchmarkPanel({ workspaceId: _ws }: Props) {
                   style={{ padding: '0.5rem', cursor: 'pointer' }}
                   onClick={() => toggleSort('model_name')}
                 >
-                  Model{sortArrow('model_name')}
+                  {t('benchmark.col_model')}{sortArrow('model_name')}
                 </th>
                 <th
                   style={{ padding: '0.5rem', cursor: 'pointer' }}
                   onClick={() => toggleSort('benchmark_name')}
                 >
-                  Benchmark{sortArrow('benchmark_name')}
+                  {t('benchmark.col_benchmark')}{sortArrow('benchmark_name')}
                 </th>
                 <th
                   style={{ padding: '0.5rem', cursor: 'pointer', textAlign: 'right' }}
                   onClick={() => toggleSort('score')}
                 >
-                  Skor{sortArrow('score')}
+                  {t('benchmark.col_score')}{sortArrow('score')}
                 </th>
-                <th style={{ padding: '0.5rem' }}>Metrikler</th>
+                <th style={{ padding: '0.5rem' }}>{t('benchmark.col_metrics')}</th>
                 <th
                   style={{ padding: '0.5rem', cursor: 'pointer' }}
                   onClick={() => toggleSort('tested_at')}
                 >
-                  Tarih{sortArrow('tested_at')}
+                  {t('benchmark.col_date')}{sortArrow('tested_at')}
                 </th>
               </tr>
             </thead>
@@ -212,18 +212,18 @@ export function BenchmarkPanel({ workspaceId: _ws }: Props) {
               {sortedBenchmarks.map((b) => (
                 <tr key={b.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                   <td style={{ padding: '0.5rem', fontWeight: 600 }}>{b.model_name}</td>
-                  <td style={{ padding: '0.5rem', color: '#64748b' }}>{b.benchmark_name}</td>
+                  <td style={{ padding: '0.5rem', color: 'var(--text-muted)' }}>{b.benchmark_name}</td>
                   <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 600 }}>
                     {b.score.toFixed(2)}
                   </td>
-                  <td style={{ padding: '0.5rem', fontSize: '0.8rem', color: '#64748b' }}>
+                  <td style={{ padding: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                     {Object.entries(b.metrics).map(([k, v]) => (
                       <span key={k} style={{ marginRight: '0.75rem', whiteSpace: 'nowrap' }}>
                         {k}: <strong>{typeof v === 'number' ? v.toFixed(2) : v}</strong>
                       </span>
                     ))}
                   </td>
-                  <td style={{ padding: '0.5rem', color: '#94a3b8', fontSize: '0.8rem' }}>
+                  <td style={{ padding: '0.5rem', color: 'var(--text-faint)', fontSize: '0.8rem' }}>
                     {new Date(b.tested_at).toLocaleDateString(dateLocale, {
                       day: 'numeric',
                       month: 'short',
@@ -239,8 +239,8 @@ export function BenchmarkPanel({ workspaceId: _ws }: Props) {
       ) : (
         <div className="rec-empty">
           <div className="rec-empty-icon">🧪</div>
-          <h4>Henüz kıyaslama kaydı yok</h4>
-          <p>Yukarıdaki formu kullanarak bir model benchmark'ı çalıştırın.</p>
+          <h4>{t('benchmark.empty_title')}</h4>
+          <p>{t('benchmark.empty_desc')}</p>
         </div>
       )}
     </div>

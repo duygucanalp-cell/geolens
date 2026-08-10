@@ -97,7 +97,7 @@ export function AlertRulesPanel({ workspaceId, brands }: { workspaceId: string; 
       </div>
 
       {showCreate && (
-        <form onSubmit={handleCreate} style={{ background: '#f8fafc', padding: '1rem', borderRadius: '10px', marginBottom: '1rem' }}>
+        <form onSubmit={handleCreate} style={{ background: 'var(--surface-2)', padding: '1rem', borderRadius: '10px', marginBottom: '1rem' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <input className="notif-input" placeholder={t('alertrules.name')} value={newName} onChange={e => setNewName(e.target.value)} required />
             <select value={newBrandId} onChange={e => setNewBrandId(e.target.value)} className="filter-select" required>
@@ -132,7 +132,7 @@ export function AlertRulesPanel({ workspaceId, brands }: { workspaceId: string; 
               <div className="rec-card-content">
                 <div className="rec-card-header">
                   <span className="rec-category-badge">{brandMap.get(r.brand_id) || r.brand_id}</span>
-                  <span className="rec-status-badge" style={{ background: r.enabled ? '#dcfce7' : '#fef2f2', color: r.enabled ? '#22c55e' : '#ef4444' }}>
+                  <span className="rec-status-badge" style={{ background: r.enabled ? 'var(--success-soft)' : 'var(--danger-bg)', color: r.enabled ? '#22c55e' : '#ef4444' }}>
                     {r.enabled ? t('alertrules.enabled') : t('alertrules.disabled')}
                   </span>
                 </div>

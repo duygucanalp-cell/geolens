@@ -160,14 +160,14 @@ export function TenantSettingsPanel() {
       {error && <div className="audit-error">{error}</div>}
 
       {tenant && (
-        <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '10px', marginBottom: '1rem' }}>
+        <div style={{ background: 'var(--surface-2)', padding: '1rem', borderRadius: '10px', marginBottom: '1rem' }}>
           <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'center' }}>
             <div>
-              <strong style={{ color: '#334155' }}>{tenant.name}</strong>
-              <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{tenant.slug}</p>
+              <strong style={{ color: 'var(--text-strong)' }}>{tenant.name}</strong>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-faint)' }}>{tenant.slug}</p>
             </div>
             <span className="rec-category-badge">{TIER_LABELS[tenant.tier] || tenant.tier}</span>
-            <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-faint)' }}>
               {t('tenant.created')}: {new Date(tenant.created_at).toLocaleDateString()}
             </div>
           </div>
@@ -182,8 +182,8 @@ export function TenantSettingsPanel() {
             style={{
               padding: '0.6rem 1.2rem',
               border: 'none',
-              background: activeTab === tab ? '#6366f1' : 'transparent',
-              color: activeTab === tab ? '#fff' : '#64748b',
+              background: activeTab === tab ? 'var(--accent)' : 'transparent',
+              color: activeTab === tab ? '#fff' : 'var(--text-muted)',
               fontWeight: activeTab === tab ? 600 : 400,
               cursor: 'pointer',
               borderRadius: '8px 8px 0 0',
@@ -197,8 +197,8 @@ export function TenantSettingsPanel() {
 
       {activeTab === 'members' && (
         <div>
-          <form onSubmit={handleInvite} style={{ background: '#f8fafc', padding: '1rem', borderRadius: '10px', marginBottom: '1rem' }}>
-            <h4 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.75rem', color: '#334155' }}>{t('tenant.invite_title')}</h4>
+          <form onSubmit={handleInvite} style={{ background: 'var(--surface-2)', padding: '1rem', borderRadius: '10px', marginBottom: '1rem' }}>
+            <h4 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.75rem', color: 'var(--text-strong)' }}>{t('tenant.invite_title')}</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                 <input className="notif-input" style={{ flex: 1 }} placeholder={t('tenant.invite_email_placeholder')} value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} required />
@@ -227,7 +227,7 @@ export function TenantSettingsPanel() {
             </div>
           ) : (
             <div>
-              <h4 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.75rem', color: '#334155' }}>
+              <h4 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.75rem', color: 'var(--text-strong)' }}>
                 {t('tenant.member_list')} ({members.length})
               </h4>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
@@ -244,10 +244,10 @@ export function TenantSettingsPanel() {
                   {members.map(m => (
                     <tr key={m.user_id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                       <td style={{ padding: '0.5rem', fontWeight: 600 }}>{m.full_name}</td>
-                      <td style={{ padding: '0.5rem', color: '#64748b' }}>{m.email}</td>
+                      <td style={{ padding: '0.5rem', color: 'var(--text-muted)' }}>{m.email}</td>
                       <td style={{ padding: '0.5rem' }}><span className="rec-category-badge">{m.workspace_role}</span></td>
-                      <td style={{ padding: '0.5rem', fontFamily: 'monospace', fontSize: '0.8rem', color: '#94a3b8' }}>{m.workspace_id}</td>
-                      <td style={{ padding: '0.5rem', color: '#94a3b8', fontSize: '0.8rem' }}>{new Date(m.created_at).toLocaleDateString()}</td>
+                      <td style={{ padding: '0.5rem', fontFamily: 'monospace', fontSize: '0.8rem', color: 'var(--text-faint)' }}>{m.workspace_id}</td>
+                      <td style={{ padding: '0.5rem', color: 'var(--text-faint)', fontSize: '0.8rem' }}>{new Date(m.created_at).toLocaleDateString()}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -260,15 +260,15 @@ export function TenantSettingsPanel() {
       {activeTab === 'apikeys' && (
         <div>
           {showCreateForm ? (
-            <form onSubmit={handleCreateKey} style={{ background: '#f8fafc', padding: '1rem', borderRadius: '10px', marginBottom: '1rem' }}>
-              <h4 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.75rem', color: '#334155' }}>{t('tenant.key_create')}</h4>
+            <form onSubmit={handleCreateKey} style={{ background: 'var(--surface-2)', padding: '1rem', borderRadius: '10px', marginBottom: '1rem' }}>
+              <h4 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.75rem', color: 'var(--text-strong)' }}>{t('tenant.key_create')}</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <input className="notif-input" style={{ flex: 1 }} placeholder={t('tenant.key_name')} value={newKeyName} onChange={e => setNewKeyName(e.target.value)} required />
                   <select value={newKeyRole} onChange={e => setNewKeyRole(e.target.value)} className="filter-select">
-                    <option value="admin">Admin</option>
-                    <option value="editor">Editör</option>
-                    <option value="viewer">İzleyici</option>
+                    <option value="admin">{t('tenant.role_admin')}</option>
+                    <option value="editor">{t('tenant.role_editor')}</option>
+                    <option value="viewer">{t('tenant.role_viewer')}</option>
                   </select>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -290,9 +290,9 @@ export function TenantSettingsPanel() {
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
                 <span style={{ fontSize: '1.2rem' }}>⚠️</span>
                 <div style={{ flex: 1 }}>
-                  <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#92400e', marginBottom: '0.25rem' }}>{t('tenant.key_warning_title')}</h4>
+                  <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--warn-text)', marginBottom: '0.25rem' }}>{t('tenant.key_warning_title')}</h4>
                   <p style={{ fontSize: '0.85rem', color: '#a16207', marginBottom: '0.5rem' }}>{createdKey.warning}</p>
-                  <div style={{ background: '#fff', padding: '0.75rem', borderRadius: '6px', fontFamily: 'monospace', fontSize: '0.8rem', wordBreak: 'break-all' }}>
+                  <div style={{ background: 'var(--surface)', padding: '0.75rem', borderRadius: '6px', fontFamily: 'monospace', fontSize: '0.8rem', wordBreak: 'break-all' }}>
                     {createdKey.api_key}
                   </div>
                   <p style={{ fontSize: '0.78rem', color: '#a16207', marginTop: '0.5rem' }}>{t('tenant.key_warning_save')}</p>
@@ -311,7 +311,7 @@ export function TenantSettingsPanel() {
             </div>
           ) : (
             <div>
-              <h4 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.75rem', color: '#334155' }}>
+              <h4 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.75rem', color: 'var(--text-strong)' }}>
                 {t('tenant.keys_list')} ({apiKeys.length})
               </h4>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
@@ -336,7 +336,7 @@ export function TenantSettingsPanel() {
                           {k.is_active ? t('tenant.key_active') : t('tenant.key_inactive')}
                         </span>
                       </td>
-                      <td style={{ padding: '0.5rem', color: '#94a3b8', fontSize: '0.8rem' }}>
+                      <td style={{ padding: '0.5rem', color: 'var(--text-faint)', fontSize: '0.8rem' }}>
                         {new Date(k.created_at).toLocaleDateString()}
                       </td>
                       <td style={{ padding: '0.5rem', textAlign: 'right' }}>
@@ -363,21 +363,21 @@ export function TenantSettingsPanel() {
               <h4>{t('tenant.no_subscription')}</h4>
             </div>
           ) : (
-            <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '10px' }}>
+            <div style={{ background: 'var(--surface-2)', padding: '1.5rem', borderRadius: '10px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div>
-                  <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t('tenant.sub_plan')}</span>
-                  <div style={{ fontSize: '1.2rem', fontWeight: 700, color: '#334155' }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-faint)' }}>{t('tenant.sub_plan')}</span>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-strong)' }}>
                     {TIER_LABELS[subscription.tier] || subscription.tier}
                   </div>
                 </div>
                 <div>
-                  <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t('tenant.sub_tenant_id')}</span>
-                  <div style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#64748b' }}>{subscription.tenant_id}</div>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-faint)' }}>{t('tenant.sub_tenant_id')}</span>
+                  <div style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--text-muted)' }}>{subscription.tenant_id}</div>
                 </div>
                 <div>
-                  <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t('tenant.sub_updated')}</span>
-                  <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-faint)' }}>{t('tenant.sub_updated')}</span>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                     {new Date(subscription.updated_at).toLocaleDateString()}
                   </div>
                 </div>

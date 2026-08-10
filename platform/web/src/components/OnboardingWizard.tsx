@@ -18,11 +18,37 @@ const STEP_ICONS: Record<StepKey, string> = {
   measurement: '📡',
 }
 
+// Aktif adım oturum boyunca hatırlanır — oturum süresi dolup tekrar
+// giriş yapıldığında kullanıcı kaldığı adımdan devam eder.
+const WIZARD_STEP_KEY = 'geolens.wizard_step'
+
+function readSavedStep(): StepKey | null {
+  try {
+    const saved = sessionStorage.getItem(WIZARD_STEP_KEY)
+    if (saved && (STEP_KEYS as readonly string[]).includes(saved)) {
+      return saved as StepKey
+    }
+  } catch { /* sessionStorage erişilemiyorsa yoksay */ }
+  return null
+}
+
+function saveStep(key: StepKey) {
+  try {
+    sessionStorage.setItem(WIZARD_STEP_KEY, key)
+  } catch { /* yoksay */ }
+}
+
+function clearSavedStep() {
+  try {
+    sessionStorage.removeItem(WIZARD_STEP_KEY)
+  } catch { /* yoksay */ }
+}
+
 export function OnboardingWizard({ workspaceId, onComplete }: OnboardingWizardProps) {
   const { t } = useTranslation()
   const [status, setStatus] = useState<SetupStatus | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeStep, setActiveStep] = useState<StepKey>('brand')
+  const [activeStep, setActiveStep] = useState<StepKey>(() => readSavedStep() ?? 'brand')
   const [error, setError] = useState<string | null>(null)
 
   // Brand form state
@@ -69,16 +95,27 @@ export function OnboardingWizard({ workspaceId, onComplete }: OnboardingWizardPr
   async function loadStatus() {
     try {
       setLoading(true)
-      const s = await getSetupStatus(workspaceId)
+      const raw = await getSetupStatus(workspaceId)
+      // steps alanı her yanıtta garanti edilmez; boş diziye normalize edilir
+      // (aşağıdaki .find/.filter çağrıları tanımsız steps üzerinde patlamasın).
+      const s: SetupStatus = { setup_complete: raw.setup_complete, steps: raw.steps ?? [] }
       setStatus(s)
       if (s.setup_complete) {
+        // Kurulum tamamlandığında hatırlanan adımı temizle
+        clearSavedStep()
         onComplete()
         return
       }
-      // Set initial active step to first undone step
-      const nextUndone = s.steps.find(st => !st.done)
-      if (nextUndone) {
-        setActiveStep(nextUndone.key as StepKey)
+      // Kayıtlı adım hâlâ yapılmadıysa oradan devam et; değilse ilk yapılmamış adıma git
+      const saved = readSavedStep()
+      const savedStep = s.steps.find(st => st.key === saved)
+      if (saved && savedStep && !savedStep.done) {
+        goToStep(saved)
+      } else {
+        const nextUndone = s.steps.find(st => !st.done)
+        if (nextUndone) {
+          goToStep(nextUndone.key as StepKey)
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : t('dashboard.error_load'))
@@ -89,15 +126,27 @@ export function OnboardingWizard({ workspaceId, onComplete }: OnboardingWizardPr
 
   async function refreshStatus() {
     try {
-      const s = await getSetupStatus(workspaceId)
+      const raw = await getSetupStatus(workspaceId)
+      const s: SetupStatus = { setup_complete: raw.setup_complete, steps: raw.steps ?? [] }
       setStatus(s)
       if (s.setup_complete) {
+        clearSavedStep()
         onComplete()
       }
     } catch {
       // ignore refresh errors
     }
   }
+
+  function goToStep(key: StepKey) {
+    setActiveStep(key)
+    saveStep(key)
+  }
+
+  // Yardımcılar erken tanımlanır — aksi hâlde loading early-return'ü yüzünden
+  // ilk render'da useEffect içinde TDZ ReferenceError'u oluşurdu.
+  const isStepDone = (key: string) => status?.steps?.find(s => s.key === key)?.done ?? false
+  const isStepActive = (key: string) => activeStep === key
 
   // Fetch brands for competitor selection when brand step is active
   useEffect(() => {
@@ -205,12 +254,9 @@ export function OnboardingWizard({ workspaceId, onComplete }: OnboardingWizardPr
     )
   }
 
-  const isStepDone = (key: string) => currentStatus?.steps.find(s => s.key === key)?.done ?? false
-  const isStepActive = (key: string) => activeStep === key
-
   // Find the current step index for the progress indicator
   const currentStepIndex = STEP_KEYS.indexOf(activeStep)
-  const doneCount = currentStatus?.steps.filter(s => s.done).length ?? 0
+  const doneCount = currentStatus?.steps?.filter(s => s.done).length ?? 0
 
   return (
     <div className="wizard-page">
@@ -421,7 +467,7 @@ export function OnboardingWizard({ workspaceId, onComplete }: OnboardingWizardPr
               <button
                 className="wizard-btn-secondary"
                 onClick={() => {
-                  setActiveStep(STEP_KEYS[currentStepIndex - 1])
+                  goToStep(STEP_KEYS[currentStepIndex - 1])
                   setError(null)
                 }}
               >
@@ -432,7 +478,7 @@ export function OnboardingWizard({ workspaceId, onComplete }: OnboardingWizardPr
               <button
                 className="wizard-btn"
                 onClick={() => {
-                  setActiveStep(STEP_KEYS[currentStepIndex + 1])
+                  goToStep(STEP_KEYS[currentStepIndex + 1])
                   setError(null)
                 }}
               >

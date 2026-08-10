@@ -73,7 +73,7 @@ export function NotificationSettings({ workspaceId }: Props) {
     try {
       setTestEmailStatus(t('notif.test_sending'))
       const result = await sendTestEmail(workspaceId, settings.email_address)
-      setTestEmailStatus(`✅ Test e-postası gönderildi: ${result.to}`)
+      setTestEmailStatus(t('notif.test_sent', { to: result.to }))
       setTimeout(() => setTestEmailStatus(null), 5000)
     } catch (err) {
       setTestEmailStatus(`❌ ${err instanceof Error ? err.message : t('notif.send_failed')}`)
@@ -86,7 +86,7 @@ export function NotificationSettings({ workspaceId }: Props) {
   }
 
   if (loading) {
-    return <div className="notif-settings-loading">Ayarlar yükleniyor...</div>
+    return <div className="notif-settings-loading">{t('notif.loading')}</div>
   }
 
   if (error && !settings) {
@@ -98,9 +98,9 @@ export function NotificationSettings({ workspaceId }: Props) {
   return (
     <div className="notif-settings">
       <div className="notif-settings-header">
-        <h3>Bildirim Ayarları</h3>
+        <h3>{t('notif.title')}</h3>
         <p className="notif-settings-desc">
-          Haftalık özet e-postaları ve skor düşüş bildirimlerini yapılandırın.
+          {t('notif.desc')}
         </p>
       </div>
 
@@ -109,13 +109,13 @@ export function NotificationSettings({ workspaceId }: Props) {
 
       <div className="notif-setting-row">
         <label className="notif-setting-label">
-          <span>E-posta Adresi</span>
+          <span>{t('notif.email')}</span>
           <input
             type="email"
             className="notif-input"
             value={settings.email_address}
             onChange={(e) => update('email_address', e.target.value)}
-            placeholder="ornek@email.com"
+            placeholder={t('notif.email_placeholder')}
           />
         </label>
       </div>
@@ -127,7 +127,7 @@ export function NotificationSettings({ workspaceId }: Props) {
             checked={settings.digest_enabled}
             onChange={(e) => update('digest_enabled', e.target.checked)}
           />
-          <span>Haftalık özet e-postalarını etkinleştir</span>
+          <span>{t('notif.enable_digest')}</span>
         </label>
       </div>
 
@@ -135,7 +135,7 @@ export function NotificationSettings({ workspaceId }: Props) {
         <div className="notif-setting-details">
           <div className="notif-setting-row-inline">
             <label className="notif-setting-label">
-              <span>Gün</span>
+              <span>{t('notif.day')}</span>
               <select
                 className="notif-select"
                 value={settings.digest_day}
@@ -147,7 +147,7 @@ export function NotificationSettings({ workspaceId }: Props) {
               </select>
             </label>
             <label className="notif-setting-label">
-              <span>Saat</span>
+              <span>{t('notif.time')}</span>
               <input
                 type="time"
                 className="notif-input notif-input-sm"
@@ -156,7 +156,7 @@ export function NotificationSettings({ workspaceId }: Props) {
               />
             </label>
             <label className="notif-setting-label">
-              <span>Format</span>
+              <span>{t('notif.format')}</span>
               <select
                 className="notif-select"
                 value={settings.digest_format}
@@ -172,7 +172,7 @@ export function NotificationSettings({ workspaceId }: Props) {
       )}
 
       <div className="notif-setting-section">
-        <h4>Skor Düşüş Bildirimleri</h4>
+        <h4>{t('notif.score_drops')}</h4>
         <div className="notif-setting-row">
           <label className="notif-setting-checkbox">
             <input
@@ -180,13 +180,13 @@ export function NotificationSettings({ workspaceId }: Props) {
               checked={settings.notify_on_drop}
               onChange={(e) => update('notify_on_drop', e.target.checked)}
             />
-            <span>Skor düşüşlerinde e-posta bildirimi gönder</span>
+            <span>{t('notif.notify_on_drop')}</span>
           </label>
         </div>
         {settings.notify_on_drop && (
           <div className="notif-setting-row">
             <label className="notif-setting-label">
-              <span>Eşik (% düşüş)</span>
+              <span>{t('notif.threshold')}</span>
               <div className="notif-threshold-group">
                 <input
                   type="range"
@@ -204,16 +204,16 @@ export function NotificationSettings({ workspaceId }: Props) {
       </div>
 
       <div className="notif-setting-section">
-        <h4>Test</h4>
+        <h4>{t('notif.test')}</h4>
         <p className="notif-setting-hint">
-          Ayarları kaydettikten sonra bir test e-postası göndererek bildirim altyapısını test edin.
+          {t('notif.test_hint')}
         </p>
         <button
           className="notif-test-btn"
           onClick={handleTestEmail}
           disabled={!settings.email_address}
         >
-          Test E-postası Gönder
+          {t('notif.test_send')}
         </button>
         {testEmailStatus && (
           <p className={`notif-test-status ${testEmailStatus.startsWith('✅') ? 'success' : ''}`}>

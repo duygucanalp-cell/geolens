@@ -39,6 +39,7 @@ import (
 	"github.com/geolens/platform/internal/cost"
 	"github.com/geolens/platform/internal/delivery"
 	"github.com/geolens/platform/internal/discovery"
+	"github.com/geolens/platform/internal/drift"
 	"github.com/geolens/platform/internal/explain"
 	"github.com/geolens/platform/internal/gate"
 	"github.com/geolens/platform/internal/governance"
@@ -53,6 +54,7 @@ import (
 	"github.com/geolens/platform/internal/prompt"
 	"github.com/geolens/platform/internal/public"
 	"github.com/geolens/platform/internal/recommendation"
+	"github.com/geolens/platform/internal/redteam"
 	"github.com/geolens/platform/internal/registry"
 	"github.com/geolens/platform/internal/replay"
 	"github.com/geolens/platform/internal/retention"
@@ -130,6 +132,9 @@ func main() {
 	engines.Register(chatgptAdapter)
 	geminiAdapter := gemini.NewAdapter(cfg.GeminiAPIKey, saver)
 	engines.Register(geminiAdapter)
+	// Google AI Overview + Google AI Mode (Kademe 3 — directional) — FR-B6 HT2 genişletmesi
+	engines.Register(geminiAdapter.WithAIOverview("", ""))
+	engines.Register(geminiAdapter.WithAIMode("", ""))
 	claudeAdapter := claude.NewAdapter(cfg.ClaudeAPIKey, saver)
 	engines.Register(claudeAdapter)
 	grokAdapter := grok.NewAdapter(cfg.GrokAPIKey, saver)
@@ -152,21 +157,23 @@ func main() {
 	}
 
 	// Handler'lar
-	authHandler := auth.NewProductionHandler(pool, jwtService, redisClient)
+	emailCfg := delivery.EmailConfig{
+		FromName: cfg.SendGridFromName, FromEmail: cfg.SendGridFromEmail, SendGridKey: cfg.SendGridAPIKey,
+	}
+	deliverySvc := delivery.NewService(emailCfg, pool)
+	authHandler := auth.NewProductionHandler(pool, jwtService, redisClient, deliverySvc, cfg.BaseURL)
 	configHandler := config.NewProductionHandler(pool)
 	panelHandler := config.NewProductionPanelHandler(pool)
 	measureHandler := measure.NewProductionHandler(pool, engines)
 	auditHandler := audit.NewProductionHandler(pool)
-	deliveryHandler := delivery.NewProductionHandler(pool, delivery.EmailConfig{
-		FromName: cfg.SendGridFromName, FromEmail: cfg.SendGridFromEmail, SendGridKey: cfg.SendGridAPIKey,
-	})
+	deliveryHandler := delivery.NewProductionHandler(pool, emailCfg)
 	privacyHandler := privacy.NewProductionHandler(pool)
 	recommendationHandler := recommendation.NewProductionHandler(pool)
 	pdfHandler := pdf.NewProductionHandler(pool)
 	alertHandler := alert.NewProductionHandler(pool)
 	apiKeyHandler := apikey.NewProductionHandler(pool)
 	publicHandler := public.NewProductionHandler(pool)
-	billingHandler := billing.NewHandler(pool, cfg.StripeAPIKey, cfg.StripeWebhookSecret)
+	billingHandler := billing.NewHandler(pool, cfg.StripeAPIKey, cfg.StripeWebhookSecret, cfg.EFaturaMode)
 	complianceHandler := compliance.NewHandler(pool)
 	retentionHandler := retention.NewHandler(pool)
 	pilotHandler := pilot.NewHandler(pool)
@@ -192,6 +199,8 @@ func main() {
 	technicalgeoHandler := technicalgeo.NewProductionHandler(pool)
 	contentgeoHandler := contentgeo.NewProductionHandler(pool)
 	competitiveHandler := competitive.NewProductionHandler(pool)
+	redteamHandler := redteam.NewProductionHandler(pool)
+	driftHandler := drift.NewProductionHandler(pool)
 	seoHandler := seo.NewProductionHandler(pool, cfg.GoogleOAuthClientID, cfg.GoogleOAuthClientSecret, cfg.BaseURL)
 
 	// SEO data sync worker (FR-B8) — her 1 saatte Search Console verilerini senkronize eder
@@ -244,6 +253,7 @@ func main() {
 
 		r.Post("/auth/register", authHandler.Register)
 		r.Post("/auth/login", authHandler.Login)
+		r.Post("/auth/refresh", authHandler.Refresh)
 		r.Post("/auth/accept-invitation", authHandler.AcceptInvitation)
 		r.Post("/sso/acs/{tenantId}", ssoHandler.HandleACS)
 
@@ -275,6 +285,12 @@ func main() {
 			r.Post("/billing/checkout", billingHandler.CreateCheckoutSession)
 			r.Post("/billing/webhook", billingHandler.HandleWebhook)
 			r.Get("/billing/subscription", billingHandler.GetSubscription)
+			r.Get("/billing/invoices", billingHandler.ListInvoices)
+			r.Get("/billing/invoices/{invoiceId}", billingHandler.GetInvoice)
+			r.Post("/billing/invoices/{invoiceId}/efatura", billingHandler.SubmitEFatura)
+			r.Get("/billing/invoices/{invoiceId}/efatura/xml", billingHandler.DownloadUBL)
+			r.Get("/billing/invoices/{invoiceId}/pdf", billingHandler.DownloadInvoicePDF)
+			r.Post("/billing/portal", billingHandler.CreatePortalSession)
 
 			r.With(httpmw.RequireRole(httpmw.RoleAdmin)).Get("/compliance/soc2", complianceHandler.SOC2Readiness)
 			r.With(httpmw.RequireRole(httpmw.RoleAdmin)).Get("/compliance/report", complianceHandler.ComplianceReport)
@@ -361,6 +377,28 @@ func main() {
 				r.Get("/traces", agentHandler.ListTraces)
 				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/traces/{traceId}/steps", agentHandler.RecordStep)
 				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/traces/{traceId}/complete", agentHandler.CompleteTrace)
+			})
+
+			// R16: LLM Red Teaming — adversarial saldırı senaryolarıyla savunma testi
+			r.Route("/redteam", func(r chi.Router) {
+				r.Use(httpmw.RequireRole(httpmw.RoleViewer))
+				r.Get("/cases", redteamHandler.ListCases)
+				r.Get("/runs", redteamHandler.ListRuns)
+				r.Get("/runs/{runId}", redteamHandler.GetRun)
+				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/runs", redteamHandler.Run)
+				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/cases", redteamHandler.CreateCase)
+				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Delete("/cases/{caseId}", redteamHandler.DeleteCase)
+				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/seed-defaults", redteamHandler.SeedDefaults)
+			})
+
+			// R17: Drift Detection — metrik/model sapması izleme
+			r.Route("/drift", func(r chi.Router) {
+				r.Use(httpmw.RequireRole(httpmw.RoleViewer))
+				r.Get("/alerts", driftHandler.ListAlerts)
+				r.Get("/entities", driftHandler.ListEntities)
+				r.Get("/analysis", driftHandler.Analyze)
+				r.Get("/observations", driftHandler.ListObservations)
+				r.With(httpmw.RequireRole(httpmw.RoleEditor)).Post("/record", driftHandler.Record)
 			})
 
 			// R9: Prompt Audit

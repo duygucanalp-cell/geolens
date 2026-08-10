@@ -40,7 +40,15 @@ Tüm olay üretimi transactional outbox deseniyle yapılır:
 | q:audit | cg:measure | audit.site |
 | q:report | cg:report | report.render, report.scheduled |
 | q:notify | cg:notify | notify.alert, digest.weekly |
+| q:sentiment | cg:analysis | analysis.sentiment, analysis.hallucination |
+| q:replay | cg:analysis | replay.snapshot |
+| q:archive | cg:analysis | archive.entry |
+| q:gap | cg:analysis | competitive.gap |
+| q:technical-geo | cg:analysis | technical.bot, technical.schema |
+| q:content-geo | cg:analysis | content.gap, content.hub |
 | q:dead | — | Zehirli mesajlar (DLQ) |
+
+> **Faz 4/HT1 kapsamı:** Analiz akışları (q:sentiment, q:replay, q:archive, q:gap, q:technical-geo, q:content-geo) 0307 §2.1 ve `platform/queue/outbox.go` sabitleriyle birebir eşleşir. SEO senkronu (Search Console/GA4) Redis Stream **kullanmaz**; worker içinde ticker/zamanlayıcı tabanlıdır.
 
 ---
 
@@ -91,3 +99,4 @@ scheduler → q:measure → worker:measure → ScoreCalculated → outbox
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: outbox pattern, kuyruk yapısı, tüketim garantileri, olay akışı. |
 | 1.1 | 23.07.2026 | Devralınan AVIP Kararları eklendi: D-74 (Redis Streams/ADR-005), D-75 (DLQ oynatma), D-73 (kilit kaybı). |
+| 1.2 | 04.08.2026 | **Stream senkronu:** §3 kuyruk yapısı kod gerçeğiyle güncellendi (`platform/queue/outbox.go`) — 6 analiz akışı eklendi (q:sentiment, q:replay, q:archive, q:gap, q:technical-geo, q:content-geo). SEO senkronunun stream kullanmadığı not edildi. 0307 §2.1 ile hizalı. |

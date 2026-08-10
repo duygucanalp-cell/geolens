@@ -32,6 +32,7 @@ type Config struct {
 	MistralAPIKey           string
 	StripeAPIKey            string
 	StripeWebhookSecret     string
+	EFaturaMode             string
 	ElasticsearchURL        string
 	ElasticsearchAPIKey     string
 	ClickHouseURL           string
@@ -83,6 +84,7 @@ func LoadFromEnv() Config {
 		MistralAPIKey:           getEnv("MISTRAL_API_KEY", ""),
 		StripeAPIKey:            getEnv("STRIPE_API_KEY", ""),
 		StripeWebhookSecret:     getEnv("STRIPE_WEBHOOK_SECRET", ""),
+		EFaturaMode:             getEnv("EFATURA_MODE", "mock"),
 		ElasticsearchURL:        getEnv("ELASTICSEARCH_URL", ""),
 		ElasticsearchAPIKey:     getEnv("ELASTICSEARCH_API_KEY", ""),
 		ClickHouseURL:           getEnv("CLICKHOUSE_URL", ""),

@@ -4,17 +4,17 @@
 |---|---|
 | Doküman ID | 0304 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.2 |
+| Versiyon | 1.3 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
-| Tarih | 28 Temmuz 2026 |
-| İlişkili | 0302, 0303, 0305, 0306, 0307, 0309, 0311, 0511, 0416, 0417, 0418, 0419 |
+| Tarih | 04 Ağustos 2026 |
+| İlişkili | 0302, 0303, 0305, 0306, 0307, 0309, 0311, 0511, 0209, 0210, 0416, 0417, 0418, 0419 |
 
 ---
 
 ## 1. Amaç
 
-Bu doküman, GeoLens Platform'daki tüm alan olaylarını (domain events), olay şemalarını, üretici/tüketici bağlarını ve olay fırtınası (event storming) çıktılarını tanımlar. Amaç, bağlamlar arası iletişimin olay tabanlı kısmını sabitlemek ve 0307 Background Jobs tasarımına girdi sağlamaktır.
+Bu doküman, GeoLens Platform'daki tüm alan olaylarını (domain events), olay şemalarını, üretici/tüketici bağlarını ve olay fırtınası (event storming) çıktılarını tanımlar. Amaç, bağlamlar arası iletişimin olay tabanlı kısmını sabitlemek ve 0307 Background Jobs tasarımına girdi sağlamaktır. HT1 genişletmesi (v1.2) BC7-BC10 olaylarını, Faz 4 + HT2 genişletmesi (v1.3) BC11-BC13 olaylarını kapsar (0302 v1.3 ile senkron).
 
 > **Tasarım filtresi bağlantısı:** Bu doküman **F2** (ölçek — olay tabanlı iletişim bağlamlar arası gevşek bağlılık sağlar) filtresine kanıt sağlar.
 
@@ -126,6 +126,42 @@ GeoLens'te alan olayları **outbox pattern** ile taşınır:
 | **GapAnalysisCompleted** | gap worker | insight, delivery | Gap analizi tamamlandı | snapshot_id, brand_id, competitor_id, competitive_score, gap_overview |
 | **GapThresholdExceeded** | gap worker | delivery (alert) | Gap eşiği aşıldı → alert tetiklenir | snapshot_id, gap_türü, gap_değeri, eşik, brand_id, competitor_id |
 
+### 3.10 Yapay Zekâ Yönetişim Olayları (BC11 — Faz 4)
+
+| Olay | Üretici | Tüketici | Tetikleyici | İçerdiği Veri |
+|------|---------|----------|------------|---------------|
+| **RegistryEntityRegistered** | registry servisi | explain, gate, governance (audit log) | Envanter kaydı oluşturuldu | entity_id, entity_type, lifecycle_state, risk_class, provider |
+| **RiskAssessmentCompleted** | registry servisi | gate, incident | Risk değerlendirmesi yazıldı | entity_id, risk_class, score, assessed_by |
+| **DiscoveryScanCompleted** | discovery servisi | registry (aday bulgular), governance | Kaçak AI taraması tamamlandı | scan_id, bulunan_sayısı, risk_dağılımı |
+| **GuardrailViolation** | guardrail runtime | incident, delivery | Kural eşleşti, aksiyon (block/flag/log) uygulandı | evaluation_id, rule_id, category, action, severity, matched_pattern |
+| **PolicyPackApplied** | policy servisi | governance (audit log) | Politika paketi uygulandı | pack_id, framework, kontrol_sayısı |
+| **BiasTestCompleted** | bias servisi | incident (önyargı bulgusu), delivery | Önyargı testi tamamlandı | test_id, model_id, metric_type, fairness_score, has_bias |
+| **GateCheckDecision** | gate servisi | registry (lifecycle), incident | Deployment kapısı karar verdi (onaylandı/engelli) | check_id, entity_id, target_env, decision, passed/total_checks |
+| **AgentTraceCompleted** | agent runtime | governance | Ajan izi tamamlandı | trace_id, agent_name, workflow_name, status, süre |
+| **RedTeamRunCompleted** | redteam servisi | delivery (rapor), governance | Kırmızı takım koşusu tamamlandı | run_id, target_name, total/passed/failed, defense_score |
+
+### 3.11 Yapay Zekâ Operasyon Olayları (BC12 — Faz 4)
+
+| Olay | Üretici | Tüketici | Tetikleyici | İçerdiği Veri |
+|------|---------|----------|------------|---------------|
+| **IncidentOpened** | incident servisi | delivery (notify), governance | Olay kaydı açıldı (otomatik/manüel) | incident_id, severity, category, source, entity_id |
+| **IncidentResolved** | incident servisi | delivery (notify) | Olay çözüldü/kapandı | incident_id, severity, resolution, süre |
+| **DriftAlertTriggered** | drift analiz servisi | incident (olay adayı), delivery (alert) | Sapma eşiği aşıldı | alert_id, entity_id, metric, drift_score, severity, delta |
+| **OptimizationRecommendationGenerated** | optimize servisi | insight, UI | Yeni optimizasyon önerisi üretildi | recommendation_id, category, impact, effort, score_potential |
+| **PromptAuditCompleted** | prompt denetim servisi | delivery | Prompt denetimi tamamlandı | audit_id, prompt_id, engine_name, status, score |
+| **ModelBenchmarkCompleted** | benchmark servisi | delivery | Model kıyaslaması tamamlandı | benchmark_id, model_name, engine_name, accuracy, latency |
+| **VersionEntryCreated** | version servisi | governance | Sürüm değişikliği kaydedildi | entity_type, entity_id, old/new_version, changed_by |
+
+### 3.12 Faturalama Olayları (BC13 — HT2)
+
+| Olay | Üretici | Tüketici | Tetikleyici | İçerdiği Veri |
+|------|---------|----------|------------|---------------|
+| **InvoiceCreated** | Stripe webhook | billing servisi, UI | Stripe invoice.created | invoice_id, tenant_id, stripe_invoice_id, amount_total, currency |
+| **InvoicePaid** | Stripe webhook | billing servisi, delivery | Stripe invoice.paid | invoice_id, tenant_id, stripe_invoice_id, amount_total |
+| **InvoiceVoided** | Stripe webhook | billing servisi | Stripe invoice.voided | invoice_id, tenant_id, stripe_invoice_id |
+| **EInvoiceSent** | e-Fatura servisi | UI | e-Fatura/e-Arşiv GİB'e iletildi | invoice_id, document_id, invoice_type, gib_status |
+| **GIBStatusRejected** | e-Fatura servisi | delivery (uyarı) | GİB belgeyi reddetti | invoice_id, gib_response_id, hata_detayı |
+
 ---
 
 ## 4. Olay Fırtınası (Event Storming) Çıktısı
@@ -171,6 +207,36 @@ GeoLens'te alan olayları **outbox pattern** ile taşınır:
 [Her motor çağrısı] → QuotaExceeded? → [Evet] → İş engellenir, alarm üretilir
                                      → [Hayır] → İş devam eder
 ```
+
+### 4.4 AI Yönetişim Olay Akışı (Faz 4)
+
+```
+Envanter Kaydı → RegistryEntityRegistered → RiskAssessmentCompleted
+                                                       ↓
+                                              GateCheckDecision (CI/CD)
+                                                       ↓
+                                      GuardrailViolation → IncidentOpened
+                                               ↓                 ↓
+                                       DriftAlertTriggered  IncidentResolved
+                                               ↓
+                                      RedTeamRunCompleted → defense_score (0-100)
+```
+
+**Faz 4 genişletmesi:** Yönetişim hattı üç kademede işler:
+1. **Keşif** — RegistryEntityRegistered → RiskAssessmentCompleted (envanter ve risk)
+2. **Savunma** — GuardrailViolation ve GateCheckDecision (runtime + deployment kapısı)
+3. **Ölçüm** — DriftAlertTriggered ve RedTeamRunCompleted (sapma izleme + savunma testi)
+Kural ihlalleri (GuardrailViolation, BiasTestCompleted, GateCheckDecision) IncidentOpened'a kaynak olur.
+
+### 4.5 Fatura ve GİB Akışı (HT2)
+
+```
+Stripe webhook → InvoiceCreated → InvoicePaid → e-Fatura: EInvoiceSent
+                                                       ↓
+                                          GIBStatusRejected → uyarı
+```
+
+**HT2 genişletmesi:** Fatura olayları dış webhook (Stripe/GİB) kaynaklıdır; outbox gerektirmez (O-5 gerekçesiyle aynı). e-Fatura akışı GİB durumunu none → pending → accepted/rejected olarak taşır.
 
 ---
 
@@ -225,9 +291,11 @@ Tüm olaylar aşağıdaki ortak alanları taşır. HT1'de eklenen olaylar da ayn
 2. **Ölçüm hattı olayları** HT1'de 4 paralel kola ayrılmıştır: insight, archive, replay, analysis. MeasurementJobCompleted artık tek bir tüketici değil, 4 farklı worker profiline yönlendirme yapar.
 3. **Outbox pattern** tüm olay üretiminde zorunludur. Bu, olay kaybını önler ve transaction bütünlüğünü korur.
 4. **Correlation_id** tüm olay zinciri boyunca taşınır. HT1'de measurement_job_id → snapshot_id/archive_entry_id/gap_snapshot_id zincirleri eklenmiştir.
-5. **0307 (Background Jobs)** bu olayların kuyruk yapılandırmasını (Streams, tüketici grupları, DLQ) tanımlar. HT1'de 5 yeni Redis Stream (q:archive, q:replay, q:sentiment, q:gap, q:seo-sc, q:seo-ga4) eklenmiştir.
+5. **0307 (Background Jobs)** bu olayların kuyruk yapılandırmasını (Streams, tüketici grupları, DLQ) tanımlar. Kod gerçeğinde (platform/queue/outbox.go) 11 Redis Stream sabiti vardır: q:measure, q:audit, q:report, q:notify, q:dead (DLQ) + 6 analiz akışı (q:sentiment, q:replay, q:archive, q:gap, q:technical-geo, q:content-geo). SEO senkronu stream kullanmaz; zamanlayıcı/ticker tabanlıdır (q:seo-sc/q:seo-ga4 yoktur).
 6. **SEO olayları** diğerlerinden farklı olarak periyodik zamanlayıcı ile tetiklenir (ölçüm olayıyla değil). SEOSyncCompleted/SEOSyncFailed worker profili bazlı metriklerle izlenir.
 7. **GapThresholdExceeded** ve **HallucinationDetected** olayları, doğrudan alert sistemini (BC5) tetikleyerek uyarı üretir — ölçüm sonrası ikincil analizlerden kaynaklanan otomatik uyarı modelinin ilk örnekleridir.
+8. **Faz 4 ve HT2 genişletmesi (v1.3):** 38'den 59 alan olayına genişleme — 21 yeni olay (BC11: 9 yönetişim, BC12: 7 operasyon, BC13: 5 fatura). Yeni olaylar 0302 v1.3'teki BC11-BC13 varlıklarının durum geçişlerinden türetilmiştir.
+9. **Faz 4 olay taşıması:** BC11/BC12 olayları (GuardrailViolation, GateCheckDecision, IncidentOpened, DriftAlertTriggered, RedTeamRunCompleted) şu an doğrudan DB yazan handler'larla üretilir; outbox'a bağlanma Faz 4/HT2 kararıdır (O-6). BC13 olayları dış webhook (Stripe/GİB) kaynaklıdır ve outbox gerektirmez.
 
 ---
 
@@ -240,6 +308,7 @@ Tüm olaylar aşağıdaki ortak alanları taşır. HT1'de eklenen olaylar da ayn
 | O-3 | Benchmark olayları (HT2) şimdiden tanımlanmalı mı? | ⏳ Hayır; HT2'de eklenir. |
 | O-4 | HT1 ölçüm sonrası 4 paralel kol (insight, archive, replay, analysis) — başarısızlık durumunda diğer kolları beklemeli mi? | ⏳ Mevcut tasarım: tamamen bağımsız (bir kol başarısız olursa diğerleri etkilenmez). |
 | O-5 | SEO worker'larının (seo-sc, seo-ga4) olayları outbox üzerinden mi yoksa doğrudan Redis Streams'e mi yazılmalı? | ⏳ Mevcut karar: doğrudan Redis Streams (periyodik worker, transaction gerekmez). |
+| O-6 | Faz 4 olayları (GuardrailViolation, GateCheckDecision, IncidentOpened, DriftAlertTriggered, RedTeamRunCompleted) outbox üzerinden mi taşınmalı, yoksa doğrudan DB yazımı yeterli mi? | ⏳ Faz 4/HT2'de karara bağlanır; mevcut handler'lar doğrudan DB yazar. |
 
 ### Devralınan AVIP Kararları
 
@@ -265,3 +334,4 @@ Tüm olaylar aşağıdaki ortak alanları taşır. HT1'de eklenen olaylar da ayn
 | 1.0 | 22.07.2026 | İlk yayın: 21 alan olayı, olay şablonu, outbox pattern, olay fırtınası çıktıları (ölçüm hattı, haftalık özet, kota), tüketim garantileri. 0302/0303'ten türetilmiştir. |
 | 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-74 (Redis Streams), D-75 (DLQ). Devralınan Kararlar eklendi. |
 | 1.2 | 28.07.2026 | **HT1 domain events genişletmesi:** 17 yeni olay eklendi (BC7: 4 arşiv; BC8: 2 replay; BC9: 5 SEO; BC10: 6 analiz). Toplam olay sayısı 21'den 38'e çıktı. Ölçüm hattı olay zinciri 4 paralel kolla güncellendi. Çıkarımlar güncellendi. Açık sorulara O-4 (paralel kol bağımsızlığı) ve O-5 (SEO olay mekanizması) eklendi. |
+| 1.3 | 04.08.2026 | **Faz 4 ve HT2 domain events genişletmesi:** 21 yeni olay eklendi (BC11: 9 yönetişim; BC12: 7 operasyon; BC13: 5 fatura). Toplam olay sayısı 38'den 59'a çıktı. §4 olay fırtınasına 4.4 AI yönetişim ve 4.5 fatura/GİB akışları eklendi. §7 çıkarımlar güncellendi. §8 açık sorulara O-6 (Faz 4 olay taşıması) eklendi. 0302 v1.3, 0209 (Faz 4) ve 0210 (rakip kapanışı) ile senkron. |

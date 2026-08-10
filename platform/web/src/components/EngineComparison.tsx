@@ -27,8 +27,8 @@ export function EngineComparison({ scores, brandName }: EngineComparisonProps) {
   if (!latest?.engine_breakdown || Object.keys(latest.engine_breakdown).length === 0) {
     return (
       <div className="engine-comparison">
-        <h4>Motor Karşılaştırması</h4>
-        <p className="engine-empty">Henüz motor verisi yok</p>
+        <h4>{t('enginecmp.title')}</h4>
+        <p className="engine-empty">{t('enginecmp.empty')}</p>
       </div>
     )
   }
@@ -36,34 +36,34 @@ export function EngineComparison({ scores, brandName }: EngineComparisonProps) {
   const data = Object.entries(latest.engine_breakdown).map(([engine, val]) => ({
     name: t(ENGINE_NAMES[engine]) || engine,
     value: Math.round(val),
-    color: ENGINE_COLORS[engine] || '#94a3b8',
+    color: ENGINE_COLORS[engine] || 'var(--text-faint)',
   }))
 
   return (
     <div className="engine-comparison">
-      <h4>Motor Karşılaştırması — {brandName}</h4>
+      <h4>{t('enginecmp.title_brand', { brand: brandName })}</h4>
       <ResponsiveContainer width="100%" height={200}>
         <BarChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
           <XAxis
             dataKey="name"
-            tick={{ fontSize: 12, fill: '#64748b' }}
+            tick={{ fontSize: 12, fill: 'var(--text-muted)' }}
             tickLine={false}
-            axisLine={{ stroke: '#e2e8f0' }}
+            axisLine={{ stroke: 'var(--border)' }}
           />
           <YAxis
             domain={[0, 100]}
-            tick={{ fontSize: 11, fill: '#94a3b8' }}
+            tick={{ fontSize: 11, fill: 'var(--text-faint)' }}
             tickLine={false}
             axisLine={false}
           />
           <Tooltip
             contentStyle={{
-              background: '#1e293b',
+              background: 'var(--text)',
               border: 'none',
               borderRadius: '8px',
               fontSize: '12px',
-              color: '#f8fafc',
+              color: 'var(--surface-2)',
             }}
             formatter={(value: number) => [`${value}`, t('score.trend_tooltip_score')]}
           />

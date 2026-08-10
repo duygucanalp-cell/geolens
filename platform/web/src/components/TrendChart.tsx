@@ -61,24 +61,24 @@ export function TrendChart({ scores, brandName }: TrendChartProps) {
           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
           <XAxis
             dataKey="dateLabel"
-            tick={{ fontSize: 11, fill: '#94a3b8' }}
+            tick={{ fontSize: 11, fill: 'var(--text-faint)' }}
             tickLine={false}
-            axisLine={{ stroke: '#e2e8f0' }}
+            axisLine={{ stroke: 'var(--border)' }}
           />
           <YAxis
             domain={[0, 100]}
-            tick={{ fontSize: 11, fill: '#94a3b8' }}
+            tick={{ fontSize: 11, fill: 'var(--text-faint)' }}
             tickLine={false}
             axisLine={false}
             tickCount={6}
           />
           <Tooltip
             contentStyle={{
-              background: '#1e293b',
+              background: 'var(--text)',
               border: 'none',
               borderRadius: '8px',
               fontSize: '12px',
-              color: '#f8fafc',
+              color: 'var(--surface-2)',
             }}
             labelFormatter={(label) => `Tarih: ${label}`}
             formatter={(value: number) => [`${value.toFixed(1)}`, t('score.trend_tooltip_score')]}
@@ -104,8 +104,8 @@ export function TrendChart({ scores, brandName }: TrendChartProps) {
             dataKey="value"
             stroke="#6366f1"
             strokeWidth={2.5}
-            dot={{ r: 4, fill: '#6366f1', stroke: '#fff', strokeWidth: 2 }}
-            activeDot={{ r: 6, fill: '#6366f1', stroke: '#fff', strokeWidth: 2 }}
+            dot={{ r: 4, fill: 'var(--accent)', stroke: '#fff', strokeWidth: 2 }}
+            activeDot={{ r: 6, fill: 'var(--accent)', stroke: '#fff', strokeWidth: 2 }}
           />
         </ComposedChart>
       </ResponsiveContainer>

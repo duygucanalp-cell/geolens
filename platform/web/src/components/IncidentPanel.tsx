@@ -45,7 +45,7 @@ export function IncidentPanel({ workspaceId: _ws }: Props) {
       setError(null)
       setData(await getIncidents())
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'İncident verileri yüklenemedi')
+      setError(err instanceof Error ? err.message : t('incident.load_error'))
     } finally {
       setLoading(false)
     }
@@ -66,7 +66,7 @@ export function IncidentPanel({ workspaceId: _ws }: Props) {
       setNewDesc('')
       loadData()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'İncident oluşturulamadı')
+      setError(err instanceof Error ? err.message : t('incident.create_error'))
     }
   }
 
@@ -79,13 +79,13 @@ export function IncidentPanel({ workspaceId: _ws }: Props) {
     }
   }
 
-  if (loading) return <div className="dashboard-loading">İncident verileri yükleniyor...</div>
+  if (loading) return <div className="dashboard-loading">{t('incident.loading')}</div>
 
   return (
     <div className="rec-panel">
       <div className="rec-header">
-        <h3>🚨 Incident Yönetimi</h3>
-        <p className="rec-desc">AI güvenlik, performans ve uyumluluk olaylarının takibi.</p>
+        <h3>{t('incident.title')}</h3>
+        <p className="rec-desc">{t('incident.desc')}</p>
       </div>
 
       {error && <div className="audit-error">{error}</div>}
@@ -93,52 +93,52 @@ export function IncidentPanel({ workspaceId: _ws }: Props) {
       {/* Summary Cards */}
       {data && (
         <div className="rec-summary">
-          <div className="rec-summary-card" style={{ background: '#fef2f2' }}>
+          <div className="rec-summary-card" style={{ background: 'var(--danger-bg)' }}>
             <span className="rec-summary-value" style={{ color: '#ef4444' }}>{data.open_count}</span>
-            <span className="rec-summary-label">Açık Incident</span>
+            <span className="rec-summary-label">{t('incident.summary_open')}</span>
           </div>
           <div className="rec-summary-card" style={{ background: '#fff7ed' }}>
             <span className="rec-summary-value" style={{ color: '#f97316' }}>{data.critical_count}</span>
-            <span className="rec-summary-label">Kritik/Yüksek</span>
+            <span className="rec-summary-label">{t('incident.summary_critical')}</span>
           </div>
-          <div className="rec-summary-card" style={{ background: '#eef2ff' }}>
-            <span className="rec-summary-value" style={{ color: '#6366f1' }}>{data.count}</span>
-            <span className="rec-summary-label">Toplam</span>
+          <div className="rec-summary-card" style={{ background: 'var(--accent-soft)' }}>
+            <span className="rec-summary-value" style={{ color: 'var(--accent)' }}>{data.count}</span>
+            <span className="rec-summary-label">{t('incident.summary_total')}</span>
           </div>
         </div>
       )}
 
       <div className="dashboard-filters">
         <button className="refresh-btn" onClick={() => setShowCreate(!showCreate)}>
-          {showCreate ? t('guardrails.cancel') : 'Yeni Incident'}
+          {showCreate ? t('guardrails.cancel') : t('incident.create')}
         </button>
       </div>
 
       {showCreate && (
-        <form onSubmit={handleCreate} style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '10px', marginBottom: '1.5rem' }}>
-          <h4 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '1rem' }}>Yeni Incident Oluştur</h4>
+        <form onSubmit={handleCreate} style={{ background: 'var(--surface-2)', padding: '1.25rem', borderRadius: '10px', marginBottom: '1.5rem' }}>
+          <h4 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '1rem' }}>{t('incident.create_title')}</h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <input className="notif-input" placeholder={t('incident.create_form_title')} value={newTitle} onChange={(e) => setNewTitle(e.target.value)} required />
             <textarea className="notif-input" placeholder={t('incident.create_form_desc')} value={newDesc} onChange={(e) => setNewDesc(e.target.value)} rows={3} />
             <div style={{ display: 'flex', gap: '0.75rem' }}>
               <select value={newSeverity} onChange={(e) => setNewSeverity(e.target.value)} className="filter-select">
-                <option value="critical">Kritik</option>
-                <option value="high">Yüksek</option>
-                <option value="medium">Orta</option>
-                <option value="low">Düşük</option>
-                <option value="info">Bilgi</option>
+                <option value="critical">{t('incident.severity_critical')}</option>
+                <option value="high">{t('incident.severity_high')}</option>
+                <option value="medium">{t('incident.severity_medium')}</option>
+                <option value="low">{t('incident.severity_low')}</option>
+                <option value="info">{t('incident.severity_info')}</option>
               </select>
               <select value={newCategory} onChange={(e) => setNewCategory(e.target.value)} className="filter-select">
-                <option value="outage">Kesinti</option>
-                <option value="degradation">Performans Düşüşü</option>
-                <option value="bias">Bias/Adillik</option>
-                <option value="injection">Prompt Injection</option>
-                <option value="data_leak">Veri Sızıntısı</option>
-                <option value="policy_violation">Politika İhlali</option>
-                <option value="other">Diğer</option>
+                <option value="outage">{t('incident.category_outage')}</option>
+                <option value="degradation">{t('incident.category_degradation')}</option>
+                <option value="bias">{t('incident.category_bias')}</option>
+                <option value="injection">{t('incident.category_injection')}</option>
+                <option value="data_leak">{t('incident.category_data_leak')}</option>
+                <option value="policy_violation">{t('incident.category_policy_violation')}</option>
+                <option value="other">{t('incident.category_other')}</option>
               </select>
             </div>
-            <button type="submit" className="audit-btn">Oluştur</button>
+            <button type="submit" className="audit-btn">{t('common.create')}</button>
           </div>
         </form>
       )}
@@ -146,35 +146,35 @@ export function IncidentPanel({ workspaceId: _ws }: Props) {
       {data && data.incidents.length === 0 ? (
         <div className="rec-empty">
           <div className="rec-empty-icon">🚨</div>
-          <h4>Hiç incident yok</h4>
-          <p>Tüm sistemler çalışıyor gibi görünüyor.</p>
+          <h4>{t('incident.empty_title')}</h4>
+          <p>{t('incident.empty_desc')}</p>
         </div>
       ) : (
         <div className="rec-list">
           {data?.incidents.map((inc) => (
             <div key={inc.id} className="rec-card">
               <div className="rec-card-left">
-                <div className="rec-severity-bar" style={{ backgroundColor: SEVERITY_COLORS[inc.severity] || '#94a3b8' }} />
+                <div className="rec-severity-bar" style={{ backgroundColor: SEVERITY_COLORS[inc.severity] || 'var(--text-faint)' }} />
               </div>
               <div className="rec-card-content">
                 <div className="rec-card-header">
                   <span className="rec-severity-badge" style={{
-                    color: SEVERITY_COLORS[inc.severity] || '#94a3b8',
-                    borderColor: SEVERITY_COLORS[inc.severity] || '#94a3b8',
+                    color: SEVERITY_COLORS[inc.severity] || 'var(--text-faint)',
+                    borderColor: SEVERITY_COLORS[inc.severity] || 'var(--text-faint)',
                   }}>
                     {t(SEVERITY_LABELS[inc.severity]) || inc.severity}
                   </span>
                   <span className="rec-category-badge">{inc.category}</span>
                   <span className="rec-status-badge" style={{
-                    background: STATUS_COLORS[inc.status] + '15' || '#f8fafc',
-                    color: STATUS_COLORS[inc.status] || '#64748b',
+                    background: STATUS_COLORS[inc.status] + '15' || 'var(--surface-2)',
+                    color: STATUS_COLORS[inc.status] || 'var(--text-muted)',
                   }}>
                     {STATUS_LABELS[inc.status] || inc.status}
                   </span>
-                  {inc.source && <span className="rec-category-badge">Kaynak: {inc.source}</span>}
+                  {inc.source && <span className="rec-category-badge">{t('incident.source_label', { source: inc.source })}</span>}
                 </div>
                 <h4 className="rec-title">{inc.title}</h4>
-                {inc.assigned_to && <p className="rec-detail">Atanan: {inc.assigned_to}</p>}
+                {inc.assigned_to && <p className="rec-detail">{t('incident.assigned_label', { assignee: inc.assigned_to })}</p>}
                 <div className="rec-meta">
                   <span className="rec-date">
                     {new Date(inc.occurred_at).toLocaleDateString(dateLocale, {
@@ -182,7 +182,7 @@ export function IncidentPanel({ workspaceId: _ws }: Props) {
                     })}
                   </span>
                   {inc.severity_score > 0 && (
-                    <span className="rec-confidence-label">Skor: {inc.severity_score.toFixed(1)}</span>
+                    <span className="rec-confidence-label">{t('incident.score_label', { score: inc.severity_score.toFixed(1) })}</span>
                   )}
                 </div>
               </div>

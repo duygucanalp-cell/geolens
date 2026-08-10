@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import i18n from '../i18n'
 import { SiteAuditPanel } from './SiteAuditPanel'
 
 // Mock API client
@@ -69,8 +70,9 @@ describe('SiteAuditPanel', () => {
   const workspaceId = 'ws-test-123'
   const onStatus = vi.fn()
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks()
+    await i18n.changeLanguage('tr')
   })
 
   it('shows brand selector and Denetim Başlat button', () => {

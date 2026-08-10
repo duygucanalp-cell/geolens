@@ -16,8 +16,10 @@ import (
 const (
 	tier           = engine.TierDirect      // Gemini API — Kademe 1 (direct)
 	aiOverviewTier = engine.TierDirectional // Google AI Overview — Kademe 3 (directional)
+	aiModeTier     = engine.TierDirectional // Google AI Mode — Kademe 3 (directional)
 	apiURL         = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-pro:generateContent"
 	aiOverviewURL  = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-pro:generateContent?alt=sse" // AI Overview endpoint (Kademe 3 proxy)
+	aiModeURL      = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-pro:generateContent?alt=sse" // Google AI Mode endpoint (Kademe 3 proxy)
 	modelName      = "gemini-3.5-pro"
 	timeout        = 60 * time.Second
 )
@@ -277,7 +279,7 @@ func (a *Adapter) parseResponse(ctx context.Context, raw []byte, durationMs int6
 // WithAIOverview returns a copy of the adapter configured for Google AI Overview mode.
 // AI Overview sonuçları Kademe 3 (directional) fidelity etiketiyle işaretlenir.
 // MVP'de Google AI Overview, ayrı bir yüzey olarak Gemini grounding vekili üzerinden proxy'lenir.
-func (a *Adapter) WithAIOverview(tenantID, workspaceID string) engine.Adapter {
+func (a *Adapter) WithAIOverview(tenantID, workspaceID string) *aiOverviewAdapter {
 	return &aiOverviewAdapter{
 		Adapter: Adapter{
 			apiKey:      a.apiKey,
@@ -302,6 +304,21 @@ func (a *aiOverviewAdapter) Tier() engine.Tier {
 	return aiOverviewTier
 }
 
+// WithContext returns a copy of the AI Overview adapter with tenant and workspace context set.
+// Adapter.WithContext override edilir; aksi halde embed edilen Adapter yöntemi AI Overview
+// wrapper'ını düşürerek Kademe 1 gemini adapter'ına geri döner.
+func (a *aiOverviewAdapter) WithContext(tenantID, workspaceID string) engine.Adapter {
+	return &aiOverviewAdapter{
+		Adapter: Adapter{
+			apiKey:      a.apiKey,
+			httpClient:  a.httpClient,
+			storage:     a.storage,
+			tenantID:    tenantID,
+			workspaceID: workspaceID,
+		},
+	}
+}
+
 func (a *aiOverviewAdapter) Execute(ctx context.Context, prompt string) (*engine.RawResponse, error) {
 	// Google AI Overview, Gemini grounding API'sini kullanır ancak Kademe 3 (directional)
 	// fidelity etiketiyle işaretlenir.
@@ -313,5 +330,63 @@ func (a *aiOverviewAdapter) Execute(ctx context.Context, prompt string) (*engine
 	resp.Tier = aiOverviewTier
 	resp.FidelityLabel = fmt.Sprintf("Kademe 3 · google_ai_overview · %s (official_proxy/directional)", modelName)
 	resp.EngineName = "google_ai_overview"
+	return resp, nil
+}
+
+// WithAIMode returns a copy of the adapter configured for Google AI Mode.
+// AI Mode sonuçları Kademe 3 (directional) fidelity etiketiyle işaretlenir.
+// HT2 — FR-B6 genişletmesi: Gemini proxy adapter'ı üzerinden AI Mode yüzeyi.
+// Maliyet/kararlılık değerlendirmesi 0207-ht2 §5.2.3 kriterleriyle yapılır.
+func (a *Adapter) WithAIMode(tenantID, workspaceID string) *aiModeAdapter {
+	return &aiModeAdapter{
+		Adapter: Adapter{
+			apiKey:      a.apiKey,
+			httpClient:  a.httpClient,
+			storage:     a.storage,
+			tenantID:    tenantID,
+			workspaceID: workspaceID,
+		},
+	}
+}
+
+// aiModeAdapter wraps the standard Gemini adapter for Google AI Mode queries.
+type aiModeAdapter struct {
+	Adapter
+}
+
+func (a *aiModeAdapter) Name() string {
+	return "google_ai_mode"
+}
+
+func (a *aiModeAdapter) Tier() engine.Tier {
+	return aiModeTier
+}
+
+// WithContext returns a copy of the AI Mode adapter with tenant and workspace context set.
+// Adapter.WithContext override edilir; aksi halde embed edilen Adapter yöntemi AI Mode
+// wrapper'ını düşürerek Kademe 1 gemini adapter'ına geri döner.
+func (a *aiModeAdapter) WithContext(tenantID, workspaceID string) engine.Adapter {
+	return &aiModeAdapter{
+		Adapter: Adapter{
+			apiKey:      a.apiKey,
+			httpClient:  a.httpClient,
+			storage:     a.storage,
+			tenantID:    tenantID,
+			workspaceID: workspaceID,
+		},
+	}
+}
+
+func (a *aiModeAdapter) Execute(ctx context.Context, prompt string) (*engine.RawResponse, error) {
+	// Google AI Mode, Gemini API'yi kullanır ancak Kademe 3 (directional)
+	// fidelity etiketiyle işaretlenir.
+	resp, err := a.Adapter.Execute(ctx, prompt)
+	if err != nil {
+		return nil, err
+	}
+	// Yanıtı AI Mode etiketiyle override et
+	resp.Tier = aiModeTier
+	resp.FidelityLabel = fmt.Sprintf("Kademe 3 · google_ai_mode · %s (official_proxy/directional)", modelName)
+	resp.EngineName = "google_ai_mode"
 	return resp, nil
 }

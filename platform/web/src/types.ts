@@ -298,6 +298,90 @@ export interface GateHistoryEntry {
   checked_at: string
 }
 
+// R16: LLM Red Teaming
+export interface RedTeamCase {
+  id: string
+  tenant_id: string
+  name: string
+  category: string
+  payload: string
+  attack_vector: string
+  severity: string
+  enabled: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface RedTeamRun {
+  id: string
+  target_name: string
+  total_cases: number
+  passed: number
+  failed: number
+  defense_score: number
+  status: string
+  created_at: string
+}
+
+export interface RedTeamResult {
+  id?: string
+  run_id?: string
+  case_id: string
+  category: string
+  payload: string
+  outcome: string
+  risk_level: string
+  matched_rule: string
+  detail: string
+}
+
+// R17: Drift Detection
+export interface DriftObservation {
+  id: string
+  tenant_id: string
+  entity_id: string
+  entity_name: string
+  metric: string
+  value: number
+  window_start: string
+  created_at: string
+}
+
+export interface DriftEntitySummary {
+  entity_id: string
+  entity_name: string
+  metric: string
+  observation_count: number
+  mean_value: number
+  last_observed: string
+}
+
+export interface DriftAnalysis {
+  entity_id: string
+  metric: string
+  drift_score: number
+  severity: string
+  reference_mean: number
+  current_mean: number
+  delta: number
+  detail: string
+}
+
+export interface DriftAlert {
+  id: string
+  tenant_id: string
+  entity_id: string
+  entity_name: string
+  metric: string
+  drift_score: number
+  severity: string
+  reference_mean: number
+  current_mean: number
+  delta: number
+  detail: string
+  created_at: string
+}
+
 // R11: Cost Analytics
 export interface CostEntry {
   id: string
@@ -498,50 +582,170 @@ export interface AlertRule {
   updated_at: string
 }
 
-// Technical GEO
+// Technical GEO (FR-B6/B7/E7) — backend technicalgeo paketi ile birebir
+// (önceki `overall_score`/`bot_access_score` şeması backend'den farklıydı)
 export interface TechnicalGEOScore {
-  overall_score: number
-  bot_access_score: number
+  brand_id: string
+  overall: number
+  bot_score: number
   schema_score: number
-  robots_score: number
+  source_share: number
+  grade: string
 }
 
 export interface BotAnalysis {
   id: string
   brand_id: string
   bot_name: string
-  accessible: boolean
-  status_code: number
-  response_time_ms: number
+  url: string
+  is_blocked: boolean
+  robots_txt_rule: string
+  ges_score: number
   analyzed_at: string
 }
 
-// Content GEO
+export interface SchemaAnalysis {
+  id: string
+  brand_id: string
+  schema_type: string
+  is_present: boolean
+  schema_score: number
+  recommendation: string
+  analyzed_at: string
+}
+
+// Content GEO (FR-E5/E6)
 export interface ContentGap {
   id: string
   brand_id: string
-  topic: string
-  competitor_covered: boolean
-  our_coverage: boolean
-  importance: string
+  gap_type: string
+  gap_score: number
+  description: string
   recommendation: string
+  priority: string
+  analyzed_at: string
+}
+
+export interface ContentHubScore {
+  brand_id: string
+  overall: number
+  topic_coverage: number
+  source_diversity: number
+  authority_score: number
+  opportunity_gap: number
+  grade: string
 }
 
 export interface TopicCluster {
-  name: string
-  count: number
-  avg_score: number
+  id: string
+  brand_id: string
+  topic_name: string
+  opportunity_score: number
+  relevance: string
+  recommendation: string
+  created_at: string
 }
 
-// Competitive Gap
-export interface CompetitiveGapOverview {
+// Competitive Gap (FR-D11)
+export interface GapDetail {
+  gap_value: number
+  normalized: number
+  brand_value: number
+  competitor_value: number
+  direction: string // brand_ahead / competitor_ahead / equal
+}
+
+export interface GapSnapshot {
+  id: string
   brand_id: string
   brand_name: string
-  our_score: number
-  competitor_avg: number
-  gap: number
-  strengths: string[]
-  weaknesses: string[]
+  competitor_id: string
+  competitor_name: string
+  visibility_gap?: GapDetail
+  citation_gap?: GapDetail
+  content_gap?: GapDetail
+  topic_gap?: GapDetail
+  prompt_gap?: GapDetail
+  competitive_score: number
+  period_start: string
+  period_end: string
+  created_at: string
+}
+
+export interface CompetitiveGapOverview {
+  id: string
+  competitor_id: string
+  competitor_name: string
+  visibility_gap?: number
+  citation_gap?: number
+  content_gap?: number
+  topic_gap?: number
+  prompt_gap?: number
+  competitive_score: number
+  period_start: string
+  period_end: string
+  created_at: string
+}
+
+export interface CompetitiveRecommendation {
+  id: string
+  gap_type: string
+  priority: string
+  description: string
+  impact?: string
+  kanit_derecesi?: string
+}
+
+// Conversation Replay (FR-D12)
+export interface ReplaySnapshot {
+  id: string
+  brand_id: string
+  prompt_text: string
+  engine_name: string
+  response_preview: string
+  content_hash: string
+  s3_ref?: string | null
+  created_at: string
+}
+
+export interface ReplaySnapshotDetail extends ReplaySnapshot {
+  response_full: string
+}
+
+export interface ReplayDiff {
+  snapshot_a: string
+  snapshot_b: string
+  brand_id: string
+  engine_name: string
+  prompt_text: string
+  has_changed: boolean
+  changes?: string
+  analyzed_at: string
+}
+
+// Response Archive (FR-D13)
+export interface ArchiveEntry {
+  id: string
+  brand_id: string
+  engine_name: string
+  prompt_text: string
+  // Liste ucu her zaman döner; detay ucu (GET /archive/{id}) özeti içermez
+  response_preview?: string
+  s3_ref?: string | null
+  version: number
+  content_hash: string
+  created_at: string
+}
+
+export interface ArchiveEntryDetail extends ArchiveEntry {
+  response_full: string
+}
+
+export interface ArchiveVersion {
+  version: number
+  entry_id: string
+  content_hash: string
+  created_at: string
 }
 
 // Tenant Settings

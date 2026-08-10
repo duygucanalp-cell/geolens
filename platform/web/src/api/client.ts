@@ -1,6 +1,83 @@
+import i18n from '../i18n'
 import type { Score, Brand, Panel, AuditResult } from '../types'
 
 const BASE = '/v1'
+
+// ApiError, HTTP durum kodunu taşıyan API hatasıdır.
+export class ApiError extends Error {
+  status: number
+
+  constructor(status: number, message: string) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+  }
+}
+
+// Oturum süresi dolduğunda (401) tetiklenen global geri çağırma.
+// App bileşeni bu callback'i kaydederek logout + login yönlendirmesi yapar.
+type SessionExpiredHandler = () => void
+let sessionExpiredHandler: SessionExpiredHandler | null = null
+
+/**
+ * 401 (oturum süresi doldu) durumunda çağrılacak handler'ı kaydeder.
+ * Bileşen unmount olduğunda null geçirerek kaydı temizleyin.
+ */
+export function onSessionExpired(handler: SessionExpiredHandler | null) {
+  sessionExpiredHandler = handler
+}
+
+function notifySessionExpired() {
+  sessionExpiredHandler?.()
+}
+
+// 403 (yetki yetersiz) durumunda global toast gösterecek handler.
+type PermissionDeniedHandler = (message: string) => void
+let permissionDeniedHandler: PermissionDeniedHandler | null = null
+
+export function onPermissionDenied(handler: PermissionDeniedHandler | null) {
+  permissionDeniedHandler = handler
+}
+
+function notifyPermissionDenied(message: string) {
+  permissionDeniedHandler?.(message)
+}
+
+// Auth endpoint'leri: bu uçlarda 401 'geçersiz kimlik bilgisi' anlamına gelir,
+// oturum süresinin dolması DEĞİL. Bu yüzden oturum kapatma tetiklenmez.
+const AUTH_ENDPOINTS = [
+  `${BASE}/auth/login`,
+  `${BASE}/auth/register`,
+  `${BASE}/auth/accept-invitation`,
+]
+
+// 403 (yetki yetersiz) hatası mı? — panel içi gösterim kararlarında kullanılır.
+// 403'te hata mesajı bilinçli olarak boştur; gösterimi global toast yönetir.
+export function isPermissionDenied(err: unknown): boolean {
+  return err instanceof ApiError && err.status === 403
+}
+
+// Bilinen API hata kodlarını kullanıcı dostu mesajlara çevirir.
+// Sunucu tarafından okunabilir bir mesaj gelirse (örn. login hatası) olduğu gibi gösterilir.
+const FRIENDLY_ERRORS: Record<string, string> = {
+  authentication_required: 'session.expired',
+  authorization_required: 'session.expired',
+  invalid_token: 'session.expired',
+  insufficient_permissions: 'errors.permission_denied',
+  workspace_access_denied: 'errors.workspace_access_denied',
+  rate_limited: 'errors.rate_limited',
+  plan_upgrade_required: 'errors.plan_upgrade_required',
+}
+
+function friendlyMessage(code: string): string {
+  // Yalnızca bilinen makine kodlarını çevir; sunucunun verdiği
+  // okunabilir mesaj (örn. "geçersiz e-posta veya şifre") olduğu gibi korunur.
+  const key = FRIENDLY_ERRORS[code]
+  if (key) {
+    return i18n.t(key)
+  }
+  return code || i18n.t('api.error')
+}
 
 async function fetchJSON<T>(url: string, init?: RequestInit): Promise<T> {
   const token = localStorage.getItem('token')
@@ -12,23 +89,65 @@ async function fetchJSON<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, { ...init, headers })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }))
-    throw new Error(err.error || 'API error')
+    const code = err.error || res.statusText
+
+    // Oturum süresi doldu: 401 + istek token ile yapılmış + auth endpoint'i değil
+    if (res.status === 401 && token && !AUTH_ENDPOINTS.includes(url)) {
+      notifySessionExpired()
+    }
+
+    // Yetki yetersiz (403): oturum kapanmaz, kullanıcıya global toast gösterilir.
+    // Panel içi hata gösterimi yerine YALNIZCA toast kullanılır — fırlatılan hata
+    // boş mesajlıdır; paneller {error && ...} kalıbıyla boş mesajı göstermez.
+    if (res.status === 403 && !AUTH_ENDPOINTS.includes(url)) {
+      notifyPermissionDenied(friendlyMessage(code))
+      throw new ApiError(res.status, '')
+    }
+
+    throw new ApiError(res.status, friendlyMessage(code))
   }
   return res.json()
 }
 
+export interface AuthResponse {
+  token: string
+  expires_at: string
+  user_id: string
+  tenant_id: string
+  workspace_id: string
+  role: string
+}
+
 export function login(email: string, password: string) {
-  return fetchJSON<{ token: string; user_id: string; tenant_id: string; workspace_id: string; role: string }>(
+  return fetchJSON<AuthResponse>(
     `${BASE}/auth/login`,
     { method: 'POST', body: JSON.stringify({ email, password }) }
   )
 }
 
 export function register(email: string, password: string, name: string) {
-  return fetchJSON<{ token: string; user_id: string; tenant_id: string; workspace_id: string; role: string }>(
+  return fetchJSON<AuthResponse>(
     `${BASE}/auth/register`,
     { method: 'POST', body: JSON.stringify({ email, password, name }) }
   )
+}
+
+export function acceptInvitation(token: string, email: string, password: string, name: string) {
+  return fetchJSON<AuthResponse>(
+    `${BASE}/auth/accept-invitation`,
+    { method: 'POST', body: JSON.stringify({ token, email, password, name }) }
+  )
+}
+
+// Kayan oturum: geçerli token ile yeni bir JWT alır (süre dolmadan önce çağrılır).
+// Token süresi dolmuşsa 401 döner → normal oturum sonu akışı tetiklenir.
+export function refreshSession() {
+  return fetchJSON<AuthResponse>(`${BASE}/auth/refresh`, { method: 'POST' })
+}
+
+// Sunucu tarafında token'ı blacklist'e ekler (fire-and-forget).
+export function logout() {
+  return fetchJSON<{ status: string }>(`${BASE}/auth/logout`, { method: 'POST' }).catch(() => null)
 }
 
 export function getScores(ws: string): Promise<Score[]> {
@@ -227,6 +346,77 @@ export function runGateCheck(entityId: string): Promise<import('../types').GateC
 export async function getGateHistory(entityId: string): Promise<import('../types').GateHistoryEntry[]> {
   const res = await fetchJSON<{ history: import('../types').GateHistoryEntry[]; total: number }>(`${BASE}/gate/history/${entityId}`)
   return res.history
+}
+
+// R16: LLM Red Teaming
+export function listRedTeamCases(): Promise<{ cases: import('../types').RedTeamCase[] }> {
+  return fetchJSON(`${BASE}/redteam/cases`)
+}
+
+export function createRedTeamCase(data: {
+  name: string
+  category: string
+  payload: string
+  attack_vector?: string
+  severity?: string
+}): Promise<import('../types').RedTeamCase> {
+  return fetchJSON(`${BASE}/redteam/cases`, { method: 'POST', body: JSON.stringify(data) })
+}
+
+export function deleteRedTeamCase(caseId: string): Promise<{ status: string }> {
+  return fetchJSON(`${BASE}/redteam/cases/${caseId}`, { method: 'DELETE' })
+}
+
+export function runRedTeam(targetName: string, targetPrompt: string): Promise<{
+  run: import('../types').RedTeamRun
+  results: import('../types').RedTeamResult[]
+  total_cases: number
+  passed: number
+  failed: number
+  defense_score: number
+  status: string
+}> {
+  return fetchJSON(`${BASE}/redteam/runs`, {
+    method: 'POST',
+    body: JSON.stringify({ target_name: targetName, target_prompt: targetPrompt }),
+  })
+}
+
+export function listRedTeamRuns(): Promise<{ runs: import('../types').RedTeamRun[]; total: number }> {
+  return fetchJSON(`${BASE}/redteam/runs`)
+}
+
+export function getRedTeamRun(runId: string): Promise<{ run: import('../types').RedTeamRun; results: import('../types').RedTeamResult[] }> {
+  return fetchJSON(`${BASE}/redteam/runs/${runId}`)
+}
+
+// R17: Drift Detection
+export function recordDriftObservation(data: {
+  entity_id: string
+  entity_name?: string
+  metric: string
+  value: number
+  window_start?: string
+}): Promise<import('../types').DriftObservation> {
+  return fetchJSON(`${BASE}/drift/record`, { method: 'POST', body: JSON.stringify(data) })
+}
+
+export function listDriftEntities(): Promise<{ entities: import('../types').DriftEntitySummary[] }> {
+  return fetchJSON(`${BASE}/drift/entities`)
+}
+
+export function analyzeDrift(entityId: string, metric: string, threshold?: number): Promise<import('../types').DriftAnalysis> {
+  const q = threshold !== undefined ? `&threshold=${threshold}` : ''
+  return fetchJSON(`${BASE}/drift/analysis?entity_id=${encodeURIComponent(entityId)}&metric=${encodeURIComponent(metric)}${q}`)
+}
+
+export function listDriftObservations(entityId: string, metric: string, limit?: number): Promise<{ observations: import('../types').DriftObservation[]; total: number }> {
+  const lim = limit !== undefined ? `&limit=${limit}` : ''
+  return fetchJSON(`${BASE}/drift/observations?entity_id=${encodeURIComponent(entityId)}&metric=${encodeURIComponent(metric)}${lim}`)
+}
+
+export function listDriftAlerts(): Promise<{ alerts: import('../types').DriftAlert[]; total: number }> {
+  return fetchJSON(`${BASE}/drift/alerts`)
 }
 
 // R11: Cost Analytics
@@ -457,7 +647,15 @@ export async function triggerDigest(ws: string): Promise<Blob> {
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }))
-    throw new Error(err.error || 'Failed to generate report')
+    const code = err.error || res.statusText
+    if (res.status === 401 && token) {
+      notifySessionExpired()
+    }
+    if (res.status === 403) {
+      notifyPermissionDenied(friendlyMessage(code))
+      throw new ApiError(res.status, '')
+    }
+    throw new ApiError(res.status, friendlyMessage(code))
   }
   return res.blob()
 }
@@ -597,27 +795,221 @@ export function getSubscription(): Promise<{ tenant_id: string; tier: string; up
   return fetchJSON(`${BASE}/billing/subscription`)
 }
 
-// Technical GEO
-export function getTechnicalGEOScore(ws: string): Promise<import('../types').TechnicalGEOScore> {
-  return fetchJSON(`${BASE}/workspaces/${ws}/technical-geo/score`)
+// FR-A6: Self-serve ödeme — checkout oturumu
+export function createCheckoutSession(data: {
+  tier: string
+  success_url: string
+  cancel_url: string
+}): Promise<{ session_id: string; url: string }> {
+  return fetchJSON(`${BASE}/billing/checkout`, { method: 'POST', body: JSON.stringify(data) })
 }
 
-export function listBotAnalyses(ws: string): Promise<import('../types').ListResponse<import('../types').BotAnalysis>> {
-  return fetchJSON(`${BASE}/workspaces/${ws}/technical-geo/bots`)
+// FR-A6: Otomatik fatura listesi
+export interface BillingInvoice {
+  id: string
+  stripe_invoice_id: string
+  number: string
+  status: string
+  amount_total: number
+  currency: string
+  period_start?: string
+  period_end?: string
+  hosted_invoice_url: string
+  invoice_pdf: string
+  created_at: string
+  // FR-A6 TR özel vergi alanları
+  subtotal: number
+  vat_rate: number
+  vat_amount: number
+  invoice_type: string
+  customer_name: string
+  customer_tax_no: string
+  customer_identity: string
+  customer_address: string
+  gib_status: string
+  document_id: string
+  gib_response_id: string
 }
 
-// Content GEO
-export function listContentGaps(ws: string): Promise<import('../types').ListResponse<import('../types').ContentGap>> {
-  return fetchJSON(`${BASE}/workspaces/${ws}/content-geo/gap`)
+export function listBillingInvoices(): Promise<{ invoices: BillingInvoice[]; count: number }> {
+  return fetchJSON(`${BASE}/billing/invoices`)
 }
 
-export function getContentHubScore(ws: string): Promise<{ score: number; total: number }> {
-  return fetchJSON(`${BASE}/workspaces/${ws}/content-geo/hub-score`)
+export function getBillingInvoice(invoiceId: string): Promise<BillingInvoice> {
+  return fetchJSON(`${BASE}/billing/invoices/${invoiceId}`)
 }
 
-// Competitive Gap
-export function getCompetitiveGapOverview(ws: string): Promise<import('../types').CompetitiveGapOverview[]> {
-  return fetchJSON(`${BASE}/workspaces/${ws}/competitive-gap/overview`)
+// FR-A6: e-Fatura/e-Arşiv gönderimi (KDV hesaplaması dahil)
+export function submitEFatura(invoiceId: string, data: {
+  invoice_type: 'efatura' | 'earsiv'
+  vat_rate: number
+  customer_name: string
+  customer_tax_no?: string
+  customer_identity?: string
+  customer_address?: string
+}): Promise<{ invoice: BillingInvoice; gib: { status: string; response_id: string; message: string; submitted_at: string } }> {
+  return fetchJSON(`${BASE}/billing/invoices/${invoiceId}/efatura`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+// FR-A6: UBL-TR XML belgesi ve Türkçe fatura PDF indirme.
+// Endpoint'ler Bearer token gerektirdiği için dosyalar fetch + blob ile indirilir
+// (tarayıcı <a href> ile Authorization header gönderemez).
+export async function downloadBillingFile(path: string, fallbackName: string): Promise<void> {
+  const token = localStorage.getItem('token')
+  const res = await fetch(`${BASE}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  })
+  if (!res.ok) {
+    throw new Error(`İndirme başarısız (HTTP ${res.status})`)
+  }
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = fallbackName
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}
+
+export function eFaturaXMLDownloadUrl(invoiceId: string): string {
+  return `/billing/invoices/${invoiceId}/efatura/xml`
+}
+
+export function invoicePDFDownloadUrl(invoiceId: string): string {
+  return `/billing/invoices/${invoiceId}/pdf`
+}
+
+// FR-A6: Stripe Billing Portal (kart yönetimi, paket değişikliği, iptal)
+export function createBillingPortalSession(returnUrl: string): Promise<{ url: string }> {
+  return fetchJSON(`${BASE}/billing/portal`, {
+    method: 'POST',
+    body: JSON.stringify({ return_url: returnUrl }),
+  })
+}
+
+// Conversation Replay (FR-D12)
+export function listReplaySnapshots(ws: string, brandId?: string): Promise<import('../types').ReplaySnapshot[]> {
+  const q = brandId ? `?brand_id=${encodeURIComponent(brandId)}` : ''
+  return fetchJSON(`${BASE}/workspaces/${ws}/replay${q}`)
+}
+
+export function getReplaySnapshot(ws: string, snapshotId: string): Promise<import('../types').ReplaySnapshotDetail> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/replay/${snapshotId}`)
+}
+
+export function captureReplaySnapshot(ws: string, brandId: string, prompt: string): Promise<import('../types').ReplaySnapshot> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/replay/capture`, {
+    method: 'POST',
+    body: JSON.stringify({ brand_id: brandId, prompt }),
+  })
+}
+
+export function compareReplaySnapshots(ws: string, snapshotA: string, snapshotB: string): Promise<import('../types').ReplayDiff> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/replay/compare?snapshot_a=${encodeURIComponent(snapshotA)}&snapshot_b=${encodeURIComponent(snapshotB)}`)
+}
+
+export function deleteReplaySnapshot(ws: string, snapshotId: string): Promise<{ status: string }> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/replay/${snapshotId}`, { method: 'DELETE' })
+}
+
+// Response Archive (FR-D13)
+export function listArchiveEntries(ws: string, brandId?: string, engine?: string): Promise<import('../types').ArchiveEntry[]> {
+  const params = new URLSearchParams()
+  if (brandId) params.set('brand_id', brandId)
+  if (engine) params.set('engine', engine)
+  const qs = params.toString() ? `?${params.toString()}` : ''
+  return fetchJSON(`${BASE}/workspaces/${ws}/archive${qs}`)
+}
+
+export function getArchiveEntry(ws: string, entryId: string): Promise<import('../types').ArchiveEntryDetail> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/archive/${entryId}`)
+}
+
+export function archiveResponse(ws: string, data: { brand_id: string; engine_name?: string; prompt_text?: string; response: string }): Promise<import('../types').ArchiveEntry> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/archive`, { method: 'POST', body: JSON.stringify(data) })
+}
+
+export function getArchiveVersionHistory(ws: string, brandId: string, engine?: string): Promise<import('../types').ArchiveVersion[]> {
+  const params = new URLSearchParams({ brand_id: brandId })
+  if (engine) params.set('engine', engine)
+  return fetchJSON(`${BASE}/workspaces/${ws}/archive/versions?${params.toString()}`)
+}
+
+// Technical GEO (FR-B6/B7/E7)
+export function getTechnicalGEOScore(ws: string, brandId: string): Promise<import('../types').TechnicalGEOScore> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/technical-geo/score?brand_id=${encodeURIComponent(brandId)}`)
+}
+
+export function analyzeBotAccess(ws: string, brandId: string, url?: string): Promise<import('../types').BotAnalysis> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/technical-geo/bots`, {
+    method: 'POST',
+    body: JSON.stringify({ brand_id: brandId, url: url || '' }),
+  })
+}
+
+export function listBotAnalyses(ws: string, brandId?: string): Promise<import('../types').BotAnalysis[]> {
+  const q = brandId ? `?brand_id=${encodeURIComponent(brandId)}` : ''
+  return fetchJSON(`${BASE}/workspaces/${ws}/technical-geo/bots${q}`)
+}
+
+export function analyzeSchema(ws: string, brandId: string): Promise<import('../types').SchemaAnalysis> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/technical-geo/schema`, {
+    method: 'POST',
+    body: JSON.stringify({ brand_id: brandId }),
+  })
+}
+
+export function listSchemaAnalyses(ws: string, brandId?: string): Promise<import('../types').SchemaAnalysis[]> {
+  const q = brandId ? `?brand_id=${encodeURIComponent(brandId)}` : ''
+  return fetchJSON(`${BASE}/workspaces/${ws}/technical-geo/schema${q}`)
+}
+
+// Content GEO (FR-E5/E6)
+export function analyzeContentGap(ws: string, brandId: string): Promise<import('../types').ContentGap[]> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/content-geo/gap`, {
+    method: 'POST',
+    body: JSON.stringify({ brand_id: brandId }),
+  })
+}
+
+export function listContentGaps(ws: string, brandId?: string): Promise<import('../types').ContentGap[]> {
+  const q = brandId ? `?brand_id=${encodeURIComponent(brandId)}` : ''
+  return fetchJSON(`${BASE}/workspaces/${ws}/content-geo/gap${q}`)
+}
+
+export function getContentHubScore(ws: string, brandId: string): Promise<import('../types').ContentHubScore> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/content-geo/hub-score?brand_id=${encodeURIComponent(brandId)}`)
+}
+
+export function listTopicClusters(ws: string, brandId?: string): Promise<import('../types').TopicCluster[]> {
+  const q = brandId ? `?brand_id=${encodeURIComponent(brandId)}` : ''
+  return fetchJSON(`${BASE}/workspaces/${ws}/content-geo/topics${q}`)
+}
+
+// Competitive Gap (FR-D11)
+export function analyzeCompetitiveGap(ws: string, brandId: string): Promise<import('../types').GapSnapshot[]> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/competitive-gap/analyze`, {
+    method: 'POST',
+    body: JSON.stringify({ brand_id: brandId }),
+  })
+}
+
+export function getCompetitiveGapOverview(ws: string, brandId: string): Promise<import('../types').CompetitiveGapOverview[]> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/competitive-gap/overview?brand_id=${encodeURIComponent(brandId)}`)
+}
+
+export function getCompetitiveGapDetail(ws: string, brandId: string, competitorId: string): Promise<import('../types').GapDetail | null> {
+  return fetchJSON(`${BASE}/workspaces/${ws}/competitive-gap/visibility?brand_id=${encodeURIComponent(brandId)}&competitor_id=${encodeURIComponent(competitorId)}`)
+}
+
+export function getCompetitiveRecommendations(ws: string, brandId?: string): Promise<import('../types').CompetitiveRecommendation[]> {
+  const q = brandId ? `?brand_id=${encodeURIComponent(brandId)}` : ''
+  return fetchJSON(`${BASE}/workspaces/${ws}/competitive-gap/recommendations${q}`)
 }
 
 // Retention Policies

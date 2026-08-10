@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getSEOConnections, getSEOAuthURL, disconnectSEO, getGA4Data, getSearchConsoleData } from '../api/client'
 import type { SEOConnection, GA4DataRow, SearchConsoleRow } from '../api/client'
 
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export function SEODataPanel({ workspaceId, onStatus }: Props) {
+  const { t } = useTranslation()
   const [seoConns, setSeoConns] = useState<SEOConnection[]>([])
   const [seoConnecting, setSeoConnecting] = useState<string | null>(null)
   const [ga4Data, setGA4Data] = useState<GA4DataRow[]>([])
@@ -50,7 +52,7 @@ export function SEODataPanel({ workspaceId, onStatus }: Props) {
       const data = await getGA4Data(workspaceId)
       setGA4Data(data)
     } catch {
-      flashMsg('GA4 verisi yüklenemedi', 4000)
+      flashMsg(t('seo.ga4_load_error'), 4000)
     } finally {
       setGA4DataLoading(false)
     }
@@ -62,7 +64,7 @@ export function SEODataPanel({ workspaceId, onStatus }: Props) {
       const data = await getSearchConsoleData(workspaceId)
       setSCData(data)
     } catch {
-      flashMsg('Search Console verisi yüklenemedi', 4000)
+      flashMsg(t('seo.sc_load_error'), 4000)
     } finally {
       setSCDataLoading(false)
     }
@@ -84,9 +86,9 @@ export function SEODataPanel({ workspaceId, onStatus }: Props) {
     <>
       {/* SEO Entegrasyonları (FR-B8) — Canlı bağlantı yönetimi */}
       <div className="reports-section-title" style={{ marginTop: '2rem', marginBottom: '0.75rem' }}>
-        <h3 style={{ margin: 0 }}>🔗 SEO Entegrasyonları</h3>
-        <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0.25rem 0 0' }}>
-          Google Search Console ve GA4 bağlantısı ile AI görünürlük verilerinizi organik arama performansınızla karşılaştırın.
+        <h3 style={{ margin: 0 }}>{t('seo.title')}</h3>
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0.25rem 0 0' }}>
+          {t('seo.desc')}
         </p>
       </div>
 
@@ -95,29 +97,29 @@ export function SEODataPanel({ workspaceId, onStatus }: Props) {
         <div className="reports-action-card">
           <div className="reports-action-icon">🔍</div>
           <div className="reports-action-info">
-            <h4>Google Search Console</h4>
+            <h4>{t('seo.gsc_title')}</h4>
             <p>
               {seoConns.find(c => c.platform === 'search_console')
-                ? `Bağlı: ${seoConns.find(c => c.platform === 'search_console')!.email}`
-                : 'Organik arama verilerinizi AI görünürlüğünüzle karşılaştırmak için Google Search Console hesabınızı bağlayın.'}
+                ? t('seo.connected', { email: seoConns.find(c => c.platform === 'search_console')!.email })
+                : t('seo.gsc_connect_desc')}
             </p>
           </div>
           {seoConns.find(c => c.platform === 'search_console') ? (
             <button
               className="reports-generate-btn"
-              style={{ background: '#fee2e2', color: '#dc2626', borderColor: '#fecaca' }}
+              style={{ background: 'var(--danger-bg)', color: '#dc2626', borderColor: 'var(--danger-soft)' }}
               onClick={async () => {
                 try {
                   await disconnectSEO(workspaceId, 'search_console')
-                  flashMsg('Search Console bağlantısı kaldırıldı', 3000)
+                  flashMsg(t('seo.gsc_disconnected'), 3000)
                   const conns = await getSEOConnections(workspaceId)
                   setSeoConns(conns)
                 } catch (err) {
-                  flashMsg(`Hata: ${err instanceof Error ? err.message : 'Bağlantı kaldırılamadı'}`, 5000)
+                  flashMsg(t('seo.error', { error: err instanceof Error ? err.message : t('seo.disconnect_failed') }), 5000)
                 }
               }}
             >
-              Bağlantıyı Kes
+              {t('seo.disconnect')}
             </button>
           ) : (
             <button
@@ -128,14 +130,14 @@ export function SEODataPanel({ workspaceId, onStatus }: Props) {
                   const { auth_url } = await getSEOAuthURL(workspaceId, 'search_console')
                   window.location.href = auth_url
                 } catch (err) {
-                  flashMsg(`Hata: ${err instanceof Error ? err.message : 'Bağlantı başlatılamadı'}`, 5000)
+                  flashMsg(t('seo.error', { error: err instanceof Error ? err.message : t('seo.connect_failed') }), 5000)
                 } finally {
                   setSeoConnecting(null)
                 }
               }}
               disabled={seoConnecting === 'search_console'}
             >
-              {seoConnecting === 'search_console' ? 'Yönlendiriliyor...' : 'Google ile Bağlan'}
+              {seoConnecting === 'search_console' ? t('seo.redirecting') : t('seo.connect')}
             </button>
           )}
         </div>
@@ -144,29 +146,29 @@ export function SEODataPanel({ workspaceId, onStatus }: Props) {
         <div className="reports-action-card">
           <div className="reports-action-icon">📈</div>
           <div className="reports-action-info">
-            <h4>Google Analytics 4</h4>
+            <h4>{t('seo.ga4_title')}</h4>
             <p>
               {seoConns.find(c => c.platform === 'ga4')
-                ? `Bağlı: ${seoConns.find(c => c.platform === 'ga4')!.email}`
-                : 'Web sitesi trafik verilerinizi AI görünürlük metriklerinizle ilişkilendirmek için GA4 hesabınızı bağlayın.'}
+                ? t('seo.connected', { email: seoConns.find(c => c.platform === 'ga4')!.email })
+                : t('seo.ga4_connect_desc')}
             </p>
           </div>
           {seoConns.find(c => c.platform === 'ga4') ? (
             <button
               className="reports-generate-btn"
-              style={{ background: '#fee2e2', color: '#dc2626', borderColor: '#fecaca' }}
+              style={{ background: 'var(--danger-bg)', color: '#dc2626', borderColor: 'var(--danger-soft)' }}
               onClick={async () => {
                 try {
                   await disconnectSEO(workspaceId, 'ga4')
-                  flashMsg('GA4 bağlantısı kaldırıldı', 3000)
+                  flashMsg(t('seo.ga4_disconnected'), 3000)
                   const conns = await getSEOConnections(workspaceId)
                   setSeoConns(conns)
                 } catch (err) {
-                  flashMsg(`Hata: ${err instanceof Error ? err.message : 'Bağlantı kaldırılamadı'}`, 5000)
+                  flashMsg(t('seo.error', { error: err instanceof Error ? err.message : t('seo.disconnect_failed') }), 5000)
                 }
               }}
             >
-              Bağlantıyı Kes
+              {t('seo.disconnect')}
             </button>
           ) : (
             <button
@@ -177,14 +179,14 @@ export function SEODataPanel({ workspaceId, onStatus }: Props) {
                   const { auth_url } = await getSEOAuthURL(workspaceId, 'ga4')
                   window.location.href = auth_url
                 } catch (err) {
-                  flashMsg(`Hata: ${err instanceof Error ? err.message : 'Bağlantı başlatılamadı'}`, 5000)
+                  flashMsg(t('seo.error', { error: err instanceof Error ? err.message : t('seo.connect_failed') }), 5000)
                 } finally {
                   setSeoConnecting(null)
                 }
               }}
               disabled={seoConnecting === 'ga4'}
             >
-              {seoConnecting === 'ga4' ? 'Yönlendiriliyor...' : 'Google ile Bağlan'}
+              {seoConnecting === 'ga4' ? t('seo.redirecting') : t('seo.connect')}
             </button>
           )}
         </div>
@@ -193,7 +195,7 @@ export function SEODataPanel({ workspaceId, onStatus }: Props) {
       {/* GA4 Trafik Verileri */}
       {seoConns.find(c => c.platform === 'ga4') && (
         <div className="reports-section-title" style={{ marginTop: '1.5rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <h4 style={{ margin: 0, fontSize: '0.95rem', flex: 1 }}>📊 GA4 Trafik Verileri (Son 7 Gün)</h4>
+          <h4 style={{ margin: 0, fontSize: '0.95rem', flex: 1 }}>{t('seo.ga4_data_title')}</h4>
           <button
             onClick={loadGA4Data}
             disabled={ga4DataLoading}
@@ -204,17 +206,17 @@ export function SEODataPanel({ workspaceId, onStatus }: Props) {
               padding: '0.25rem 0.6rem',
               fontSize: '0.75rem',
               cursor: 'pointer',
-              color: '#64748b',
+              color: 'var(--text-muted)',
               transition: 'all 0.15s',
               display: 'flex',
               alignItems: 'center',
               gap: '0.25rem'
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#1e293b' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#64748b' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-hover)'; e.currentTarget.style.color = 'var(--text)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--text-muted)' }}
           >
             <span style={{ display: 'inline-block', transition: 'transform 0.3s', transform: ga4DataLoading ? 'rotate(180deg)' : 'none' }}>🔄</span>
-            {ga4DataLoading ? 'Yükleniyor...' : 'Yenile'}
+            {ga4DataLoading ? t('common.loading') : t('common.refresh')}
           </button>
         </div>
       )}
@@ -232,7 +234,7 @@ export function SEODataPanel({ workspaceId, onStatus }: Props) {
             color: '#fff',
             textAlign: 'center'
           }}>
-            <div style={{ fontSize: '0.7rem', opacity: 0.8, marginBottom: '0.25rem' }}>Sayfa Görüntüleme</div>
+            <div style={{ fontSize: '0.7rem', opacity: 0.8, marginBottom: '0.25rem' }}>{t('seo.page_views')}</div>
             <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>
               {ga4Data[0].page_views.toLocaleString()}
             </div>
@@ -244,7 +246,7 @@ export function SEODataPanel({ workspaceId, onStatus }: Props) {
             color: '#fff',
             textAlign: 'center'
           }}>
-            <div style={{ fontSize: '0.7rem', opacity: 0.8, marginBottom: '0.25rem' }}>Oturumlar</div>
+            <div style={{ fontSize: '0.7rem', opacity: 0.8, marginBottom: '0.25rem' }}>{t('seo.sessions')}</div>
             <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>
               {ga4Data[0].sessions.toLocaleString()}
             </div>
@@ -256,7 +258,7 @@ export function SEODataPanel({ workspaceId, onStatus }: Props) {
             color: '#fff',
             textAlign: 'center'
           }}>
-            <div style={{ fontSize: '0.7rem', opacity: 0.8, marginBottom: '0.25rem' }}>Hemen Çıkma</div>
+            <div style={{ fontSize: '0.7rem', opacity: 0.8, marginBottom: '0.25rem' }}>{t('seo.bounce_rate')}</div>
             <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>
               {(ga4Data[0].bounce_rate * 100).toFixed(1)}%
             </div>
@@ -268,7 +270,7 @@ export function SEODataPanel({ workspaceId, onStatus }: Props) {
             color: '#fff',
             textAlign: 'center'
           }}>
-            <div style={{ fontSize: '0.7rem', opacity: 0.8, marginBottom: '0.25rem' }}>Ort. Oturum Süresi</div>
+            <div style={{ fontSize: '0.7rem', opacity: 0.8, marginBottom: '0.25rem' }}>{t('seo.avg_session_duration')}</div>
             <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>
               {Math.round(ga4Data[0].avg_session_duration)}s
             </div>
@@ -276,15 +278,15 @@ export function SEODataPanel({ workspaceId, onStatus }: Props) {
         </div>
       )}
       {ga4DataLoading && (
-        <div style={{ textAlign: 'center', padding: '1rem', color: '#64748b', fontSize: '0.85rem' }}>
-          GA4 verileri yükleniyor...
+        <div style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+          {t('seo.ga4_loading')}
         </div>
       )}
 
       {/* Search Console Verileri */}
       {seoConns.find(c => c.platform === 'search_console') && (
         <div className="reports-section-title" style={{ marginTop: '1.5rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <h4 style={{ margin: 0, fontSize: '0.95rem', flex: 1 }}>🔍 Search Console Performansı (Son 7 Gün)</h4>
+          <h4 style={{ margin: 0, fontSize: '0.95rem', flex: 1 }}>{t('seo.sc_title')}</h4>
           <button
             onClick={loadSCData}
             disabled={scDataLoading}
@@ -295,17 +297,17 @@ export function SEODataPanel({ workspaceId, onStatus }: Props) {
               padding: '0.25rem 0.6rem',
               fontSize: '0.75rem',
               cursor: 'pointer',
-              color: '#64748b',
+              color: 'var(--text-muted)',
               transition: 'all 0.15s',
               display: 'flex',
               alignItems: 'center',
               gap: '0.25rem'
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#1e293b' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#64748b' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-hover)'; e.currentTarget.style.color = 'var(--text)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--text-muted)' }}
           >
             <span style={{ display: 'inline-block', transition: 'transform 0.3s', transform: scDataLoading ? 'rotate(180deg)' : 'none' }}>🔄</span>
-            {scDataLoading ? 'Yükleniyor...' : 'Yenile'}
+            {scDataLoading ? t('common.loading') : t('common.refresh')}
           </button>
         </div>
       )}
@@ -331,7 +333,7 @@ export function SEODataPanel({ workspaceId, onStatus }: Props) {
                 color: '#fff',
                 textAlign: 'center'
               }}>
-                <div style={{ fontSize: '0.7rem', opacity: 0.8, marginBottom: '0.25rem' }}>Toplam Tıklama</div>
+                <div style={{ fontSize: '0.7rem', opacity: 0.8, marginBottom: '0.25rem' }}>{t('seo.total_clicks')}</div>
                 <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>
                   {totalClicks.toLocaleString()}
                 </div>
@@ -343,7 +345,7 @@ export function SEODataPanel({ workspaceId, onStatus }: Props) {
                 color: '#fff',
                 textAlign: 'center'
               }}>
-                <div style={{ fontSize: '0.7rem', opacity: 0.8, marginBottom: '0.25rem' }}>Toplam Gösterim</div>
+                <div style={{ fontSize: '0.7rem', opacity: 0.8, marginBottom: '0.25rem' }}>{t('seo.total_impressions')}</div>
                 <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>
                   {totalImpressions.toLocaleString()}
                 </div>
@@ -355,7 +357,7 @@ export function SEODataPanel({ workspaceId, onStatus }: Props) {
                 color: '#fff',
                 textAlign: 'center'
               }}>
-                <div style={{ fontSize: '0.7rem', opacity: 0.8, marginBottom: '0.25rem' }}>Ort. TO</div>
+                <div style={{ fontSize: '0.7rem', opacity: 0.8, marginBottom: '0.25rem' }}>{t('seo.avg_ctr')}</div>
                 <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>
                   {avgCTR.toFixed(2)}%
                 </div>
@@ -367,7 +369,7 @@ export function SEODataPanel({ workspaceId, onStatus }: Props) {
                 color: '#fff',
                 textAlign: 'center'
               }}>
-                <div style={{ fontSize: '0.7rem', opacity: 0.8, marginBottom: '0.25rem' }}>Ort. Pozisyon</div>
+                <div style={{ fontSize: '0.7rem', opacity: 0.8, marginBottom: '0.25rem' }}>{t('seo.avg_position')}</div>
                 <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>
                   {avgPos.toFixed(1)}
                 </div>
@@ -376,7 +378,7 @@ export function SEODataPanel({ workspaceId, onStatus }: Props) {
 
             {/* En çok tıklanan sorgular */}
             <div style={{
-              background: '#fff',
+              background: 'var(--surface)',
               borderRadius: '12px',
               border: '1px solid #e2e8f0',
               overflow: 'hidden',
@@ -386,20 +388,20 @@ export function SEODataPanel({ workspaceId, onStatus }: Props) {
                 padding: '0.6rem 1rem',
                 fontSize: '0.8rem',
                 fontWeight: 600,
-                color: '#475569',
+                color: 'var(--text-secondary)',
                 borderBottom: '1px solid #e2e8f0',
-                background: '#f8fafc'
+                background: 'var(--surface-2)'
               }}>
-                En Çok Tıklanan Sorgular
+                {t('seo.top_queries')}
               </div>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
                 <thead>
-                  <tr style={{ background: '#f8fafc', color: '#64748b' }}>
-                    <th style={{ padding: '0.5rem 1rem', textAlign: 'left', fontWeight: 500 }}>Sorgu</th>
-                    <th style={{ padding: '0.5rem 0.75rem', textAlign: 'right', fontWeight: 500 }}>Tıklama</th>
-                    <th style={{ padding: '0.5rem 0.75rem', textAlign: 'right', fontWeight: 500 }}>Gösterim</th>
-                    <th style={{ padding: '0.5rem 0.75rem', textAlign: 'right', fontWeight: 500 }}>TO</th>
-                    <th style={{ padding: '0.5rem 1rem', textAlign: 'right', fontWeight: 500 }}>Pozisyon</th>
+                  <tr style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}>
+                    <th style={{ padding: '0.5rem 1rem', textAlign: 'left', fontWeight: 500 }}>{t('seo.table_query')}</th>
+                    <th style={{ padding: '0.5rem 0.75rem', textAlign: 'right', fontWeight: 500 }}>{t('seo.table_clicks')}</th>
+                    <th style={{ padding: '0.5rem 0.75rem', textAlign: 'right', fontWeight: 500 }}>{t('seo.table_impressions')}</th>
+                    <th style={{ padding: '0.5rem 0.75rem', textAlign: 'right', fontWeight: 500 }}>{t('seo.table_ctr')}</th>
+                    <th style={{ padding: '0.5rem 1rem', textAlign: 'right', fontWeight: 500 }}>{t('seo.table_position')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -407,20 +409,20 @@ export function SEODataPanel({ workspaceId, onStatus }: Props) {
                     <tr key={i} style={{
                       borderTop: '1px solid #f1f5f9',
                       transition: 'background 0.15s'
-                    }} onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')} onMouseLeave={e => (e.currentTarget.style.background = '')}>
-                      <td style={{ padding: '0.5rem 1rem', color: '#1e293b', maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {row.query || '(boş)'}
+                    }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-2)')} onMouseLeave={e => (e.currentTarget.style.background = '')}>
+                      <td style={{ padding: '0.5rem 1rem', color: 'var(--text)', maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {row.query || t('seo.empty_query')}
                       </td>
                       <td style={{ padding: '0.5rem 0.75rem', textAlign: 'right', fontWeight: 600, color: '#0ea5e9' }}>
                         {row.clicks.toLocaleString()}
                       </td>
-                      <td style={{ padding: '0.5rem 0.75rem', textAlign: 'right', color: '#475569' }}>
+                      <td style={{ padding: '0.5rem 0.75rem', textAlign: 'right', color: 'var(--text-secondary)' }}>
                         {row.impressions.toLocaleString()}
                       </td>
-                      <td style={{ padding: '0.5rem 0.75rem', textAlign: 'right', color: '#475569' }}>
+                      <td style={{ padding: '0.5rem 0.75rem', textAlign: 'right', color: 'var(--text-secondary)' }}>
                         {(row.ctr * 100).toFixed(1)}%
                       </td>
-                      <td style={{ padding: '0.5rem 1rem', textAlign: 'right', color: '#475569' }}>
+                      <td style={{ padding: '0.5rem 1rem', textAlign: 'right', color: 'var(--text-secondary)' }}>
                         {row.avg_position.toFixed(1)}
                       </td>
                     </tr>
@@ -432,8 +434,8 @@ export function SEODataPanel({ workspaceId, onStatus }: Props) {
         )
       })()}
       {scDataLoading && (
-        <div style={{ textAlign: 'center', padding: '1rem', color: '#64748b', fontSize: '0.85rem' }}>
-          Search Console verileri yükleniyor...
+        <div style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+          {t('seo.sc_loading')}
         </div>
       )}
     </>

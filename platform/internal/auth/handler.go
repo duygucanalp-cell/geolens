@@ -6,8 +6,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"html"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -21,6 +24,12 @@ import (
 	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/httputil"
 )
+
+// emailSender, davet gibi işlemsel (transactional) e-postaları gönderir.
+// Arayüz; delivery.Service (SendGrid) ve testlerdeki sahte gönderici tarafından uygulanır.
+type emailSender interface {
+	SendEmail(to, subject, htmlContent string) error
+}
 
 // ---- Request/Response Types ----
 
@@ -63,20 +72,26 @@ type Handler struct {
 	rawPool *db.Pool
 	jwt     *JWTService
 	rdb     *redis.Client
+	mail    emailSender
+	baseURL string
 }
 
 // NewHandler creates a new auth handler with the given DB interface.
-func NewHandler(pool dbiface.DB, jwt *JWTService, rdb *redis.Client) *Handler {
-	return &Handler{pool: pool, jwt: jwt, rdb: rdb}
+// mail nil olduğunda davet e-postası gönderilmez (yalnızca token döner);
+// baseURL, davet kabul bağlantısının üretildiği uygulama adresidir.
+func NewHandler(pool dbiface.DB, jwt *JWTService, rdb *redis.Client, mail emailSender, baseURL string) *Handler {
+	return &Handler{pool: pool, jwt: jwt, rdb: rdb, mail: mail, baseURL: baseURL}
 }
 
 // NewProductionHandler creates a new auth handler with a *db.Pool for production use.
-func NewProductionHandler(pool *db.Pool, jwt *JWTService, rdb *redis.Client) *Handler {
+func NewProductionHandler(pool *db.Pool, jwt *JWTService, rdb *redis.Client, mail emailSender, baseURL string) *Handler {
 	return &Handler{
 		pool:    dbiface.NewAdapter(pool),
 		rawPool: pool,
 		jwt:     jwt,
 		rdb:     rdb,
+		mail:    mail,
+		baseURL: baseURL,
 	}
 }
 
@@ -251,6 +266,70 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// Refresh handles POST /v1/auth/refresh
+// Geçerli (süresi dolmamış) JWT'yi doğrulayıp yeni bir token üretir (kayan oturum).
+// Rol, DB'den taze okunur — JWT claim'inde 2 saat boyunca eskimiş kalabilir.
+// Token süresi dolmuşsa veya iptal edilmişse (logout blacklist) 401 döner.
+func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
+	authHeader := r.Header.Get("Authorization")
+	tokenStr := ""
+	if authHeader != "" && strings.HasPrefix(authHeader, "Bearer ") {
+		tokenStr = strings.TrimPrefix(authHeader, "Bearer ")
+	}
+	if tokenStr == "" {
+		httputil.WriteError(w, http.StatusUnauthorized, "kimlik doğrulama gerekli")
+		return
+	}
+
+	claims, err := h.jwt.ValidateToken(tokenStr)
+	if err != nil {
+		httputil.WriteError(w, http.StatusUnauthorized, "oturum süresi dolmuş veya geçersiz token")
+		return
+	}
+
+	// Blacklist kontrolü: logout edilmiş token'lar yenilenemez
+	if h.rdb != nil && claims.ID != "" {
+		exists, err := h.rdb.Exists(r.Context(), blacklistPrefix+claims.ID).Result()
+		if err == nil && exists > 0 {
+			httputil.WriteError(w, http.StatusUnauthorized, "token iptal edilmiş")
+			return
+		}
+	}
+
+	// Maksimum oturum ömrü: 7 günden eski token'lar yenilenemez.
+	// Kayan oturum, çalınan bir token'ın süresiz ömür kazanmasına izin vermemeli.
+	if claims.IssuedAt != nil && time.Since(claims.IssuedAt.Time) > 7*24*time.Hour {
+		httputil.WriteError(w, http.StatusUnauthorized, "oturum süresi sona erdi, tekrar giriş yapın")
+		return
+	}
+
+	// Rolü DB'den taze oku. Kullanıcı silinmiş veya deaktif edilmişse
+	// yenileme reddedilir — oturum ömrü kullanıcı durumuna bağlanır.
+	var role string
+	if err := h.pool.QueryRow(r.Context(), `
+		SELECT role FROM identity.users WHERE id = $1 AND tenant_id = $2 AND is_active = true
+	`, claims.UserID, claims.TenantID).Scan(&role); err != nil {
+		httputil.WriteError(w, http.StatusUnauthorized, "oturum sonlandırıldı, tekrar giriş yapın")
+		return
+	}
+
+	token, expiresAt, err := h.jwt.GenerateToken(claims.UserID, claims.TenantID, role)
+	if err != nil {
+		slog.Error("jwt yenileme hatası", "error", err)
+		httputil.WriteError(w, http.StatusInternalServerError, "oturum yenilenemedi")
+		return
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, authResponse{
+		Token:       token,
+		ExpiresAt:   expiresAt.Format(time.RFC3339),
+		UserID:      claims.UserID,
+		TenantID:    claims.TenantID,
+		WorkspaceID: "",
+		Role:        role,
+	})
+}
+
 // Logout handles POST /v1/auth/logout
 // Token'ı Redis blacklist'e ekler, böylece logout sonrası kullanılamaz.
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
@@ -394,10 +473,34 @@ func (h *Handler) InviteMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httputil.WriteJSON(w, http.StatusCreated, map[string]string{
-		"status": "invited",
-		"email":  req.Email,
-		"token":  token,
+	// Davet e-postası gönder. Gönderim hatası non-fatal: token yanıtta da
+	// döndüğü için davet kabul akışı e-posta olmadan da tamamlanabilir.
+	emailSent := false
+	if h.mail != nil && h.baseURL != "" {
+		acceptURL := fmt.Sprintf("%s/#/invite?token=%s&email=%s",
+			strings.TrimRight(h.baseURL, "/"),
+			url.QueryEscape(token),
+			url.QueryEscape(req.Email))
+		subject := "GeoLens Daveti — çalışma alanına katılın"
+		body := fmt.Sprintf(`<h2>GeoLens'e davet edildiniz</h2>
+<p><strong>%s</strong> e-posta adresi, bir GeoLens çalışma alanına davet edildi.</p>
+<p>Daveti kabul etmek ve hesabınızı oluşturmak için aşağıdaki bağlantıyı kullanın:</p>
+<p><a href="%s">Daveti Kabul Et</a></p>
+<p>Bağlantı <strong>7 gün</strong> geçerlidir. Bağlantı sorunluysa davet token'ınız:</p>
+<p><code>%s</code></p>`,
+			html.EscapeString(req.Email), acceptURL, html.EscapeString(token))
+		if err := h.mail.SendEmail(req.Email, subject, body); err != nil {
+			slog.Warn("davet e-postası gönderilemedi", "email", req.Email, "error", err)
+		} else {
+			emailSent = true
+		}
+	}
+
+	httputil.WriteJSON(w, http.StatusCreated, map[string]interface{}{
+		"status":     "invited",
+		"email":      req.Email,
+		"token":      token,
+		"email_sent": emailSent,
 	})
 }
 

@@ -29,6 +29,80 @@ func TestAdapter_WithContext(t *testing.T) {
 	}
 }
 
+func TestAIOverview_WithContext_PreservesWrapper(t *testing.T) {
+	a := NewAdapter("test-key", nil)
+	overview := a.WithAIOverview("", "")
+	if overview.Name() != "google_ai_overview" {
+		t.Errorf("beklenen 'google_ai_overview', gerçek %s", overview.Name())
+	}
+	if overview.Tier() != engine.TierDirectional {
+		t.Errorf("AI Overview beklenen TierDirectional(3), gerçek %d", overview.Tier())
+	}
+
+	ctxA := overview.WithContext("tenant-1", "ws-1")
+	if ctxA.Name() != "google_ai_overview" {
+		t.Errorf("WithContext AI Overview wrapper'ı korumalı; beklenen 'google_ai_overview', gerçek %s", ctxA.Name())
+	}
+	if ctxA.Tier() != engine.TierDirectional {
+		t.Errorf("WithContext Tier değiştirmemeli; gerçek %d", ctxA.Tier())
+	}
+}
+
+func TestAIOverview_Execute_MockMode(t *testing.T) {
+	a := NewAdapter("", nil)
+	overview := a.WithAIOverview("tenant-1", "ws-1")
+	resp, err := overview.Execute(context.Background(), "test prompt")
+	if err != nil {
+		t.Fatalf("mock AI Overview Execute hata: %v", err)
+	}
+	if resp.EngineName != "google_ai_overview" {
+		t.Errorf("beklenen 'google_ai_overview', gerçek %s", resp.EngineName)
+	}
+	if resp.Tier != engine.TierDirectional {
+		t.Errorf("AI Overview yanıtı TierDirectional(3) olmalı, gerçek %d", resp.Tier)
+	}
+	if resp.FidelityLabel == "" {
+		t.Error("fidelity label boş olmamalı")
+	}
+}
+
+func TestAIMode_WithContext_PreservesWrapper(t *testing.T) {
+	a := NewAdapter("test-key", nil)
+	mode := a.WithAIMode("", "")
+	if mode.Name() != "google_ai_mode" {
+		t.Errorf("beklenen 'google_ai_mode', gerçek %s", mode.Name())
+	}
+	if mode.Tier() != engine.TierDirectional {
+		t.Errorf("AI Mode beklenen TierDirectional(3), gerçek %d", mode.Tier())
+	}
+
+	ctxA := mode.WithContext("tenant-1", "ws-1")
+	if ctxA.Name() != "google_ai_mode" {
+		t.Errorf("WithContext AI Mode wrapper'ı korumalı; beklenen 'google_ai_mode', gerçek %s", ctxA.Name())
+	}
+	if ctxA.Tier() != engine.TierDirectional {
+		t.Errorf("WithContext Tier değiştirmemeli; gerçek %d", ctxA.Tier())
+	}
+}
+
+func TestAIMode_Execute_MockMode(t *testing.T) {
+	a := NewAdapter("", nil)
+	mode := a.WithAIMode("tenant-1", "ws-1")
+	resp, err := mode.Execute(context.Background(), "test prompt")
+	if err != nil {
+		t.Fatalf("mock AI Mode Execute hata: %v", err)
+	}
+	if resp.EngineName != "google_ai_mode" {
+		t.Errorf("beklenen 'google_ai_mode', gerçek %s", resp.EngineName)
+	}
+	if resp.Tier != engine.TierDirectional {
+		t.Errorf("AI Mode yanıtı TierDirectional(3) olmalı, gerçek %d", resp.Tier)
+	}
+	if resp.FidelityLabel == "" {
+		t.Error("fidelity label boş olmamalı")
+	}
+}
+
 func TestParseResponse_Success(t *testing.T) {
 	a := NewAdapter("test-key", nil)
 	raw := []byte(`{
@@ -39,7 +113,7 @@ func TestParseResponse_Success(t *testing.T) {
 			"finishReason": "STOP"
 		}]
 	}`)
-	resp, err := a.parseResponse(raw, 150)
+	resp, err := a.parseResponse(context.Background(), raw, 150)
 	if err != nil {
 		t.Fatalf("parseResponse hata: %v", err)
 	}
@@ -69,7 +143,7 @@ func TestParseResponse_WithGrounding(t *testing.T) {
 			}]
 		}]
 	}`)
-	resp, err := a.parseResponse(raw, 150)
+	resp, err := a.parseResponse(context.Background(), raw, 150)
 	if err != nil {
 		t.Fatalf("parseResponse hata: %v", err)
 	}
@@ -87,7 +161,7 @@ func TestParseResponse_WithGrounding(t *testing.T) {
 func TestParseResponse_EmptyCandidates(t *testing.T) {
 	a := NewAdapter("test-key", nil)
 	raw := []byte(`{"candidates":[]}`)
-	_, err := a.parseResponse(raw, 100)
+	_, err := a.parseResponse(context.Background(), raw, 100)
 	if err == nil {
 		t.Error("boş candidates için hata bekleniyor")
 	}
@@ -95,7 +169,7 @@ func TestParseResponse_EmptyCandidates(t *testing.T) {
 
 func TestParseResponse_InvalidJSON(t *testing.T) {
 	a := NewAdapter("test-key", nil)
-	_, err := a.parseResponse([]byte(`{invalid`), 100)
+	_, err := a.parseResponse(context.Background(), []byte(`{invalid`), 100)
 	if err == nil {
 		t.Error("geçersiz JSON için hata bekleniyor")
 	}

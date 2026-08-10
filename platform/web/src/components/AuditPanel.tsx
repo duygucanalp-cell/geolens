@@ -13,7 +13,7 @@ const severityColors: Record<string, string> = {
   high: '#f97316',
   medium: '#eab308',
   low: '#22c55e',
-  info: '#6366f1',
+  info: 'var(--accent)',
 }
 
 export function AuditPanel({ workspaceId, brands }: AuditPanelProps) {
@@ -50,7 +50,7 @@ export function AuditPanel({ workspaceId, brands }: AuditPanelProps) {
           onChange={(e) => setSelectedBrand(e.target.value)}
           className="audit-select"
         >
-          <option value="">Marka seçin</option>
+          <option value="">{t('audit.select_brand')}</option>
           {brands.map((b) => (
             <option key={b.id} value={b.id}>
               {b.name}
@@ -147,7 +147,7 @@ export function AuditPanel({ workspaceId, brands }: AuditPanelProps) {
             <div className="audit-issues">
               <h4>{t('audit.findings', { count: result.issues.length })}</h4>
               {result.issues.map((issue, i) => (
-                <div key={i} className="audit-issue" style={{ borderLeftColor: severityColors[issue.severity] || '#94a3b8' }}>
+                <div key={i} className="audit-issue" style={{ borderLeftColor: severityColors[issue.severity] || 'var(--text-faint)' }}>
                   <div className="issue-header">
                     <span className="issue-severity" style={{ color: severityColors[issue.severity] }}>
                       {issue.severity.toUpperCase()}
