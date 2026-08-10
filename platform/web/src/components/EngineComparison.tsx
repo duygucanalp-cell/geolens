@@ -44,7 +44,7 @@ export function EngineComparison({ scores, brandName }: EngineComparisonProps) {
       <h4>{t('enginecmp.title_brand', { brand: brandName })}</h4>
       <ResponsiveContainer width="100%" height={200}>
         <BarChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
           <XAxis
             dataKey="name"
             tick={{ fontSize: 12, fill: 'var(--text-muted)' }}

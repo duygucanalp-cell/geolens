@@ -88,7 +88,7 @@ export function DiscoveryPanel({ workspaceId: _ws }: Props) {
               <span className="rec-summary-value" style={{ color: '#ef4444' }}>{criticalCount}</span>
               <span className="rec-summary-label">{t('discovery.risk_critical')}</span>
             </div>
-            <div className="rec-summary-card" style={{ background: highCount > 0 ? '#fff7ed' : 'var(--success-bg)' }}>
+            <div className="rec-summary-card" style={{ background: highCount > 0 ? 'var(--amber-bg)' : 'var(--success-bg)' }}>
               <span className="rec-summary-value" style={{ color: '#f97316' }}>{highCount}</span>
               <span className="rec-summary-label">{t('discovery.summary_high_risk')}</span>
             </div>

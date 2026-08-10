@@ -1,3 +1,4 @@
+import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { listDriftEntities, listDriftAlerts, analyzeDrift, recordDriftObservation, listDriftObservations } from '../api/client'
@@ -62,7 +63,7 @@ export function DriftPanel({ workspaceId: _ws }: Props) {
     } catch (err) { setError(err instanceof Error ? err.message : t('drift.record_error')) }
   }
 
-  if (loading) return <div className="dashboard-loading">{t('drift.loading')}</div>
+  if (loading) return <PanelSkeleton message={t('drift.loading')} />
 
   return (
     <div className="rec-panel">
@@ -98,7 +99,7 @@ export function DriftPanel({ workspaceId: _ws }: Props) {
         <div style={{ marginBottom: '1.5rem' }}>
           <div style={{
             textAlign: 'center', padding: '1.5rem', borderRadius: '12px', marginBottom: '1rem',
-            background: analysis.severity === 'critical' ? 'var(--danger-bg)' : analysis.severity === 'warning' ? '#fefce8' : 'var(--success-bg)',
+            background: analysis.severity === 'critical' ? 'var(--danger-bg)' : analysis.severity === 'warning' ? 'var(--amber-bg)' : 'var(--success-bg)',
           }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>
               {analysis.severity === 'critical' ? '📉' : analysis.severity === 'warning' ? '⚠️' : '✅'}

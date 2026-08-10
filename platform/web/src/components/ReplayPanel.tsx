@@ -1,3 +1,4 @@
+import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import {
@@ -184,7 +185,7 @@ export function ReplayPanel({ workspaceId: ws, brands }: Props) {
       )}
 
       {loading ? (
-        <div className="dashboard-loading">{t('replay.loading')}</div>
+        <PanelSkeleton message={t('replay.loading')} />
       ) : snapshots.length === 0 ? (
         <div className="rec-empty">
           <div className="rec-empty-icon">▶️</div>
@@ -229,7 +230,7 @@ export function ReplayPanel({ workspaceId: ws, brands }: Props) {
               <button className="modal-close" onClick={() => setDetail(null)}>✕</button>
             </div>
             {detailLoading ? (
-              <div className="dashboard-loading">{t('replay.loading')}</div>
+              <PanelSkeleton message={t('replay.loading')} />
             ) : (
               <>
                 <p className="rec-category-badge" style={{ display: 'inline-block', marginBottom: '0.5rem' }}>

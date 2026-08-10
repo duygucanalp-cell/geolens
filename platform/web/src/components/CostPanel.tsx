@@ -1,3 +1,4 @@
+import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useMemo, useState } from 'react'
 import { getCostEntries, getCostSummary } from '../api/client'
@@ -51,7 +52,7 @@ export function CostPanel({ workspaceId: _ws }: Props) {
     return Array.from(set)
   }, [entries])
 
-  if (loading) return <div className="dashboard-loading">{t('cost.loading')}</div>
+  if (loading) return <PanelSkeleton message={t('cost.loading')} />
   if (error) return <div className="dashboard-error"><p>{error}</p><button onClick={loadData}>{t('cost.retry')}</button></div>
 
   return (
@@ -112,7 +113,7 @@ export function CostPanel({ workspaceId: _ws }: Props) {
       {filteredEntries.length > 0 ? (
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
           <thead>
-            <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
+            <tr style={{ borderBottom: '2px solid var(--border)', textAlign: 'left' }}>
               <th style={{ padding: '0.5rem' }}>{t('cost.table_engine')}</th>
               <th style={{ padding: '0.5rem' }}>{t('cost.table_model')}</th>
               <th style={{ padding: '0.5rem' }}>{t('cost.table_operation')}</th>
@@ -123,7 +124,7 @@ export function CostPanel({ workspaceId: _ws }: Props) {
           </thead>
           <tbody>
             {filteredEntries.map((e) => (
-              <tr key={e.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+              <tr key={e.id} style={{ borderBottom: '1px solid var(--border)' }}>
                 <td style={{ padding: '0.5rem', fontWeight: 600 }}>{t(ENGINE_NAMES[e.engine_name]) || e.engine_name}</td>
                 <td style={{ padding: '0.5rem', color: 'var(--text-muted)' }}>{e.model_name || '-'}</td>
                 <td style={{ padding: '0.5rem' }}>{e.operation}</td>

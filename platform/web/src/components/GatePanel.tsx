@@ -79,7 +79,7 @@ export function GatePanel({ workspaceId: _ws }: Props) {
         <div style={{ marginBottom: '1.5rem' }}>
           <div style={{
             textAlign: 'center', padding: '1.5rem', borderRadius: '12px', marginBottom: '1rem',
-            background: checkResult.decision === 'approved' ? 'var(--success-bg)' : checkResult.decision === 'flagged' ? '#fefce8' : 'var(--danger-bg)',
+            background: checkResult.decision === 'approved' ? 'var(--success-bg)' : checkResult.decision === 'flagged' ? 'var(--amber-bg)' : 'var(--danger-bg)',
           }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>
               {checkResult.decision === 'approved' ? '✅' : checkResult.decision === 'flagged' ? '⚠️' : '🔴'}
@@ -142,7 +142,7 @@ export function GatePanel({ workspaceId: _ws }: Props) {
                     <h4 className="rec-title">{item.entity_id}</h4>
                     <div className="rec-meta">
                       <span className="rec-date">{item.target_env}</span>
-                      <span className="rec-date">{item.passed_checks}/{item.total_checks} geçti</span>
+                      <span className="rec-date">{t('gate.checks_passed', { passed: item.passed_checks, total: item.total_checks })}</span>
                       {item.checked_at && (
                         <span className="rec-date">{new Date(item.checked_at).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                       )}

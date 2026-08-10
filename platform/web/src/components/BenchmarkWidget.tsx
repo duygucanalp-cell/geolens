@@ -1,3 +1,4 @@
+import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { getBenchmarkContext } from '../api/client'
@@ -36,7 +37,7 @@ export function BenchmarkWidget({ workspaceId, sector }: Props) {
   if (loading) {
     return (
       <div className="benchmark-widget">
-        <div className="benchmark-loading">{t('benchmark_widget.loading')}</div>
+        <PanelSkeleton compact message={t('benchmark_widget.loading')} rows={2} />
       </div>
     )
   }

@@ -1,3 +1,4 @@
+import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { detectHallucinations, listHallucinations, verifyHallucination } from '../api/client'
@@ -60,7 +61,7 @@ export function HallucinationPanel({ workspaceId }: Props) {
   const totalFlags = flags.length
   const verifiedCount = flags.filter(f => f.is_verified).length
 
-  if (loading) return <div className="dashboard-loading">{t('hallucination.loading')}</div>
+  if (loading) return <PanelSkeleton message={t('hallucination.loading')} />
 
   return (
     <div className="rec-panel">

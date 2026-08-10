@@ -1,3 +1,4 @@
+import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import {
@@ -73,7 +74,7 @@ export function ContentGeoPanel({ workspaceId: ws, brands }: Props) {
     }
   }
 
-  if (loading) return <div className="dashboard-loading">{t('contentgeo.loading')}</div>
+  if (loading) return <PanelSkeleton message={t('contentgeo.loading')} />
 
   return (
     <div className="rec-panel">

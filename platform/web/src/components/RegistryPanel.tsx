@@ -1,3 +1,4 @@
+import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { listRegistryEntities, createRegistryEntity, deleteRegistryEntity } from '../api/client'
@@ -27,7 +28,7 @@ export function RegistryPanel({ workspaceId: _ws }: Props) {
 
   async function handleDelete(id: string) { try { await deleteRegistryEntity(id); loadEntities() } catch (e) { setError(e instanceof Error ? e.message : t('registry.delete_error')) } }
 
-  if (loading) return <div className="dashboard-loading">{t('registry.loading')}</div>
+  if (loading) return <PanelSkeleton message={t('registry.loading')} />
 
   return (
     <div className="rec-panel">

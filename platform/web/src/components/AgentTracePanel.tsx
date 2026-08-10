@@ -1,3 +1,4 @@
+import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { listTraces, getTrace, startTrace } from '../api/client'
@@ -40,7 +41,7 @@ export function AgentTracePanel({ workspaceId: _ws }: Props) {
     catch (e) { setError(e instanceof Error ? e.message : t('agenttrace.start_error')) }
   }
 
-  if (loading) return <div className="dashboard-loading">{t('agenttrace.loading')}</div>
+  if (loading) return <PanelSkeleton message={t('agenttrace.loading')} />
 
   return (
     <div className="rec-panel">

@@ -1,3 +1,4 @@
+import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { getComplianceReport, getComplianceSOC2, getComplianceEvidence } from '../api/client'
@@ -59,7 +60,7 @@ export function CompliancePanel() {
     }
   }
 
-  if (loading) return <div className="dashboard-loading">{t('compliance.loading')}</div>
+  if (loading) return <PanelSkeleton message={t('compliance.loading')} />
   if (error) return <div className="dashboard-error"><p>{error}</p><button onClick={loadData}>{t('dashboard.retry')}</button></div>
 
   return (
@@ -147,7 +148,7 @@ export function CompliancePanel() {
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
             <thead>
-              <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
+              <tr style={{ borderBottom: '2px solid var(--border)', textAlign: 'left' }}>
                 <th style={{ padding: '0.5rem' }}>{t('compliance.evidence_name')}</th>
                 <th style={{ padding: '0.5rem' }}>{t('compliance.evidence_framework')}</th>
                 <th style={{ padding: '0.5rem' }}>{t('compliance.evidence_status')}</th>
@@ -156,7 +157,7 @@ export function CompliancePanel() {
             </thead>
             <tbody>
               {evidence.map((item) => (
-                <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                <tr key={item.id} style={{ borderBottom: '1px solid var(--border)' }}>
                   <td style={{ padding: '0.5rem', fontWeight: 600 }}>{item.name}</td>
                   <td style={{ padding: '0.5rem', color: 'var(--text-muted)' }}>{item.framework}</td>
                   <td style={{ padding: '0.5rem' }}>

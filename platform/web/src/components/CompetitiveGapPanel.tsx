@@ -1,3 +1,4 @@
+import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useMemo, useState } from 'react'
 import { RadarChart, PolarGrid, PolarAngleAxis, Radar, Legend, Tooltip, ResponsiveContainer } from 'recharts'
@@ -114,7 +115,7 @@ export function CompetitiveGapPanel({ workspaceId: ws, brands }: Props) {
     ? Object.keys(radarData[0]).find(k => k !== 'axis' && k !== t('competitive.brand')) ?? ''
     : ''
 
-  if (loading) return <div className="dashboard-loading">{t('competitive.loading')}</div>
+  if (loading) return <PanelSkeleton message={t('competitive.loading')} />
 
   return (
     <div className="rec-panel">

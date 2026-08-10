@@ -1,3 +1,4 @@
+import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { explainEntity, listExplainResults } from '../api/client'
@@ -37,7 +38,7 @@ export function ExplainPanel({ workspaceId: _ws }: Props) {
     finally { setExplainLoading(false) }
   }
 
-  if (loading) return <div className="dashboard-loading">{t('explain.loading')}</div>
+  if (loading) return <PanelSkeleton message={t('explain.loading')} />
 
   return (
     <div className="rec-panel">

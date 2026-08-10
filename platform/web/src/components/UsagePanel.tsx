@@ -1,3 +1,4 @@
+import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { getUsageMetrics, getUsageSummary } from '../api/client'
@@ -34,7 +35,7 @@ export function UsagePanel({ workspaceId: _ws }: Props) {
     }
   }
 
-  if (loading) return <div className="dashboard-loading">{t('usage.loading')}</div>
+  if (loading) return <PanelSkeleton message={t('usage.loading')} />
   if (error) return <div className="dashboard-error"><p>{error}</p><button onClick={loadData}>{t('common.retry')}</button></div>
 
   return (
@@ -87,7 +88,7 @@ export function UsagePanel({ workspaceId: _ws }: Props) {
           </h4>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
             <thead>
-              <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
+              <tr style={{ borderBottom: '2px solid var(--border)', textAlign: 'left' }}>
                 <th style={{ padding: '0.5rem' }}>{t('usage.table_endpoint')}</th>
                 <th style={{ padding: '0.5rem', textAlign: 'right' }}>{t('usage.table_hits')}</th>
                 <th style={{ padding: '0.5rem', textAlign: 'right' }}>{t('usage.table_latency')}</th>
@@ -95,7 +96,7 @@ export function UsagePanel({ workspaceId: _ws }: Props) {
             </thead>
             <tbody>
               {summary.top_endpoints.map((ep, i) => (
-                <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                <tr key={i} style={{ borderBottom: '1px solid var(--border)' }}>
                   <td style={{ padding: '0.5rem', fontFamily: 'monospace', fontSize: '0.8rem' }}>{ep.endpoint}</td>
                   <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 600 }}>{ep.hits}</td>
                   <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ep.avg_latency_ms.toFixed(0)}ms</td>
@@ -113,7 +114,7 @@ export function UsagePanel({ workspaceId: _ws }: Props) {
           </h4>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
             <thead>
-              <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
+              <tr style={{ borderBottom: '2px solid var(--border)', textAlign: 'left' }}>
                 <th style={{ padding: '0.5rem' }}>{t('usage.table_endpoint')}</th>
                 <th style={{ padding: '0.5rem' }}>{t('usage.table_method')}</th>
                 <th style={{ padding: '0.5rem', textAlign: 'right' }}>{t('usage.table_status')}</th>
@@ -123,7 +124,7 @@ export function UsagePanel({ workspaceId: _ws }: Props) {
             </thead>
             <tbody>
               {metrics.map((m) => (
-                <tr key={m.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                <tr key={m.id} style={{ borderBottom: '1px solid var(--border)' }}>
                   <td style={{ padding: '0.5rem', fontFamily: 'monospace', fontSize: '0.8rem' }}>{m.endpoint}</td>
                   <td style={{ padding: '0.5rem', fontWeight: 600 }}>{m.method}</td>
                   <td style={{

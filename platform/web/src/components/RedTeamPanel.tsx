@@ -1,3 +1,4 @@
+import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { listRedTeamCases, createRedTeamCase, deleteRedTeamCase, runRedTeam, listRedTeamRuns } from '../api/client'
@@ -65,7 +66,7 @@ export function RedTeamPanel({ workspaceId: _ws }: Props) {
     finally { setRunning(false) }
   }
 
-  if (loading) return <div className="dashboard-loading">{t('redteam.loading')}</div>
+  if (loading) return <PanelSkeleton message={t('redteam.loading')} />
 
   return (
     <div className="rec-panel">
@@ -93,7 +94,7 @@ export function RedTeamPanel({ workspaceId: _ws }: Props) {
         <div style={{ marginBottom: '1.5rem' }}>
           <div style={{
             textAlign: 'center', padding: '1.5rem', borderRadius: '12px', marginBottom: '1rem',
-            background: runResult.defense_score >= 80 ? 'var(--success-bg)' : runResult.defense_score >= 50 ? '#fefce8' : 'var(--danger-bg)',
+            background: runResult.defense_score >= 80 ? 'var(--success-bg)' : runResult.defense_score >= 50 ? 'var(--amber-bg)' : 'var(--danger-bg)',
           }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>
               {runResult.defense_score >= 80 ? '🛡️' : runResult.defense_score >= 50 ? '⚠️' : '🔴'}

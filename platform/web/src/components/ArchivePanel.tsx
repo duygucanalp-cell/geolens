@@ -1,3 +1,4 @@
+import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { listArchiveEntries, getArchiveEntry, archiveResponse, getArchiveVersionHistory } from '../api/client'
@@ -150,7 +151,7 @@ export function ArchivePanel({ workspaceId: ws, brands }: Props) {
       )}
 
       {loading ? (
-        <div className="dashboard-loading">{t('archive.loading')}</div>
+        <PanelSkeleton message={t('archive.loading')} />
       ) : entries.length === 0 ? (
         <div className="rec-empty">
           <div className="rec-empty-icon">🗄️</div>

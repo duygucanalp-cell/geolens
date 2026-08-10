@@ -1,3 +1,4 @@
+import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useMemo, useState } from 'react'
 import { getVersionEntries } from '../api/client'
@@ -41,7 +42,7 @@ export function VersionPanel({ workspaceId: _ws }: Props) {
     return entries.filter((e) => e.entity_type === entityFilter)
   }, [entries, entityFilter])
 
-  if (loading) return <div className="dashboard-loading">{t('version.loading')}</div>
+  if (loading) return <PanelSkeleton message={t('version.loading')} />
   if (error) return <div className="dashboard-error"><p>{error}</p><button onClick={loadData}>{t('version.retry')}</button></div>
 
   return (
@@ -102,7 +103,7 @@ export function VersionPanel({ workspaceId: _ws }: Props) {
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
               <thead>
-                <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
+                <tr style={{ borderBottom: '2px solid var(--border)', textAlign: 'left' }}>
                   <th style={{ padding: '0.5rem' }}>{t('version.table_entity')}</th>
                   <th style={{ padding: '0.5rem' }}>{t('version.table_type')}</th>
                   <th style={{ padding: '0.5rem' }}>{t('version.table_old')}</th>
@@ -113,7 +114,7 @@ export function VersionPanel({ workspaceId: _ws }: Props) {
               </thead>
               <tbody>
                 {filtered.map((e) => (
-                  <tr key={e.id} style={{ borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }}
+                  <tr key={e.id} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
                     onClick={() => setSelectedEntry(e)}>
                     <td style={{ padding: '0.5rem', fontWeight: 600 }}>{e.entity_name || e.entity_id}</td>
                     <td style={{ padding: '0.5rem', color: 'var(--text-muted)' }}>{e.entity_type}</td>

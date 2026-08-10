@@ -44,12 +44,12 @@ export function TrendChart({ scores, brandName }: TrendChartProps) {
   }, [scores])
 
   if (chartData.length === 0) {
-    return <div className="trend-empty">Trend verisi yok</div>
+    return <div className="trend-empty">{t('score.trend_empty')}</div>
   }
 
   return (
     <div className="trend-chart">
-      <h3 className="trend-title">{brandName} — Görünürlük Trendi</h3>
+      <h3 className="trend-title">{t('score.trend_title', { brand: brandName })}</h3>
       <ResponsiveContainer width="100%" height={220}>
         <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
           <defs>
@@ -58,7 +58,7 @@ export function TrendChart({ scores, brandName }: TrendChartProps) {
               <stop offset="95%" stopColor="#6366f1" stopOpacity={0.05} />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
           <XAxis
             dataKey="dateLabel"
             tick={{ fontSize: 11, fill: 'var(--text-faint)' }}
@@ -80,7 +80,7 @@ export function TrendChart({ scores, brandName }: TrendChartProps) {
               fontSize: '12px',
               color: 'var(--surface-2)',
             }}
-            labelFormatter={(label) => `Tarih: ${label}`}
+            labelFormatter={(label) => t('score.trend_tooltip_date', { label })}
             formatter={(value: number) => [`${value.toFixed(1)}`, t('score.trend_tooltip_score')]}
           />
           {/* CI band area */}
@@ -95,7 +95,7 @@ export function TrendChart({ scores, brandName }: TrendChartProps) {
             type="monotone"
             dataKey="ciLow"
             stroke="none"
-            fill="#f1f5f9"
+            fill="var(--surface-2)"
             fillOpacity={1}
           />
           {/* Score line */}

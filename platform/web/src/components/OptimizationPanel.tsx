@@ -1,3 +1,4 @@
+import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { getOptimizationRecommendations, generateOptimizationRecommendations, updateOptimizationStatus } from '../api/client'
@@ -73,7 +74,7 @@ export function OptimizationPanel({ workspaceId: _ws }: Props) {
     }
   }
 
-  if (loading) return <div className="dashboard-loading">{t('optimization.loading')}</div>
+  if (loading) return <PanelSkeleton message={t('optimization.loading')} />
 
   return (
     <div className="rec-panel">

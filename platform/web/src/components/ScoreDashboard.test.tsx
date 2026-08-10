@@ -154,16 +154,17 @@ describe('ScoreDashboard — gruplu navigasyon', () => {
   })
 
   it('Türkçe İ ve aksansız arama eşleşir (İçerik → icerik)', async () => {
+    await i18n.changeLanguage('tr')
     stubFetch()
     const user = userEvent.setup()
     render(<ScoreDashboard workspaceId="ws1" />)
 
     await waitFor(() => {
-      expect(screen.getByText('Visibility Dashboard')).toBeInTheDocument()
+      expect(screen.getByText('Görünürlük Panosu')).toBeInTheDocument()
     })
 
-    await user.click(screen.getByText(/☰ Scores/))
-    await user.type(screen.getByPlaceholderText('Search tabs...'), 'icerik')
+    await user.click(screen.getByText(/☰ Skorlar/))
+    await user.type(screen.getByPlaceholderText('Sekme ara...'), 'icerik')
 
     expect(screen.getByRole('menuitem', { name: '📚 İçerik GEO' })).toBeInTheDocument()
     // Eşleşen kısım vurgulanır

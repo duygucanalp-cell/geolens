@@ -1,3 +1,4 @@
+import { PanelSkeleton } from './PanelSkeleton'
 import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getBrands, createBrand, updateBrand, deleteBrand, getBrandCompetitors, updateBrandCompetitors, deleteBrandCompetitor, searchBrands } from '../api/client'
@@ -320,7 +321,7 @@ export function BrandManagement({ workspaceId }: BrandManagementProps) {
   }
 
   if (loading) {
-    return <div className="dashboard-loading">{t('brand.loading')}</div>
+    return <PanelSkeleton message={t('brand.loading')} />
   }
 
   if (error) {

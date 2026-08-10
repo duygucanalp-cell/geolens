@@ -1,3 +1,4 @@
+import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { ScoreCard } from './ScoreCard'
@@ -303,7 +304,7 @@ export function ScoreDashboard({ workspaceId }: ScoreDashboardProps) {
   }
 
   if (loading) {
-    return <div className="dashboard-loading">{t('dashboard.loading')}</div>
+    return <PanelSkeleton message={t('dashboard.loading')} rows={6} />
   }
 
   if (error) {
@@ -339,19 +340,19 @@ export function ScoreDashboard({ workspaceId }: ScoreDashboardProps) {
     { key: 'version', label: t('tab.version') },
     { key: 'incident', label: t('tab.incident') },
     { key: 'promptaudit', label: t('tab.promptaudit') },
-    { key: 'benchmark', label: '🧪 Benchmark' },
-    { key: 'sentiment', label: '💬 Sentiment' },
-    { key: 'hallucination', label: '🧠 Halüsinasyon' },
-    { key: 'alertrules', label: '🔔 Uyarılar' },
+    { key: 'benchmark', label: `🧪 ${t('tab.benchmark')}` },
+    { key: 'sentiment', label: `💬 ${t('tab.sentiment')}` },
+    { key: 'hallucination', label: `🧠 ${t('tab.hallucination')}` },
+    { key: 'alertrules', label: `🔔 ${t('tab.alertrules')}` },
     { key: 'tenant', label: t('tab.tenant') },
     { key: 'compliance', label: t('tab.compliance') },
-    { key: 'prompts', label: '💬 Prompts' },
-    { key: 'billing', label: '💳 Fatura' },
-    { key: 'replay', label: '▶ Replay' },
-    { key: 'archive', label: '🗄 Arşiv' },
-    { key: 'technicalgeo', label: '⚙️ Teknik GEO' },
-    { key: 'contentgeo', label: '📚 İçerik GEO' },
-    { key: 'competitive', label: '🥊 Rakip' },
+    { key: 'prompts', label: `💬 ${t('tab.prompts')}` },
+    { key: 'billing', label: `💳 ${t('tab.billing')}` },
+    { key: 'replay', label: `▶ ${t('tab.replay')}` },
+    { key: 'archive', label: `🗄 ${t('tab.archive')}` },
+    { key: 'technicalgeo', label: `⚙️ ${t('tab.technicalgeo')}` },
+    { key: 'contentgeo', label: `📚 ${t('tab.contentgeo')}` },
+    { key: 'competitive', label: `🥊 ${t('tab.competitive')}` },
   ]
 
   const tabsMap = new Map(tabs.map(tab => [tab.key, tab]))
@@ -506,6 +507,7 @@ export function ScoreDashboard({ workspaceId }: ScoreDashboardProps) {
 
             {filteredScores.length === 0 ? (
               <div className="dashboard-empty">
+                <div className="empty-icon" aria-hidden="true">📡</div>
                 <h2>{t('dashboard.empty_title')}</h2>
                 <p>{t('dashboard.empty_desc')}</p>
               </div>
@@ -668,7 +670,7 @@ export function ScoreDashboard({ workspaceId }: ScoreDashboardProps) {
         )}
       </div>
 
-      <Suspense fallback={<div className="dashboard-loading">{t('dashboard.component_loading')}</div>}>
+      <Suspense fallback={<PanelSkeleton compact message={t('dashboard.component_loading')} rows={2} />}>
         {/* Keep-alive: bir kez yüklenen sekme DOM'da kalır (yalnızca gizlenir),
             böylece sekme değişiminde veriler yeniden yüklenmez, geçişler anlıktır */}
         {Array.from(visitedTabs).map(key => (

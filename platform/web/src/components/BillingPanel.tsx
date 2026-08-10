@@ -1,3 +1,4 @@
+import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import {
@@ -198,7 +199,7 @@ export function BillingPanel({ workspaceId: _ws }: Props) {
     return `${symbol}${value.toLocaleString(dateLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   }
 
-  if (loading) return <div className="dashboard-loading">{t('billing.loading')}</div>
+  if (loading) return <PanelSkeleton message={t('billing.loading')} />
   if (error && !subscription) return <div className="dashboard-error"><p>{error}</p><button onClick={loadData}>{t('common.retry')}</button></div>
 
   return (
@@ -279,7 +280,7 @@ export function BillingPanel({ workspaceId: _ws }: Props) {
       ) : (
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
           <thead>
-            <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
+            <tr style={{ borderBottom: '2px solid var(--border)', textAlign: 'left' }}>
               <th style={{ padding: '0.5rem' }}>{t('billing.invoice_number')}</th>
               <th style={{ padding: '0.5rem' }}>{t('billing.invoice_status')}</th>
               <th style={{ padding: '0.5rem', textAlign: 'right' }}>{t('billing.invoice_amount')}</th>
@@ -290,7 +291,7 @@ export function BillingPanel({ workspaceId: _ws }: Props) {
           </thead>
           <tbody>
             {invoices.map((inv) => (
-              <tr key={inv.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+              <tr key={inv.id} style={{ borderBottom: '1px solid var(--border)' }}>
                 <td style={{ padding: '0.5rem', fontWeight: 600 }}>{inv.number || inv.stripe_invoice_id}</td>
                 <td style={{ padding: '0.5rem' }}>
                   <span className={`rec-category-badge ${inv.status === 'paid' ? '' : 'benchmark-trend-down'}`}>

@@ -30,6 +30,8 @@
   --medium: #eab308;
   --warn-bg: #fef3c7;
   --warn-border: #fde68a;
+  --amber-bg: #fff7ed;
+  --amber-border: #fed7aa;
   --warn-text: #92400e;
   --warn-text-strong: #78350f;
   --mark-bg: #fef08a;
@@ -66,6 +68,8 @@
   --medium: #fbbf24;
   --warn-bg: rgba(245, 158, 11, 0.16);
   --warn-border: rgba(245, 158, 11, 0.4);
+  --amber-bg: rgba(251, 146, 60, 0.14);
+  --amber-border: rgba(251, 146, 60, 0.35);
   --warn-text: #fcd34d;
   --warn-text-strong: #fbbf24;
   --mark-bg: #713f12;
@@ -109,7 +113,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .dashboard-header h2 { font-size: 1.25rem; }
 .refresh-btn { background: var(--accent); color: #fff; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
 .scores-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1rem; }
-.dashboard-loading, .dashboard-error, .dashboard-empty { text-align: center; padding: 3rem; color: var(--text-muted); }
+.dashboard-error, .dashboard-empty { text-align: center; padding: 3rem; color: var(--text-muted); }
 .dashboard-error button { margin-top: 1rem; background: var(--accent); color: #fff; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; }
 
 .score-card { background: var(--surface); border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
@@ -303,7 +307,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .rec-summary { display: flex; gap: 0.75rem; margin-bottom: 1.25rem; }
 .rec-summary-card { flex: 1; min-width: 80px; padding: 0.75rem; border-radius: 8px; text-align: center; background: var(--surface-2); }
 .rec-summary-card.critical { background: var(--danger-bg); }
-.rec-summary-card.high { background: #fff7ed; }
+.rec-summary-card.high { background: var(--amber-bg); }
 .rec-summary-card.total { background: var(--accent-soft); }
 .rec-summary-value { display: block; font-size: 1.5rem; font-weight: 700; }
 .rec-summary-card.critical .rec-summary-value { color: var(--danger); }
@@ -800,3 +804,299 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 /* Keep-alive: gizli sekmeler erişilebilirlik ağacından çıkarılır */
 .tab-panel { min-height: 200px; }
 .tab-panel[hidden] { display: none; }
+
+/* ==== App shell ==== */
+.app { min-height: 100vh; display: flex; flex-direction: column; }
+.app-header {
+  background: var(--header-bg); color: #fff; padding: 0.75rem 2rem;
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 0.5rem; flex-wrap: wrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  position: sticky; top: 0; z-index: 500;
+}
+.app-header-brand { display: flex; align-items: center; gap: 0.6rem; min-width: 0; }
+.app-header-logo {
+  width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--accent), #818cf8);
+  font-size: 1.05rem; font-weight: 700; color: #fff;
+  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.35);
+}
+.app-header-title { font-size: 1.05rem; font-weight: 700; letter-spacing: 0.2px; white-space: nowrap; }
+.app-header-sub { font-size: 0.72rem; color: var(--text-faint); margin-top: 0.1rem; }
+.app-header-actions { display: flex; gap: 0.5rem; align-items: center; flex-shrink: 0; }
+.app-header-user {
+  display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0.75rem;
+  border: 1px solid var(--border-strong); border-radius: 8px; font-size: 0.8rem;
+  color: var(--text-strong); background: rgba(255, 255, 255, 0.04); max-width: 240px;
+}
+.app-header-user-email {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary);
+}
+.header-icon-btn {
+  width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+  background: none; border: 1px solid var(--border-strong); border-radius: 8px;
+  cursor: pointer; font-size: 1rem; color: var(--text-secondary); transition: all 0.2s;
+}
+.header-icon-btn:hover { background: var(--surface-hover); border-color: var(--accent); }
+
+/* ==== engine-bars (ScoreCard) ==== */
+.engine-bars { display: flex; flex-direction: column; gap: 0.4rem; }
+
+/* ==== audit-info (BillingPanel bilgi notu) ==== */
+.audit-info {
+  background: var(--success-bg); color: var(--success-strong); border: 1px solid var(--success-soft);
+  padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.85rem; margin-bottom: 1rem;
+  animation: slideDown 0.25s ease;
+}
+
+/* ==== notif-label (BillingPanel e-Fatura formu) ==== */
+.notif-label {
+  display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary);
+  margin-bottom: 0.35rem;
+}
+
+/* ==== reports-section-title (SEO / SiteAudit) ==== */
+.reports-section-title { margin: 1.5rem 0 0.75rem; }
+.reports-section-title h3 { margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--text); }
+.reports-section-title h4 { margin: 0; font-size: 0.95rem; font-weight: 600; color: var(--text-strong); }
+.reports-section-title p { font-size: 0.8rem; color: var(--text-muted); margin: 0.25rem 0 0; }
+
+/* ==== SEO metrik kartları ==== */
+.seo-data-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem; margin-bottom: 1rem;
+}
+.seo-metric-card {
+  border-radius: 12px; padding: 1rem; color: #fff; text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12); transition: transform 0.15s, box-shadow 0.15s;
+}
+.seo-metric-card:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18); }
+.seo-metric-card-label { font-size: 0.7rem; opacity: 0.85; margin-bottom: 0.25rem; }
+.seo-metric-card-value { font-size: 1.5rem; font-weight: 700; }
+
+/* SEO yenile butonu */
+.seo-refresh-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 0.25rem 0.6rem; font-size: 0.75rem; cursor: pointer;
+  color: var(--text-muted); transition: all 0.15s;
+  display: flex; align-items: center; gap: 0.25rem; font-family: inherit;
+}
+.seo-refresh-btn:hover { background: var(--surface-hover); color: var(--text); }
+.seo-refresh-btn:disabled { opacity: 0.6; cursor: default; }
+.seo-refresh-icon { display: inline-block; }
+.seo-refresh-icon.spinning { animation: spin 0.8s linear infinite; }
+
+/* SEO tablo */
+.seo-table-card {
+  background: var(--surface); border-radius: 12px; border: 1px solid var(--border);
+  overflow: hidden; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+.seo-table-header {
+  padding: 0.6rem 1rem; font-size: 0.8rem; font-weight: 600;
+  color: var(--text-secondary); border-bottom: 1px solid var(--border); background: var(--surface-2);
+}
+.seo-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.seo-table th {
+  padding: 0.5rem 1rem; text-align: left; font-weight: 500; color: var(--text-muted);
+  background: var(--surface-2);
+}
+.seo-table th.num, .seo-table td.num { text-align: right; }
+.seo-table td { padding: 0.5rem 1rem; border-top: 1px solid var(--border); color: var(--text-secondary); }
+.seo-table td.query { color: var(--text); max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.seo-table td.clicks { font-weight: 600; color: #0ea5e9; }
+.seo-table tbody tr { transition: background 0.15s; }
+.seo-table tbody tr:hover { background: var(--surface-2); }
+.seo-loading {
+  text-align: center; padding: 1rem; color: var(--text-muted); font-size: 0.85rem;
+}
+
+/* ==== site-audit-panel ==== */
+.site-audit-panel {
+  background: var(--surface); border-radius: 12px; padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+.site-audit-brand-row {
+  display: flex; gap: 0.75rem; align-items: center; margin-bottom: 1.25rem;
+}
+.site-audit-brand-select {
+  flex: 1; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 8px;
+  font-size: 0.85rem; color: var(--text); background: var(--surface); font-family: inherit;
+}
+.site-audit-brand-select:focus { outline: none; border-color: var(--accent); }
+.site-audit-finding {
+  background: var(--surface-2); border-radius: 8px; padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border); margin-bottom: 0.4rem;
+}
+.site-audit-finding-header { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.2rem; }
+.site-audit-severity-tag {
+  color: #fff; font-size: 0.65rem; padding: 0.1rem 0.4rem; border-radius: 4px; font-weight: 600;
+}
+.site-audit-finding-title { font-weight: 600; font-size: 0.85rem; color: var(--text); }
+.site-audit-finding-detail { margin: 0.2rem 0; font-size: 0.78rem; color: var(--text-secondary); }
+.site-audit-finding-rec {
+  margin: 0.2rem 0 0; font-size: 0.75rem; color: #0891b2; font-style: italic;
+}
+
+/* ==== tab-nav-trigger-label ==== */
+.tab-nav-trigger-label {
+  display: inline-flex; align-items: center; gap: 0.4rem; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* SEO bağlantı kesme butonu */
+.seo-disconnect-btn {
+  background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-soft);
+}
+.seo-disconnect-btn:hover { background: var(--danger-bg); color: var(--danger-strong); }
+
+/* SEO bölüm başlık satırı (başlık + yenile butonu) */
+.seo-section-row { display: flex; align-items: center; gap: 0.5rem; }
+.seo-section-row h4 { flex: 1; }
+
+/* SiteAudit bulgu listesi */
+.site-audit-findings {
+  display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.4rem;
+}
+
+/* ==== Genel cilalama ==== */
+/* Boş durum kartları */
+.dashboard-empty {
+  display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+  padding: 3.5rem 1.5rem; border: 1px dashed var(--border); border-radius: 12px;
+}
+.dashboard-empty .empty-icon { font-size: 2.5rem; }
+.dashboard-empty h2 { font-size: 1.1rem; color: var(--text-strong); }
+.dashboard-empty p { font-size: 0.85rem; color: var(--text-muted); max-width: 420px; }
+
+/* Hata durumu */
+.dashboard-error {
+  display: flex; flex-direction: column; align-items: center; gap: 1rem;
+  padding: 3.5rem 1.5rem; background: var(--danger-bg); border: 1px solid var(--danger-soft);
+  border-radius: 12px; color: var(--danger-strong);
+}
+.dashboard-error p { font-size: 0.9rem; }
+.dashboard-error button {
+  padding: 0.5rem 1.25rem; background: var(--accent); color: #fff; border: none;
+  border-radius: 8px; cursor: pointer; font-size: 0.85rem; transition: background 0.2s;
+}
+.dashboard-error button:hover { background: var(--accent-hover); }
+
+/* Genel buton tutarlılığı */
+button { font-family: inherit; }
+
+/* Kartlar için daha yumuşak gölge + hover */
+.score-card, .brand-section, .audit-panel, .notif-settings, .rec-panel,
+.monitoring-panel, .brand-management, .reports-panel, .site-audit-panel {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.score-card:hover, .brand-section:hover, .audit-panel:hover, .notif-settings:hover,
+.rec-panel:hover, .monitoring-panel:hover, .brand-management:hover, .reports-panel:hover,
+.site-audit-panel:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+/* Responsive: mobilde header ve dashboard daralır */
+@media (max-width: 640px) {
+  .app-header { padding: 0.6rem 1rem; }
+  .app-header-user { display: none; }
+  .dashboard { padding: 1rem; }
+  .scores-grid { grid-template-columns: 1fr; }
+  .rec-summary { flex-wrap: wrap; }
+}
+
+/* Odak görünürlüğü (erişilebilirlik) */
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+
+/* Kaydırma çubukları */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ==== Auth sayfası cilalama ==== */
+.auth-page {
+  background: linear-gradient(135deg, var(--bg) 0%, var(--accent-soft) 100%);
+}
+.auth-card {
+  border: 1px solid var(--border);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+}
+.auth-brand-row {
+  display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.25rem;
+}
+.auth-brand-logo {
+  width: 44px; height: 44px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--accent), #818cf8);
+  color: #fff; font-size: 1.35rem; font-weight: 700;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+}
+.auth-brand-name { font-size: 1.25rem; font-weight: 700; color: var(--text); }
+.auth-card input:focus {
+  outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+}
+.auth-card button[type=submit] {
+  font-weight: 600; letter-spacing: 0.2px; margin-top: 0.25rem;
+  transition: background 0.2s, transform 0.1s;
+}
+.auth-card button[type=submit]:active { transform: scale(0.98); }
+.auth-card button[type=submit]:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ==== Skeleton / Shimmer yükleme görünümü ==== */
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.panel-skeleton {
+  background: var(--surface); border-radius: 12px; padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06); display: flex;
+  flex-direction: column; gap: 0.75rem;
+}
+.panel-skeleton-compact { padding: 1rem; box-shadow: none; border: 1px solid var(--border); }
+
+.skeleton-block {
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-hover) 50%, var(--surface-2) 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s ease infinite;
+  border-radius: 8px;
+}
+.skeleton-title { height: 22px; width: 45%; }
+.skeleton-line { height: 12px; width: 100%; }
+.skeleton-line-short { width: 65%; }
+
+.skeleton-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.75rem; margin-top: 0.25rem;
+}
+.skeleton-grid-compact { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+.skeleton-card { height: 110px; }
+
+.skeleton-message {
+  font-size: 0.85rem; color: var(--text-faint); text-align: center;
+  animation: fadeIn 0.3s ease;
+}
+
+/* ==== Özel yükleme sınıfları → shimmer ==== */
+/* Bu sınıflar düz metin yerine shimmer bloğu gösterir (metin korunur) */
+.seo-loading, .rec-loading, .notif-settings-loading, .wizard-loading, .brand-mgmt-competitors-loading {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 0.75rem; padding: 2rem; color: var(--text-faint); font-size: 0.85rem;
+}
+.seo-loading::before, .rec-loading::before, .notif-settings-loading::before,
+.wizard-loading::before, .brand-mgmt-competitors-loading::before {
+  content: ''; width: 220px; height: 14px; border-radius: 7px;
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-hover) 50%, var(--surface-2) 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+.seo-loading::after, .rec-loading::after, .notif-settings-loading::after,
+.wizard-loading::after, .brand-mgmt-competitors-loading::after {
+  content: ''; width: 140px; height: 10px; border-radius: 5px;
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-hover) 50%, var(--surface-2) 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s ease infinite 0.15s;
+}

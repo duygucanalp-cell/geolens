@@ -1,3 +1,4 @@
+import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { getIncidents, createIncident, updateIncident } from '../api/client'
@@ -79,7 +80,7 @@ export function IncidentPanel({ workspaceId: _ws }: Props) {
     }
   }
 
-  if (loading) return <div className="dashboard-loading">{t('incident.loading')}</div>
+  if (loading) return <PanelSkeleton message={t('incident.loading')} />
 
   return (
     <div className="rec-panel">
@@ -97,7 +98,7 @@ export function IncidentPanel({ workspaceId: _ws }: Props) {
             <span className="rec-summary-value" style={{ color: '#ef4444' }}>{data.open_count}</span>
             <span className="rec-summary-label">{t('incident.summary_open')}</span>
           </div>
-          <div className="rec-summary-card" style={{ background: '#fff7ed' }}>
+          <div className="rec-summary-card" style={{ background: 'var(--amber-bg)' }}>
             <span className="rec-summary-value" style={{ color: '#f97316' }}>{data.critical_count}</span>
             <span className="rec-summary-label">{t('incident.summary_critical')}</span>
           </div>

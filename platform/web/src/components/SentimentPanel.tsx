@@ -1,3 +1,4 @@
+import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { analyzeSentiment, getSentimentSummary, listSentiment } from '../api/client'
@@ -66,7 +67,7 @@ export function SentimentPanel({ workspaceId: ws }: Props) {
     }
   }
 
-  if (loading) return <div className="dashboard-loading">{t('sentiment.loading')}</div>
+  if (loading) return <PanelSkeleton message={t('sentiment.loading')} />
 
   return (
     <div className="rec-panel">
@@ -92,7 +93,7 @@ export function SentimentPanel({ workspaceId: ws }: Props) {
             <span className="rec-summary-value" style={{ color: SENTIMENT_COLOR.negative }}>{summary.negative}</span>
             <span className="rec-summary-label">{t('sentiment.negative')}</span>
           </div>
-          <div className="rec-summary-card" style={{ background: '#fefce8' }}>
+          <div className="rec-summary-card" style={{ background: 'var(--amber-bg)' }}>
             <span className="rec-summary-value" style={{ color: SENTIMENT_COLOR.neutral }}>{summary.neutral}</span>
             <span className="rec-summary-label">{t('sentiment.neutral')}</span>
           </div>
@@ -165,7 +166,7 @@ export function SentimentPanel({ workspaceId: ws }: Props) {
                     {SENTIMENT_EMOJI[r.sentiment]} {t(`sentiment.${r.sentiment}`)}
                   </span>
                   <span className="rec-status-badge" style={{
-                    background: r.sentiment === 'positive' ? 'var(--success-bg)' : r.sentiment === 'negative' ? 'var(--danger-bg)' : '#fefce8',
+                    background: r.sentiment === 'positive' ? 'var(--success-bg)' : r.sentiment === 'negative' ? 'var(--danger-bg)' : 'var(--amber-bg)',
                     color: SENTIMENT_COLOR[r.sentiment],
                   }}>
                     {(r.confidence * 100).toFixed(0)}%

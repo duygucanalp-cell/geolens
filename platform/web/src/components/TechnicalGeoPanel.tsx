@@ -1,3 +1,4 @@
+import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import {
@@ -75,7 +76,7 @@ export function TechnicalGeoPanel({ workspaceId: ws, brands }: Props) {
 
   const blockedBots = bots.filter(b => b.is_blocked).length
 
-  if (loading) return <div className="dashboard-loading">{t('technical.loading')}</div>
+  if (loading) return <PanelSkeleton message={t('technical.loading')} />
 
   return (
     <div className="rec-panel">

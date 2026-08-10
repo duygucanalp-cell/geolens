@@ -1,3 +1,4 @@
+import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { evaluateBias, listBiasTests } from '../api/client'
@@ -57,7 +58,7 @@ export function BiasPanel({ workspaceId: _ws }: Props) {
   const avgFairness = tests.length > 0 ?tests.reduce((s, item) => s + item.fairness_score, 0) / tests.length : 0
 const biasCount = tests.filter(item => item.has_bias).length
 
-  if (loading) return <div className="dashboard-loading">{t('bias.loading')}</div>
+  if (loading) return <PanelSkeleton message={t('bias.loading')} />
 
   return (
     <div className="rec-panel">

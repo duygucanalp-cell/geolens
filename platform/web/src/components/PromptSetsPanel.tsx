@@ -1,3 +1,4 @@
+import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { listPromptSets } from '../api/client'
@@ -33,7 +34,7 @@ export function PromptSetsPanel({ workspaceId }: { workspaceId: string }) {
     }
   }
 
-  if (loading) return <div className="dashboard-loading">{t('promptaudit.loading')}</div>
+  if (loading) return <PanelSkeleton message={t('promptaudit.loading')} />
   if (error) return <div className="dashboard-error"><p>{error}</p><button onClick={load}>{t('dashboard.retry')}</button></div>
 
   return (
@@ -56,7 +57,7 @@ export function PromptSetsPanel({ workspaceId }: { workspaceId: string }) {
             </div>
             <button className="rec-dismiss-btn" onClick={() => setSelected(null)}>✕</button>
           </div>
-          <div style={{ marginTop: '0.75rem', background: 'var(--surface)', padding: '0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0', whiteSpace: 'pre-wrap', fontSize: '0.85rem' }}>
+          <div style={{ marginTop: '0.75rem', background: 'var(--surface)', padding: '0.75rem', borderRadius: '6px', border: '1px solid var(--border)', whiteSpace: 'pre-wrap', fontSize: '0.85rem' }}>
             {selected.prompt_text}
           </div>
           <div className="rec-meta" style={{ marginTop: '0.5rem' }}>

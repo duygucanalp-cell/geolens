@@ -1,3 +1,4 @@
+import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { getTenant, listMembers, inviteMember, listApiKeys, createApiKey, deleteApiKey, getSubscription } from '../api/client'
@@ -140,7 +141,7 @@ export function TenantSettingsPanel() {
     }
   }, [activeTab])
 
-  if (tenantLoading) return <div className="dashboard-loading">{t('tenant.loading')}</div>
+  if (tenantLoading) return <PanelSkeleton message={t('tenant.loading')} />
   if (error && !tenant) return <div className="dashboard-error"><p>{error}</p><button onClick={loadTenant}>{t('common.retry')}</button></div>
 
   const TIER_LABELS: Record<string, string> = {
@@ -174,7 +175,7 @@ export function TenantSettingsPanel() {
         </div>
       )}
 
-      <div className="dashboard-filters" style={{ borderBottom: '2px solid #e2e8f0', padding: 0, gap: 0, marginBottom: '1rem' }}>
+      <div className="dashboard-filters" style={{ borderBottom: '2px solid var(--border)', padding: 0, gap: 0, marginBottom: '1rem' }}>
         {(['members', 'apikeys', 'subscription'] as Tab[]).map(tab => (
           <button
             key={tab}
@@ -219,7 +220,7 @@ export function TenantSettingsPanel() {
           </form>
 
           {membersLoading ? (
-            <div className="dashboard-loading" style={{ padding: '1rem' }}>{t('tenant.loading_members')}</div>
+            <PanelSkeleton compact message={t('tenant.loading_members')} />
           ) : members.length === 0 ? (
             <div className="rec-empty">
               <div className="rec-empty-icon">👥</div>
@@ -232,7 +233,7 @@ export function TenantSettingsPanel() {
               </h4>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                 <thead>
-                  <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
+                  <tr style={{ borderBottom: '2px solid var(--border)', textAlign: 'left' }}>
                     <th style={{ padding: '0.5rem' }}>{t('tenant.member_name')}</th>
                     <th style={{ padding: '0.5rem' }}>{t('tenant.member_email')}</th>
                     <th style={{ padding: '0.5rem' }}>{t('tenant.member_role')}</th>
@@ -242,7 +243,7 @@ export function TenantSettingsPanel() {
                 </thead>
                 <tbody>
                   {members.map(m => (
-                    <tr key={m.user_id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <tr key={m.user_id} style={{ borderBottom: '1px solid var(--border)' }}>
                       <td style={{ padding: '0.5rem', fontWeight: 600 }}>{m.full_name}</td>
                       <td style={{ padding: '0.5rem', color: 'var(--text-muted)' }}>{m.email}</td>
                       <td style={{ padding: '0.5rem' }}><span className="rec-category-badge">{m.workspace_role}</span></td>
@@ -286,7 +287,7 @@ export function TenantSettingsPanel() {
           )}
 
           {createdKey && (
-            <div style={{ background: '#fefce8', border: '1px solid #eab308', borderRadius: '10px', padding: '1rem', marginBottom: '1rem' }}>
+            <div style={{ background: 'var(--amber-bg)', border: '1px solid var(--medium)', borderRadius: '10px', padding: '1rem', marginBottom: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
                 <span style={{ fontSize: '1.2rem' }}>⚠️</span>
                 <div style={{ flex: 1 }}>
@@ -303,7 +304,7 @@ export function TenantSettingsPanel() {
           )}
 
           {keysLoading ? (
-            <div className="dashboard-loading" style={{ padding: '1rem' }}>{t('tenant.loading_keys')}</div>
+            <PanelSkeleton compact message={t('tenant.loading_keys')} />
           ) : apiKeys.length === 0 ? (
             <div className="rec-empty">
               <div className="rec-empty-icon">🔑</div>
@@ -316,7 +317,7 @@ export function TenantSettingsPanel() {
               </h4>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                 <thead>
-                  <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
+                  <tr style={{ borderBottom: '2px solid var(--border)', textAlign: 'left' }}>
                     <th style={{ padding: '0.5rem' }}>{t('tenant.key_name_col')}</th>
                     <th style={{ padding: '0.5rem' }}>{t('tenant.key_prefix_col')}</th>
                     <th style={{ padding: '0.5rem' }}>{t('tenant.key_role_col')}</th>
@@ -327,7 +328,7 @@ export function TenantSettingsPanel() {
                 </thead>
                 <tbody>
                   {apiKeys.map(k => (
-                    <tr key={k.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <tr key={k.id} style={{ borderBottom: '1px solid var(--border)' }}>
                       <td style={{ padding: '0.5rem', fontWeight: 600 }}>{k.name}</td>
                       <td style={{ padding: '0.5rem', fontFamily: 'monospace', fontSize: '0.8rem' }}>{k.key_prefix}...</td>
                       <td style={{ padding: '0.5rem' }}><span className="rec-category-badge">{k.role}</span></td>
@@ -356,7 +357,7 @@ export function TenantSettingsPanel() {
       {activeTab === 'subscription' && (
         <div>
           {subLoading ? (
-            <div className="dashboard-loading" style={{ padding: '1rem' }}>{t('tenant.loading_subscription')}</div>
+            <PanelSkeleton compact message={t('tenant.loading_subscription')} />
           ) : !subscription ? (
             <div className="rec-empty">
               <div className="rec-empty-icon">💳</div>

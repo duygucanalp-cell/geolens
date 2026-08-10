@@ -1,3 +1,4 @@
+import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { listPolicyPacks, listPolicyControls, updatePolicyControl } from '../api/client'
@@ -31,7 +32,7 @@ export function PolicyPacksPanel({ workspaceId: _ws }: Props) {
     catch (e) { setError(e instanceof Error ? e.message : t('policy.update_error')) }
   }
 
-  if (loading) return <div className="dashboard-loading">{t('policy.loading')}</div>
+  if (loading) return <PanelSkeleton message={t('policy.loading')} />
 
   return (
     <div className="rec-panel">

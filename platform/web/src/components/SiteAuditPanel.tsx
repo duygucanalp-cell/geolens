@@ -18,8 +18,8 @@ const SEVERITY_COLORS: Record<string, string> = {
 
 const SEVERITY_BG: Record<string, string> = {
   critical: 'var(--danger-bg)',
-  high: '#fff7ed',
-  medium: '#fefce8',
+  high: 'var(--amber-bg)',
+  medium: 'var(--amber-bg)',
   low: 'var(--success-bg)',
 }
 
@@ -102,27 +102,17 @@ export function SiteAuditPanel({ workspaceId, onStatus }: Props) {
 
   return (
     <div className="site-audit-panel">
-      <div className="reports-section-title" style={{ marginTop: '2rem', marginBottom: '0.75rem' }}>
-        <h3 style={{ margin: 0 }}>{t('siteaudit.title')}</h3>
-        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0.25rem 0 0' }}>
-          {t('siteaudit.desc')}
-        </p>
+      <div className="reports-section-title">
+        <h3>{t('siteaudit.title')}</h3>
+        <p>{t('siteaudit.desc')}</p>
       </div>
 
       {/* Brand Selector */}
-      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '1.25rem' }}>
+      <div className="site-audit-brand-row">
         <select
           value={selectedBrandId}
           onChange={e => setSelectedBrandId(e.target.value)}
-          style={{
-            flex: 1,
-            padding: '0.5rem 0.75rem',
-            border: '1px solid #e2e8f0',
-            borderRadius: '8px',
-            fontSize: '0.85rem',
-            color: 'var(--text)',
-            background: 'var(--surface)',
-          }}
+          className="site-audit-brand-select"
         >
           <option value="">{t('siteaudit.select_brand')}</option>
           {brands.map(b => (
@@ -134,7 +124,6 @@ export function SiteAuditPanel({ workspaceId, onStatus }: Props) {
           onClick={handleRunAudit}
           disabled={!selectedBrandId || auditing}
           className="reports-generate-btn"
-          style={{ whiteSpace: 'nowrap' }}
         >
           {auditing ? t('siteaudit.running') : t('siteaudit.run')}
         </button>
@@ -142,7 +131,7 @@ export function SiteAuditPanel({ workspaceId, onStatus }: Props) {
 
       {/* Loading */}
       {loading && (
-        <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+        <div className="seo-loading">
           {t('siteaudit.loading')}
         </div>
       )}
@@ -162,40 +151,27 @@ export function SiteAuditPanel({ workspaceId, onStatus }: Props) {
       {!loading && findings && (
         <>
           {/* Score & Summary */}
-          <div className="seo-data-grid" style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-            gap: '0.75rem',
-            marginBottom: '1rem'
-          }}>
+          <div className="seo-data-grid">
             <div className="seo-metric-card" style={{
               background: findings.overall_score >= 80
                 ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
                 : findings.overall_score >= 50
                   ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
                   : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-              borderRadius: '12px',
-              padding: '1rem',
-              color: '#fff',
-              textAlign: 'center'
             }}>
-              <div style={{ fontSize: '0.7rem', opacity: 0.8, marginBottom: '0.25rem' }}>{t('siteaudit.overall_score')}</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>
+              <div className="seo-metric-card-label">{t('siteaudit.overall_score')}</div>
+              <div className="seo-metric-card-value">
                 {findings.overall_score.toFixed(0)}
               </div>
             </div>
             {(['critical', 'high', 'medium', 'low'] as const).map(sev => (
               <div key={sev} className="seo-metric-card" style={{
                 background: SEVERITY_COLORS[sev],
-                borderRadius: '12px',
-                padding: '1rem',
-                color: '#fff',
-                textAlign: 'center'
               }}>
-                <div style={{ fontSize: '0.7rem', opacity: 0.8, marginBottom: '0.25rem' }}>
+                <div className="seo-metric-card-label">
                   {t(SEVERITY_KEYS[sev])}
                 </div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>
+                <div className="seo-metric-card-value">
                   {severityCount(sev)}
                 </div>
               </div>
@@ -212,34 +188,29 @@ export function SiteAuditPanel({ workspaceId, onStatus }: Props) {
               <div className="reports-action-info">
                 <h4>{t(CATEGORY_KEYS[cat])}</h4>
                 {hasIssues(cat) ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.4rem' }}>
+                  <div className="site-audit-findings">
                     {findings.catalog[cat]!.map((item, i) => (
-                      <div key={i} style={{
-                        background: SEVERITY_BG[item.severity] || 'var(--surface-2)',
-                        borderRadius: '8px',
-                        padding: '0.6rem 0.8rem',
-                        border: `1px solid ${SEVERITY_COLORS[item.severity] || 'var(--border)'}33`,
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.2rem' }}>
-                          <span style={{
-                            background: SEVERITY_COLORS[item.severity] || 'var(--text-muted)',
-                            color: '#fff',
-                            fontSize: '0.65rem',
-                            padding: '0.1rem 0.4rem',
-                            borderRadius: '4px',
-                            fontWeight: 600,
-                          }}>
+                      <div
+                        key={i}
+                        className="site-audit-finding"
+                        style={{ background: SEVERITY_BG[item.severity] || 'var(--surface-2)', border: `1px solid ${SEVERITY_COLORS[item.severity] || 'var(--border)'}33` }}
+                      >
+                        <div className="site-audit-finding-header">
+                          <span
+                            className="site-audit-severity-tag"
+                            style={{ background: SEVERITY_COLORS[item.severity] || 'var(--text-muted)' }}
+                          >
                             {SEVERITY_KEYS[item.severity] ? t(SEVERITY_KEYS[item.severity]) : item.severity}
                           </span>
-                          <span style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text)' }}>
+                          <span className="site-audit-finding-title">
                             {item.title}
                           </span>
                         </div>
-                        <p style={{ margin: '0.2rem 0', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                        <p className="site-audit-finding-detail">
                           {item.detail}
                         </p>
                         {item.recommendation && (
-                          <p style={{ margin: '0.2rem 0 0', fontSize: '0.75rem', color: '#0891b2', fontStyle: 'italic' }}>
+                          <p className="site-audit-finding-rec">
                             💡 {item.recommendation}
                           </p>
                         )}

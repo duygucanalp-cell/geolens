@@ -1,3 +1,4 @@
+import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { listAlertRules, createAlertRule, updateAlertRule, deleteAlertRule } from '../api/client'
@@ -79,7 +80,7 @@ export function AlertRulesPanel({ workspaceId, brands }: { workspaceId: string; 
 
   const brandMap = new Map(brands.map(b => [b.id, b.name]))
 
-  if (loading) return <div className="dashboard-loading">{t('alertrules.loading')}</div>
+  if (loading) return <PanelSkeleton message={t('alertrules.loading')} />
 
   return (
     <div className="rec-panel">

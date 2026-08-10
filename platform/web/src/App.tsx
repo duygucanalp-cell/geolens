@@ -245,7 +245,7 @@ export default function App() {
   function themeButton() {
     return (
       <button
-        className="lang-btn"
+        className="header-icon-btn"
         onClick={toggleTheme}
         aria-label={t('app.theme')}
         title={t('app.theme')}
@@ -383,7 +383,10 @@ export default function App() {
               {currentLang === 'tr' ? '🇬🇧 EN' : '🇹🇷 TR'}
             </button>
           </div>
-          <h1>{t('app.platform')}</h1>
+          <div className="auth-brand-row">
+            <div className="auth-brand-logo" aria-hidden="true">G</div>
+            <span className="auth-brand-name">{t('app.platform')}</span>
+          </div>
           <h2>{t('invite.title')}</h2>
           <p style={{ fontSize: '0.9rem', color: '#475569', marginBottom: '1rem' }}>
             {t('invite.subtitle')} <strong>{inviteEmail}</strong>
@@ -421,19 +424,43 @@ export default function App() {
     )
   }
 
+  // Profesyonel üst çubuk: logo + uygulama adı + kullanıcı e-postası + eylemler
+  function appHeader() {
+    return (
+      <header className="app-header">
+        <div className="app-header-brand">
+          <div className="app-header-logo" aria-hidden="true">G</div>
+          <div>
+            <div className="app-header-title">{t('app.title')}</div>
+            <div className="app-header-sub">{t('app.tagline')}</div>
+          </div>
+        </div>
+        <div className="app-header-actions">
+          {email && (
+            <div className="app-header-user" title={email}>
+              <span aria-hidden="true">👤</span>
+              <span className="app-header-user-email">{email}</span>
+            </div>
+          )}
+          {themeButton()}
+          <button
+            className="lang-btn"
+            onClick={toggleLang}
+            aria-label={t('app.switch_language')}
+            title={t('app.switch_language')}
+          >
+            {currentLang === 'tr' ? '🇬🇧 EN' : '🇹🇷 TR'}
+          </button>
+          <button className="logout-btn" onClick={handleLogout}>{t('app.logout')}</button>
+        </div>
+      </header>
+    )
+  }
+
   if (page === 'onboarding') {
     return (
       <div className="app">
-        <header className="app-header">
-          <h1>{t('app.title')}</h1>
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            {themeButton()}
-            <button className="lang-btn" onClick={toggleLang}>
-              {currentLang === 'tr' ? '🇬🇧 EN' : '🇹🇷 TR'}
-            </button>
-            <button className="logout-btn" onClick={handleLogout}>{t('app.logout')}</button>
-          </div>
-        </header>
+        {appHeader()}
         {renderSessionExtend()}
         {toast && <div className="app-toast" role="status">{toast}</div>}
         <main>
@@ -446,16 +473,7 @@ export default function App() {
   if (page === 'dashboard') {
     return (
       <div className="app">
-        <header className="app-header">
-          <h1>{t('app.title')}</h1>
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            {themeButton()}
-            <button className="lang-btn" onClick={toggleLang}>
-              {currentLang === 'tr' ? '🇬🇧 EN' : '🇹🇷 TR'}
-            </button>
-            <button className="logout-btn" onClick={handleLogout}>{t('app.logout')}</button>
-          </div>
-        </header>
+        {appHeader()}
         {renderSessionExtend()}
         {toast && <div className="app-toast" role="status">{toast}</div>}
         <main>
@@ -477,7 +495,10 @@ export default function App() {
             {currentLang === 'tr' ? '🇬🇧 EN' : '🇹🇷 TR'}
           </button>
         </div>
-        <h1>{t('app.platform')}</h1>
+        <div className="auth-brand-row">
+          <div className="auth-brand-logo" aria-hidden="true">G</div>
+          <span className="auth-brand-name">{t('app.platform')}</span>
+        </div>
         <h2>{isRegister ? t('auth.register') : t('auth.login')}</h2>
         <form onSubmit={handleAuth}>
           <input

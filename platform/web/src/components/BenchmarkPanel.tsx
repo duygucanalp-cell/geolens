@@ -1,3 +1,4 @@
+import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useMemo, useState } from 'react'
 import { listBenchmarks, runBenchmark, compareBenchmarks } from '../api/client'
@@ -91,7 +92,7 @@ export function BenchmarkPanel({ workspaceId: _ws }: Props) {
     return sortAsc ? ' ▲' : ' ▼'
   }
 
-  if (loading) return <div className="dashboard-loading">{t('benchmark.loading')}</div>
+  if (loading) return <PanelSkeleton message={t('benchmark.loading')} />
   if (error) return <div className="dashboard-error"><p>{error}</p><button onClick={loadData}>{t('common.retry')}</button></div>
 
   return (
@@ -146,7 +147,7 @@ export function BenchmarkPanel({ workspaceId: _ws }: Props) {
           </h4>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
             <thead>
-              <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
+              <tr style={{ borderBottom: '2px solid var(--border)', textAlign: 'left' }}>
                 <th style={{ padding: '0.5rem' }}>{t('benchmark.col_metrics')}</th>
                 {comparison.models.map((m) => (
                   <th key={m} style={{ padding: '0.5rem', textAlign: 'right' }}>{m}</th>
@@ -155,7 +156,7 @@ export function BenchmarkPanel({ workspaceId: _ws }: Props) {
             </thead>
             <tbody>
               {comparison.metrics.map((metric) => (
-                <tr key={metric} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                <tr key={metric} style={{ borderBottom: '1px solid var(--border)' }}>
                   <td style={{ padding: '0.5rem', fontWeight: 600 }}>{metric}</td>
                   {comparison.models.map((m) => {
                     const val = comparison.results[m]?.[metric]
@@ -180,7 +181,7 @@ export function BenchmarkPanel({ workspaceId: _ws }: Props) {
           </h4>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
             <thead>
-              <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
+              <tr style={{ borderBottom: '2px solid var(--border)', textAlign: 'left' }}>
                 <th
                   style={{ padding: '0.5rem', cursor: 'pointer' }}
                   onClick={() => toggleSort('model_name')}
@@ -210,7 +211,7 @@ export function BenchmarkPanel({ workspaceId: _ws }: Props) {
             </thead>
             <tbody>
               {sortedBenchmarks.map((b) => (
-                <tr key={b.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                <tr key={b.id} style={{ borderBottom: '1px solid var(--border)' }}>
                   <td style={{ padding: '0.5rem', fontWeight: 600 }}>{b.model_name}</td>
                   <td style={{ padding: '0.5rem', color: 'var(--text-muted)' }}>{b.benchmark_name}</td>
                   <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 600 }}>

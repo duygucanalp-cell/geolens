@@ -1,3 +1,4 @@
+import { PanelSkeleton } from './PanelSkeleton'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { listPromptAudits, runPromptAudit, getPromptAudit } from '../api/client'
@@ -58,7 +59,7 @@ export function PromptAuditPanel({ workspaceId: _ws }: Props) {
     safe: '#22c55e', suspicious: '#eab308', risky: '#f97316', critical: '#ef4444',
   }
 
-  if (loading) return <div className="dashboard-loading">{t('promptaudit.loading')}</div>
+  if (loading) return <PanelSkeleton message={t('promptaudit.loading')} />
 
   return (
     <div className="rec-panel">
@@ -115,7 +116,7 @@ export function PromptAuditPanel({ workspaceId: _ws }: Props) {
                 </div>
                 <button className="rec-dismiss-btn" onClick={() => { setDetail(null); setSelected(null) }}>✕</button>
               </div>
-              <p style={{ marginTop: '0.75rem', fontSize: '0.9rem', background: 'var(--surface)', padding: '0.5rem', borderRadius: '6px', border: '1px solid #e2e8f0', whiteSpace: 'pre-wrap' }}>
+              <p style={{ marginTop: '0.75rem', fontSize: '0.9rem', background: 'var(--surface)', padding: '0.5rem', borderRadius: '6px', border: '1px solid var(--border)', whiteSpace: 'pre-wrap' }}>
                 {detail.prompt_text}
               </p>
               <div className="rec-meta" style={{ marginTop: '0.5rem' }}>

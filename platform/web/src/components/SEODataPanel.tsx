@@ -85,11 +85,9 @@ export function SEODataPanel({ workspaceId, onStatus }: Props) {
   return (
     <>
       {/* SEO Entegrasyonları (FR-B8) — Canlı bağlantı yönetimi */}
-      <div className="reports-section-title" style={{ marginTop: '2rem', marginBottom: '0.75rem' }}>
-        <h3 style={{ margin: 0 }}>{t('seo.title')}</h3>
-        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0.25rem 0 0' }}>
-          {t('seo.desc')}
-        </p>
+      <div className="reports-section-title">
+        <h3>{t('seo.title')}</h3>
+        <p>{t('seo.desc')}</p>
       </div>
 
       <div className="reports-actions">
@@ -106,8 +104,7 @@ export function SEODataPanel({ workspaceId, onStatus }: Props) {
           </div>
           {seoConns.find(c => c.platform === 'search_console') ? (
             <button
-              className="reports-generate-btn"
-              style={{ background: 'var(--danger-bg)', color: '#dc2626', borderColor: 'var(--danger-soft)' }}
+              className="reports-generate-btn seo-disconnect-btn"
               onClick={async () => {
                 try {
                   await disconnectSEO(workspaceId, 'search_console')
@@ -155,8 +152,7 @@ export function SEODataPanel({ workspaceId, onStatus }: Props) {
           </div>
           {seoConns.find(c => c.platform === 'ga4') ? (
             <button
-              className="reports-generate-btn"
-              style={{ background: 'var(--danger-bg)', color: '#dc2626', borderColor: 'var(--danger-soft)' }}
+              className="reports-generate-btn seo-disconnect-btn"
               onClick={async () => {
                 try {
                   await disconnectSEO(workspaceId, 'ga4')
@@ -194,119 +190,62 @@ export function SEODataPanel({ workspaceId, onStatus }: Props) {
 
       {/* GA4 Trafik Verileri */}
       {seoConns.find(c => c.platform === 'ga4') && (
-        <div className="reports-section-title" style={{ marginTop: '1.5rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <h4 style={{ margin: 0, fontSize: '0.95rem', flex: 1 }}>{t('seo.ga4_data_title')}</h4>
+        <div className="reports-section-title seo-section-row">
+          <h4>{t('seo.ga4_data_title')}</h4>
           <button
             onClick={loadGA4Data}
             disabled={ga4DataLoading}
-            style={{
-              background: 'none',
-              border: '1px solid #e2e8f0',
-              borderRadius: '6px',
-              padding: '0.25rem 0.6rem',
-              fontSize: '0.75rem',
-              cursor: 'pointer',
-              color: 'var(--text-muted)',
-              transition: 'all 0.15s',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.25rem'
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-hover)'; e.currentTarget.style.color = 'var(--text)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--text-muted)' }}
+            className="seo-refresh-btn"
           >
-            <span style={{ display: 'inline-block', transition: 'transform 0.3s', transform: ga4DataLoading ? 'rotate(180deg)' : 'none' }}>🔄</span>
+            <span className={`seo-refresh-icon ${ga4DataLoading ? 'spinning' : ''}`}>🔄</span>
             {ga4DataLoading ? t('common.loading') : t('common.refresh')}
           </button>
         </div>
       )}
       {ga4Data.length > 0 && (
-        <div className="seo-data-grid" style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-          gap: '0.75rem',
-          marginBottom: '1rem'
-        }}>
-          <div className="seo-metric-card" style={{
-            background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-            borderRadius: '12px',
-            padding: '1rem',
-            color: '#fff',
-            textAlign: 'center'
-          }}>
-            <div style={{ fontSize: '0.7rem', opacity: 0.8, marginBottom: '0.25rem' }}>{t('seo.page_views')}</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>
+        <div className="seo-data-grid">
+          <div className="seo-metric-card" style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' }}>
+            <div className="seo-metric-card-label">{t('seo.page_views')}</div>
+            <div className="seo-metric-card-value">
               {ga4Data[0].page_views.toLocaleString()}
             </div>
           </div>
-          <div className="seo-metric-card" style={{
-            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-            borderRadius: '12px',
-            padding: '1rem',
-            color: '#fff',
-            textAlign: 'center'
-          }}>
-            <div style={{ fontSize: '0.7rem', opacity: 0.8, marginBottom: '0.25rem' }}>{t('seo.sessions')}</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>
+          <div className="seo-metric-card" style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}>
+            <div className="seo-metric-card-label">{t('seo.sessions')}</div>
+            <div className="seo-metric-card-value">
               {ga4Data[0].sessions.toLocaleString()}
             </div>
           </div>
-          <div className="seo-metric-card" style={{
-            background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-            borderRadius: '12px',
-            padding: '1rem',
-            color: '#fff',
-            textAlign: 'center'
-          }}>
-            <div style={{ fontSize: '0.7rem', opacity: 0.8, marginBottom: '0.25rem' }}>{t('seo.bounce_rate')}</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>
+          <div className="seo-metric-card" style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' }}>
+            <div className="seo-metric-card-label">{t('seo.bounce_rate')}</div>
+            <div className="seo-metric-card-value">
               {(ga4Data[0].bounce_rate * 100).toFixed(1)}%
             </div>
           </div>
-          <div className="seo-metric-card" style={{
-            background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-            borderRadius: '12px',
-            padding: '1rem',
-            color: '#fff',
-            textAlign: 'center'
-          }}>
-            <div style={{ fontSize: '0.7rem', opacity: 0.8, marginBottom: '0.25rem' }}>{t('seo.avg_session_duration')}</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>
+          <div className="seo-metric-card" style={{ background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)' }}>
+            <div className="seo-metric-card-label">{t('seo.avg_session_duration')}</div>
+            <div className="seo-metric-card-value">
               {Math.round(ga4Data[0].avg_session_duration)}s
             </div>
           </div>
         </div>
       )}
       {ga4DataLoading && (
-        <div style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+        <div className="seo-loading">
           {t('seo.ga4_loading')}
         </div>
       )}
 
       {/* Search Console Verileri */}
       {seoConns.find(c => c.platform === 'search_console') && (
-        <div className="reports-section-title" style={{ marginTop: '1.5rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <h4 style={{ margin: 0, fontSize: '0.95rem', flex: 1 }}>{t('seo.sc_title')}</h4>
+        <div className="reports-section-title seo-section-row">
+          <h4>{t('seo.sc_title')}</h4>
           <button
             onClick={loadSCData}
             disabled={scDataLoading}
-            style={{
-              background: 'none',
-              border: '1px solid #e2e8f0',
-              borderRadius: '6px',
-              padding: '0.25rem 0.6rem',
-              fontSize: '0.75rem',
-              cursor: 'pointer',
-              color: 'var(--text-muted)',
-              transition: 'all 0.15s',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.25rem'
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-hover)'; e.currentTarget.style.color = 'var(--text)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--text-muted)' }}
+            className="seo-refresh-btn"
           >
-            <span style={{ display: 'inline-block', transition: 'transform 0.3s', transform: scDataLoading ? 'rotate(180deg)' : 'none' }}>🔄</span>
+            <span className={`seo-refresh-icon ${scDataLoading ? 'spinning' : ''}`}>🔄</span>
             {scDataLoading ? t('common.loading') : t('common.refresh')}
           </button>
         </div>
@@ -320,109 +259,64 @@ export function SEODataPanel({ workspaceId, onStatus }: Props) {
 
         return (
           <>
-            <div className="seo-data-grid" style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-              gap: '0.75rem',
-              marginBottom: '1rem'
-            }}>
-              <div className="seo-metric-card" style={{
-                background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
-                borderRadius: '12px',
-                padding: '1rem',
-                color: '#fff',
-                textAlign: 'center'
-              }}>
-                <div style={{ fontSize: '0.7rem', opacity: 0.8, marginBottom: '0.25rem' }}>{t('seo.total_clicks')}</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>
+            <div className="seo-data-grid">
+              <div className="seo-metric-card" style={{ background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)' }}>
+                <div className="seo-metric-card-label">{t('seo.total_clicks')}</div>
+                <div className="seo-metric-card-value">
                   {totalClicks.toLocaleString()}
                 </div>
               </div>
-              <div className="seo-metric-card" style={{
-                background: 'linear-gradient(135deg, #14b8a6 0%, #0d9488 100%)',
-                borderRadius: '12px',
-                padding: '1rem',
-                color: '#fff',
-                textAlign: 'center'
-              }}>
-                <div style={{ fontSize: '0.7rem', opacity: 0.8, marginBottom: '0.25rem' }}>{t('seo.total_impressions')}</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>
+              <div className="seo-metric-card" style={{ background: 'linear-gradient(135deg, #14b8a6 0%, #0d9488 100%)' }}>
+                <div className="seo-metric-card-label">{t('seo.total_impressions')}</div>
+                <div className="seo-metric-card-value">
                   {totalImpressions.toLocaleString()}
                 </div>
               </div>
-              <div className="seo-metric-card" style={{
-                background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
-                borderRadius: '12px',
-                padding: '1rem',
-                color: '#fff',
-                textAlign: 'center'
-              }}>
-                <div style={{ fontSize: '0.7rem', opacity: 0.8, marginBottom: '0.25rem' }}>{t('seo.avg_ctr')}</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>
+              <div className="seo-metric-card" style={{ background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)' }}>
+                <div className="seo-metric-card-label">{t('seo.avg_ctr')}</div>
+                <div className="seo-metric-card-value">
                   {avgCTR.toFixed(2)}%
                 </div>
               </div>
-              <div className="seo-metric-card" style={{
-                background: 'linear-gradient(135deg, #ec4899 0%, #db2777 100%)',
-                borderRadius: '12px',
-                padding: '1rem',
-                color: '#fff',
-                textAlign: 'center'
-              }}>
-                <div style={{ fontSize: '0.7rem', opacity: 0.8, marginBottom: '0.25rem' }}>{t('seo.avg_position')}</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>
+              <div className="seo-metric-card" style={{ background: 'linear-gradient(135deg, #ec4899 0%, #db2777 100%)' }}>
+                <div className="seo-metric-card-label">{t('seo.avg_position')}</div>
+                <div className="seo-metric-card-value">
                   {avgPos.toFixed(1)}
                 </div>
               </div>
             </div>
 
             {/* En çok tıklanan sorgular */}
-            <div style={{
-              background: 'var(--surface)',
-              borderRadius: '12px',
-              border: '1px solid #e2e8f0',
-              overflow: 'hidden',
-              marginBottom: '1rem'
-            }}>
-              <div style={{
-                padding: '0.6rem 1rem',
-                fontSize: '0.8rem',
-                fontWeight: 600,
-                color: 'var(--text-secondary)',
-                borderBottom: '1px solid #e2e8f0',
-                background: 'var(--surface-2)'
-              }}>
+            <div className="seo-table-card">
+              <div className="seo-table-header">
                 {t('seo.top_queries')}
               </div>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+              <table className="seo-table">
                 <thead>
-                  <tr style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}>
-                    <th style={{ padding: '0.5rem 1rem', textAlign: 'left', fontWeight: 500 }}>{t('seo.table_query')}</th>
-                    <th style={{ padding: '0.5rem 0.75rem', textAlign: 'right', fontWeight: 500 }}>{t('seo.table_clicks')}</th>
-                    <th style={{ padding: '0.5rem 0.75rem', textAlign: 'right', fontWeight: 500 }}>{t('seo.table_impressions')}</th>
-                    <th style={{ padding: '0.5rem 0.75rem', textAlign: 'right', fontWeight: 500 }}>{t('seo.table_ctr')}</th>
-                    <th style={{ padding: '0.5rem 1rem', textAlign: 'right', fontWeight: 500 }}>{t('seo.table_position')}</th>
+                  <tr>
+                    <th>{t('seo.table_query')}</th>
+                    <th className="num">{t('seo.table_clicks')}</th>
+                    <th className="num">{t('seo.table_impressions')}</th>
+                    <th className="num">{t('seo.table_ctr')}</th>
+                    <th className="num">{t('seo.table_position')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {topQueries.map((row, i) => (
-                    <tr key={i} style={{
-                      borderTop: '1px solid #f1f5f9',
-                      transition: 'background 0.15s'
-                    }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-2)')} onMouseLeave={e => (e.currentTarget.style.background = '')}>
-                      <td style={{ padding: '0.5rem 1rem', color: 'var(--text)', maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <tr key={i}>
+                      <td className="query">
                         {row.query || t('seo.empty_query')}
                       </td>
-                      <td style={{ padding: '0.5rem 0.75rem', textAlign: 'right', fontWeight: 600, color: '#0ea5e9' }}>
+                      <td className="num clicks">
                         {row.clicks.toLocaleString()}
                       </td>
-                      <td style={{ padding: '0.5rem 0.75rem', textAlign: 'right', color: 'var(--text-secondary)' }}>
+                      <td className="num">
                         {row.impressions.toLocaleString()}
                       </td>
-                      <td style={{ padding: '0.5rem 0.75rem', textAlign: 'right', color: 'var(--text-secondary)' }}>
+                      <td className="num">
                         {(row.ctr * 100).toFixed(1)}%
                       </td>
-                      <td style={{ padding: '0.5rem 1rem', textAlign: 'right', color: 'var(--text-secondary)' }}>
+                      <td className="num">
                         {row.avg_position.toFixed(1)}
                       </td>
                     </tr>
@@ -434,7 +328,7 @@ export function SEODataPanel({ workspaceId, onStatus }: Props) {
         )
       })()}
       {scDataLoading && (
-        <div style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+        <div className="seo-loading">
           {t('seo.sc_loading')}
         </div>
       )}
