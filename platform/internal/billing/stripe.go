@@ -21,6 +21,51 @@ type StripeClient struct {
 	APIKey        string
 	WebhookSecret string
 	httpClient    *http.Client
+
+	// priceIDs, tier+currency → Stripe Price ID eşlemesidir.
+	// HT2 globalleşme (multi-currency): farklı para birimleri için ayrı price ID'leri atanır.
+	// Boş bırakılırsa varsayılan (usd) map kullanılır. Env'den doldurulabilir.
+	priceIDs map[string]string
+}
+
+// currencyPriceIDs returns the tier→priceId lookup for a given currency.
+// Desteklenen para birimleri: usd, eur, try (TR), gbp (HT2 multi-currency).
+// Bilinmeyen currency için usd'e düşer.
+func (s *StripeClient) currencyPriceIDs(currency string) map[string]string {
+	if s.priceIDs != nil {
+		return s.priceIDs
+	}
+	switch currency {
+	case "eur":
+		return map[string]string{
+			"pro":        "price_pro_monthly_eur",
+			"business":   "price_business_monthly_eur",
+			"enterprise": "price_enterprise_monthly_eur",
+		}
+	case "try":
+		return map[string]string{
+			"pro":        "price_pro_monthly_try",
+			"business":   "price_business_monthly_try",
+			"enterprise": "price_enterprise_monthly_try",
+		}
+	case "gbp":
+		return map[string]string{
+			"pro":        "price_pro_monthly_gbp",
+			"business":   "price_business_monthly_gbp",
+			"enterprise": "price_enterprise_monthly_gbp",
+		}
+	default:
+		return map[string]string{
+			"pro":        "price_pro_monthly",
+			"business":   "price_business_monthly",
+			"enterprise": "price_enterprise_monthly",
+		}
+	}
+}
+
+// SetPriceIDs overrides the tier/currency price mapping (env-driven, HT2 multi-currency).
+func (s *StripeClient) SetPriceIDs(priceIDs map[string]string) {
+	s.priceIDs = priceIDs
 }
 
 type CheckoutSession struct {
@@ -36,12 +81,8 @@ func NewStripeClient(apiKey, webhookSecret string) *StripeClient {
 	}
 }
 
-func (s *StripeClient) CreateCheckout(tenantID, tier, successURL, cancelURL string) (*CheckoutSession, error) {
-	priceMap := map[string]string{
-		"pro":        "price_pro_monthly",
-		"business":   "price_business_monthly",
-		"enterprise": "price_enterprise_monthly",
-	}
+func (s *StripeClient) CreateCheckout(ctx context.Context, tenantID, tier, currency, successURL, cancelURL string) (*CheckoutSession, error) {
+	priceMap := s.currencyPriceIDs(currency)
 	priceID, ok := priceMap[tier]
 	if !ok {
 		return nil, fmt.Errorf("bilinmeyen tier: %s", tier)
@@ -66,6 +107,7 @@ func (s *StripeClient) CreateCheckout(tenantID, tier, successURL, cancelURL stri
 		"metadata": map[string]string{
 			"tenant_id": tenantID,
 			"tier":      tier,
+			"currency":  currency,
 		},
 	}
 	body, err := json.Marshal(params)
@@ -73,7 +115,7 @@ func (s *StripeClient) CreateCheckout(tenantID, tier, successURL, cancelURL stri
 		return nil, fmt.Errorf("param marshal: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(context.Background(), "POST", "https://api.stripe.com/v1/checkout/sessions", bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, "POST", "https://api.stripe.com/v1/checkout/sessions", bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("stripe istek: %w", err)
 	}
@@ -136,7 +178,7 @@ type Invoice struct {
 // CreatePortalSession creates a Stripe billing portal session for the tenant's subscription.
 // Fatura görüntüleme, kredi kartı yönetimi, paket yükseltme/düşürme ve iptal işlemleri
 // Stripe'in kendi yönetim arayüzü üzerinden yapılır (FR-A6 self-serve UI).
-func (s *StripeClient) CreatePortalSession(tenantID, returnURL string) (string, error) {
+func (s *StripeClient) CreatePortalSession(ctx context.Context, tenantID, returnURL string) (string, error) {
 	if s.APIKey == "" || s.APIKey == "mock" {
 		slog.Warn("stripe mock modda çalışıyor — portal session oluşturulmaz")
 		return returnURL, nil
@@ -147,7 +189,7 @@ func (s *StripeClient) CreatePortalSession(tenantID, returnURL string) (string, 
 	// Metadata üzerinden eşleme: checkout sırasında client_reference_id=tenantID kullanılır.
 	// Gerçek customer ID, ilk ödeme sonrası webhook'ta yakalanır; burada customer listesi aranır.
 	body := "limit=100"
-	req, err := http.NewRequestWithContext(context.Background(), "GET",
+	req, err := http.NewRequestWithContext(ctx, "GET",
 		"https://api.stripe.com/v1/customers?"+body, nil)
 	if err != nil {
 		return "", fmt.Errorf("stripe customer istek: %w", err)
@@ -198,7 +240,7 @@ func (s *StripeClient) CreatePortalSession(tenantID, returnURL string) (string, 
 		return "", fmt.Errorf("portal param marshal: %w", err)
 	}
 
-	req, err = http.NewRequestWithContext(context.Background(), "POST",
+	req, err = http.NewRequestWithContext(ctx, "POST",
 		"https://api.stripe.com/v1/billing_portal/sessions", bytes.NewReader(portalParams))
 	if err != nil {
 		return "", fmt.Errorf("stripe portal istek: %w", err)

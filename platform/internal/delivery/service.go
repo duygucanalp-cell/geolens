@@ -24,11 +24,20 @@ func NewService(cfg EmailConfig, pool *db.Pool) Service {
 }
 
 // SendNotification sends a single notification.
-// For now, only email channel is supported.
+// Desteklenen kanallar: email, webhook (Slack/Teams/Discord/PagerDuty/custom). In-app henüz pasif.
 func (s *service) SendNotification(notif Notification) error {
 	switch notif.Channel {
 	case ChannelEmail:
 		return s.sendEmailNotification(&notif)
+	case ChannelWebhook:
+		if err := s.SendWebhook(notif); err != nil {
+			notif.Status = DeliveryFailed
+			return err
+		}
+		now := time.Now()
+		notif.Status = DeliverySent
+		notif.SentAt = &now
+		return nil
 	case ChannelInApp:
 		slog.Debug("in-app notification (not yet implemented)", "id", notif.ID)
 		return nil
@@ -322,13 +331,15 @@ func (s *service) GetSettings(ctx context.Context, workspaceID, tenantID string)
 
 	err := s.pool.QueryRow(ctx, `
 		SELECT email_address, digest_enabled, digest_day, digest_time,
-		       digest_format, notify_on_drop, drop_threshold
+		       digest_format, notify_on_drop, drop_threshold,
+		       webhook_url, webhook_kind, webhook_active
 		FROM delivery.notification_settings
 		WHERE workspace_id = $1 AND tenant_id = $2
 	`, workspaceID, tenantID).Scan(
 		&settings.EmailAddress, &settings.DigestEnabled, &settings.DigestDay,
 		&settings.DigestTime, &settings.DigestFormat,
 		&settings.NotifyOnDrop, &settings.DropThreshold,
+		&settings.WebhookURL, &settings.WebhookKind, &settings.WebhookActive,
 	)
 
 	if err != nil {
@@ -356,8 +367,9 @@ func (s *service) UpdateSettings(ctx context.Context, settings *NotificationSett
 	_, err := s.pool.Exec(ctx, `
 		INSERT INTO delivery.notification_settings
 			(workspace_id, tenant_id, email_address, digest_enabled, digest_day,
-			 digest_time, digest_format, notify_on_drop, drop_threshold, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, now())
+			 digest_time, digest_format, notify_on_drop, drop_threshold,
+			 webhook_url, webhook_kind, webhook_active, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, now())
 		ON CONFLICT (workspace_id, tenant_id) DO UPDATE SET
 			email_address = EXCLUDED.email_address,
 			digest_enabled = EXCLUDED.digest_enabled,
@@ -366,10 +378,14 @@ func (s *service) UpdateSettings(ctx context.Context, settings *NotificationSett
 			digest_format = EXCLUDED.digest_format,
 			notify_on_drop = EXCLUDED.notify_on_drop,
 			drop_threshold = EXCLUDED.drop_threshold,
+			webhook_url = EXCLUDED.webhook_url,
+			webhook_kind = EXCLUDED.webhook_kind,
+			webhook_active = EXCLUDED.webhook_active,
 			updated_at = now()
 	`, settings.WorkspaceID, tenantID, settings.EmailAddress, settings.DigestEnabled,
 		settings.DigestDay, settings.DigestTime, settings.DigestFormat,
-		settings.NotifyOnDrop, settings.DropThreshold)
+		settings.NotifyOnDrop, settings.DropThreshold,
+		settings.WebhookURL, settings.WebhookKind, settings.WebhookActive)
 
 	if err != nil {
 		return fmt.Errorf("delivery: ayarlar kaydedilemedi: %w", err)

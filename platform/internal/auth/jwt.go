@@ -92,15 +92,15 @@ func InjectContext(ctx context.Context, claims *Claims) context.Context {
 
 // TokenValidator returns an httpmw.TokenValidator function that wraps JWTService.ValidateToken
 // with Redis blacklist checking. If rdb is nil, blacklist check is skipped.
-func (s *JWTService) TokenValidator(rdb *redis.Client) func(string) (string, string, string, error) {
-	return func(tokenStr string) (string, string, string, error) {
+func (s *JWTService) TokenValidator(rdb *redis.Client) func(context.Context, string) (string, string, string, error) {
+	return func(ctx context.Context, tokenStr string) (string, string, string, error) {
 		claims, err := s.ValidateToken(tokenStr)
 		if err != nil {
 			return "", "", "", err
 		}
 
 		if rdb != nil && claims.ID != "" {
-			exists, err := rdb.Exists(context.Background(), blacklistPrefix+claims.ID).Result()
+			exists, err := rdb.Exists(ctx, blacklistPrefix+claims.ID).Result()
 			if err == nil && exists > 0 {
 				return "", "", "", fmt.Errorf("token iptal edilmiş")
 			}
@@ -112,7 +112,7 @@ func (s *JWTService) TokenValidator(rdb *redis.Client) func(string) (string, str
 
 // BlacklistToken adds the given JWT token to the Redis blacklist for its remaining lifetime.
 // The blacklist key is token:blacklist:{jti} and auto-expires when the token would have expired.
-func (s *JWTService) BlacklistToken(tokenStr string, rdb *redis.Client) error {
+func (s *JWTService) BlacklistToken(ctx context.Context, tokenStr string, rdb *redis.Client) error {
 	if rdb == nil {
 		return nil
 	}
@@ -127,5 +127,5 @@ func (s *JWTService) BlacklistToken(tokenStr string, rdb *redis.Client) error {
 		return nil
 	}
 
-	return rdb.Set(context.Background(), blacklistPrefix+claims.ID, "1", remaining).Err()
+	return rdb.Set(ctx, blacklistPrefix+claims.ID, "1", remaining).Err()
 }

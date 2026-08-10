@@ -98,7 +98,8 @@ var roleWeights = map[string]int{
 
 // TokenValidator validates a JWT token string and returns (userID, tenantID, role, error).
 // Bu callback yaklaşımı, httpmw'nin auth paketine bağımlı olmasını engeller (import cycle).
-type TokenValidator func(tokenStr string) (userID, tenantID, role string, err error)
+// ctx: isteğe ait context; Redis gibi dış çağrılar bu context ile yürütülür.
+type TokenValidator func(ctx context.Context, tokenStr string) (userID, tenantID, role string, err error)
 
 // Authenticate validates the JWT token from the Authorization header.
 // Public routes (health, auth register/login) are skipped via the router grouping.
@@ -116,7 +117,7 @@ func Authenticate(validate TokenValidator) func(http.Handler) http.Handler {
 				tokenStr = authHeader[7:]
 			}
 
-			userID, tenantID, role, err := validate(tokenStr)
+			userID, tenantID, role, err := validate(r.Context(), tokenStr)
 			if err != nil {
 				http.Error(w, `{"error":"invalid_token"}`, http.StatusUnauthorized)
 				return

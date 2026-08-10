@@ -5,9 +5,10 @@ import type { BenchmarkContext } from '../types'
 
 interface Props {
   workspaceId: string
+  sector?: string
 }
 
-export function BenchmarkWidget({ workspaceId }: Props) {
+export function BenchmarkWidget({ workspaceId, sector }: Props) {
   const { t } = useTranslation()
   const [data, setData] = useState<BenchmarkContext | null>(null)
   const [loading, setLoading] = useState(true)
@@ -16,13 +17,14 @@ export function BenchmarkWidget({ workspaceId }: Props) {
 
   useEffect(() => {
     loadData()
-  }, [workspaceId])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspaceId, sector])
 
   async function loadData() {
     try {
       setLoading(true)
       setError(null)
-      const ctx = await getBenchmarkContext(workspaceId)
+      const ctx = await getBenchmarkContext(workspaceId, sector)
       setData(ctx)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sektör verisi alınamadı')

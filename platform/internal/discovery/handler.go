@@ -79,10 +79,12 @@ func (h *Handler) runScan(ctx context.Context, cancel context.CancelFunc, scanID
 		select {
 		case <-ctx.Done():
 			slog.Warn("shadow ai taraması iptal edildi", "scan_id", scanID)
-			_, _ = h.pool.Exec(ctx, `
+			if _, err := h.pool.Exec(ctx, `
 				UPDATE discovery.scans SET status = 'failed', error_message = 'timeout', completed_at = now()
 				WHERE id = $1
-			`, scanID)
+			`, scanID); err != nil {
+				slog.Warn("scan iptal durumu güncellenemedi", "scan_id", scanID, "error", err)
+			}
 			return
 		default:
 		}

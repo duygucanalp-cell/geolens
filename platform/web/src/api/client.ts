@@ -786,8 +786,10 @@ export function getComplianceEvidence(): Promise<{ evidence: { id: string; frame
 }
 
 // Benchmark Context (FR-D5: DP korumalı sektör kıyası)
-export function getBenchmarkContext(ws: string): Promise<import('../types').BenchmarkContext> {
-  return fetchJSON(`${BASE}/workspaces/${ws}/benchmark/context`)
+// sector: isteğe bağlı sektör filtreleri (FR-D5 kırılımı)
+export function getBenchmarkContext(ws: string, sector?: string): Promise<import('../types').BenchmarkContext> {
+  const q = sector ? `?sector=${encodeURIComponent(sector)}` : ''
+  return fetchJSON(`${BASE}/workspaces/${ws}/benchmark/context${q}`)
 }
 
 // Billing

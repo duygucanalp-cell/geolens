@@ -4,8 +4,10 @@ package privacy
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -72,7 +74,133 @@ func (h *Handler) userRoleFromDB(ctx context.Context) string {
 	return role
 }
 
-// RequestDeletion handles POST /v1/account/deletion
+// ExportData handles GET /v1/account/data
+// GDPR veri taşınabilirliği: kiracıya ait kişisel verileri makine-okunur (JSON) olarak dışa aktarır.
+// KVKK sağ unutulma (RequestDeletion) ile birlikte GDPR veri taşınabilirliği hakkını kapatır.
+func (h *Handler) ExportData(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	tenantID := httpmw.GetTenantID(ctx)
+	if tenantID == "" {
+		httputil.WriteError(w, http.StatusUnauthorized, "kimlik doğrulama gerekli")
+		return
+	}
+
+	payload := map[string]interface{}{
+		"tenant_id":          tenantID,
+		"exported_at":        time.Now().UTC().Format(time.RFC3339),
+		"format_version":     1,
+		"users":              []interface{}{},
+		"memberships":        []interface{}{},
+		"brands":             []interface{}{},
+		"prompt_sets":        []interface{}{},
+		"measurement_scores": []interface{}{},
+	}
+
+	// Kullanıcılar (kişisel veri)
+	if rows, err := h.pool.Query(ctx, `
+		SELECT u.id, u.email, u.full_name, u.created_at
+		FROM identity.users u
+		JOIN identity.user_tenants ut ON ut.user_id = u.id
+		WHERE ut.tenant_id = $1
+		ORDER BY u.created_at
+	`, tenantID); err == nil {
+		for rows.Next() {
+			var id, email, name string
+			var createdAt interface{}
+			if err := rows.Scan(&id, &email, &name, &createdAt); err == nil {
+				payload["users"] = append(payload["users"].([]interface{}), map[string]interface{}{
+					"id": id, "email": email, "full_name": name, "created_at": fmt.Sprint(createdAt),
+				})
+			}
+		}
+		rows.Close()
+	}
+
+	// Üyelikler
+	if rows, err := h.pool.Query(ctx, `
+		SELECT user_id, role, created_at FROM config.memberships
+		WHERE tenant_id = $1 ORDER BY created_at
+	`, tenantID); err == nil {
+		for rows.Next() {
+			var userID, role string
+			var createdAt interface{}
+			if err := rows.Scan(&userID, &role, &createdAt); err == nil {
+				payload["memberships"] = append(payload["memberships"].([]interface{}), map[string]interface{}{
+					"user_id": userID, "role": role, "created_at": fmt.Sprint(createdAt),
+				})
+			}
+		}
+		rows.Close()
+	}
+
+	// Markalar
+	if rows, err := h.pool.Query(ctx, `
+		SELECT id, workspace_id, name, website_url, created_at
+		FROM config.brands WHERE tenant_id = $1 AND is_active = true
+		ORDER BY created_at
+	`, tenantID); err == nil {
+		for rows.Next() {
+			var id, wsID, name, url string
+			var createdAt interface{}
+			if err := rows.Scan(&id, &wsID, &name, &url, &createdAt); err == nil {
+				payload["brands"] = append(payload["brands"].([]interface{}), map[string]interface{}{
+					"id": id, "workspace_id": wsID, "name": name, "website_url": url, "created_at": fmt.Sprint(createdAt),
+				})
+			}
+		}
+		rows.Close()
+	}
+
+	// Prompt setleri
+	if rows, err := h.pool.Query(ctx, `
+		SELECT id, name, category, created_at FROM config.prompt_sets
+		WHERE tenant_id = $1 ORDER BY created_at
+	`, tenantID); err == nil {
+		for rows.Next() {
+			var id, name, category string
+			var createdAt interface{}
+			if err := rows.Scan(&id, &name, &category, &createdAt); err == nil {
+				payload["prompt_sets"] = append(payload["prompt_sets"].([]interface{}), map[string]interface{}{
+					"id": id, "name": name, "category": category, "created_at": fmt.Sprint(createdAt),
+				})
+			}
+		}
+		rows.Close()
+	}
+
+	// Ölçüm skorları
+	if rows, err := h.pool.Query(ctx, `
+		SELECT brand_id, workspace_id, value, engine_name, freshness_at
+		FROM measure.scores WHERE tenant_id = $1
+		ORDER BY freshness_at DESC LIMIT 1000
+	`, tenantID); err == nil {
+		for rows.Next() {
+			var brandID, wsID, engineName string
+			var value float64
+			var freshnessAt interface{}
+			if err := rows.Scan(&brandID, &wsID, &value, &engineName, &freshnessAt); err == nil {
+				payload["measurement_scores"] = append(payload["measurement_scores"].([]interface{}), map[string]interface{}{
+					"brand_id": brandID, "workspace_id": wsID, "value": value,
+					"engine_name": engineName, "freshness_at": fmt.Sprint(freshnessAt),
+				})
+			}
+		}
+		rows.Close()
+	}
+
+	// GDPR audit kaydı: veri dışa aktarımı loglanır
+	if _, err := h.pool.Exec(ctx, `
+		INSERT INTO governance.audit_log (id, tenant_id, user_id, event_type, resource_type, resource_id, action, metadata)
+		VALUES (gen_random_uuid()::text, $1, $2, 'privacy.data_exported', 'tenant', $3, 'export',
+		        jsonb_build_object('format', 'json'))
+	`, tenantID, httpmw.GetUserID(ctx), tenantID); err != nil {
+		slog.Warn("GDPR dışa aktarım audit log kaydı başarısız", "error", err)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Disposition", `attachment; filename="geolens-data-export.json"`)
+	httputil.WriteJSON(w, http.StatusOK, payload)
+}
 // KVKK kapsamında kullanıcının veri silme talebi.
 // Admin: doğrudan anonimleştirme yapar.
 // Editor/Viewer: talep oluşturur (admin onayı gerekir).

@@ -189,11 +189,10 @@ func (h *Handler) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// state token'ını komisyonlu olarak temizle
-	_, _ = h.pool.Exec(r.Context(), `DELETE FROM governance.cache_store WHERE cache_key = $1`, "seo:state:"+state)
-
-	// State token'ı temizle
-	_, _ = h.pool.Exec(r.Context(), `DELETE FROM governance.cache_store WHERE cache_key = $1`, "seo:state:"+state)
+	// state token'ını cache'den temizle
+	if _, err := h.pool.Exec(r.Context(), `DELETE FROM governance.cache_store WHERE cache_key = $1`, "seo:state:"+state); err != nil {
+		slog.Warn("state token temizlenemedi", "error", err)
+	}
 
 	// Authorization code'u token ile değiştir
 	redirectURI := h.baseURL + "/v1/workspaces/" + workspaceID + "/seo/callback"

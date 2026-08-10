@@ -6,13 +6,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
+	"math"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
 	"github.com/geolens/platform/platform/db"
+	"github.com/geolens/platform/platform/metrics"
 )
 
 // SyncWorker periodically syncs Search Console and GA4 data for connected accounts.
@@ -67,6 +71,7 @@ func (w *SyncWorker) syncAll(ctx context.Context) {
 
 // syncConnections processes all active connections for a given platform.
 func (w *SyncWorker) syncConnections(ctx context.Context, platform string) {
+	start := time.Now()
 	rows, err := w.pool.Query(ctx, `
 		SELECT id, tenant_id, workspace_id, platform, access_token, refresh_token, token_expires_at
 		FROM seo.connections
@@ -74,14 +79,17 @@ func (w *SyncWorker) syncConnections(ctx context.Context, platform string) {
 	`, platform)
 	if err != nil {
 		slog.Warn("seo sync: bağlantı sorgu hatası", "platform", platform, "error", err)
+		metrics.SEOSyncsTotal.WithLabelValues(platform, "", "query_error").Inc()
 		return
 	}
 	defer rows.Close()
 
+	success, failed := 0, 0
 	for rows.Next() {
 		var c connRow
 		if err := rows.Scan(&c.ID, &c.TenantID, &c.WorkspaceID, &c.Platform, &c.AccessToken, &c.RefreshToken, &c.TokenExpiresAt); err != nil {
 			slog.Warn("seo sync: satır okuma hatası", "error", err)
+			failed++
 			continue
 		}
 
@@ -91,46 +99,67 @@ func (w *SyncWorker) syncConnections(ctx context.Context, platform string) {
 			newToken, err := w.refreshAccessToken(ctx, c.RefreshToken)
 			if err != nil {
 				slog.Error("seo sync: token yenileme hatası", "conn", c.ID, "error", err)
+				failed++
 				continue
 			}
 			accessToken = newToken.AccessToken
 
-			_, _ = w.pool.Exec(ctx, `
+			if _, err := w.pool.Exec(ctx, `
 				UPDATE seo.connections
 				SET access_token = $1, refresh_token = COALESCE(NULLIF($2, ''), refresh_token),
 				    token_expires_at = $3, updated_at = now()
 				WHERE id = $4
-			`, newToken.AccessToken, newToken.RefreshToken, newToken.ExpiresAt, c.ID)
+			`, newToken.AccessToken, newToken.RefreshToken, newToken.ExpiresAt, c.ID); err != nil {
+				slog.Error("seo sync: token güncelleme hatası", "conn", c.ID, "error", err)
+				failed++
+				continue
+			}
 		}
 
+		var syncErr error
 		switch platform {
 		case "search_console":
-			w.syncSearchConsole(ctx, c, accessToken)
+			syncErr = w.syncSearchConsole(ctx, c, accessToken)
 		case "ga4":
-			w.syncGA4(ctx, c, accessToken)
+			syncErr = w.syncGA4(ctx, c, accessToken)
+		}
+		if syncErr != nil {
+			slog.Warn("seo sync: bağlantı senkronizasyon hatası", "platform", platform, "conn", c.ID, "error", syncErr)
+			failed++
+			metrics.SEOSyncsTotal.WithLabelValues(platform, c.TenantID, "error").Inc()
+			continue
 		}
 
 		// Son sync zamanını güncelle
-		_, _ = w.pool.Exec(ctx, `UPDATE seo.connections SET last_synced_at = now() WHERE id = $1`, c.ID)
+		if _, err := w.pool.Exec(ctx, `UPDATE seo.connections SET last_synced_at = now() WHERE id = $1`, c.ID); err != nil {
+			slog.Warn("seo sync: last_synced_at güncelleme hatası", "conn", c.ID, "error", err)
+		}
+		success++
+		metrics.SEOSyncsTotal.WithLabelValues(platform, c.TenantID, "ok").Inc()
 	}
 
 	if rows.Err() != nil {
 		slog.Warn("seo sync: connection rows iterasyon hatası", "platform", platform, "error", rows.Err())
+		failed++
 	}
+
+	metrics.SEOSyncDuration.WithLabelValues(platform).Observe(time.Since(start).Seconds())
+	slog.Info("seo sync döngüsü tamam", "platform", platform, "success", success, "failed", failed, "elapsed", time.Since(start).String())
 }
 
 // syncSearchConsole processes a single Search Console connection.
-func (w *SyncWorker) syncSearchConsole(ctx context.Context, c connRow, accessToken string) {
+func (w *SyncWorker) syncSearchConsole(ctx context.Context, c connRow, accessToken string) error {
 	brandRows, err := w.pool.Query(ctx, `
 		SELECT id, COALESCE(website_url, '') FROM config.brands
 		WHERE workspace_id = $1 AND tenant_id = $2 AND is_active = true
 	`, c.WorkspaceID, c.TenantID)
 	if err != nil {
 		slog.Warn("seo sync: marka sorgu hatası", "workspace", c.WorkspaceID, "error", err)
-		return
+		return fmt.Errorf("marka sorgusu: %w", err)
 	}
 	defer brandRows.Close()
 
+	var syncErr error
 	for brandRows.Next() {
 		var brandID, siteURL string
 		if err := brandRows.Scan(&brandID, &siteURL); err != nil {
@@ -141,27 +170,31 @@ func (w *SyncWorker) syncSearchConsole(ctx context.Context, c connRow, accessTok
 		}
 		if err := w.syncBrandData(ctx, c.TenantID, c.WorkspaceID, c.ID, brandID, siteURL, accessToken); err != nil {
 			slog.Warn("seo sync: sc data hatası", "brand", brandID, "error", err)
+			syncErr = err
 		}
 	}
 
 	if brandRows.Err() != nil {
 		slog.Warn("seo sync: brand rows iterasyon hatası", "error", brandRows.Err())
+		syncErr = brandRows.Err()
 	}
+
+	return syncErr
 }
 
 // syncGA4 processes a single GA4 connection.
 // Önce kullanıcının erişebildiği GA4 property'lerini keşfeder,
 // ardından her brand için Analytics Data API'den trafik verilerini çeker.
-func (w *SyncWorker) syncGA4(ctx context.Context, c connRow, accessToken string) {
+func (w *SyncWorker) syncGA4(ctx context.Context, c connRow, accessToken string) error {
 	// GA4 property'lerini keşfet
 	properties, err := w.discoverGA4Properties(ctx, accessToken)
 	if err != nil {
 		slog.Warn("seo sync: ga4 property keşif hatası", "error", err)
-		return
+		return fmt.Errorf("ga4 property keşif: %w", err)
 	}
 	if len(properties) == 0 {
 		slog.Debug("seo sync: ga4 property bulunamadı", "conn", c.ID)
-		return
+		return nil
 	}
 
 	// İlk property'yi kullan (veya domain eşleşmesi yap)
@@ -173,10 +206,11 @@ func (w *SyncWorker) syncGA4(ctx context.Context, c connRow, accessToken string)
 	`, c.WorkspaceID, c.TenantID)
 	if err != nil {
 		slog.Warn("seo sync: marka sorgu hatası", "workspace", c.WorkspaceID, "error", err)
-		return
+		return fmt.Errorf("marka sorgusu: %w", err)
 	}
 	defer brandRows.Close()
 
+	var syncErr error
 	for brandRows.Next() {
 		var brandID, siteURL string
 		if err := brandRows.Scan(&brandID, &siteURL); err != nil {
@@ -188,12 +222,16 @@ func (w *SyncWorker) syncGA4(ctx context.Context, c connRow, accessToken string)
 
 		if err := w.syncGA4Data(ctx, c.TenantID, c.WorkspaceID, c.ID, brandID, siteURL, propertyID, accessToken); err != nil {
 			slog.Warn("seo sync: ga4 data hatası", "brand", brandID, "error", err)
+			syncErr = err
 		}
 	}
 
 	if brandRows.Err() != nil {
 		slog.Warn("seo sync: brand rows iterasyon hatası", "error", brandRows.Err())
+		syncErr = brandRows.Err()
 	}
+
+	return syncErr
 }
 
 // discoverGA4Properties gets available GA4 properties for the connected Google account.
@@ -261,28 +299,46 @@ func (w *SyncWorker) syncGA4Data(ctx context.Context, tenantID, workspaceID, con
 	}
 
 	apiURL := fmt.Sprintf("https://analyticsdata.googleapis.com/v1beta/%s:runReport", propertyID)
-	req, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewReader(body))
-	if err != nil {
-		return fmt.Errorf("http istek oluşturma: %w", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("ga4 api çağrısı: %w", err)
-	}
-	defer resp.Body.Close()
+	// HT2 sertleştirme: geçici hatalar (429, 5xx) için exponential backoff ile retry
+	var rawResp []byte
+	var respStatus int
+	err = doWithRetry(ctx, 4, func() (bool, error) {
+		req, rerr := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewReader(body))
+		if rerr != nil {
+			return false, fmt.Errorf("http istek oluşturma: %w", rerr)
+		}
+		req.Header.Set("Authorization", "Bearer "+accessToken)
+		req.Header.Set("Content-Type", "application/json")
 
-	if resp.StatusCode == http.StatusUnauthorized {
+		resp, derr := http.DefaultClient.Do(req)
+		if derr != nil {
+			return true, fmt.Errorf("ga4 api çağrısı: %w", derr)
+		}
+		defer resp.Body.Close()
+		b, rerr := io.ReadAll(resp.Body)
+		if rerr != nil {
+			return false, fmt.Errorf("yanıt okuma: %w", rerr)
+		}
+		rawResp = b
+		respStatus = resp.StatusCode
+		if retryableStatus(resp.StatusCode) {
+			return true, fmt.Errorf("ga4 api hatası (HTTP %d)", resp.StatusCode)
+		}
+		return false, nil
+	})
+	if err != nil {
+		return err
+	}
+	if respStatus == http.StatusUnauthorized {
 		return fmt.Errorf("yetkisiz erişim")
 	}
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("ga4 api hatası (HTTP %d)", resp.StatusCode)
+	if respStatus != http.StatusOK {
+		return fmt.Errorf("ga4 api hatası (HTTP %d)", respStatus)
 	}
 
 	var apiResp ga4RunReportResponse
-	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
+	if err := json.Unmarshal(rawResp, &apiResp); err != nil {
 		return fmt.Errorf("yanıt ayrıştırma: %w", err)
 	}
 
@@ -348,28 +404,46 @@ func (w *SyncWorker) syncBrandData(ctx context.Context, tenantID, workspaceID, c
 	}
 
 	apiURL := fmt.Sprintf("https://www.googleapis.com/webmasters/v3/sites/%s/searchAnalytics/query", encodedURL)
-	req, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewReader(body))
-	if err != nil {
-		return fmt.Errorf("http istek oluşturma: %w", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("api çağrısı: %w", err)
-	}
-	defer resp.Body.Close()
+	// HT2 sertleştirme: geçici hatalar (429, 5xx) için exponential backoff ile retry
+	var rawResp []byte
+	var respStatus int
+	err = doWithRetry(ctx, 4, func() (bool, error) {
+		req, rerr := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewReader(body))
+		if rerr != nil {
+			return false, fmt.Errorf("http istek oluşturma: %w", rerr)
+		}
+		req.Header.Set("Authorization", "Bearer "+accessToken)
+		req.Header.Set("Content-Type", "application/json")
 
-	if resp.StatusCode == http.StatusUnauthorized {
+		resp, derr := http.DefaultClient.Do(req)
+		if derr != nil {
+			return true, fmt.Errorf("api çağrısı: %w", derr)
+		}
+		defer resp.Body.Close()
+		b, rerr := io.ReadAll(resp.Body)
+		if rerr != nil {
+			return false, fmt.Errorf("yanıt okuma: %w", rerr)
+		}
+		rawResp = b
+		respStatus = resp.StatusCode
+		if retryableStatus(resp.StatusCode) {
+			return true, fmt.Errorf("api hatası (HTTP %d)", resp.StatusCode)
+		}
+		return false, nil
+	})
+	if err != nil {
+		return err
+	}
+	if respStatus == http.StatusUnauthorized {
 		return fmt.Errorf("yetkisiz erişim (token expired?)")
 	}
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("api hatası (HTTP %d)", resp.StatusCode)
+	if respStatus != http.StatusOK {
+		return fmt.Errorf("api hatası (HTTP %d)", respStatus)
 	}
 
 	var apiResp searchAnalyticsResponse
-	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
+	if err := json.Unmarshal(rawResp, &apiResp); err != nil {
 		return fmt.Errorf("yanıt ayrıştırma: %w", err)
 	}
 
@@ -379,6 +453,7 @@ func (w *SyncWorker) syncBrandData(ctx context.Context, tenantID, workspaceID, c
 	}
 
 	today := time.Now().Format("2006-01-02")
+	written := 0
 	for _, row := range apiResp.Rows {
 		query := ""
 		if len(row.Keys) > 0 {
@@ -395,8 +470,11 @@ func (w *SyncWorker) syncBrandData(ctx context.Context, tenantID, workspaceID, c
 		`, connID, tenantID, brandID, query, row.Clicks, row.Impressions, row.CTR, row.AvgPosition, today)
 		if err != nil {
 			slog.Warn("seo sync: veri kaydetme hatası", "query", query, "error", err)
+		} else {
+			written++
 		}
 	}
+	metrics.SEOSyncRows.WithLabelValues("search_console").Add(float64(written))
 
 	slog.Debug("seo sync: brand verisi güncellendi",
 		"brand", brandID, "rows", len(apiResp.Rows))
@@ -513,6 +591,41 @@ type ga4MetricValue struct {
 }
 
 // ---- Helper Functions ----
+
+// doWithRetry executes fn. For retryable HTTP failures (respecting the optional
+// status-aware retry function), it waits exponentially (1s, 2s, 4s, 8s) with
+// jitter, up to 4 attempts total. HT2 sertleştirme: API rate limit ve geçici
+// hatalar için smart retry.
+func doWithRetry(ctx context.Context, attempts int, fn func() (bool, error)) error {
+	_, lastErr := fn()
+	if lastErr == nil {
+		return nil
+	}
+	backoff := 1 * time.Second
+	for i := 2; i <= attempts; i++ {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(backoff + time.Duration(rand.Intn(500))*time.Millisecond):
+		}
+		retry, err := fn()
+		if err == nil {
+			return nil
+		}
+		lastErr = err
+		if !retry {
+			return err
+		}
+		backoff = time.Duration(math.Min(float64(backoff*2), float64(8*time.Second)))
+	}
+	return lastErr
+}
+
+// retryableStatus returns true if the HTTP status indicates a transient failure.
+func retryableStatus(code int) bool {
+	return code == http.StatusTooManyRequests || code == http.StatusInternalServerError ||
+		code == http.StatusBadGateway || code == http.StatusServiceUnavailable || code == http.StatusGatewayTimeout
+}
 
 func parseInt64(s string) int64 {
 	var v int64

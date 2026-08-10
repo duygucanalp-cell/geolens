@@ -337,7 +337,7 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	if authHeader != "" && strings.HasPrefix(authHeader, "Bearer ") {
 		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
 		if tokenStr != "" {
-			if err := h.jwt.BlacklistToken(tokenStr, h.rdb); err != nil {
+			if err := h.jwt.BlacklistToken(r.Context(), tokenStr, h.rdb); err != nil {
 				slog.Warn("token blacklist ekleme hatası", "error", err)
 			}
 		}

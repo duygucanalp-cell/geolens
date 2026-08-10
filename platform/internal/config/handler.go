@@ -1,7 +1,6 @@
 package config
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -182,13 +181,13 @@ func (h *Handler) CreateBrand(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Transaction başlat
-	tx, err := h.pool.Begin(context.Background())
+	tx, err := h.pool.Begin(r.Context())
 	if err != nil {
 		slog.Error("transaction başlatma hatası", "error", err)
 		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "işlem başlatılamadı"})
 		return
 	}
-	rollback := func() { _ = tx.Rollback(context.Background()) }
+	rollback := func() { _ = tx.Rollback(r.Context()) }
 
 	// Kullanıcı tanımlı rakipleri doğrula (FR-B1)
 	if len(req.Competitors) > 0 {
@@ -197,7 +196,7 @@ func (h *Handler) CreateBrand(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			var exists bool
-			err = tx.QueryRow(context.Background(), `
+			err = tx.QueryRow(r.Context(), `
 				SELECT EXISTS(SELECT 1 FROM config.brands
 					WHERE id = $1 AND tenant_id = $2 AND is_active = true)
 			`, compID, tenantID).Scan(&exists)
@@ -212,7 +211,7 @@ func (h *Handler) CreateBrand(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var brandID string
-	err = tx.QueryRow(context.Background(), `
+	err = tx.QueryRow(r.Context(), `
 		INSERT INTO config.brands (id, workspace_id, tenant_id, name, website_url)
 		VALUES (gen_random_uuid()::text, $1, $2, $3, $4)
 		RETURNING id
@@ -231,7 +230,7 @@ func (h *Handler) CreateBrand(w http.ResponseWriter, r *http.Request) {
 			if compID == brandID {
 				continue // kendi kendine rakip olamaz
 			}
-			_, err = tx.Exec(context.Background(), `
+			_, err = tx.Exec(r.Context(), `
 				INSERT INTO config.brand_competitors (id, brand_id, competitor_id, tenant_id)
 				VALUES (gen_random_uuid()::text, $1, $2, $3)
 				ON CONFLICT (brand_id, competitor_id) DO NOTHING
@@ -246,7 +245,7 @@ func (h *Handler) CreateBrand(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Transaction'ı commit et
-	if err = tx.Commit(context.Background()); err != nil {
+	if err = tx.Commit(r.Context()); err != nil {
 		rollback()
 		slog.Error("transaction commit hatası", "error", err)
 		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "işlem tamamlanamadı"})
@@ -487,16 +486,16 @@ func (h *Handler) UpdateBrandCompetitors(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Transaction başlat
-	tx, err := h.pool.Begin(context.Background())
+	tx, err := h.pool.Begin(r.Context())
 	if err != nil {
 		slog.Error("transaction başlatma hatası", "error", err)
 		httputil.WriteError(w, http.StatusInternalServerError, "işlem başlatılamadı")
 		return
 	}
-	rollback := func() { _ = tx.Rollback(context.Background()) }
+	rollback := func() { _ = tx.Rollback(r.Context()) }
 
 	// Mevcut rakipleri sil (DELETE + INSERT = replace)
-	if _, err = tx.Exec(context.Background(), `
+	if _, err = tx.Exec(r.Context(), `
 		DELETE FROM config.brand_competitors
 		WHERE brand_id = $1 AND tenant_id = $2
 	`, brandID, tenantID); err != nil {
@@ -512,7 +511,7 @@ func (h *Handler) UpdateBrandCompetitors(w http.ResponseWriter, r *http.Request)
 			continue
 		}
 		var exists bool
-		if err = tx.QueryRow(context.Background(), `
+		if err = tx.QueryRow(r.Context(), `
 			SELECT EXISTS(SELECT 1 FROM config.brands
 				WHERE id = $1 AND tenant_id = $2 AND is_active = true)
 		`, compID, tenantID).Scan(&exists); err != nil || !exists {
@@ -522,7 +521,7 @@ func (h *Handler) UpdateBrandCompetitors(w http.ResponseWriter, r *http.Request)
 			})
 			return
 		}
-		if _, err = tx.Exec(context.Background(), `
+		if _, err = tx.Exec(r.Context(), `
 			INSERT INTO config.brand_competitors (id, brand_id, competitor_id, tenant_id)
 			VALUES (gen_random_uuid()::text, $1, $2, $3)
 			ON CONFLICT (brand_id, competitor_id) DO NOTHING
@@ -534,7 +533,7 @@ func (h *Handler) UpdateBrandCompetitors(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	if err = tx.Commit(context.Background()); err != nil {
+	if err = tx.Commit(r.Context()); err != nil {
 		rollback()
 		slog.Error("transaction commit hatası", "error", err)
 		httputil.WriteError(w, http.StatusInternalServerError, "işlem tamamlanamadı")

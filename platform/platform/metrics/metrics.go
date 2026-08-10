@@ -208,3 +208,27 @@ var (
 		Help: "Tetiklenen gap alert sayısı (gap_type ayrımıyla)",
 	}, []string{"gap_type"})
 )
+
+// ---- SEO Sync Metrics (FR-B8 / HT2 sertleştirme) ----
+
+var (
+	// SEOSyncsTotal counts completed/failed SEO sync runs per platform and tenant.
+	// HT2: worker telemetrisi — her sync işlemi için başarı/başarısızlık sayısı.
+	SEOSyncsTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "geolens_seo_syncs_total",
+		Help: "SEO sync koşusu sayısı (platform, tenant, sonuç ayrımıyla)",
+	}, []string{LabelType, LabelTenant, LabelStatus})
+
+	// SEOSyncDuration tracks SEO sync run duration per platform.
+	SEOSyncDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "geolens_seo_sync_duration_seconds",
+		Help:    "SEO sync süresi dağılımı (saniye)",
+		Buckets: []float64{0.5, 1.0, 2.0, 5.0, 10.0, 30.0, 60.0},
+	}, []string{LabelType})
+
+	// SEOSyncRows tracks rows written per sync run (data volume).
+	SEOSyncRows = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "geolens_seo_sync_rows_total",
+		Help: "SEO sync'te yazılan satır sayısı (platform ayrımıyla)",
+	}, []string{LabelType})
+)

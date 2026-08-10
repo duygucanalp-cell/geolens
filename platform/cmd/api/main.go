@@ -271,6 +271,7 @@ func main() {
 
 			r.Post("/account/deletion", privacyHandler.RequestDeletion)
 			r.Post("/privacy/delete", privacyHandler.RequestDeletion)
+			r.Get("/account/data", privacyHandler.ExportData)
 			r.Get("/deletion-requests", privacyHandler.ListDeletionRequests)
 			r.Post("/deletion-requests/{id}/process", privacyHandler.ProcessDeletionRequest)
 			r.With(httpmw.RequireRole(httpmw.RoleViewer)).Get("/tenant/panorama", configHandler.ListWorkspacePanorama)

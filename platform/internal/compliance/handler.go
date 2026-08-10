@@ -4,6 +4,7 @@ package compliance
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -286,5 +287,7 @@ func (h *Handler) DownloadEvidence(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Content-Disposition", "attachment; filename=soc2-evidence.json")
-	_ = json.NewEncoder(w).Encode(pack)
+	if err := json.NewEncoder(w).Encode(pack); err != nil {
+		slog.Warn("soc2 kanıt dosyası kodlanamadı", "error", err)
+	}
 }

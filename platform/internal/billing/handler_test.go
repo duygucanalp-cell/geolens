@@ -110,7 +110,7 @@ func TestStripeWebhookSignature_Valid(t *testing.T) {
 
 func TestStripeCheckout_MockMode(t *testing.T) {
 	s := NewStripeClient("mock", "")
-	sess, err := s.CreateCheckout("T01", "pro", "https://app/ok", "https://app/cancel")
+	sess, err := s.CreateCheckout(context.Background(), "T01", "pro", "usd", "https://app/ok", "https://app/cancel")
 	if err != nil {
 		t.Fatalf("mock checkout hatası: %v", err)
 	}
@@ -124,14 +124,14 @@ func TestStripeCheckout_MockMode(t *testing.T) {
 
 func TestStripeCheckout_InvalidTier(t *testing.T) {
 	s := NewStripeClient("mock", "")
-	if _, err := s.CreateCheckout("T01", "gold", "u", "c"); err == nil {
+	if _, err := s.CreateCheckout(context.Background(), "T01", "gold", "usd", "u", "c"); err == nil {
 		t.Fatal("geçersiz tier için hata dönülmedi")
 	}
 }
 
 func TestStripePortal_MockMode(t *testing.T) {
 	s := NewStripeClient("mock", "")
-	url, err := s.CreatePortalSession("T01", "/billing")
+	url, err := s.CreatePortalSession(context.Background(), "T01", "/billing")
 	if err != nil {
 		t.Fatalf("mock portal hatası: %v", err)
 	}

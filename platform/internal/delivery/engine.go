@@ -12,8 +12,21 @@ import (
 type Channel string
 
 const (
-	ChannelEmail Channel = "email"
-	ChannelInApp Channel = "in_app"
+	ChannelEmail   Channel = "email"
+	ChannelInApp   Channel = "in_app"
+	ChannelWebhook Channel = "webhook"
+)
+
+// WebhookKind describes the webhook destination format.
+// HT2 ticari olgunlaştırma: Slack/e-posta dışında Teams, Discord, PagerDuty, custom webhook.
+type WebhookKind string
+
+const (
+	WebhookKindGeneric   WebhookKind = "generic"
+	WebhookKindSlack     WebhookKind = "slack"
+	WebhookKindTeams     WebhookKind = "teams"
+	WebhookKindDiscord   WebhookKind = "discord"
+	WebhookKindPagerDuty WebhookKind = "pagerduty"
 )
 
 // NotificationType represents the type of notification.
@@ -51,6 +64,11 @@ type Notification struct {
 	Status      DeliveryStatus         `json:"status"`
 	SentAt      *time.Time             `json:"sent_at,omitempty"`
 	CreatedAt   time.Time              `json:"created_at"`
+
+	// Webhook alanları (HT2 webhook çeşitlendirme — Teams/Discord/PagerDuty/custom).
+	// Channel = webhook iken URL zorunludur.
+	WebhookURL  string      `json:"webhook_url,omitempty"`
+	WebhookKind WebhookKind `json:"webhook_kind,omitempty"`
 }
 
 // EmailConfig holds the configuration for email delivery.
@@ -70,6 +88,12 @@ type NotificationSettings struct {
 	DigestFormat  string `json:"digest_format"`  // email, pdf, both
 	NotifyOnDrop  bool   `json:"notify_on_drop"` // score drop notification
 	DropThreshold int    `json:"drop_threshold"` // % drop to trigger notification
+
+	// Webhook kanalı ayarları (HT2 webhook çeşitlendirme).
+	// webhook_webhook_url set edildiğinde bildirimler workspace'e webhook üzerinden gider.
+	WebhookURL    string `json:"webhook_url,omitempty"`
+	WebhookKind   string `json:"webhook_kind,omitempty"` // generic, slack, teams, discord, pagerduty
+	WebhookActive bool   `json:"webhook_active,omitempty"`
 }
 
 // ValidDays lists all acceptable digest_day values.
@@ -138,6 +162,26 @@ func ValidateSettings(s *NotificationSettings) error {
 	// Validate drop_threshold
 	if s.DropThreshold < 1 || s.DropThreshold > 100 {
 		return &validationError{msg: "düşüş eşiği 1-100 arası olmalı"}
+	}
+
+	// Validate webhook settings
+	if s.WebhookActive {
+		if s.WebhookURL == "" {
+			return &validationError{msg: "webhook aktifken webhook URL'si gerekli"}
+		}
+		if s.WebhookKind == "" {
+			return &validationError{msg: "webhook aktifken webhook türü gerekli (generic, slack, teams, discord, pagerduty)"}
+		}
+		valid = false
+		for _, k := range []string{"generic", "slack", "teams", "discord", "pagerduty"} {
+			if s.WebhookKind == k {
+				valid = true
+				break
+			}
+		}
+		if !valid {
+			return &validationError{msg: fmt.Sprintf("geçersiz webhook türü: %s (generic, slack, teams, discord veya pagerduty olmalı)", s.WebhookKind)}
+		}
 	}
 
 	return nil

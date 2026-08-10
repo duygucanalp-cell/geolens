@@ -295,7 +295,7 @@ func TestRequireRole_UnknownRoleReturnsForbidden(t *testing.T) {
 // =============================================================================
 
 func TestAuthenticate_ValidToken(t *testing.T) {
-	validator := func(tokenStr string) (userID, tenantID, role string, err error) {
+	validator := func(ctx context.Context, tokenStr string) (userID, tenantID, role string, err error) {
 		return "U01", "T01", "admin", nil
 	}
 	handler := Authenticate(validator)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -321,7 +321,7 @@ func TestAuthenticate_ValidToken(t *testing.T) {
 }
 
 func TestAuthenticate_InvalidToken(t *testing.T) {
-	validator := func(tokenStr string) (userID, tenantID, role string, err error) {
+	validator := func(ctx context.Context, tokenStr string) (userID, tenantID, role string, err error) {
 		return "", "", "", assertAnError{}
 	}
 	handler := Authenticate(validator)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -339,7 +339,7 @@ func TestAuthenticate_InvalidToken(t *testing.T) {
 }
 
 func TestAuthenticate_NoHeader(t *testing.T) {
-	validator := func(tokenStr string) (userID, tenantID, role string, err error) {
+	validator := func(ctx context.Context, tokenStr string) (userID, tenantID, role string, err error) {
 		t.Error("validator çağrılmamalı")
 		return "", "", "", assertAnError{}
 	}
@@ -358,7 +358,7 @@ func TestAuthenticate_NoHeader(t *testing.T) {
 
 func TestAuthenticate_NoBearerPrefix(t *testing.T) {
 	var capturedToken string
-	validator := func(tokenStr string) (userID, tenantID, role string, err error) {
+	validator := func(ctx context.Context, tokenStr string) (userID, tenantID, role string, err error) {
 		capturedToken = tokenStr
 		return "U01", "T01", "admin", nil
 	}
@@ -435,7 +435,7 @@ func TestMiddlewareChain_ContextFlow(t *testing.T) {
 	// Bu test, middleware zincirinin context'i doğru şekilde aktardığını doğrular.
 	// Zincir: RequestID → Logger (passthrough) → Authenticate (mock)
 
-	tokenValidator := func(token string) (string, string, string, error) {
+	tokenValidator := func(ctx context.Context, token string) (string, string, string, error) {
 		return "U01", "T01", "editor", nil
 	}
 
@@ -479,7 +479,7 @@ func TestMiddlewareChain_RBACBlocking(t *testing.T) {
 	// Authenticate token'dan rolü context'e taşır (JWT claim → context),
 	// böylece workspace dışı rotalarda (R-serisi vb.) RBAC çalışır.
 
-	tokenValidator := func(token string) (string, string, string, error) {
+	tokenValidator := func(ctx context.Context, token string) (string, string, string, error) {
 		return "U01", "T01", "viewer", nil
 	}
 
@@ -512,7 +512,7 @@ func TestMiddlewareChain_AuthenticatePropagatesRole(t *testing.T) {
 	// Bu test, Authenticate'in JWT claim'indeki rolü context'e taşıdığını
 	// ve RequireRole'un workspace dışı rotalarda bu rolü kullanabildiğini doğrular.
 
-	tokenValidator := func(token string) (string, string, string, error) {
+	tokenValidator := func(ctx context.Context, token string) (string, string, string, error) {
 		return "U01", "T01", "editor", nil
 	}
 

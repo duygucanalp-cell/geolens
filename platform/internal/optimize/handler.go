@@ -115,7 +115,11 @@ func (h *Handler) GenerateRecommendations(w http.ResponseWriter, r *http.Request
 		BrandID  string `json:"brand_id"`
 		AutoSave bool   `json:"auto_save"`
 	}{}
-	_ = json.NewDecoder(r.Body).Decode(&input)
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		slog.Warn("öneri isteği çözümlenemedi", "error", err)
+		httputil.WriteError(w, http.StatusBadRequest, "geçersiz istek")
+		return
+	}
 
 	// Analiz için mevcut skorları kontrol et
 	var scoreCount int

@@ -124,7 +124,7 @@ func TestTokenValidator(t *testing.T) {
 		t.Fatalf("GenerateToken failed: %v", err)
 	}
 
-	userID, tenantID, role, err := validator(tokenStr)
+	userID, tenantID, role, err := validator(context.Background(), tokenStr)
 	if err != nil {
 		t.Fatalf("validator failed: %v", err)
 	}
@@ -143,7 +143,7 @@ func TestTokenValidator_Invalid(t *testing.T) {
 	svc := NewJWTService("test-secret")
 	validator := svc.TokenValidator(nil)
 
-	_, _, _, err := validator("invalid-token")
+	_, _, _, err := validator(context.Background(), "invalid-token")
 	if err == nil {
 		t.Fatal("expected error for invalid token")
 	}

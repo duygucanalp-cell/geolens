@@ -658,6 +658,7 @@ func (h *Handler) ListRadarComparison(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetBenchmarkContext(w http.ResponseWriter, r *http.Request) {
 	workspaceID := httpmw.GetWorkspaceID(r.Context())
 	tenantID := httpmw.GetTenantID(r.Context())
+	sector := r.URL.Query().Get("sector") // FR-D5 kırılımı: isteğe bağlı sektör filtresi
 
 	// Kullanıcının son skoru
 	var myScore float64
@@ -671,27 +672,48 @@ func (h *Handler) GetBenchmarkContext(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Toplam kiracı sayısı (NFR-13 gizlilik eşiği)
+	// Sektör filtresi belirtilmişse, sektör içindeki markalara ait skorlarla kısıtla.
 	var tenantCount int
-	_ = h.pool.QueryRow(r.Context(), `
-		SELECT COUNT(DISTINCT tenant_id) FROM measure.scores
-	`).Scan(&tenantCount)
+	if sector != "" {
+		_ = h.pool.QueryRow(r.Context(), `
+			SELECT COUNT(DISTINCT s.tenant_id)
+			FROM measure.scores s
+			JOIN config.brands b ON b.id = s.brand_id
+			WHERE b.sector = $1
+		`, sector).Scan(&tenantCount)
+	} else {
+		_ = h.pool.QueryRow(r.Context(), `
+			SELECT COUNT(DISTINCT tenant_id) FROM measure.scores
+		`).Scan(&tenantCount)
+	}
 
 	// Ham sektör istatistiklerini topla
 	var sectorAvg, sectorMin, sectorMax, sectorMedian, sectorStdDev float64
 	var percentile25, percentile75, percentile90 float64
 
 	if tenantCount >= 5 {
+		// Marka bazlı en son skorlarla istatistikleri hesapla.
+		// Sektör filtresi: measure.scores JOIN config.brands (FR-D5 sektör kırılımı).
+		sectorFilter := ""
+		var filterArgs []interface{}
+		if sector != "" {
+			sectorFilter = `JOIN config.brands b ON b.id = sub.brand_id
+				WHERE b.sector = $1`
+			filterArgs = append(filterArgs, sector)
+		}
+
 		// Ortalama, min, max
 		_ = h.pool.QueryRow(r.Context(), `
 			SELECT AVG(sub.latest)::numeric(10,2),
 				MIN(sub.latest)::numeric(10,2),
 				MAX(sub.latest)::numeric(10,2)
 			FROM (
-				SELECT DISTINCT ON (brand_id) value AS latest
+				SELECT DISTINCT ON (brand_id) brand_id, value AS latest
 				FROM measure.scores
 				ORDER BY brand_id, freshness_at DESC
 			) sub
-		`).Scan(&sectorAvg, &sectorMin, &sectorMax)
+			`+sectorFilter,
+			filterArgs...).Scan(&sectorAvg, &sectorMin, &sectorMax)
 
 		// Medyan
 		_ = h.pool.QueryRow(r.Context(), `
@@ -699,30 +721,32 @@ func (h *Handler) GetBenchmarkContext(w http.ResponseWriter, r *http.Request) {
 				SELECT value, ROW_NUMBER() OVER (ORDER BY value) AS rn,
 					COUNT(*) OVER () AS cnt
 				FROM (
-					SELECT DISTINCT ON (brand_id) value
+					SELECT DISTINCT ON (brand_id) brand_id, value
 					FROM measure.scores
 					ORDER BY brand_id, freshness_at DESC
 				) sub
+				`+sectorFilter+`
 			)
 			SELECT AVG(value)::numeric(10,2)
 			FROM ranked
 			WHERE rn IN ((cnt + 1) / 2, (cnt + 2) / 2)
-		`).Scan(&sectorMedian)
+		`, filterArgs...).Scan(&sectorMedian)
 
 		// Standart sapma
 		_ = h.pool.QueryRow(r.Context(), `
 			SELECT COALESCE(STDDEV(sub.latest)::numeric(10,2), 0)
 			FROM (
-				SELECT DISTINCT ON (brand_id) value AS latest
+				SELECT DISTINCT ON (brand_id) brand_id, value AS latest
 				FROM measure.scores
 				ORDER BY brand_id, freshness_at DESC
 			) sub
-		`).Scan(&sectorStdDev)
+			`+sectorFilter,
+			filterArgs...).Scan(&sectorStdDev)
 
 		// Yüzdelik dilimler (PG 16+ percentile_cont)
 		_ = h.pool.QueryRow(r.Context(), `
 			WITH distinct_scores AS (
-				SELECT DISTINCT ON (brand_id) value AS latest
+				SELECT DISTINCT ON (brand_id) brand_id, value AS latest
 				FROM measure.scores
 				ORDER BY brand_id, freshness_at DESC
 			)
@@ -731,7 +755,8 @@ func (h *Handler) GetBenchmarkContext(w http.ResponseWriter, r *http.Request) {
 				PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY latest)::numeric(10,2),
 				PERCENTILE_CONT(0.90) WITHIN GROUP (ORDER BY latest)::numeric(10,2)
 			FROM distinct_scores
-		`).Scan(&percentile25, &percentile75, &percentile90)
+			`+sectorFilter,
+			filterArgs...).Scan(&percentile25, &percentile75, &percentile90)
 	}
 
 	// Difarensiyel gizlilik katmanı uygula

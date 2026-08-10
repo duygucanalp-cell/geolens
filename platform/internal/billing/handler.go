@@ -36,6 +36,7 @@ func (h *Handler) CreateCheckoutSession(w http.ResponseWriter, r *http.Request) 
 
 	var req struct {
 		Tier       string `json:"tier"`
+		Currency   string `json:"currency"`
 		SuccessURL string `json:"success_url"`
 		CancelURL  string `json:"cancel_url"`
 	}
@@ -52,8 +53,11 @@ func (h *Handler) CreateCheckoutSession(w http.ResponseWriter, r *http.Request) 
 		httputil.WriteError(w, http.StatusBadRequest, "geçersiz tier (pro, business, enterprise)")
 		return
 	}
+	if req.Currency == "" {
+		req.Currency = "usd" // HT2 multi-currency: varsayılan USD
+	}
 
-	session, err := h.stripe.CreateCheckout(tenantID, req.Tier, req.SuccessURL, req.CancelURL)
+	session, err := h.stripe.CreateCheckout(r.Context(), tenantID, req.Tier, req.Currency, req.SuccessURL, req.CancelURL)
 	if err != nil {
 		slog.Error("checkout session oluşturma hatası", "error", err)
 		httputil.WriteError(w, http.StatusInternalServerError, "ödeme oturumu oluşturulamadı")
@@ -177,12 +181,16 @@ func (h *Handler) CreatePortalSession(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		ReturnURL string `json:"return_url"`
 	}
-	_ = json.NewDecoder(r.Body).Decode(&req)
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		slog.Warn("portal session isteği çözümlenemedi", "error", err)
+		httputil.WriteError(w, http.StatusBadRequest, "geçersiz istek")
+		return
+	}
 	if req.ReturnURL == "" {
 		req.ReturnURL = "/"
 	}
 
-	url, err := h.stripe.CreatePortalSession(tenantID, req.ReturnURL)
+	url, err := h.stripe.CreatePortalSession(r.Context(), tenantID, req.ReturnURL)
 	if err != nil {
 		slog.Error("portal session oluşturma hatası", "error", err)
 		httputil.WriteError(w, http.StatusInternalServerError, "portal oturumu oluşturulamadı")

@@ -3,6 +3,7 @@ package httputil
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 )
 
@@ -10,7 +11,9 @@ import (
 func WriteJSON(w http.ResponseWriter, status int, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(v)
+	if err := json.NewEncoder(w).Encode(v); err != nil {
+		slog.Warn("json yanıt kodlanamadı", "status", status, "error", err)
+	}
 }
 
 // WriteError sends a JSON error response.
