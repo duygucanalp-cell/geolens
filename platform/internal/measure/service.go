@@ -43,6 +43,17 @@ func NewService(pool *db.Pool, engines *engine.Registry, cfg *config.Config) Ser
 	}
 }
 
+// effectiveWeights returns env-configured weights (SCORE_WEIGHTS) or GAVF defaults.
+// PO review §4: skor ağırlıkları env üzerinden yapılandırılabilir (0301 O-1 kalibrasyonu).
+func (s *service) effectiveWeights() ComponentWeights {
+	if s.cfg != nil {
+		if p, pos, src, comp, ok := s.cfg.ParseScoreWeights(); ok {
+			return ComponentWeights{PresenceShare: p, PositionWeight: pos, SourceShare: src, CompetitorContext: comp}
+		}
+	}
+	return defaultWeights
+}
+
 // Measure executes n=3 measurements for all registered engines and aggregates results.
 func (s *service) Measure(ctx context.Context, req MeasurementRequest) (*MeasurementResult, error) {
 	// Tüm kayıtlı motorları topla
@@ -158,8 +169,9 @@ func (s *service) Measure(ctx context.Context, req MeasurementRequest) (*Measure
 // Dört bileşen: Varlık Payı (%35), Konum Ağırlığı (%25), Kaynak Payı (%20), Rakip Bağlamı (%20).
 // Partial yayın: bazı motorlar başarısız olsa bile kalan veriyle hesaplama yapılır.
 func (s *service) CalculateScore(ctx context.Context, panelID string, results []MeasurementResult, weights ComponentWeights) (*Score, error) {
+	// weights boşsa: env override (SCORE_WEIGHTS) veya GAVF varsayılanları (deterministik default)
 	if weights == (ComponentWeights{}) {
-		weights = defaultWeights
+		weights = s.effectiveWeights()
 	}
 
 	// Tüm raw response'ları birleştir — başarısız motorlar atlanır (partial yayın)
@@ -177,27 +189,11 @@ func (s *service) CalculateScore(ctx context.Context, panelID string, results []
 	workspaceID := results[0].WorkspaceID
 	tenantID := results[0].TenantID
 
-	// ---- Bileşen 1: Varlık Payı (Presence Share) - %35 ----
-	presenceScore := computePresenceShare(allResponses, brandName)
+	// Saf, deterministik skor matematiği (partial yayın dahil — G2 determinizm ilkesi)
+	totalScore := computeTotalScore(allResponses, brandName, weights)
 
-	// ---- Bileşen 2: Konum Ağırlığı (Position Weight) - %25 ----
-	positionScore := computePositionWeight(allResponses)
-
-	// ---- Bileşen 3: Kaynak Payı (Source Share) - %20 ----
-	sourceScore := computeSourceShare(allResponses)
-
-	// ---- Bileşen 4: Rakip Bağlamı (Competitor Context) - %20 ----
-	competitorScore := computeCompetitorContext(allResponses)
-
-	// Ağırlıklı toplam (partial yayın: başarısız bileşenler 0 olarak katılır)
-	totalScore := weights.PresenceShare*presenceScore +
-		weights.PositionWeight*positionScore +
-		weights.SourceShare*sourceScore +
-		weights.CompetitorContext*competitorScore
-
-	// [0, 100] aralığına normalize et
-	totalScore = math.Min(totalScore, 100.0)
-	totalScore = math.Max(totalScore, 0.0)
+	// Bileşenler (deterministik yeniden hesap kaydı için)
+	presenceScore, positionScore, sourceScore, competitorScore := computeComponentScores(allResponses, brandName)
 
 	scoreID := id.New()
 	calcRunID := id.New()
@@ -290,6 +286,35 @@ func (s *service) GetScoreByID(ctx context.Context, scoreID string) (*Score, err
 }
 
 // ---- Bileşen Hesaplama Fonksiyonları ----
+
+// computeComponentScores returns the four visibility components for the given responses.
+// Deterministik: aynı girdi her zaman aynı bileşenleri üretir (G2 ilkesi).
+func computeComponentScores(responses []engine.RawResponse, brandName string) (presence, position, source, competitor float64) {
+	return computePresenceShare(responses, brandName),
+		computePositionWeight(responses),
+		computeSourceShare(responses),
+		computeCompetitorContext(responses)
+}
+
+// computeTotalScore is the pure, deterministic weighted scoring math used by CalculateScore.
+// Partial yayın dahil: aynı girdi her zaman aynı skoru üretir (G2 determinizm ilkesi, temp=0 + n=3).
+func computeTotalScore(responses []engine.RawResponse, brandName string, weights ComponentWeights) float64 {
+	if weights == (ComponentWeights{}) {
+		weights = defaultWeights
+	}
+
+	// Ağırlıklı toplam (partial yayın: başarısız bileşenler 0 olarak katılır)
+	presence, position, source, competitor := computeComponentScores(responses, brandName)
+	total := weights.PresenceShare*presence +
+		weights.PositionWeight*position +
+		weights.SourceShare*source +
+		weights.CompetitorContext*competitor
+
+	// [0, 100] aralığına normalize et
+	total = math.Min(total, 100.0)
+	total = math.Max(total, 0.0)
+	return total
+}
 
 // computePresenceShare calculates what % of responses mention the brand name.
 func computePresenceShare(responses []engine.RawResponse, brandName string) float64 {

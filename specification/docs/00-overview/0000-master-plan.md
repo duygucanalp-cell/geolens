@@ -4,10 +4,10 @@
 |---|---|
 | Doküman ID | 0000 |
 | Proje | GeoLens Specification |
-| Versiyon | 1.2 |
+| Versiyon | 1.3 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Product |
-| Tarih | 27 Temmuz 2026 |
+| Tarih | 10 Ağustos 2026 |
 | İlişkili | platform/docs/0000, platform/docs/0401, platform/docs/0416-0419, platform/docs/adr/0001–0005 |
 
 ---
@@ -96,7 +96,12 @@ specification/docs/
 │   ├── 0106-prompt-taxonomy.md         # Prompt sınıflandırma şeması
 │   ├── 0107-citation-framework.md      # Alıntı çıkarma ve doğrulama
 │   ├── 0108-fidelity-tiers.md          # Fidelite kademeleri
-│   └── 0109-compliance-levels.md       # Uyumluluk seviyeleri (Temel/İleri/Tam/Sertifikalı)
+│   ├── 0109-compliance-levels.md       # Uyumluluk seviyeleri (Temel/İleri/Tam/Sertifikalı)
+│   ├── 0110-sentiment-hallucination-standard.md  # Duygu analizi ve hallüsinasyon tespiti (S2)
+│   ├── 0111-technical-geo-standard.md  # Teknik GEO: bot erişimi, schema, citation breakdown (S5)
+│   ├── 0112-content-geo-standard.md    # Content GEO: content gap, topic cluster, FAQ (S5)
+│   ├── 0113-competitive-gap-standard.md# Rekabetçi boşluk: 5 gap türü (S3)
+│   └── 0114-conversation-replay-standard.md  # Konuşma tekrarı ve yanıt arşivi (S2)
 │
 ├── 02-methodology/         # Detaylı metodoloji
 │   ├── 0201-sampling-methodology.md        # Örnekleme: n=3, temp=0, bayraklı oran
@@ -189,3 +194,4 @@ Her skor, üretildiği GAVF versiyonunu taşır. Versiyon değişiklikleri adr/ 
 | 1.0 | 22.07.2026 | İlk yayın: Specification reposu master planı, doküman ağacı, GAVF versiyonlama, yayın döngüsü. |
 | 1.1 | 22.07.2026 | Doküman ağacı güncellendi: 00-overview'e 0005-version-sync-plan, 03-compliance'a 0305-gavf-compliance-matrix eklendi. Toplam: 43 doküman. |
 | 1.2 | 27.07.2026 | Turkcell RFP kapsamında yeni GAVF bileşenleri eklendi: S5 GEO Standardı, Sentiment/Hallüsinasyon, Competitive Gap, Conversation Replay/Response Archive. Felsefe ilkelerine S7 (Kapsayıcılık) eklendi. Üst veri ve Kaynaklar güncellendi. Toplam: 47+ doküman. |
+| 1.3 | 10.08.2026 | GAVF bileşenlerinin standard dokümanları eklendi: 0110 (Sentiment/Hallüsinasyon, S2), 0111 (Teknik GEO, S5), 0112 (Content GEO, S5), 0113 (Competitive Gap, S3), 0114 (Conversation Replay/Archive, S2). Doküman ağacı güncellendi. Toplam: 48 doküman. |

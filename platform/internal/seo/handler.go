@@ -247,7 +247,7 @@ func (h *Handler) exchangeCode(ctx context.Context, code, redirectURI string) (*
 	if err != nil {
 		return nil, fmt.Errorf("token isteği: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var tr tokenResponse
 	if err := json.NewDecoder(resp.Body).Decode(&tr); err != nil {
@@ -279,7 +279,7 @@ func (h *Handler) getTokenEmail(ctx context.Context, accessToken string) string 
 	if err != nil {
 		return ""
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var info struct {
 		Email string `json:"email"`

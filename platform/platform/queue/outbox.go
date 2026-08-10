@@ -52,12 +52,13 @@ const (
 	StreamGap          = "q:gap"
 	StreamTechnicalGeo = "q:technical-geo"
 	StreamContentGeo   = "q:content-geo"
+	StreamGovernance   = "q:governance" // Faz 4 olayları: guardrail, gate, incident, drift, redteam (O-6)
 )
 
 // Start begins the dispatch loop. Runs until the context is cancelled. //nolint:misspell
 func (d *Dispatcher) Start(ctx context.Context) {
 	// Consumer gruplarını oluştur (ilk seferde hata vermez)
-	for _, stream := range []string{StreamMeasure, StreamAudit, StreamReport, StreamNotify, StreamDead, StreamSentiment, StreamReplay, StreamArchive, StreamGap, StreamTechnicalGeo, StreamContentGeo} {
+	for _, stream := range []string{StreamMeasure, StreamAudit, StreamReport, StreamNotify, StreamDead, StreamSentiment, StreamReplay, StreamArchive, StreamGap, StreamTechnicalGeo, StreamContentGeo, StreamGovernance} {
 		if err := d.rdb.XGroupCreateMkStream(ctx, stream, d.consumerGroup, "0").Err(); err != nil {
 			// BUSYGROUP: grup zaten var — ilk çalıştırmada sorun değil
 			slog.Debug("redis stream grubu", "stream", stream, "error", err)

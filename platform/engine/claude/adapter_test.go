@@ -52,7 +52,7 @@ func TestParseResponse(t *testing.T) {
 		"usage": {"input_tokens": 15, "output_tokens": 25}
 	}`
 
-	resp, err := a.parseResponse([]byte(raw), 150)
+	resp, err := a.parseResponse(context.Background(), []byte(raw), 150)
 	if err != nil {
 		t.Fatalf("parseResponse() error = %v", err)
 	}
@@ -79,7 +79,7 @@ func TestParseResponseWithCitations(t *testing.T) {
 		"stop_reason": "end_turn"
 	}`
 
-	resp, err := a.parseResponse([]byte(raw), 200)
+	resp, err := a.parseResponse(context.Background(), []byte(raw), 200)
 	if err != nil {
 		t.Fatalf("parseResponse() error = %v", err)
 	}
@@ -96,7 +96,7 @@ func TestParseResponseWithCitations(t *testing.T) {
 
 func TestParseResponseInvalidJSON(t *testing.T) {
 	a := NewAdapter("", nil)
-	_, err := a.parseResponse([]byte(`not json`), 100)
+	_, err := a.parseResponse(context.Background(), []byte(`not json`), 100)
 	if err == nil {
 		t.Error("expected error for invalid JSON")
 	}

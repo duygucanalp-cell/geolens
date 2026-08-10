@@ -63,7 +63,7 @@ CI workflow: lint → test (`-short`) → build (api, scheduler, worker).
 - **Migrations** in `migrations/` — auto-executed by docker-compose (mounted to `/docker-entrypoint-initdb.d`)
 - **Secrets**: SOPS+Age encrypted file at `docker/.env.secrets.enc`, decrypted at container start by `docker/entrypoint.sh`
 - **Frontend**: React 18 + TypeScript + Vite + Recharts, proxies `/v1` → `localhost:8080`
-- **Go version note**: `go.mod` says `go 1.26.1`, CI workflow pins `GO_VERSION: "1.23"` — the CI config may need updating
+- **Go version note**: `go.mod` says `go 1.26.1`, CI workflow pins `GO_VERSION: "1.26"` — in sync
 
 ## specification/ — Pure Docs
 

@@ -15,6 +15,7 @@ import (
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/httputil"
+	"github.com/geolens/platform/platform/queue"
 )
 
 type Handler struct {
@@ -354,6 +355,18 @@ func (h *Handler) Run(w http.ResponseWriter, r *http.Request) {
 		slog.Error("redteam run kayıt hatası", "error", err)
 		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "test çalıştırılamadı"})
 		return
+	}
+
+	// O-6: RedTeamRunCompleted olayını outbox üzerinden taşı (doğrudan DB yazımı yerine)
+	if err := queue.EnqueueEvent(r.Context(), h.pool, "redteam.run.completed", queue.StreamGovernance, map[string]interface{}{
+		"run_id":        run.ID,
+		"target_name":   run.TargetName,
+		"total_cases":   run.TotalCases,
+		"passed":        run.Passed,
+		"failed":        run.Failed,
+		"defense_score": run.DefenseScore,
+	}, tenantID, "redteam:run:"+run.ID); err != nil {
+		slog.Warn("redteam olayı outbox'a yazılamadı", "run_id", run.ID, "error", err)
 	}
 
 	for _, res := range results {

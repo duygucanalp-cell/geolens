@@ -456,7 +456,7 @@ Executive Dashboard (FR-F8) ve Operasyonel Dashboard (FR-F9) içinde:
 4. **Marka profili cold-start:** Hallüsinasyon tespitinin çalışması için marka profili bilgilerinin doldurulması gerekir. MVP onboarding akışına marka profili oluşturma adımı eklenmelidir. Profil boşken hallüsinasyon tespiti pasif kalır.
 5. **Doğrulama döngüsü:** Hallüsinasyon tespiti tam otomatik değildir. Kritik/yüksek bulgular manuel doğrulama gerektirir. Kullanıcı "verify" veya "false_positive" olarak işaretleyebilir. "false_positive" işaretleri FR-F1 anlamlı uyarı metriğini (M11 yanlis alarm orani) besler.
 5. **Dil desteği:** Sentiment sözlüğü TR + EN dillerinde başlar. Her yeni dil için ayrı sözlük oluşturulması gerekir.
-6. **Specification bağlantısı:** Sentiment analizi metodolojisi, GAVF Yanıt Standardı (S2) kapsamında specification reposuna eklenmelidir.
+6. **Specification bağlantısı:** Sentiment analizi metodolojisi, GAVF Yanıt Standardı (S2) kapsamında specification reposuna eklenmiştir: `specification/docs/01-standard/0110-sentiment-hallucination-standard.md`.
 
 ---
 
@@ -492,3 +492,4 @@ Executive Dashboard (FR-F8) ve Operasyonel Dashboard (FR-F9) içinde:
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 27.07.2026 | İlk yayın: Duygu analizi (sentiment) ve hallüsinasyon tespiti metodolojisi. 5 duygu sınıfı, 5 hallüsinasyon türü, sözlük bazlı tespit, marka profili doğrulama, veri modeli (sentiment_scores, hallucination_flags), API tasarımı, alerting ve dashboard entegrasyonu. Turkcell RFP gereksinimlerini karşılar (FR-D7, FR-D8). |
+| 1.1 | 10.08.2026 | Specification bağlantısı kapatıldı: metodoloji spec 0110'a eklendi (0110-sentiment-hallucination-standard.md). |

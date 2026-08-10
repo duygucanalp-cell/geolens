@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -57,6 +58,10 @@ type Config struct {
 	GoogleOAuthClientID     string
 	GoogleOAuthClientSecret string
 	BaseURL                 string
+	// Hardcoded değerlerin env'e taşınması (PO review §4)
+	JWTTokenTTL       time.Duration // JWT_TOKEN_TTL (varsayılan 2h)
+	StripePriceIDsRaw string        // STRIPE_PRICE_IDS — "tier=priceId,..." (varsayılan boş → Stripe default map)
+	ScoreWeightsRaw   string        // SCORE_WEIGHTS — "presence,position,source,competitor" (varsayılan 35/25/20/20)
 }
 
 // LoadFromEnv reads configuration from environment variables with sensible defaults.
@@ -109,7 +114,55 @@ func LoadFromEnv() Config {
 		GoogleOAuthClientID:     getEnv("GOOGLE_OAUTH_CLIENT_ID", ""),
 		GoogleOAuthClientSecret: getEnv("GOOGLE_OAUTH_CLIENT_SECRET", ""),
 		BaseURL:                 getEnv("BASE_URL", "http://localhost:8080"),
+		JWTTokenTTL:             parseDuration(getEnv("JWT_TOKEN_TTL", "2h")),
+		StripePriceIDsRaw:       getEnv("STRIPE_PRICE_IDS", ""),
+		ScoreWeightsRaw:         getEnv("SCORE_WEIGHTS", ""),
 	}
+}
+
+// ParseStripePriceIDs parses the STRIPE_PRICE_IDS env ("tier=priceId,tier=priceId,...")
+// into the Stripe price map. Boş veya geçersiz girdide nil döner (Stripe default map kullanılır).
+// Örn: "pro=price_1xxx,business=price_2xxx,enterprise=price_3xxx"
+func (c Config) ParseStripePriceIDs() map[string]string {
+	if c.StripePriceIDsRaw == "" {
+		return nil
+	}
+	out := make(map[string]string)
+	for _, pair := range strings.Split(c.StripePriceIDsRaw, ",") {
+		kv := strings.SplitN(pair, "=", 2)
+		if len(kv) != 2 {
+			continue
+		}
+		key := strings.TrimSpace(kv[0])
+		if key != "" {
+			out[key] = strings.TrimSpace(kv[1])
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+// ParseScoreWeights parses the SCORE_WEIGHTS env ("presence,position,source,competitor").
+// Geçersiz girdide ok=false döner — varsayılan GAVF ağırlıkları (35/25/20/20) kullanılır.
+func (c Config) ParseScoreWeights() (presence, position, source, competitor float64, ok bool) {
+	if c.ScoreWeightsRaw == "" {
+		return 0, 0, 0, 0, false
+	}
+	parts := strings.Split(c.ScoreWeightsRaw, ",")
+	if len(parts) != 4 {
+		return 0, 0, 0, 0, false
+	}
+	vals := make([]float64, 4)
+	for i, p := range parts {
+		v, err := strconv.ParseFloat(strings.TrimSpace(p), 64)
+		if err != nil {
+			return 0, 0, 0, 0, false
+		}
+		vals[i] = v
+	}
+	return vals[0], vals[1], vals[2], vals[3], true
 }
 
 func getEnv(key, fallback string) string {

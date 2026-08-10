@@ -38,6 +38,10 @@ linters:
         - "personel"
         - "cancelled"
         - "güncellen"
+        # "analyses" geçerli İngilizce çoğuldur (analysis) ve DB tablo adlarında (gap_analyses,
+        # bot_analyses, schema_analyses) + Prometheus metrik adlarında kullanılır; rename migration
+        # gerektirir ve metrik adlarını kırar. Bu yüzden linter sözlüğünden istisna edilir.
+        - "analyses"
     revive:
       severity: warning
       rules:

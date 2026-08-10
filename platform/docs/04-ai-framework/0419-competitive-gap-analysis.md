@@ -547,7 +547,7 @@ CREATE INDEX idx_gap_recommendations ON competitive.gap_recommendations(gap_id);
 3. **Competitive Score (0-100)**, yönetici dashboard'unda (FR-F8) tek bir metrik olarak gösterilebilir.
 4. **Öneri motoru entegrasyonu:** Her gap tespiti, 0413 Recommendation Engine'e kanıt dereceli öneri olarak beslenir.
 5. **Rakip bazlı analiz:** Her marka için sınırsız sayıda rakip tanımlanabilir. Her rakip çifti için ayrı gap analizi yapılır.
-6. **Specification bağlantısı:** Competitive Gap metodolojisi, GAVF S3 (Skor Standardı) kapsamında specification reposuna eklenmelidir.
+6. **Specification bağlantısı:** Competitive Gap metodolojisi, GAVF S3 (Skor Standardı) kapsamında specification reposuna eklenmiştir: `specification/docs/01-standard/0113-competitive-gap-standard.md`.
 
 ---
 
@@ -579,3 +579,4 @@ CREATE INDEX idx_gap_recommendations ON competitive.gap_recommendations(gap_id);
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 27.07.2026 | İlk yayın: Competitive Gap Analysis metodolojisi. 5 gap türü (Visibility/Citation/Content/Topic/Prompt), her biri için algoritma, normalizasyon, alert eşikleri. Örnek JSON raporlar, veri modeli (gap_snapshots, gap_recommendations), Dashboard ve Öneri Motoru entegrasyonu. Turkcell RFP gereksinimini karşılar (FR-D11). |
+| 1.1 | 10.08.2026 | Specification bağlantısı kapatıldı: metodoloji spec 0113'e eklendi (0113-competitive-gap-standard.md). |

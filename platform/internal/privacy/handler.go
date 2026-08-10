@@ -201,6 +201,7 @@ func (h *Handler) ExportData(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", `attachment; filename="geolens-data-export.json"`)
 	httputil.WriteJSON(w, http.StatusOK, payload)
 }
+
 // KVKK kapsamında kullanıcının veri silme talebi.
 // Admin: doğrudan anonimleştirme yapar.
 // Editor/Viewer: talep oluşturur (admin onayı gerekir).

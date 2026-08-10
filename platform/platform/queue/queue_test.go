@@ -1,9 +1,14 @@
 package queue
 
 import (
+	"context"
+	"errors"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/geolens/platform/internal/dbiface"
+	"github.com/geolens/platform/internal/testutil"
 )
 
 func TestNewRedisClient_InvalidURL(t *testing.T) {
@@ -93,6 +98,58 @@ func TestNewDispatcher_NilFields(t *testing.T) {
 	}
 	if d.rdb != nil {
 		t.Fatal("expected nil rdb")
+	}
+}
+
+// ---- O-6: Outbox Olay Taşıması Testleri ----
+
+func TestStreamGovernanceConstant(t *testing.T) {
+	if StreamGovernance != "q:governance" {
+		t.Fatalf("StreamGovernance = %q, want q:governance", StreamGovernance)
+	}
+}
+
+func TestEnqueueEvent(t *testing.T) {
+	execCount := 0
+	pool := &testutil.MockPool{ExecFunc: func(_ context.Context, sql string, _ ...any) (dbiface.CommandResult, error) {
+		execCount++
+		if !strings.Contains(sql, "INSERT INTO public.event_outbox") {
+			t.Fatalf("beklenen outbox INSERT, SQL: %s", sql)
+		}
+		return testutil.MockCommandResult{RowsAffectedVal: 1}, nil
+	}}
+
+	if err := EnqueueEvent(context.Background(), pool, "guardrail.violation", StreamGovernance,
+		map[string]interface{}{"rule_id": "r-1"}, "tenant-1", "idem-1"); err != nil {
+		t.Fatalf("EnqueueEvent hatası: %v", err)
+	}
+	if execCount != 1 {
+		t.Fatalf("beklenen 1 Exec, gerçek %d", execCount)
+	}
+}
+
+func TestEnqueueEvent_EmptyIdempotencyKey(t *testing.T) {
+	pool := &testutil.MockPool{ExecFunc: func(_ context.Context, _ string, args ...any) (dbiface.CommandResult, error) {
+		// idempotency_key boş bırakılırsa NULL (nil) yazılmalı
+		if args[5] != nil {
+			t.Fatalf("beklenen nil idempotency key, gerçek %v", args[5])
+		}
+		return testutil.MockCommandResult{RowsAffectedVal: 1}, nil
+	}}
+
+	if err := EnqueueEvent(context.Background(), pool, "drift.alert.triggered", StreamGovernance,
+		map[string]interface{}{"entity_id": "e-1"}, "tenant-1", ""); err != nil {
+		t.Fatalf("EnqueueEvent hatası: %v", err)
+	}
+}
+
+func TestEnqueueEvent_Error(t *testing.T) {
+	pool := &testutil.MockPool{ExecFunc: func(_ context.Context, _ string, _ ...any) (dbiface.CommandResult, error) {
+		return nil, errors.New("db error")
+	}}
+	if err := EnqueueEvent(context.Background(), pool, "incident.opened", StreamGovernance,
+		map[string]interface{}{}, "t-1", ""); err == nil {
+		t.Fatal("beklenen hata, nil geldi")
 	}
 }
 

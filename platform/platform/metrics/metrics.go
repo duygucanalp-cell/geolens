@@ -207,6 +207,13 @@ var (
 		Name: "geolens_gap_alerts_triggered_total",
 		Help: "Tetiklenen gap alert sayısı (gap_type ayrımıyla)",
 	}, []string{"gap_type"})
+
+	// GovernanceEventsTotal counts Faz 4 governance events consumed from q:governance (O-6).
+	// GuardrailViolation, GateCheckDecision, IncidentOpened, DriftAlertTriggered, RedTeamRunCompleted.
+	GovernanceEventsTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "geolens_governance_events_total",
+		Help: "Faz 4 yönetişim olayı sayısı (event_type, tenant ayrımıyla)",
+	}, []string{LabelType, LabelTenant})
 )
 
 // ---- SEO Sync Metrics (FR-B8 / HT2 sertleştirme) ----

@@ -3,7 +3,9 @@ package guardrail
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"regexp"
@@ -15,6 +17,7 @@ import (
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/httputil"
+	"github.com/geolens/platform/platform/queue"
 )
 
 type Handler struct {
@@ -217,6 +220,21 @@ func (h *Handler) Evaluate(w http.ResponseWriter, r *http.Request) {
 		})
 
 		h.logEvaluation(r.Context(), tenantID, rule.ID, input.Prompt, input.Response, matched, actionTaken, time.Since(start).Milliseconds())
+
+		// O-6: guardrail ihlali olayını outbox üzerinden taşı (doğrudan DB yazımı yerine)
+		// İçerik türevli deterministik anahtar: aynı tenant+kural+prompt/response ikilisi
+		// için tekrarlanan evaluate çağrıları yinelenen olay üretmez (unique index).
+		if matched && actionTaken != "none" {
+			idemKey := guardrailIdempotencyKey(tenantID, rule.ID, input.Prompt, input.Response)
+			if err := queue.EnqueueEvent(r.Context(), h.pool, "guardrail.violation", queue.StreamGovernance, map[string]interface{}{
+				"rule_id":      rule.ID,
+				"rule_name":    rule.Name,
+				"category":     rule.Category,
+				"action_taken": actionTaken,
+			}, tenantID, idemKey); err != nil {
+				slog.Warn("guardrail olayı outbox'a yazılamadı", "rule_id", rule.ID, "error", err)
+			}
+		}
 	}
 
 	resp := map[string]interface{}{
@@ -230,6 +248,14 @@ func (h *Handler) Evaluate(w http.ResponseWriter, r *http.Request) {
 		status = http.StatusForbidden
 	}
 	httputil.WriteJSON(w, status, resp)
+}
+
+// guardrailIdempotencyKey deterministik bir outbox idempotency anahtarı üretir.
+// Aynı (tenant, rule, prompt, response) ikilisi her zaman aynı anahtarı verir —
+// tekrarlanan evaluate çağrıları event_outbox unique index'i sayesinde tek olaya indirgenir.
+func guardrailIdempotencyKey(tenantID, ruleID, prompt, response string) string {
+	h := sha256.Sum256([]byte(tenantID + "|" + ruleID + "|" + prompt + "|" + response))
+	return fmt.Sprintf("guardrail:%s:%x", ruleID, h[:12])
 }
 
 // compilePattern compiles a guardrail pattern into a regexp.

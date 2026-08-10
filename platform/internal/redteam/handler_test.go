@@ -127,8 +127,10 @@ func TestRun_Success(t *testing.T) {
 		QueryRowFunc: func(_ context.Context, _ string, _ ...any) dbiface.RowScanner {
 			return &testutil.MockRow{Values: []any{"run-1", "hedef", 2, 1, 1, 50.0, "completed", "now"}}
 		},
-		ExecFunc: func(_ context.Context, _ string, _ ...any) (dbiface.CommandResult, error) {
-			insertCount++
+		ExecFunc: func(_ context.Context, sql string, _ ...any) (dbiface.CommandResult, error) {
+			if strings.Contains(sql, "INSERT INTO redteam.results") {
+				insertCount++
+			}
 			return testutil.MockCommandResult{RowsAffectedVal: 1}, nil
 		},
 	})

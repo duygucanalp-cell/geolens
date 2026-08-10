@@ -171,3 +171,24 @@ func TestSeedDefaults(t *testing.T) {
 		t.Fatalf("expected 8 seed inserts, got %d", count)
 	}
 }
+
+// TestGuardrailIdempotencyKey deterministik olmalı: aynı girdi → aynı anahtar,
+// farklı girdi → farklı anahtar (yinelenen outbox olayını engelleme garantisi).
+func TestGuardrailIdempotencyKey(t *testing.T) {
+	k1 := guardrailIdempotencyKey("T01", "R1", "prompt a", "response b")
+	k2 := guardrailIdempotencyKey("T01", "R1", "prompt a", "response b")
+	if k1 != k2 {
+		t.Fatalf("same input should produce same key: %q vs %q", k1, k2)
+	}
+
+	k3 := guardrailIdempotencyKey("T02", "R1", "prompt a", "response b")
+	k4 := guardrailIdempotencyKey("T01", "R2", "prompt a", "response b")
+	k5 := guardrailIdempotencyKey("T01", "R1", "prompt b", "response b")
+	if k3 == k1 || k4 == k1 || k5 == k1 {
+		t.Fatal("different inputs should produce different keys")
+	}
+
+	if len(k1) == 0 || k1[:10] != "guardrail:" {
+		t.Fatalf("unexpected key format: %q", k1)
+	}
+}

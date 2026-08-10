@@ -330,7 +330,7 @@ Content GEO çıktıları, 0413 Öneri Motoru'na girdi sağlar:
 3. **Topic Cluster ve FAQ önerileri**, AI motorlarının yapılandırılmış içeriği daha kolay alıntılaması prensibine dayanır.
 4. **Semantik optimizasyon**, geleneksel SEO'nun LSI kelime stratejisinin AI çağındaki karşılığıdır.
 5. **Öneri motoru entegrasyonu:** Content GEO çıktıları doğrudan 0413 Recommendation Engine'e kanıt dereceli öneri olarak beslenir.
-6. **Specification bağlantısı:** Content GEO metodolojisi, GAVF S5 (GEO Standardı) kapsamında specification reposuna eklenmelidir.
+6. **Specification bağlantısı:** Content GEO metodolojisi, GAVF S5 (GEO Standardı) kapsamında specification reposuna eklenmiştir: `specification/docs/01-standard/0112-content-geo-standard.md`.
 
 ---
 
@@ -364,3 +364,4 @@ Content GEO çıktıları, 0413 Öneri Motoru'na girdi sağlar:
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 27.07.2026 | İlk yayın: Content GEO metodolojisi. Content Gap Analizi (5 gap türü, fırsat puanı), GEO içerik önerileri (Topic Cluster, FAQ, Entity, semantik/LSI optimizasyon), Content Hub stratejisi ve puanı, Öneri Motoru entegrasyonu. Turkcell RFP gereksinimlerini karşılar (FR-E5, FR-E6). |
+| 1.1 | 10.08.2026 | Specification bağlantısı kapatıldı: metodoloji spec 0112'ye eklendi (0112-content-geo-standard.md). |

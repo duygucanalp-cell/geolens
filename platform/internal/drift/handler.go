@@ -2,7 +2,9 @@
 package drift
 
 import (
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"math"
 	"net/http"
@@ -12,6 +14,7 @@ import (
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/httputil"
+	"github.com/geolens/platform/platform/queue"
 )
 
 type Handler struct {
@@ -262,6 +265,20 @@ func (h *Handler) Analyze(w http.ResponseWriter, r *http.Request) {
 		`, tenantID, entityID, "", metric, score, severity, refMean, curMean, delta, "güncel pencere referans ortalamasından sapıyor")
 		if err != nil {
 			slog.Debug("drift uyarı kayıt hatası", "error", err)
+		} else {
+			// O-6: DriftAlertTriggered olayını outbox üzerinden taşı (doğrudan DB yazımı yerine)
+			// İçerik türevli deterministik anahtar: aynı pencere/skor için tekrarlanan analyze
+			// çağrıları yinelenen olay üretmez (unique index).
+			idemKey := driftIdempotencyKey(entityID, metric, score, delta)
+			if err := queue.EnqueueEvent(r.Context(), h.pool, "drift.alert.triggered", queue.StreamGovernance, map[string]interface{}{
+				"entity_id":   entityID,
+				"metric":      metric,
+				"drift_score": score,
+				"severity":    severity,
+				"delta":       delta,
+			}, tenantID, idemKey); err != nil {
+				slog.Warn("drift uyarı olayı outbox'a yazılamadı", "entity_id", entityID, "error", err)
+			}
 		}
 	}
 
@@ -307,6 +324,14 @@ func (h *Handler) ListAlerts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{"alerts": alerts, "total": len(alerts)})
+}
+
+// driftIdempotencyKey deterministik bir outbox idempotency anahtarı üretir.
+// Aynı (entity, metric, skor, delta) kombinasyonu her zaman aynı anahtarı verir —
+// drift_score 2 ondalığa yuvarlandığı için aynı pencere tekrar analiz edilse bile sabittir.
+func driftIdempotencyKey(entityID, metric string, score, delta float64) string {
+	h := sha256.Sum256([]byte(fmt.Sprintf("%s|%s|%.2f|%.2f", entityID, metric, score, delta)))
+	return fmt.Sprintf("drift:%s:%x", entityID, h[:12])
 }
 
 // computeDriftScore referans ve güncel değerler arasındaki sapmayı 0-100 aralığına ölçekler.

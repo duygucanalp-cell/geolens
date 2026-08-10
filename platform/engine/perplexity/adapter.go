@@ -135,7 +135,7 @@ func (a *Adapter) Execute(ctx context.Context, prompt string) (*engine.RawRespon
 		return nil, fmt.Errorf("perplexity api hatası (HTTP %d): %s", resp.StatusCode, string(rawBody))
 	}
 
-	return a.parseResponse(rawBody, durationMs)
+	return a.parseResponse(ctx, rawBody, durationMs)
 }
 
 // mockResponse returns a realistic mock response for demo purposes.
@@ -162,7 +162,7 @@ func mockResponse(prompt string) *engine.RawResponse {
 }
 
 // parseResponse parses a raw Perplexity API response into RawResponse.
-func (a *Adapter) parseResponse(raw []byte, durationMs int64) (*engine.RawResponse, error) {
+func (a *Adapter) parseResponse(ctx context.Context, raw []byte, durationMs int64) (*engine.RawResponse, error) {
 	var sr sonarResponse
 	if err := json.Unmarshal(raw, &sr); err != nil {
 		return nil, fmt.Errorf("perplexity yanıt ayrıştırma: %w", err)
@@ -199,7 +199,6 @@ func (a *Adapter) parseResponse(raw []byte, durationMs int64) (*engine.RawRespon
 	// Ham yanıtı S3'e kaydet (storage varsa)
 	// storage için hem interface nil hem de içteki pointer nil kontrolü
 	if a.storage != nil && a.tenantID != "" {
-		ctx := context.Background()
 		key, err := a.storage.SaveRawResponse(ctx, a.tenantID, a.workspaceID, "perplexity", raw)
 		if err != nil {
 			// Non-fatal: S3 hatası skor hesaplamasını engellemez

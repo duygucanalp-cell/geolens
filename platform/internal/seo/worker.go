@@ -247,7 +247,7 @@ func (w *SyncWorker) discoverGA4Properties(ctx context.Context, accessToken stri
 	if err != nil {
 		return nil, fmt.Errorf("property listeleme: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("property listeleme hatası (HTTP %d)", resp.StatusCode)
@@ -315,7 +315,7 @@ func (w *SyncWorker) syncGA4Data(ctx context.Context, tenantID, workspaceID, con
 		if derr != nil {
 			return true, fmt.Errorf("ga4 api çağrısı: %w", derr)
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		b, rerr := io.ReadAll(resp.Body)
 		if rerr != nil {
 			return false, fmt.Errorf("yanıt okuma: %w", rerr)
@@ -420,7 +420,7 @@ func (w *SyncWorker) syncBrandData(ctx context.Context, tenantID, workspaceID, c
 		if derr != nil {
 			return true, fmt.Errorf("api çağrısı: %w", derr)
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		b, rerr := io.ReadAll(resp.Body)
 		if rerr != nil {
 			return false, fmt.Errorf("yanıt okuma: %w", rerr)
@@ -500,7 +500,7 @@ func (w *SyncWorker) refreshAccessToken(ctx context.Context, refreshToken string
 	if err != nil {
 		return nil, fmt.Errorf("refresh isteği: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var tr tokenResponse
 	if err := json.NewDecoder(resp.Body).Decode(&tr); err != nil {
@@ -629,12 +629,12 @@ func retryableStatus(code int) bool {
 
 func parseInt64(s string) int64 {
 	var v int64
-	fmt.Sscanf(s, "%d", &v)
+	_, _ = fmt.Sscanf(s, "%d", &v)
 	return v
 }
 
 func parseFloat(s string) float64 {
 	var v float64
-	fmt.Sscanf(s, "%f", &v)
+	_, _ = fmt.Sscanf(s, "%f", &v)
 	return v
 }

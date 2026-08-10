@@ -15,6 +15,7 @@ import (
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/httputil"
+	"github.com/geolens/platform/platform/queue"
 )
 
 type Handler struct {
@@ -150,6 +151,20 @@ func (h *Handler) Check(w http.ResponseWriter, r *http.Request) {
 		decision, passed, len(checks), string(checkDetailsJSON))
 	if err != nil {
 		slog.Warn("gate check persistence hatası", "check_id", checkID, "error", err)
+	} else {
+		// O-6: GateCheckDecision olayını outbox üzerinden taşı (doğrudan DB yazımı yerine)
+		if err := queue.EnqueueEvent(r.Context(), h.pool, "gate.check.decision", queue.StreamGovernance, map[string]interface{}{
+			"check_id":    checkID,
+			"entity_id":   entityID,
+			"entity_type": input.EntityType,
+			"target_env":  input.TargetEnv,
+			"version":     input.Version,
+			"decision":    decision,
+			"passed":      passed,
+			"total":       len(checks),
+		}, tenantID, "gate:check:"+checkID); err != nil {
+			slog.Warn("gate karar olayı outbox'a yazılamadı", "check_id", checkID, "error", err)
+		}
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, map[string]interface{}{

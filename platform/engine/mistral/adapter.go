@@ -152,7 +152,7 @@ func (a *Adapter) Execute(ctx context.Context, prompt string) (*engine.RawRespon
 		return nil, fmt.Errorf("mistral api hatası (HTTP %d): %s", resp.StatusCode, string(rawBody))
 	}
 
-	return a.parseResponse(rawBody, durationMs)
+	return a.parseResponse(ctx, rawBody, durationMs)
 }
 
 // mockResponse returns a realistic mock response for demo purposes.
@@ -180,7 +180,7 @@ func mockResponse(prompt string) *engine.RawResponse {
 }
 
 // parseResponse parses a raw Mistral API response into RawResponse.
-func (a *Adapter) parseResponse(raw []byte, durationMs int64) (*engine.RawResponse, error) {
+func (a *Adapter) parseResponse(ctx context.Context, raw []byte, durationMs int64) (*engine.RawResponse, error) {
 	var cr chatResponse
 	if err := json.Unmarshal(raw, &cr); err != nil {
 		return nil, fmt.Errorf("mistral yanıt ayrıştırma: %w", err)
@@ -208,7 +208,6 @@ func (a *Adapter) parseResponse(raw []byte, durationMs int64) (*engine.RawRespon
 
 	// Ham yanıtı S3'e kaydet (storage varsa)
 	if a.storage != nil && a.tenantID != "" {
-		ctx := context.Background()
 		key, err := a.storage.SaveRawResponse(ctx, a.tenantID, a.workspaceID, "mistral", raw)
 		if err != nil {
 			resp.S3Ref = ""

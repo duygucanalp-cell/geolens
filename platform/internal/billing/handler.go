@@ -31,6 +31,14 @@ func NewHandler(pool *db.Pool, stripeKey, webhookSecret, efaturaMode string) *Ha
 	}
 }
 
+// SetPriceIDs overrides the Stripe tier→price mapping from env (STRIPE_PRICE_IDS).
+// PO review §4: hardcoded price ID'leri env üzerinden yapılandırılabilir (HT2 multi-currency).
+func (h *Handler) SetPriceIDs(priceIDs map[string]string) {
+	if h.stripe != nil && len(priceIDs) > 0 {
+		h.stripe.SetPriceIDs(priceIDs)
+	}
+}
+
 func (h *Handler) CreateCheckoutSession(w http.ResponseWriter, r *http.Request) {
 	tenantID := httpmw.GetTenantID(r.Context())
 

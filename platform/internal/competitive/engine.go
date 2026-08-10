@@ -24,6 +24,14 @@ func NewEngine(pool *db.Pool) *Engine {
 	return &Engine{pool: pool}
 }
 
+// scanRow logs and tolerates row-scan errors on COALESCE queries that always return a row.
+// Hata durumunda değişken varsayılan değerinde (0) kalır — gap hesaplaması devam eder.
+func scanRow(err error) {
+	if err != nil {
+		slog.Debug("competitive gap: satır okuma hatası", "error", err)
+	}
+}
+
 // GapSnapshot represents a complete gap analysis between brand and competitor.
 type GapSnapshot struct {
 	ID               string     `json:"id"`
@@ -155,15 +163,15 @@ func (e *Engine) analyzeCompetitor(ctx context.Context, brandID, brandName, comp
 func (e *Engine) calcVisibilityGap(ctx context.Context, brandID, compID, tenantID string) *GapDetail {
 	var brandSOV, compSOV float64
 
-	e.pool.QueryRow(ctx, `
+	scanRow(e.pool.QueryRow(ctx, `
 		SELECT COALESCE(AVG(value), 0) FROM measure.scores
 		WHERE brand_id = $1 AND tenant_id = $2 AND freshness_at > now() - interval '30 days'
-	`, brandID, tenantID).Scan(&brandSOV)
+	`, brandID, tenantID).Scan(&brandSOV))
 
-	e.pool.QueryRow(ctx, `
+	scanRow(e.pool.QueryRow(ctx, `
 		SELECT COALESCE(AVG(value), 0) FROM measure.scores
 		WHERE brand_id = $1 AND tenant_id = $2 AND freshness_at > now() - interval '30 days'
-	`, compID, tenantID).Scan(&compSOV)
+	`, compID, tenantID).Scan(&compSOV))
 
 	gap := brandSOV - compSOV
 	norm := 50.0 + (gap/100.0)*50.0
@@ -194,20 +202,20 @@ func (e *Engine) calcVisibilityGap(ctx context.Context, brandID, compID, tenantI
 func (e *Engine) calcCitationGap(ctx context.Context, brandID, compID, tenantID string) *GapDetail {
 	var brandCites, compCites, totalCites int
 
-	e.pool.QueryRow(ctx, `
+	scanRow(e.pool.QueryRow(ctx, `
 		SELECT COALESCE(SUM(citation_count), 0) FROM measure.citations
 		WHERE brand_id = $1 AND tenant_id = $2
-	`, brandID, tenantID).Scan(&brandCites)
+	`, brandID, tenantID).Scan(&brandCites))
 
-	e.pool.QueryRow(ctx, `
+	scanRow(e.pool.QueryRow(ctx, `
 		SELECT COALESCE(SUM(citation_count), 0) FROM measure.citations
 		WHERE brand_id = $1 AND tenant_id = $2
-	`, compID, tenantID).Scan(&compCites)
+	`, compID, tenantID).Scan(&compCites))
 
-	e.pool.QueryRow(ctx, `
+	scanRow(e.pool.QueryRow(ctx, `
 		SELECT COALESCE(SUM(citation_count), 0) FROM measure.citations
 		WHERE (brand_id = $1 OR brand_id = $2) AND tenant_id = $3
-	`, brandID, compID, tenantID).Scan(&totalCites)
+	`, brandID, compID, tenantID).Scan(&totalCites))
 
 	brandRate := 0.0
 	compRate := 0.0
@@ -245,15 +253,15 @@ func (e *Engine) calcCitationGap(ctx context.Context, brandID, compID, tenantID 
 func (e *Engine) calcContentGap(ctx context.Context, brandID, compID, tenantID string) *GapDetail {
 	// Simplified: compare source domain diversity
 	var brandDomains, compDomains int
-	e.pool.QueryRow(ctx, `
+	scanRow(e.pool.QueryRow(ctx, `
 		SELECT COUNT(DISTINCT source_domain) FROM measure.citations
 		WHERE brand_id = $1 AND tenant_id = $2
-	`, brandID, tenantID).Scan(&brandDomains)
+	`, brandID, tenantID).Scan(&brandDomains))
 
-	e.pool.QueryRow(ctx, `
+	scanRow(e.pool.QueryRow(ctx, `
 		SELECT COUNT(DISTINCT source_domain) FROM measure.citations
 		WHERE brand_id = $1 AND tenant_id = $2
-	`, compID, tenantID).Scan(&compDomains)
+	`, compID, tenantID).Scan(&compDomains))
 
 	gap := float64(brandDomains - compDomains)
 	norm := 50.0 + (gap/20.0)*50.0 // normalize assuming max 20 domain difference
@@ -284,15 +292,15 @@ func (e *Engine) calcContentGap(ctx context.Context, brandID, compID, tenantID s
 func (e *Engine) calcTopicGap(ctx context.Context, brandID, compID, tenantID string) *GapDetail {
 	// Simplified: compare score presence across topics
 	var brandScore, compScore float64
-	e.pool.QueryRow(ctx, `
+	scanRow(e.pool.QueryRow(ctx, `
 		SELECT COALESCE(AVG(value), 0) FROM measure.scores
 		WHERE brand_id = $1 AND tenant_id = $2 AND freshness_at > now() - interval '30 days'
-	`, brandID, tenantID).Scan(&brandScore)
+	`, brandID, tenantID).Scan(&brandScore))
 
-	e.pool.QueryRow(ctx, `
+	scanRow(e.pool.QueryRow(ctx, `
 		SELECT COALESCE(AVG(value), 0) FROM measure.scores
 		WHERE brand_id = $1 AND tenant_id = $2 AND freshness_at > now() - interval '30 days'
-	`, compID, tenantID).Scan(&compScore)
+	`, compID, tenantID).Scan(&compScore))
 
 	gap := brandScore - compScore
 	norm := 50.0 + (gap/100.0)*50.0
@@ -323,15 +331,15 @@ func (e *Engine) calcTopicGap(ctx context.Context, brandID, compID, tenantID str
 func (e *Engine) calcPromptGap(ctx context.Context, brandID, compID, tenantID string) *GapDetail {
 	// Simplified: compare measurement job completion counts as proxy for prompt coverage
 	var brandJobs, compJobs int
-	e.pool.QueryRow(ctx, `
+	scanRow(e.pool.QueryRow(ctx, `
 		SELECT COUNT(*) FROM measure.measurement_jobs
 		WHERE brand_id = $1 AND tenant_id = $2 AND status = 'completed'
-	`, brandID, tenantID).Scan(&brandJobs)
+	`, brandID, tenantID).Scan(&brandJobs))
 
-	e.pool.QueryRow(ctx, `
+	scanRow(e.pool.QueryRow(ctx, `
 		SELECT COUNT(*) FROM measure.measurement_jobs
 		WHERE brand_id = $1 AND tenant_id = $2 AND status = 'completed'
-	`, compID, tenantID).Scan(&compJobs)
+	`, compID, tenantID).Scan(&compJobs))
 
 	brandCoverage := float64(brandJobs)
 	compCoverage := float64(compJobs)

@@ -264,7 +264,6 @@ func (a *Adapter) parseResponse(ctx context.Context, raw []byte, durationMs int6
 
 	// Ham yanıtı S3'e kaydet (storage varsa)
 	if a.storage != nil && a.tenantID != "" {
-		ctx := context.Background()
 		key, err := a.storage.SaveRawResponse(ctx, a.tenantID, a.workspaceID, "gemini", raw)
 		if err != nil {
 			resp.S3Ref = ""

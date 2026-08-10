@@ -151,7 +151,7 @@ func main() {
 	defer cancel()
 
 	// Redis Stream consumer group'u oluştur (yoksa)
-	analysisStreams := []string{queue.StreamSentiment, queue.StreamReplay, queue.StreamArchive, queue.StreamGap, queue.StreamTechnicalGeo, queue.StreamContentGeo}
+	analysisStreams := []string{queue.StreamSentiment, queue.StreamReplay, queue.StreamArchive, queue.StreamGap, queue.StreamTechnicalGeo, queue.StreamContentGeo, queue.StreamGovernance}
 	for _, s := range append([]string{queue.StreamMeasure}, analysisStreams...) {
 		if err := rdb.XGroupCreateMkStream(ctx, s, cfg.ConsumerGroup, "0").Err(); err != nil {
 			if !isGroupAlreadyExists(err) {
@@ -169,6 +169,13 @@ func main() {
 	go func() {
 		defer wg.Done()
 		runWorker(ctx, pool.Pool, rdb, engines, saver, cfg.ConsumerGroup, cfg.ConsumerGroup, measureSvc, recommendationSvc, deliverySvc, sentimentEngine, competitiveEngine)
+	}()
+
+	// Faz 4 yönetişim olay tüketicisi (q:governance — guardrail, gate, incident, drift, redteam)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		runGovernanceWorker(ctx, rdb, cfg.ConsumerGroup)
 	}()
 
 	// Queue depth collector (periyodik XLEN ile kuyruk derinliği metrikleri)
@@ -247,6 +254,67 @@ func runWorker(ctx context.Context, pool *pgxpool.Pool, rdb *redis.Client, engin
 			}
 		}
 	}
+}
+
+// runGovernanceWorker consumes Faz 4 governance events from q:governance (O-6).
+// Olaylar kaynak tablolarında (guardrail.evaluations, drift.alerts, vb.) zaten kalıcıdır;
+// bu tüketici telemetri toplar (GovernanceEventsTotal) ve mesajları ACK'ler.
+// Gelecekte webhook/bildirim tüketicisi buraya eklenebilir.
+func runGovernanceWorker(ctx context.Context, rdb *redis.Client, consumerGroup string) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			results, err := rdb.XReadGroup(ctx, &redis.XReadGroupArgs{
+				Group:    consumerGroup,
+				Consumer: consumerName + "-governance",
+				Streams:  []string{queue.StreamGovernance, ">"},
+				Count:    10,
+				Block:    5 * time.Second,
+			}).Result()
+
+			if err != nil && err != redis.Nil {
+				if isNoGroupError(err) {
+					slog.Warn("governance stream grubu bulunamadı, yeniden oluşturuluyor", "error", err)
+					_ = rdb.XGroupCreateMkStream(ctx, queue.StreamGovernance, consumerGroup, "0").Err()
+				} else {
+					slog.Error("governance stream okuma hatası", "error", err)
+				}
+				time.Sleep(1 * time.Second)
+				continue
+			}
+
+			if err == redis.Nil || len(results) == 0 {
+				continue
+			}
+
+			for _, stream := range results {
+				for _, msg := range stream.Messages {
+					processGovernanceMessage(rdb, stream.Stream, msg.ID, msg.Values, consumerGroup)
+				}
+			}
+		}
+	}
+}
+
+// processGovernanceMessage processes a single q:governance message: metrik toplar ve ACK'ler.
+func processGovernanceMessage(rdb *redis.Client, stream, msgID string, values map[string]interface{}, consumerGroup string) {
+	logger := slog.With("msg_id", msgID, "stream", stream)
+
+	eventType, _ := values["event"].(string)
+	tenantID, _ := values["tenant_id"].(string)
+
+	if eventType == "" {
+		logger.Warn("governance: event tipi eksik")
+		ackMessage(rdb, stream, msgID, consumerGroup)
+		return
+	}
+
+	metrics.GovernanceEventsTotal.WithLabelValues(eventType, tenantID).Inc()
+	logger.Debug("governance olayı işlendi", "event_type", eventType, "tenant_id", tenantID)
+
+	ackMessage(rdb, stream, msgID, consumerGroup)
 }
 
 // processMessage processes a single Redis Stream message.
@@ -755,7 +823,7 @@ func runQueueDepthCollector(ctx context.Context, rdb *redis.Client) {
 	defer ticker.Stop()
 
 	streams := []string{queue.StreamMeasure, queue.StreamAudit, queue.StreamReport, queue.StreamNotify,
-		queue.StreamSentiment, queue.StreamReplay, queue.StreamArchive, queue.StreamGap, queue.StreamTechnicalGeo, queue.StreamContentGeo}
+		queue.StreamSentiment, queue.StreamReplay, queue.StreamArchive, queue.StreamGap, queue.StreamTechnicalGeo, queue.StreamContentGeo, queue.StreamGovernance}
 	deadStreams := []string{queue.StreamDead}
 
 	slog.Info("kuyruk derinliği toplayıcı başlatıldı", "interval", "15s")

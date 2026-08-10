@@ -239,6 +239,100 @@ func TestPartialPublication_MixedEngines(t *testing.T) {
 	}
 }
 
+// ---- H15: Determinizm Testleri (ADR-012 Kriter 1) ----
+// G2 ilkesi: aynı girdi → aynı skor. Partial yayın dahil hiçbir rastgelelik skoru etkilemez.
+
+// TestCalculateScore_Deterministic verifies that identical inputs always produce identical scores.
+func TestCalculateScore_Deterministic(t *testing.T) {
+	data := []engine.RawResponse{
+		{EngineName: "perplexity", Content: "Acme sektör lideridir ve yenilikçi ürünleriyle tanınır.",
+			Citations: []engine.Citation{{URL: "https://example.com/acme", Position: 1, Engine: "perplexity"}}},
+		{EngineName: "chatgpt", Content: "Acme pazar lideridir.",
+			Citations: []engine.Citation{{URL: "https://test.org", Position: 1, Engine: "chatgpt"}}},
+	}
+
+	first := computeTotalScore(data, "Acme", ComponentWeights{})
+	second := computeTotalScore(data, "Acme", ComponentWeights{})
+
+	if first != second {
+		t.Errorf("aynı girdi farklı skor üretti: %f != %f", first, second)
+	}
+
+	// Bileşenler de deterministik olmalı
+	if computePresenceShare(data, "Acme") != computePresenceShare(data, "Acme") {
+		t.Error("PresenceShare deterministik değil")
+	}
+	if computePositionWeight(data) != computePositionWeight(data) {
+		t.Error("PositionWeight deterministik değil")
+	}
+	if computeSourceShare(data) != computeSourceShare(data) {
+		t.Error("SourceShare deterministik değil")
+	}
+	if computeCompetitorContext(data) != computeCompetitorContext(data) {
+		t.Error("CompetitorContext deterministik değil")
+	}
+}
+
+// TestPartialPublication_DeterministicRecompute verifies that recomputing with the
+// same partial data (some engines failed) yields bit-identical scores.
+func TestPartialPublication_DeterministicRecompute(t *testing.T) {
+	// 1/3 motor başarılı (2 motor başarısız — partial yayın)
+	partial := []engine.RawResponse{
+		{EngineName: "perplexity", Content: "Acme yenilikçi bir firma.",
+			Citations: []engine.Citation{{URL: "https://example.com", Position: 1, Engine: "perplexity"}}},
+	}
+
+	// Aynı partial veriyle tekrar tekrar hesapla — her seferinde aynı skor
+	var prev float64 = -1
+	for i := 0; i < 5; i++ {
+		total := computeTotalScore(partial, "Acme", ComponentWeights{})
+		if i > 0 && total != prev {
+			t.Fatalf("partial yayın yeniden hesapta farklı skor: %f != %f", total, prev)
+		}
+		prev = total
+	}
+
+	// 2/3 motor başarılı partial durum
+	mixed := append([]engine.RawResponse{}, partial...)
+	mixed = append(mixed, engine.RawResponse{
+		EngineName: "chatgpt",
+		Content:    "Acme pazar lideridir.",
+		Citations:  []engine.Citation{{URL: "https://test.org", Position: 1, Engine: "chatgpt"}},
+	})
+
+	run1 := computeTotalScore(mixed, "Acme", ComponentWeights{})
+	run2 := computeTotalScore(mixed, "Acme", ComponentWeights{})
+	if run1 != run2 {
+		t.Errorf("2 motorlu partial durum deterministik değil: %f != %f", run1, run2)
+	}
+}
+
+// TestCalculateScore_ScoreRange verifies the score stays in [0, 100] for edge inputs.
+func TestCalculateScore_ScoreRange(t *testing.T) {
+	// Tüm bileşenler 0 (marka hiç geçmiyor, alıntı yok) → alt sınır
+	empty := []engine.RawResponse{{
+		EngineName: "perplexity",
+		Content:    "Sektördeki en büyük firma hakkında bilgi.",
+	}}
+	total := computeTotalScore(empty, "Acme", ComponentWeights{})
+	if total < 0 {
+		t.Errorf("skor 0'ın altına düşmemeli: %f", total)
+	}
+
+	// Çok yüksek bileşenler → üst sınır 100
+	high := []engine.RawResponse{{
+		EngineName: "perplexity",
+		Content:    "Acme Acme Acme Acme Acme Acme Acme Acme Acme Acme Acme Acme",
+		Citations: []engine.Citation{
+			{URL: "https://a.com"}, {URL: "https://b.org"}, {URL: "https://c.net"},
+			{URL: "https://d.io"}, {URL: "https://e.co"},
+		},
+	}}
+	if total := computeTotalScore(high, "Acme", ComponentWeights{}); total > 100 {
+		t.Errorf("skor 100'ün üzerine çıkmamalı: %f", total)
+	}
+}
+
 func TestGenerateULID_Unique(t *testing.T) {
 	ids := make(map[string]bool)
 	for i := 0; i < 100; i++ {

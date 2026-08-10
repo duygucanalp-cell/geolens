@@ -29,11 +29,16 @@ type JWTService struct {
 }
 
 // NewJWTService creates a new JWT service.
-func NewJWTService(secret string) *JWTService {
-	ttl := 2 * time.Hour // kayan süre (D-28)
+// ttl opsiyoneldir; verilmezse 2 saat kullanılır (kayan süre, D-28).
+// PO review §4: hardcoded TTL env üzerinden yapılandırılabilir (JWT_TOKEN_TTL).
+func NewJWTService(secret string, ttl ...time.Duration) *JWTService {
+	tokenTTL := 2 * time.Hour // kayan süre (D-28)
+	if len(ttl) > 0 && ttl[0] > 0 {
+		tokenTTL = ttl[0]
+	}
 	return &JWTService{
 		secret:   []byte(secret),
-		tokenTTL: ttl,
+		tokenTTL: tokenTTL,
 	}
 }
 

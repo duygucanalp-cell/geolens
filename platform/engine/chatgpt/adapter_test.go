@@ -44,7 +44,7 @@ func TestParseResponse_Success(t *testing.T) {
 			"finish_reason": "stop"
 		}]
 	}`)
-	resp, err := a.parseResponse(raw, 150)
+	resp, err := a.parseResponse(context.Background(), raw, 150)
 	if err != nil {
 		t.Fatalf("parseResponse hata: %v", err)
 	}
@@ -85,7 +85,7 @@ func TestParseResponse_WithAnnotations(t *testing.T) {
 			"finish_reason": "stop"
 		}]
 	}`)
-	resp, err := a.parseResponse(raw, 150)
+	resp, err := a.parseResponse(context.Background(), raw, 150)
 	if err != nil {
 		t.Fatalf("parseResponse hata: %v", err)
 	}
@@ -103,7 +103,7 @@ func TestParseResponse_WithAnnotations(t *testing.T) {
 func TestParseResponse_EmptyChoices(t *testing.T) {
 	a := NewAdapter("test-key", nil)
 	raw := []byte(`{"id":"r-1","object":"chat.completion","model":"gpt-4o","choices":[]}`)
-	_, err := a.parseResponse(raw, 100)
+	_, err := a.parseResponse(context.Background(), raw, 100)
 	if err == nil {
 		t.Error("boş choices için hata bekleniyor")
 	}
@@ -111,7 +111,7 @@ func TestParseResponse_EmptyChoices(t *testing.T) {
 
 func TestParseResponse_InvalidJSON(t *testing.T) {
 	a := NewAdapter("test-key", nil)
-	_, err := a.parseResponse([]byte(`{invalid`), 100)
+	_, err := a.parseResponse(context.Background(), []byte(`{invalid`), 100)
 	if err == nil {
 		t.Error("geçersiz JSON için hata bekleniyor")
 	}

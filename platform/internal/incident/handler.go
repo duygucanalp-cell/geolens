@@ -15,6 +15,7 @@ import (
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/httputil"
+	"github.com/geolens/platform/platform/queue"
 )
 
 type Handler struct {
@@ -165,6 +166,18 @@ func (h *Handler) CreateIncident(w http.ResponseWriter, r *http.Request) {
 		slog.Warn("incident DB'ye yazılamadı", "error", err)
 		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "incident kaydedilemedi"})
 		return
+	}
+
+	// O-6: IncidentOpened olayını outbox üzerinden taşı (doğrudan DB yazımı yerine)
+	if err := queue.EnqueueEvent(r.Context(), h.pool, "incident.opened", queue.StreamGovernance, map[string]interface{}{
+		"incident_id": incidentID,
+		"severity":    input.Severity,
+		"category":    input.Category,
+		"title":       input.Title,
+		"status":      "open",
+		"source":      input.Source,
+	}, tenantID, "incident:opened:"+incidentID); err != nil {
+		slog.Warn("incident olayı outbox'a yazılamadı", "incident_id", incidentID, "error", err)
 	}
 
 	slog.Info("incident oluşturuldu", "incident_id", incidentID, "severity", input.Severity, "title", input.Title)

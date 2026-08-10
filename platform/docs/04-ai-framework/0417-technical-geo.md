@@ -332,7 +332,7 @@ GET    /v1/technical-geo/recommendations/{site_id}  — Teknik GEO önerileri
 2. **FR-B6 (LLM Bot izleme)** ve **FR-B7 (Schema analizi)** tüm paketlerde temel düzeyde sunulur. Detaylı analiz Pro+ paketlerdedir.
 3. **Citation Breakdown**, uzun vadede içerik stratejisinin AI kanalındaki başarısını ölçmek için kullanılır. Hangi içerik türlerinin daha çok alıntılandığı, içerik üretim önceliklerini belirler.
 4. **Knowledge Graph geliştirme** en uzun vadeli stratejidir ve doğrudan platform tarafından yapılamaz, ancak bu alandaki boşluklar tespit edilip öneri olarak sunulur.
-5. **Specification bağlantısı:** Teknik GEO metodolojisi, GAVF S5 (GEO Standardı) kapsamında specification reposuna eklenmelidir.
+5. **Specification bağlantısı:** Teknik GEO metodolojisi, GAVF S5 (GEO Standardı) kapsamında specification reposuna eklenmiştir: `specification/docs/01-standard/0111-technical-geo-standard.md`.
 
 ---
 
@@ -363,3 +363,4 @@ GET    /v1/technical-geo/recommendations/{site_id}  — Teknik GEO önerileri
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 27.07.2026 | İlk yayın: Teknik GEO metodolojisi. LLM bot izleme (8 bot, erişim skoru), Structured Data/Schema analizi (10 schema türü, puanlama), Citation Breakdown (8 URL kategorisi), Teknik GEO önerileri (SD, entity, knowledge graph, bot erişimi). Turkcell RFP gereksinimlerini karşılar (FR-B6, FR-B7, FR-E7). |
+| 1.1 | 10.08.2026 | Specification bağlantısı kapatıldı: metodoloji spec 0111'e eklendi (0111-technical-geo-standard.md). |

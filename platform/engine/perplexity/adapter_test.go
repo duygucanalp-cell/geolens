@@ -1,6 +1,7 @@
 package perplexity
 
 import (
+	"context"
 	"testing"
 
 	"github.com/geolens/platform/engine"
@@ -36,7 +37,7 @@ func TestParseResponse_Success(t *testing.T) {
 		"choices": [{"index": 0, "message": {"role": "assistant", "content": "Acme pazar lideridir."}}],
 		"citations": ["https://example.com"]
 	}`)
-	resp, err := a.parseResponse(raw, 150)
+	resp, err := a.parseResponse(context.Background(), raw, 150)
 	if err != nil {
 		t.Fatalf("parseResponse hata: %v", err)
 	}
@@ -54,7 +55,7 @@ func TestParseResponse_Success(t *testing.T) {
 func TestParseResponse_EmptyChoices(t *testing.T) {
 	a := NewAdapter("test-key", nil)
 	raw := []byte(`{"id": "req-1", "model": "sonar-pro", "choices": [], "citations": []}`)
-	_, err := a.parseResponse(raw, 100)
+	_, err := a.parseResponse(context.Background(), raw, 100)
 	if err == nil {
 		t.Error("boş choices için hata bekleniyor")
 	}
@@ -62,7 +63,7 @@ func TestParseResponse_EmptyChoices(t *testing.T) {
 
 func TestParseResponse_InvalidJSON(t *testing.T) {
 	a := NewAdapter("test-key", nil)
-	_, err := a.parseResponse([]byte(`{invalid`), 100)
+	_, err := a.parseResponse(context.Background(), []byte(`{invalid`), 100)
 	if err == nil {
 		t.Error("geçersiz JSON için hata bekleniyor")
 	}

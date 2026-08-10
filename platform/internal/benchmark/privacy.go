@@ -101,7 +101,7 @@ func laplaceRandom(scale float64) float64 {
 		u = 1e-16
 	}
 	// Shift to (-0.5, 0.5) then apply Laplace inverse CDF
-	u = u - 0.5
+	u -= 0.5
 	return -scale * math.Copysign(math.Log(1-2*math.Abs(u)), u)
 }
 
@@ -146,11 +146,12 @@ func AnonymizeSectorStats(raw RawSectorStats, config DPConfig) AggregatedSectorS
 	stats.Difference = stats.MyScore - stats.SectorAvg
 
 	// Trend determination based on difference after DP
-	if stats.Difference > 5.0 {
+	switch {
+	case stats.Difference > 5.0:
 		stats.Trend = "up"
-	} else if stats.Difference < -5.0 {
+	case stats.Difference < -5.0:
 		stats.Trend = "down"
-	} else {
+	default:
 		stats.Trend = "stable"
 	}
 

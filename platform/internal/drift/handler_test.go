@@ -7,6 +7,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/geolens/platform/internal/dbiface"
@@ -145,8 +146,10 @@ func TestAnalyze_WithDrift(t *testing.T) {
 		QueryFunc: func(_ context.Context, _ string, _ ...any) (dbiface.RowsIter, error) {
 			return testutil.NewMockRows(rows), nil
 		},
-		ExecFunc: func(_ context.Context, _ string, _ ...any) (dbiface.CommandResult, error) {
-			alertCount++
+		ExecFunc: func(_ context.Context, sql string, _ ...any) (dbiface.CommandResult, error) {
+			if strings.Contains(sql, "INSERT INTO drift.alerts") {
+				alertCount++
+			}
 			return testutil.MockCommandResult{RowsAffectedVal: 1}, nil
 		},
 	})
@@ -217,5 +220,26 @@ func TestSeverityFor(t *testing.T) {
 	}
 	if severityFor(70) != "critical" {
 		t.Fatal("70 should be critical")
+	}
+}
+
+// TestDriftIdempotencyKey deterministik olmalı: aynı (entity, metric, skor, delta)
+// kombinasyonu → aynı anahtar; farklı girdi → farklı anahtar.
+func TestDriftIdempotencyKey(t *testing.T) {
+	k1 := driftIdempotencyKey("brand-1", "visibility_score", 42.5, 3.25)
+	k2 := driftIdempotencyKey("brand-1", "visibility_score", 42.5, 3.25)
+	if k1 != k2 {
+		t.Fatalf("same input should produce same key: %q vs %q", k1, k2)
+	}
+
+	k3 := driftIdempotencyKey("brand-2", "visibility_score", 42.5, 3.25)
+	k4 := driftIdempotencyKey("brand-1", "refusal_rate", 42.5, 3.25)
+	k5 := driftIdempotencyKey("brand-1", "visibility_score", 60.0, 3.25)
+	if k3 == k1 || k4 == k1 || k5 == k1 {
+		t.Fatal("different inputs should produce different keys")
+	}
+
+	if len(k1) == 0 || k1[:6] != "drift:" {
+		t.Fatalf("unexpected key format: %q", k1)
 	}
 }

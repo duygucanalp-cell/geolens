@@ -97,8 +97,8 @@ func main() {
 	}
 	defer pool.Close()
 
-	// JWT servisi
-	jwtService := auth.NewJWTService(cfg.JWTSecret)
+	// JWT servisi (TTL env'den: JWT_TOKEN_TTL, varsayılan 2h)
+	jwtService := auth.NewJWTService(cfg.JWTSecret, cfg.JWTTokenTTL)
 
 	// S3 Storage (MinIO)
 	s3Client, err := storage.NewClient(cfg.S3Endpoint, cfg.S3AccessKey, cfg.S3SecretKey, cfg.S3Bucket, cfg.S3Region, false)
@@ -174,6 +174,9 @@ func main() {
 	apiKeyHandler := apikey.NewProductionHandler(pool)
 	publicHandler := public.NewProductionHandler(pool)
 	billingHandler := billing.NewHandler(pool, cfg.StripeAPIKey, cfg.StripeWebhookSecret, cfg.EFaturaMode)
+	if ids := cfg.ParseStripePriceIDs(); len(ids) > 0 {
+		billingHandler.SetPriceIDs(ids)
+	}
 	complianceHandler := compliance.NewHandler(pool)
 	retentionHandler := retention.NewHandler(pool)
 	pilotHandler := pilot.NewHandler(pool)
