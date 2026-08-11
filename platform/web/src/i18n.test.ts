@@ -100,7 +100,7 @@ describe('Turkish translations', () => {
   it('renders tab labels in Turkish', () => {
     expect(i18n.t('tab.scores')).toBe('Skorlar')
     expect(i18n.t('tab.audit')).toBe('Site Denetim')
-    expect(i18n.t('tab.cost')).toBe('Maliyet')
+    expect(i18n.t('tab.costs')).toBe('Maliyet & Kullanım')
     expect(i18n.t('tab.incident')).toBe('Incident')
   })
 
@@ -175,7 +175,7 @@ describe('English translations', () => {
   it('renders tab labels in English', () => {
     expect(i18n.t('tab.scores')).toBe('Scores')
     expect(i18n.t('tab.audit')).toBe('Site Audit')
-    expect(i18n.t('tab.cost')).toBe('Cost')
+    expect(i18n.t('tab.costs')).toBe('Cost & Usage')
     expect(i18n.t('tab.incident')).toBe('Incident')
   })
 
@@ -249,7 +249,7 @@ describe('Language switching flow', () => {
   it('changes tab labels when switching language', async () => {
     // Tab labels that have distinct TR vs EN translations
     const localizedTabKeys = ['scores', 'audit', 'reports', 'notifications', 'recommendations', 'monitoring',
-      'cost', 'usage', 'optimization', 'version']
+      'costs', 'replay', 'geo', 'version']
 
     // Turkish
     await i18n.changeLanguage('tr')

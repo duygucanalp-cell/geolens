@@ -1137,6 +1137,48 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .auth-card { padding: 2.25rem 1.75rem; }
 }
 
+/* ==== Birleşik sekmeler (merged tabs) ====
+   Birden çok panelin tek sayfada üst üste dizildiği düzen:
+   her alt panel kendi kartı olarak görünür, aralarında nefes payı bırakılır.
+   İlk alt panelin h3 başlığı sayfanın bölüm başlığı görevini üstlenir. */
+.merged-tab {
+  display: flex; flex-direction: column; gap: 1.5rem;
+}
+.merged-tab > * {
+  min-width: 0;
+}
+
+/* Birleşik sekme sayfa başlığı: h2 (pano başlığı hiyerarşisi) + açıklama */
+.merged-header {
+  background: linear-gradient(135deg, var(--surface) 0%, var(--accent-soft) 120%);
+  border: 1px solid var(--border); border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+}
+.merged-header h2 {
+  margin: 0 0 0.25rem; font-size: 1.2rem; font-weight: 700; color: var(--text-strong);
+}
+.merged-header p {
+  margin: 0; font-size: 0.85rem; color: var(--text-muted);
+}
+
+/* Başlık + paylaşılan kontroller (dönem seçici + yenile) yan yana */
+.merged-header-with-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.merged-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+.merged-controls .refresh-btn {
+  white-space: nowrap;
+}
+
 /* ==== Genel bakış (KPI) kartları ==== */
 .kpi-grid {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));

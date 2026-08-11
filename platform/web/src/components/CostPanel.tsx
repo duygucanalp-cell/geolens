@@ -1,29 +1,41 @@
 import { useTranslation } from 'react-i18next'
 import { useEffect, useMemo, useState } from 'react'
 import { PanelSkeleton } from './PanelSkeleton'
+import { PeriodSelect, type Period } from './PeriodSelect'
 import { getCostEntries, getCostSummary } from '../api/client'
 import type { CostEntry, CostSummary } from '../types'
 import { ENGINE_NAMES } from '../types'
 
 interface Props {
   workspaceId: string
+  // Birleşik sayfada dışarıdan kontrol edilir: dönem + yenileme durumu
+  // ortak başlıktan gelir, panel kendi kontrollerini gizler.
+  embedded?: boolean
+  period?: Period
+  refreshTick?: number
 }
 
-type Period = '1d' | '7d' | '30d' | '90d'
-
-export function CostPanel({ workspaceId: _ws }: Props) {
+export function CostPanel({
+  workspaceId: _ws,
+  embedded,
+  period: controlledPeriod,
+  refreshTick = 0,
+}: Props) {
   const { t, i18n } = useTranslation()
   const dateLocale = i18n.language?.startsWith('en') ? 'en-US' : 'tr-TR'
   const [entries, setEntries] = useState<CostEntry[]>([])
   const [summary, setSummary] = useState<CostSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [period, setPeriod] = useState<Period>('7d')
+  const [internalPeriod, setInternalPeriod] = useState<Period>('7d')
   const [filterEngine, setFilterEngine] = useState('all')
+
+  const period = controlledPeriod ?? internalPeriod
 
   useEffect(() => {
     loadData()
-  }, [period])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [period, refreshTick])
 
   async function loadData() {
     try {
@@ -62,21 +74,20 @@ export function CostPanel({ workspaceId: _ws }: Props) {
         <p className="monitoring-desc">{t('cost.desc')}</p>
       </div>
 
-      {/* Period Selector */}
+      {/* Dönem + yenileme birleşik sayfada ortak başlıkta; motor filtresi panele özeldir */}
       <div className="dashboard-filters">
-        <select value={period} onChange={(e) => setPeriod(e.target.value as Period)} className="filter-select">
-          <option value="1d">{t('period.24h')}</option>
-          <option value="7d">{t('period.7d')}</option>
-          <option value="30d">{t('period.30d')}</option>
-          <option value="90d">{t('period.90d')}</option>
-        </select>
+        {!embedded && (
+          <PeriodSelect value={period} onChange={setInternalPeriod} />
+        )}
         <select value={filterEngine} onChange={(e) => setFilterEngine(e.target.value)} className="filter-select">
           <option value="all">{t('cost.filter_all')}</option>
           {engines.map((e) => (
             <option key={e} value={e}>{t(ENGINE_NAMES[e]) || e}</option>
           ))}
         </select>
-        <button className="refresh-btn" onClick={loadData}>{t('common.refresh')}</button>
+        {!embedded && (
+          <button className="refresh-btn" onClick={loadData}>{t('common.refresh')}</button>
+        )}
       </div>
 
       {/* Summary Cards */}

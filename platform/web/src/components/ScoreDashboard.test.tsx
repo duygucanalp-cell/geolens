@@ -129,10 +129,10 @@ describe('ScoreDashboard — gruplu navigasyon', () => {
     })
 
     await user.click(screen.getByText(/☰ Scores/))
-    await user.type(screen.getByPlaceholderText('Search tabs...'), 'replay')
+    await user.type(screen.getByPlaceholderText('Search tabs...'), 'conversation')
 
     // Eşleşen öğe görünür; eşleşmeyen gruplar/öğeler gizlenir
-    expect(screen.getByRole('menuitem', { name: '▶ Replay' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: '🗨️ Conversation Data' })).toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Scores' })).not.toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: '🛡️ Guardrails' })).not.toBeInTheDocument()
   })
@@ -147,13 +147,13 @@ describe('ScoreDashboard — gruplu navigasyon', () => {
     })
 
     await user.click(screen.getByText(/☰ Scores/))
-    await user.type(screen.getByPlaceholderText('Search tabs...'), 'REPLAY')
+    await user.type(screen.getByPlaceholderText('Search tabs...'), 'CONVERSATION')
 
-    expect(screen.getByRole('menuitem', { name: '▶ Replay' })).toBeInTheDocument()
-    expect(screen.getByText('Replay', { selector: 'mark' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: '🗨️ Conversation Data' })).toBeInTheDocument()
+    expect(screen.getByText('Conversation', { selector: 'mark' })).toBeInTheDocument()
   })
 
-  it('Türkçe İ ve aksansız arama eşleşir (İçerik → icerik)', async () => {
+  it('Türkçe İ ve aksansız arama eşleşir (İz → iz)', async () => {
     await i18n.changeLanguage('tr')
     stubFetch()
     const user = userEvent.setup()
@@ -164,11 +164,11 @@ describe('ScoreDashboard — gruplu navigasyon', () => {
     })
 
     await user.click(screen.getByText(/☰ Skorlar/))
-    await user.type(screen.getByPlaceholderText('Sekme ara...'), 'icerik')
+    await user.type(screen.getByPlaceholderText('Sekme ara...'), 'iz')
 
-    expect(screen.getByRole('menuitem', { name: '📚 İçerik GEO' })).toBeInTheDocument()
-    // Eşleşen kısım vurgulanır
-    expect(screen.getByText('İçerik', { selector: 'mark' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: '🕵️ İz & Denetim' })).toBeInTheDocument()
+    // Eşleşen kısım vurgulanır ('iz' ayrıca 'İzleme' sekmesiyle de eşleşir — ikisi de işaretlenir)
+    expect(screen.getAllByText('İz', { selector: 'mark' }).length).toBeGreaterThan(0)
   })
 
   it('eşleşme yoksa sonuç bulunamadı mesajı gösterilir', async () => {
@@ -197,7 +197,7 @@ describe('ScoreDashboard — gruplu navigasyon', () => {
 
     await user.click(screen.getByText(/☰ Scores/))
     const search = screen.getByPlaceholderText('Search tabs...')
-    await user.type(search, 'replay')
+    await user.type(search, 'conversation')
     expect(screen.queryByRole('menuitem', { name: 'Scores' })).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Clear' }))
@@ -217,12 +217,12 @@ describe('ScoreDashboard — gruplu navigasyon', () => {
     })
 
     await user.click(screen.getByText(/☰ Scores/))
-    await user.type(screen.getByPlaceholderText('Search tabs...'), 'replay')
-    await user.click(screen.getByRole('menuitem', { name: '▶ Replay' }))
+    await user.type(screen.getByPlaceholderText('Search tabs...'), 'conversation')
+    await user.click(screen.getByRole('menuitem', { name: '🗨️ Conversation Data' }))
 
     expect(sessionStorage.getItem('geolens.last_tab')).toBe('replay')
     await waitFor(() => {
-      expect(screen.getByText(/☰ ▶ Replay/)).toBeInTheDocument()
+      expect(screen.getByText(/☰ 🗨️ Conversation Data/)).toBeInTheDocument()
     })
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
   })
@@ -272,17 +272,17 @@ describe('ScoreDashboard — gruplu navigasyon', () => {
       expect(screen.getByText('Visibility Dashboard')).toBeInTheDocument()
     })
 
-    // Replay GEO grubunda olduğu için önce arama ile görünür yap
+    // Konuşma Verileri GEO grubunda olduğu için önce arama ile görünür yap
     await user.click(screen.getByText(/☰ Scores/))
-    await user.type(screen.getByPlaceholderText('Search tabs...'), 'replay')
-    await user.click(screen.getByRole('menuitem', { name: 'Pin ▶ Replay' }))
+    await user.type(screen.getByPlaceholderText('Search tabs...'), 'conversation')
+    await user.click(screen.getByRole('menuitem', { name: 'Pin 🗨️ Conversation Data' }))
 
     // Çip görünür + kalıcı kayıt
-    expect(screen.getByText(/📌 ▶ Replay/)).toBeInTheDocument()
+    expect(screen.getByText(/📌 🗨️ Conversation Data/)).toBeInTheDocument()
     expect(JSON.parse(localStorage.getItem('geolens.pinned_tabs') || '[]')).toContain('replay')
 
     // Çipten seçim çalışır (menü kapalıyken bile)
-    await user.click(screen.getByText(/📌 ▶ Replay/))
+    await user.click(screen.getByText(/📌 🗨️ Conversation Data/))
     expect(sessionStorage.getItem('geolens.last_tab')).toBe('replay')
   })
 
@@ -296,12 +296,12 @@ describe('ScoreDashboard — gruplu navigasyon', () => {
     })
 
     await user.click(screen.getByText(/☰ Scores/))
-    await user.type(screen.getByPlaceholderText('Search tabs...'), 'replay')
-    await user.click(screen.getByRole('menuitem', { name: 'Pin ▶ Replay' }))
-    expect(screen.getByText(/📌 ▶ Replay/)).toBeInTheDocument()
+    await user.type(screen.getByPlaceholderText('Search tabs...'), 'conversation')
+    await user.click(screen.getByRole('menuitem', { name: 'Pin 🗨️ Conversation Data' }))
+    expect(screen.getByText(/📌 🗨️ Conversation Data/)).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Unpin ▶ Replay' }))
-    expect(screen.queryByText(/📌 ▶ Replay/)).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Unpin 🗨️ Conversation Data' }))
+    expect(screen.queryByText(/📌 🗨️ Conversation Data/)).not.toBeInTheDocument()
     expect(JSON.parse(localStorage.getItem('geolens.pinned_tabs') || '[]')).not.toContain('replay')
   })
 

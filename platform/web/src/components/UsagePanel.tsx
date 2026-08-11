@@ -1,25 +1,39 @@
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { PanelSkeleton } from './PanelSkeleton'
+import { PeriodSelect, type Period } from './PeriodSelect'
 import { getUsageMetrics, getUsageSummary } from '../api/client'
 import type { UsageMetric, UsageSummary } from '../types'
 
 interface Props {
   workspaceId: string
+  // Birleşik sayfada dışarıdan kontrol edilir: dönem + yenileme durumu
+  // ortak başlıktan gelir, panel kendi kontrollerini gizler.
+  embedded?: boolean
+  period?: Period
+  refreshTick?: number
 }
 
-type Period = '1d' | '7d' | '30d' | '90d'
-
-export function UsagePanel({ workspaceId: _ws }: Props) {
+export function UsagePanel({
+  workspaceId: _ws,
+  embedded,
+  period: controlledPeriod,
+  refreshTick = 0,
+}: Props) {
   const { t, i18n } = useTranslation()
   const dateLocale = i18n.language?.startsWith('en') ? 'en-US' : 'tr-TR'
   const [metrics, setMetrics] = useState<UsageMetric[]>([])
   const [summary, setSummary] = useState<UsageSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [period, setPeriod] = useState<Period>('7d')
+  const [internalPeriod, setInternalPeriod] = useState<Period>('7d')
 
-  useEffect(() => { loadData() }, [period])
+  const period = controlledPeriod ?? internalPeriod
+
+  useEffect(() => {
+    loadData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [period, refreshTick])
 
   async function loadData() {
     try {
@@ -45,15 +59,13 @@ export function UsagePanel({ workspaceId: _ws }: Props) {
         <p className="monitoring-desc">{t('usage.desc')}</p>
       </div>
 
-      <div className="dashboard-filters">
-        <select value={period} onChange={(e) => setPeriod(e.target.value as Period)} className="filter-select">
-          <option value="1d">{t('period.24h')}</option>
-          <option value="7d">{t('period.7d')}</option>
-          <option value="30d">{t('period.30d')}</option>
-          <option value="90d">{t('period.90d')}</option>
-        </select>
-        <button className="refresh-btn" onClick={loadData}>{t('common.refresh')}</button>
-      </div>
+      {/* Dönem + yenileme birleşik sayfada ortak başlıkta yönetilir */}
+      {!embedded && (
+        <div className="dashboard-filters">
+          <PeriodSelect value={period} onChange={setInternalPeriod} />
+          <button className="refresh-btn" onClick={loadData}>{t('common.refresh')}</button>
+        </div>
+      )}
 
       {summary && (
         <div className="monitoring-quick-stats" style={{ marginBottom: '1.5rem' }}>

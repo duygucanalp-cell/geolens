@@ -16,9 +16,7 @@ const NotificationSettings = lazy(() => import('./NotificationSettings').then(m 
 const ReportsPanel = lazy(() => import('./ReportsPanel').then(m => ({ default: m.ReportsPanel })))
 const RecommendationsPanel = lazy(() => import('./RecommendationsPanel').then(m => ({ default: m.RecommendationsPanel })))
 const MonitoringPanel = lazy(() => import('./MonitoringPanel').then(m => ({ default: m.MonitoringPanel })))
-const CostPanel = lazy(() => import('./CostPanel').then(m => ({ default: m.CostPanel })))
-const UsagePanel = lazy(() => import('./UsagePanel').then(m => ({ default: m.UsagePanel })))
-const OptimizationPanel = lazy(() => import('./OptimizationPanel').then(m => ({ default: m.OptimizationPanel })))
+const MergedCostsTab = lazy(() => import('./MergedCostsTab').then(m => ({ default: m.MergedCostsTab })))
 const VersionPanel = lazy(() => import('./VersionPanel').then(m => ({ default: m.VersionPanel })))
 const IncidentPanel = lazy(() => import('./IncidentPanel').then(m => ({ default: m.IncidentPanel })))
 const GuardrailsPanel = lazy(() => import('./GuardrailsPanel').then(m => ({ default: m.GuardrailsPanel })))
@@ -51,12 +49,12 @@ interface ScoreDashboardProps {
 }
 
 type Tab = 'scores' | 'brands' | 'audit' | 'notifications' | 'reports' | 'recommendations' | 'monitoring'
-  | 'cost' | 'usage' | 'optimization' | 'version' | 'incident'
-  | 'guardrails' | 'agenttracing' | 'registry' | 'policy' | 'bias' | 'explain' | 'discovery' | 'gate'
+  | 'costs' | 'version' | 'incident'
+  | 'guardrails' | 'traces' | 'registry' | 'results' | 'discovery'
   | 'redteam' | 'drift'
-  | 'promptaudit' | 'benchmark' | 'sentiment' | 'hallucination' | 'alertrules'
+  | 'benchmark' | 'sentiment' | 'hallucination'
   | 'tenant' | 'compliance' | 'prompts' | 'billing'
-  | 'replay' | 'archive' | 'technicalgeo' | 'contentgeo' | 'competitive'
+  | 'replay' | 'geoanalysis' | 'competitive'
 
 // Aktif sekme oturum boyunca hatırlanır — oturum süresi dolup tekrar
 // giriş yapıldığında kullanıcı kaldığı sekmeye geri döner.
@@ -65,12 +63,12 @@ const TAB_STORAGE_KEY = 'geolens.last_tab'
 // Testlerin bütünlük kuralını doğrulayabilmesi için dışa açıktır.
 export const VALID_TABS: Tab[] = [
   'scores', 'brands', 'audit', 'notifications', 'reports', 'recommendations', 'monitoring',
-  'cost', 'usage', 'optimization', 'version', 'incident',
-  'guardrails', 'agenttracing', 'registry', 'policy', 'bias', 'explain', 'discovery', 'gate',
+  'costs', 'version', 'incident',
+  'guardrails', 'traces', 'registry', 'results', 'discovery',
   'redteam', 'drift',
-  'promptaudit', 'benchmark', 'sentiment', 'hallucination', 'alertrules',
+  'benchmark', 'sentiment', 'hallucination',
   'tenant', 'compliance', 'prompts', 'billing',
-  'replay', 'archive', 'technicalgeo', 'contentgeo', 'competitive',
+  'replay', 'geoanalysis', 'competitive',
 ]
 
 // Sekmeler mantıksal gruplara ayrılır — 34 sekme tek satırda kalabalık görünmesin diye
@@ -78,9 +76,9 @@ export const VALID_TABS: Tab[] = [
 // Testlerin bütünlük kuralını doğrulayabilmesi için dışa açıktır.
 export const TAB_GROUPS: { key: string; labelKey: string; tabKeys: Tab[] }[] = [
   { key: 'measurement', labelKey: 'tabgroup.measurement', tabKeys: ['scores', 'brands', 'audit', 'reports', 'monitoring', 'benchmark', 'prompts', 'recommendations'] },
-  { key: 'geo', labelKey: 'tabgroup.geo', tabKeys: ['sentiment', 'hallucination', 'replay', 'archive', 'technicalgeo', 'contentgeo', 'competitive'] },
-  { key: 'governance', labelKey: 'tabgroup.governance', tabKeys: ['guardrails', 'agenttracing', 'registry', 'policy', 'bias', 'explain', 'discovery', 'gate', 'redteam', 'drift', 'promptaudit'] },
-  { key: 'operations', labelKey: 'tabgroup.operations', tabKeys: ['notifications', 'alertrules', 'cost', 'usage', 'optimization', 'version', 'incident'] },
+  { key: 'geo', labelKey: 'tabgroup.geo', tabKeys: ['sentiment', 'hallucination', 'replay', 'geoanalysis', 'competitive'] },
+  { key: 'governance', labelKey: 'tabgroup.governance', tabKeys: ['guardrails', 'traces', 'registry', 'results', 'discovery', 'redteam', 'drift'] },
+  { key: 'operations', labelKey: 'tabgroup.operations', tabKeys: ['notifications', 'costs', 'version', 'incident'] },
   { key: 'account', labelKey: 'tabgroup.account', tabKeys: ['tenant', 'compliance', 'billing'] },
 ]
 
@@ -333,37 +331,28 @@ export function ScoreDashboard({ workspaceId }: ScoreDashboardProps) {
     { key: 'brands', label: t('tab.brands') },
     { key: 'audit', label: t('tab.audit') },
     { key: 'reports', label: t('tab.reports') },
-    { key: 'notifications', label: t('tab.notifications') },
+    { key: 'notifications', label: `🔔 ${t('tab.notifications')}` },
     { key: 'recommendations', label: t('tab.recommendations') },
     { key: 'monitoring', label: t('tab.monitoring') },
     { key: 'guardrails', label: t('tab.guardrails') },
-    { key: 'agenttracing', label: t('tab.agenttracing') },
-    { key: 'registry', label: t('tab.registry') },
-    { key: 'policy', label: t('tab.policy') },
-    { key: 'bias', label: t('tab.bias') },
-    { key: 'explain', label: t('tab.explain') },
+    { key: 'traces', label: `🕵️ ${t('tab.traces')}` },
+    { key: 'registry', label: `🗂️ ${t('tab.registry')}` },
+    { key: 'results', label: `🔬 ${t('tab.results')}` },
     { key: 'discovery', label: t('tab.discovery') },
-    { key: 'gate', label: t('tab.gate') },
     { key: 'redteam', label: t('tab.redteam') },
     { key: 'drift', label: t('tab.drift') },
-    { key: 'cost', label: t('tab.cost') },
-    { key: 'usage', label: t('tab.usage') },
-    { key: 'optimization', label: t('tab.optimization') },
+    { key: 'costs', label: `💰 ${t('tab.costs')}` },
     { key: 'version', label: t('tab.version') },
     { key: 'incident', label: t('tab.incident') },
-    { key: 'promptaudit', label: t('tab.promptaudit') },
     { key: 'benchmark', label: `🧪 ${t('tab.benchmark')}` },
     { key: 'sentiment', label: `💬 ${t('tab.sentiment')}` },
     { key: 'hallucination', label: `🧠 ${t('tab.hallucination')}` },
-    { key: 'alertrules', label: `🔔 ${t('tab.alertrules')}` },
     { key: 'tenant', label: t('tab.tenant') },
     { key: 'compliance', label: t('tab.compliance') },
     { key: 'prompts', label: `💬 ${t('tab.prompts')}` },
     { key: 'billing', label: `💳 ${t('tab.billing')}` },
-    { key: 'replay', label: `▶ ${t('tab.replay')}` },
-    { key: 'archive', label: `🗄 ${t('tab.archive')}` },
-    { key: 'technicalgeo', label: `⚙️ ${t('tab.technicalgeo')}` },
-    { key: 'contentgeo', label: `📚 ${t('tab.contentgeo')}` },
+    { key: 'replay', label: `🗨️ ${t('tab.replay')}` },
+    { key: 'geoanalysis', label: `🌐 ${t('tab.geo')}` },
     { key: 'competitive', label: `🥊 ${t('tab.competitive')}` },
   ]
 
@@ -449,37 +438,108 @@ export function ScoreDashboard({ workspaceId }: ScoreDashboardProps) {
       case 'brands': return <BrandManagement workspaceId={workspaceId} />
       case 'audit': return <AuditPanel workspaceId={workspaceId} brands={brands} />
       case 'reports': return <ReportsPanel workspaceId={workspaceId} />
-      case 'notifications': return <NotificationSettings workspaceId={workspaceId} />
+      case 'notifications':
+        // Bildirim kanalları + uyarı kuralları tek sayfada (birleşik sekme)
+        return (
+          <div className="merged-tab">
+            <div className="merged-header">
+              <h2>🔔 {t('tab.notifications')}</h2>
+              <p>{t('merged.notifications_desc')}</p>
+            </div>
+            <NotificationSettings workspaceId={workspaceId} />
+            <AlertRulesPanel workspaceId={workspaceId} brands={brands} />
+          </div>
+        )
       case 'recommendations': return <RecommendationsPanel workspaceId={workspaceId} brands={brands} />
       case 'monitoring': return <MonitoringPanel workspaceId={workspaceId} />
-      case 'cost': return <CostPanel workspaceId={workspaceId} />
-      case 'usage': return <UsagePanel workspaceId={workspaceId} />
-      case 'optimization': return <OptimizationPanel workspaceId={workspaceId} />
+      case 'costs':
+        // Maliyet + kullanım + optimizasyon tek sayfada (birleşik sekme).
+        // Ortak dönem seçici + yenile butonu bölümler arasında paylaşılır.
+        return <MergedCostsTab workspaceId={workspaceId} />
       case 'version': return <VersionPanel workspaceId={workspaceId} />
       case 'incident': return <IncidentPanel workspaceId={workspaceId} />
-      case 'guardrails': return <GuardrailsPanel workspaceId={workspaceId} />
-      case 'agenttracing': return <AgentTracePanel workspaceId={workspaceId} />
-      case 'registry': return <RegistryPanel workspaceId={workspaceId} />
-      case 'policy': return <PolicyPacksPanel workspaceId={workspaceId} />
-      case 'bias': return <BiasPanel workspaceId={workspaceId} />
-      case 'explain': return <ExplainPanel workspaceId={workspaceId} />
+      case 'guardrails':
+        // Koruma kuralları + dağıtım kontrolü (gate) tek sayfada (birleşik sekme)
+        return (
+          <div className="merged-tab">
+            <div className="merged-header">
+              <h2>{t('tab.guardrails')}</h2>
+              <p>{t('merged.guardrails_desc')}</p>
+            </div>
+            <GuardrailsPanel workspaceId={workspaceId} />
+            <GatePanel workspaceId={workspaceId} />
+          </div>
+        )
+      case 'traces':
+        // Agent izleri + prompt denetimi tek sayfada (birleşik sekme)
+        return (
+          <div className="merged-tab">
+            <div className="merged-header">
+              <h2>🕵️ {t('tab.traces')}</h2>
+              <p>{t('merged.traces_desc')}</p>
+            </div>
+            <AgentTracePanel workspaceId={workspaceId} />
+            <PromptAuditPanel workspaceId={workspaceId} />
+          </div>
+        )
+      case 'registry':
+        // Model kaydı + politika paketleri tek sayfada (birleşik sekme)
+        return (
+          <div className="merged-tab">
+            <div className="merged-header">
+              <h2>🗂️ {t('tab.registry')}</h2>
+              <p>{t('merged.registry_desc')}</p>
+            </div>
+            <RegistryPanel workspaceId={workspaceId} />
+            <PolicyPacksPanel workspaceId={workspaceId} />
+          </div>
+        )
+      case 'results':
+        // Bias testleri + açıklanabilirlik tek sayfada (birleşik sekme)
+        return (
+          <div className="merged-tab">
+            <div className="merged-header">
+              <h2>🔬 {t('tab.results')}</h2>
+              <p>{t('merged.results_desc')}</p>
+            </div>
+            <BiasPanel workspaceId={workspaceId} />
+            <ExplainPanel workspaceId={workspaceId} />
+          </div>
+        )
       case 'discovery': return <DiscoveryPanel workspaceId={workspaceId} />
-      case 'gate': return <GatePanel workspaceId={workspaceId} />
       case 'redteam': return <RedTeamPanel workspaceId={workspaceId} />
       case 'drift': return <DriftPanel workspaceId={workspaceId} />
-      case 'promptaudit': return <PromptAuditPanel workspaceId={workspaceId} />
       case 'benchmark': return <BenchmarkPanel workspaceId={workspaceId} />
       case 'sentiment': return <SentimentPanel workspaceId={workspaceId} />
       case 'hallucination': return <HallucinationPanel workspaceId={workspaceId} />
-      case 'alertrules': return <AlertRulesPanel workspaceId={workspaceId} brands={brands} />
       case 'tenant': return <TenantSettingsPanel />
       case 'compliance': return <CompliancePanel />
       case 'prompts': return <PromptSetsPanel workspaceId={workspaceId} />
       case 'billing': return <BillingPanel workspaceId={workspaceId} />
-      case 'replay': return <ReplayPanel workspaceId={workspaceId} brands={brands} />
-      case 'archive': return <ArchivePanel workspaceId={workspaceId} brands={brands} />
-      case 'technicalgeo': return <TechnicalGeoPanel workspaceId={workspaceId} brands={brands} />
-      case 'contentgeo': return <ContentGeoPanel workspaceId={workspaceId} brands={brands} />
+      case 'replay':
+        // Konuşma kaydı + arşiv tek sayfada (birleşik sekme)
+        return (
+          <div className="merged-tab">
+            <div className="merged-header">
+              <h2>🗨️ {t('tab.replay')}</h2>
+              <p>{t('merged.replay_desc')}</p>
+            </div>
+            <ReplayPanel workspaceId={workspaceId} brands={brands} />
+            <ArchivePanel workspaceId={workspaceId} brands={brands} />
+          </div>
+        )
+      case 'geoanalysis':
+        // Teknik + içerik GEO analizleri tek sayfada (birleşik sekme)
+        return (
+          <div className="merged-tab">
+            <div className="merged-header">
+              <h2>🌐 {t('tab.geo')}</h2>
+              <p>{t('merged.geo_desc')}</p>
+            </div>
+            <TechnicalGeoPanel workspaceId={workspaceId} brands={brands} />
+            <ContentGeoPanel workspaceId={workspaceId} brands={brands} />
+          </div>
+        )
       case 'competitive': return <CompetitiveGapPanel workspaceId={workspaceId} brands={brands} />
       case 'scores':
         // 'scores' sekmesi: benchmark widget'ı + filtreler + skor ızgarası
