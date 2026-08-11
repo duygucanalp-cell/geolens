@@ -99,6 +99,8 @@ services:
       # ML serving (0421 A0-3) — serving yoksa kural tabanlı fallback (M-4)
       ML_SERVING_URL: http://ml-serving:8900
       ML_TIMEOUT: 2s
+      # Intent çarpanları (0421 A3-3) — boşsa varsayılan tablo
+      INTENT_WEIGHT_SCALE: ${INTENT_WEIGHT_SCALE:-}
       # ========== SOPS+Age ==========
       # AGE_KEY set edilirse, entrypoint.sh decrypt eder ve yukarıdaki
       # default'ları override eder (sadece dolu değerler override edilir).
@@ -151,8 +153,12 @@ services:
       context: .
       dockerfile: Dockerfile
       target: worker
+    ports:
+      # Worker metrics — kendi prosesindeki metrikler (ML breaker dahil)
+      - "8081:8081"
     environment:
       ENVIRONMENT: development
+      WORKER_METRICS_PORT: 8081
       S3_ENDPOINT: http://minio:9000
       S3_BUCKET: geolens
       S3_REGION: us-east-1
@@ -170,6 +176,8 @@ services:
       # ML serving (0421 A0-3) — serving yoksa kural tabanlı fallback (M-4)
       ML_SERVING_URL: http://ml-serving:8900
       ML_TIMEOUT: 2s
+      # Intent çarpanları (0421 A3-3) — boşsa varsayılan tablo
+      INTENT_WEIGHT_SCALE: ${INTENT_WEIGHT_SCALE:-}
       AGE_KEY: ${AGE_KEY:-}
     volumes:
       - ./docker/.env.secrets.enc:/etc/geolens/secrets/.env.secrets.enc:ro

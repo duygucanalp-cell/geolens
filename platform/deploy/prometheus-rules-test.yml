@@ -1,0 +1,48 @@
+# promtool unit test — MLServingUnavailable alert davranışı
+# Çalıştırma: promtool test rules prometheus-rules-test.yml
+# (Docker: docker run --rm --entrypoint promtool -v "$PWD/deploy:/etc/prometheus" -w /etc/prometheus prom/prometheus:v2.54.1 test rules /etc/prometheus/prometheus-rules-test.yml)
+# Senaryo: sentiment component'i cooldown'da (1) → 60s sonra alarm FIRE eder;
+# measure normal (0) → alarm tetiklenmez; cooldown kısa sürerse (<60s) alarm üretilmez.
+rule_files:
+  - prometheus-rules.yml
+
+evaluation_interval: 1m
+
+tests:
+  - interval: 1m
+    input_series:
+      # sentiment: sürekli cooldown'da (gauge 1)
+      - series: 'geolens_ml_breaker_in_cooldown{component="sentiment"}'
+        values: '1 1 1'
+      # measure: normal (gauge 0)
+      - series: 'geolens_ml_breaker_in_cooldown{component="measure"}'
+        values: '0 0 0'
+    alert_rule_test:
+      # t=0: henüz 1 dk dolmadı — for:1m nedeniyle alarm henüz FIRE değil (pending)
+      - eval_time: 0m
+        alertname: MLServingUnavailable
+        exp_alerts: []
+      # t=1m: for:1m doldu → sentiment FIRE; measure asla tetiklenmez
+      - eval_time: 1m
+        alertname: MLServingUnavailable
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              team: platform
+              component: sentiment
+            exp_annotations:
+              summary: "ML serving erişilemez (sentiment)"
+              description: "ML serving devre kesicisi 'sentiment' bileşeni için 60s'den uzun süredir cooldown'da. Serving API'si kapalı veya yanıt vermiyor — kural tabanlı fallback aktif, ancak ML destekli analizler (sentiment, intent ağırlıklandırma, hallüsinasyon) devre dışı."
+              runbook_url: "https://github.com/geolens/platform/blob/main/docs/0421-ai-model-uygulama-plani.md"
+      # t=2m: cooldown devam → hâlâ fire
+      - eval_time: 2m
+        alertname: MLServingUnavailable
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              team: platform
+              component: sentiment
+            exp_annotations:
+              summary: "ML serving erişilemez (sentiment)"
+              description: "ML serving devre kesicisi 'sentiment' bileşeni için 60s'den uzun süredir cooldown'da. Serving API'si kapalı veya yanıt vermiyor — kural tabanlı fallback aktif, ancak ML destekli analizler (sentiment, intent ağırlıklandırma, hallüsinasyon) devre dışı."
+              runbook_url: "https://github.com/geolens/platform/blob/main/docs/0421-ai-model-uygulama-plani.md"

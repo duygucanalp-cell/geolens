@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/redis/go-redis/v9"
 
 	"github.com/geolens/platform/engine"
@@ -59,7 +61,11 @@ func main() {
 		slog.Error("veritabanı bağlantısı kurulamadı", "error", err)
 		return
 	}
-	pool.Close()
+	// NOT: pool kapatma yalnızca shutdown'da (defer) yapılır — önceden yanlışlıkla
+	// burada çağrılan pool.Close(), worker'ın tüm DB işlemlerini "closed pool"
+	// hatasıyla kırıyordu (measurement_jobs yazımı, skor hesaplama, sentiment
+	// analizi hiçbiri çalışmıyordu).
+	defer pool.Close()
 
 	rdb, err := queue.NewRedisClient(cfg.RedisURL)
 	if err != nil {
@@ -133,20 +139,21 @@ func main() {
 	}
 	deliverySvc := delivery.NewService(emailCfg, pool)
 
-	// Ölçüm servisi (skor hesaplama)
-	measureSvc := measure.NewService(pool, engines, &cfg)
-
-	// Tavsiye servisi (kural değerlendirme)
-	recommendationSvc := recommendation.NewService(pool)
-
 	// ML serving istemcisi (0421 A0-3) — ML_SERVING_URL boşsa nil döner;
-	// sentiment motoru o zaman kural tabanlı fallback ile çalışır (0421 M-4).
+	// sentiment motoru ve measure intent ağırlıklandırması kural tabanlı fallback
+	// ile çalışır (0421 M-4).
 	mlClient := ml.NewClient(cfg.MLServingURL, cfg.MLTimeOut)
 	if mlClient != nil {
 		slog.Info("ML serving etkin", "url", cfg.MLServingURL, "timeout", cfg.MLTimeOut.String())
 	} else {
 		slog.Info("ML serving yapılandırılmadı — kural tabanlı analiz kullanılacak")
 	}
+
+	// Ölçüm servisi (skor hesaplama — intent tabanlı ağırlıklandırma için ML)
+	measureSvc := measure.NewServiceWithML(pool, engines, &cfg, mlClient)
+
+	// Tavsiye servisi (kural değerlendirme)
+	recommendationSvc := recommendation.NewService(pool)
 
 	// AI Analiz motorları (sentiment, competitive gap)
 	sentimentEngine := sentiment.NewEngineWithML(pool, mlClient)
@@ -213,12 +220,38 @@ func main() {
 
 	slog.Info("worker başlatılıyor", "consumer_group", cfg.ConsumerGroup)
 
+	// Worker metrics sunucusu — kendi prosesindeki Prometheus metriklerini
+	// (queue depth, engine calls, ML breaker vb.) /metrics üzerinden serve eder.
+	// API'nin :8080/metrics'inden ayrıdır; scrape için WORKER_METRICS_PORT
+	// (varsayılan 8081) kullanılır. 0421 M-4: breaker metrikleri (sentiment/measure
+	// component'leri) worker prosesinde yazıldığından bu endpoint'ten izlenir.
+	metricsSrv := &http.Server{
+		Addr:         ":" + cfg.WorkerMetricsPort,
+		Handler:      promhttp.Handler(),
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  30 * time.Second,
+	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		slog.Info("worker metrics sunucusu başlatılıyor", "port", cfg.WorkerMetricsPort)
+		if err := metricsSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("worker metrics sunucusu hatası", "error", err)
+		}
+	}()
+
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
 	slog.Info("worker kapatılıyor...")
 	cancel()
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer shutdownCancel()
+	if err := metricsSrv.Shutdown(shutdownCtx); err != nil {
+		slog.Warn("worker metrics sunucusu kapatılamadı", "error", err)
+	}
 	wg.Wait()
 	slog.Info("worker durduruldu")
 }
@@ -474,20 +507,23 @@ func processMessage(
 	var jobID string
 	err = pool.QueryRow(ctx, `
 		INSERT INTO measure.measurement_jobs (id, brand_id, panel_id, engine_name, status, tenant_id, workspace_id, prompt_text, sample_count, idempotency_key, created_at)
-		VALUES (gen_random_uuid()::text, $1, $2, $3, 'completed', $4, $5, '', 3, $6, now())
+		VALUES (gen_random_uuid()::text, $1, $2, $3, 'completed', $4, $5, $7, 3, $6, now())
 		ON CONFLICT (idempotency_key) DO UPDATE SET status = 'completed', updated_at = now()
 		RETURNING id
-	`, job.BrandID, job.PanelID, job.EngineName, job.TenantID, job.WorkspaceID, idempotencyKey).Scan(&jobID)
+	`, job.BrandID, job.PanelID, job.EngineName, job.TenantID, job.WorkspaceID, idempotencyKey, job.PromptText).Scan(&jobID)
 	if err != nil {
 		logger.Error("worker: measurement_job kaydetme hatası", "error", err)
 	}
 
 	// Ham yanıtı raw_responses tablosuna kaydet (sadece job kaydı başarılıysa)
+	// brand_id/workspace_id/prompt_text 051 migration'ı ile eklendi — cross-source
+	// hallüsinasyon karşılaştırması aynı prompt yanıtlarıyla sınırlandırılır
+	// (051_raw_responses_prompt.sql, internal/sentiment groupByPrompt).
 	if jobID != "" {
 		_, err = pool.Exec(ctx, `
-			INSERT INTO measure.raw_responses (id, job_id, engine_name, raw_body, content_text, s3_ref, tenant_id, created_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, now())
-		`, id.New(), jobID, job.EngineName, result.Content, result.Content, s3Ref, job.TenantID)
+			INSERT INTO measure.raw_responses (id, job_id, engine_name, raw_body, content_text, s3_ref, tenant_id, brand_id, workspace_id, prompt_text, created_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, now())
+		`, id.New(), jobID, job.EngineName, result.Content, result.Content, s3Ref, job.TenantID, job.BrandID, job.WorkspaceID, job.PromptText)
 		if err != nil {
 			logger.Error("worker: raw_response kaydetme hatası", "error", err)
 		}
@@ -501,7 +537,7 @@ func processMessage(
 	ackMessage(rdb, stream, msgID, consumerGroup)
 
 	// Skor hesaplama + AI analizleri (arka planda, hata worker'ı durdurmaz)
-	computeAndEvaluate(ctx, pool, job.TenantID, job.WorkspaceID, job.PanelID, job.BrandID, measureSvc, recSvc, deliverySvc, sentimentEng, competitiveEng)
+	computeAndEvaluate(ctx, pool, job.TenantID, job.WorkspaceID, job.PanelID, job.BrandID, job.PromptText, measureSvc, recSvc, deliverySvc, sentimentEng, competitiveEng)
 
 	logger.Info("worker: iş tamamlandı")
 }
@@ -510,7 +546,7 @@ func processMessage(
 func computeAndEvaluate(
 	ctx context.Context,
 	pool *pgxpool.Pool,
-	tenantID, workspaceID, panelID, brandID string,
+	tenantID, workspaceID, panelID, brandID, promptText string,
 	measureSvc measure.Service,
 	recSvc recommendation.Service,
 	deliverySvc delivery.Service,
@@ -575,6 +611,7 @@ func computeAndEvaluate(
 			WorkspaceID:  workspaceID,
 			TenantID:     tenantID,
 			EngineMeta:   engine.EngineMeta{EngineName: eng},
+			PromptText:   promptText, // 0421 A3-3 intent ağırlıklandırması
 		})
 	}
 

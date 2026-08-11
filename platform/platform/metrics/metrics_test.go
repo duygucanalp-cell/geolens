@@ -21,6 +21,18 @@ func TestMetricsRegistered(t *testing.T) {
 	_ = TotalBrands
 	_ = MeasurementsCompleted
 	_ = AuditsCompleted
+	_ = MLBreakerFailuresTotal
+	_ = MLBreakerInCooldown
+}
+
+func TestMLBreakerMetrics(t *testing.T) {
+	MLBreakerFailuresTotal.WithLabelValues("sentiment").Inc()
+	MLBreakerInCooldown.WithLabelValues("sentiment").Set(1)
+
+	count := testutil.CollectAndCount(MLBreakerFailuresTotal)
+	if count < 1 {
+		t.Error("expected at least 1 metric family for MLBreakerFailuresTotal")
+	}
 }
 
 func TestEngineCallsTotal(t *testing.T) {

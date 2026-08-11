@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/geolens/platform/engine"
 	"github.com/geolens/platform/internal/config"
 	"github.com/geolens/platform/internal/id"
+	"github.com/geolens/platform/internal/ml"
 	"github.com/geolens/platform/platform/db"
 )
 
@@ -42,6 +44,19 @@ var v1LegacyWeights = ComponentWeights{
 // algorithm version. Keep the v1 name as stable alias for tests/back-compat.
 var defaultWeights = v2DefaultWeights
 
+// defaultIntentComponentScale — prompt intent'inin VI bileşenlerine varsayılan
+// etkisi (0421 A3-3, 0404 prompt ağırlıkları ile hizalı). Sıra: [varlık, konum,
+// kaynak, rakip, appearance, sentiment, compvis]. Çarpanlar uygulandıktan sonra
+// toplam 1.0'a normalize edilir; değerler pilot verisiyle kalibre edilir (0404 §4).
+// INTENT_WEIGHT_SCALE env'i ile override edilebilir (pilot kalibrasyonu için).
+var defaultIntentComponentScale = map[string][7]float64{
+	"presence":       {1.25, 1.00, 0.90, 0.90, 1.10, 0.90, 0.90}, // varlık sinyali öne çıkar
+	"comparison":     {0.90, 1.00, 0.90, 1.40, 0.90, 0.90, 1.30}, // rakip bağlamı + compvis öne çıkar
+	"recommendation": {1.00, 1.00, 1.15, 1.00, 0.95, 1.10, 0.95}, // kaynak güveni + sentiment öne çıkar
+	"category":       {1.00, 1.00, 1.00, 1.00, 1.25, 1.00, 1.00}, // appearance (kategori görünürlüğü) öne çıkar
+	"problem":        {1.00, 1.15, 1.10, 1.00, 0.90, 1.00, 1.00}, // konum (çözüm bulunabilirliği) öne çıkar
+}
+
 // ---- Service Implementation ----
 
 // service implements the Service interface for measurement and scoring.
@@ -49,15 +64,49 @@ type service struct {
 	pool    *db.Pool
 	engines *engine.Registry
 	cfg     *config.Config
+	// ml — opsiyonel ML serving istemcisi (0421 A0-3). Nil ise intent tabanlı
+	// ağırlıklandırma atlanır (varsayılan GAVF ağırlıkları — 0421 M-4 fallback).
+	ml *ml.Client
+
+	// breaker — serving ardışık hatasında ML çağrılarını askıya alan ortak devre
+	// kesici (ml.CircuitBreaker, 0421 M-4). Worker her örnekleme mesajında aynı
+	// prompt'u skorlatır; serving kapalıyken 24×ML_TIMEOUT birikmesini önler.
+	// Sentiment servisiyle aynı tip paylaşılır (tek uygulama, tutarlı davranış).
+	breaker *ml.CircuitBreaker
+
+	// Per-prompt önbellek: worker aynı prompt'u yeniden sınıflandırmaz.
+	cacheMu      sync.Mutex
+	cachedPrompt string
+	cachedLabels *ml.PromptClassification
+
+	// intentScale — INTENT_WEIGHT_SCALE env'inden çözülen intent çarpanları
+	// (0421 A3-3 pilot kalibrasyonu). nil ise defaultIntentComponentScale kullanılır.
+	intentScale map[string][7]float64
 }
 
-// NewService creates a new measurement service.
+// NewService creates a new measurement service (ML serving yok — kural tabanlı ağırlıklar).
 func NewService(pool *db.Pool, engines *engine.Registry, cfg *config.Config) Service {
-	return &service{
-		pool:    pool,
-		engines: engines,
-		cfg:     cfg,
+	return NewServiceWithML(pool, engines, cfg, nil)
+}
+
+// NewServiceWithML, ML serving client ile ölçüm servisi kurar. mlClient nil ise
+// intent tabanlı ağırlıklandırma devre dışıdır (0421 M-4); dolu ise her skor
+// hesabında önce prompt sınıflandırılır, serving hatasında varsayılan ağırlıklar kullanılır.
+// cfg.IntentWeightScaleRaw doluysa (INTENT_WEIGHT_SCALE) intent çarpanları env'den
+// çözülür; boşsa varsayılanlar kullanılır. cfg nil ise env doğrudan okunur (handler
+// anlık skor yolu cfg geçirmez — 0421 A3-3 pilot kalibrasyonu her iki yolda da çalışır).
+func NewServiceWithML(pool *db.Pool, engines *engine.Registry, cfg *config.Config, mlClient *ml.Client) Service {
+	s := &service{pool: pool, engines: engines, cfg: cfg, ml: mlClient, breaker: ml.NewCircuitBreakerFor("measure", ml.DefaultCooldown)}
+	raw := ""
+	if cfg != nil {
+		raw = cfg.IntentWeightScaleRaw
+	} else {
+		raw = os.Getenv("INTENT_WEIGHT_SCALE")
 	}
+	if scale, ok := config.ParseIntentWeightScaleRaw(raw); ok {
+		s.intentScale = scale
+	}
+	return s
 }
 
 // effectiveWeights returns env-configured weights (SCORE_WEIGHTS) or GAVF defaults.
@@ -88,6 +137,104 @@ func (s *service) effectiveWeights() ComponentWeights {
 		return w
 	}
 	return v2DefaultWeights
+}
+
+// intentWeights — prompt intent'ine göre VI bileşen ağırlıklarını ölçekler (0421 A3-3).
+// Prompt, MeasurementResult.PromptText'ten alınır; serving yok/hatalı/cooldown'da veya
+// prompt boşsa ok=false döner (varsayılan ağırlıklar kullanılır — 0421 M-4). Sonuç
+// per-prompt önbelleklenir: worker aynı prompt'u her örnekleme mesajında yeniden gönderir.
+func (s *service) intentWeights(ctx context.Context, results []MeasurementResult, base ComponentWeights) (ComponentWeights, bool) {
+	if s.ml == nil {
+		return ComponentWeights{}, false
+	}
+	prompt := ""
+	if len(results) > 0 {
+		prompt = strings.TrimSpace(results[0].PromptText)
+	}
+	if prompt == "" {
+		return ComponentWeights{}, false
+	}
+
+	s.cacheMu.Lock()
+	cached := s.cachedPrompt == prompt && s.cachedLabels != nil
+	labels := s.cachedLabels
+	s.cacheMu.Unlock()
+
+	if !cached {
+		if s.breaker.InCooldown() {
+			return ComponentWeights{}, false
+		}
+		cls, err := s.ml.ClassifyPrompt(ctx, prompt)
+		if err != nil {
+			slog.Warn("measure: prompt sınıflandırma başarısız, varsayılan ağırlıklar kullanılıyor", "error", err)
+			s.breaker.Fail()
+			return ComponentWeights{}, false
+		}
+		s.breaker.Success()
+		s.cacheMu.Lock()
+		s.cachedPrompt = prompt
+		s.cachedLabels = cls
+		s.cacheMu.Unlock()
+		labels = cls
+	}
+
+	scale := s.effectiveIntentScale()
+	if _, known := scale[labels.Intent.Label]; !known {
+		// Bilinmeyen/boş intent → ölçek uygulanmaz, varsayılan ağırlıklar (M-4).
+		return ComponentWeights{}, false
+	}
+	adjusted := applyIntentWeightsWithScale(base, labels.Intent.Label, scale)
+	slog.Debug("measure: intent tabanlı ağırlıklar", "intent", labels.Intent.Label, "confidence", labels.Intent.Confidence)
+	return adjusted, true
+}
+
+// effectiveIntentScale — servisin aktif intent çarpan tablosu. INTENT_WEIGHT_SCALE
+// ile override edilmemişse varsayılan tablo döner.
+func (s *service) effectiveIntentScale() map[string][7]float64 {
+	if len(s.intentScale) > 0 {
+		return s.intentScale
+	}
+	return defaultIntentComponentScale
+}
+
+// applyIntentWeights — 7 bileşenli ağırlıkları intent çarpanlarıyla ölçekler ve
+// toplamı 1.0'a normalize eder. Bilinmeyen intent veya v1 (4 bileşenli) profilde
+// ağırlıklar aynen döner (deterministik; G2 ilkesi). Varsayılan çarpanları kullanır
+// (INTENT_WEIGHT_SCALE override'ı olmayan testler/kod için); servis yolu
+// effectiveIntentScale ile override edilen çarpanları kullanır.
+func applyIntentWeights(base ComponentWeights, intent string) ComponentWeights {
+	return applyIntentWeightsWithScale(base, intent, defaultIntentComponentScale)
+}
+
+// applyIntentWeightsWithScale — applyIntentWeights'in çarpan tablosu parametreli hali.
+// INTENT_WEIGHT_SCALE env'inden gelen çarpanlarla çalışır (0421 A3-3 pilot kalibrasyonu).
+func applyIntentWeightsWithScale(base ComponentWeights, intent string, scale map[string][7]float64) ComponentWeights {
+	scaleRow, ok := scale[intent]
+	if !ok || !base.IsV2() {
+		return base
+	}
+	w := ComponentWeights{
+		PresenceShare:     base.PresenceShare * scaleRow[0],
+		PositionWeight:    base.PositionWeight * scaleRow[1],
+		SourceShare:       base.SourceShare * scaleRow[2],
+		CompetitorContext: base.CompetitorContext * scaleRow[3],
+		AppearanceRate:    base.AppearanceRate * scaleRow[4],
+		Sentiment:         base.Sentiment * scaleRow[5],
+		CompVisibility:    base.CompVisibility * scaleRow[6],
+	}
+	sum := w.PresenceShare + w.PositionWeight + w.SourceShare + w.CompetitorContext +
+		w.AppearanceRate + w.Sentiment + w.CompVisibility
+	if sum <= 0 {
+		return base
+	}
+	w.PresenceShare /= sum
+	w.PositionWeight /= sum
+	w.SourceShare /= sum
+	w.CompetitorContext /= sum
+	w.AppearanceRate /= sum
+	w.Sentiment /= sum
+	w.CompVisibility /= sum
+	return w
 }
 
 // Measure executes n=3 measurements for all registered engines and aggregates results.
@@ -198,6 +345,7 @@ func (s *service) Measure(ctx context.Context, req MeasurementRequest) (*Measure
 		PanelID:      req.PanelID,
 		WorkspaceID:  req.WorkspaceID,
 		TenantID:     req.TenantID,
+		PromptText:   req.PromptText,
 	}, nil
 }
 
@@ -208,6 +356,12 @@ func (s *service) CalculateScore(ctx context.Context, panelID string, results []
 	// weights boşsa: env override (SCORE_WEIGHTS) veya GAVF varsayılanları (deterministik default)
 	if weights == (ComponentWeights{}) {
 		weights = s.effectiveWeights()
+	}
+
+	// 0421 A3-3: prompt intent sınıflandırması (serving) → VI bileşen ağırlıklarını
+	// intent'e göre ölçekle. Serving yok/hatalı/cooldown → varsayılan ağırlıklar (M-4).
+	if adjusted, ok := s.intentWeights(ctx, results, weights); ok {
+		weights = adjusted
 	}
 
 	algorithmVersion := "1.0.0"

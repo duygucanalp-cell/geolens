@@ -49,6 +49,27 @@ services:
       retries: 5
 
   # === Application ===
+  # ML serving — breaker metriklerinin (geolens_ml_breaker_*) kaynağı.
+  # Prometheus MLServingUnavailable kuralı bu servise bağımlıdır.
+  ml-serving:
+    build:
+      context: ../ml
+      dockerfile: Dockerfile
+    ports:
+      - "8900:8900"
+    environment:
+      ML_MODEL_DIR: /models
+      ML_SENTIMENT_TOKENIZER_DIR: /models/sentiment/tokenizer
+      MODELS: "sentiment=/models/sentiment/sentiment.onnx,prompt_intent=/models/prompt_classifier/prompt_intent.onnx,prompt_topic=/models/prompt_classifier/prompt_topic.onnx,prompt_persona=/models/prompt_classifier/prompt_persona.onnx,prompt_funnel=/models/prompt_classifier/prompt_funnel.onnx"
+    volumes:
+      - ../ml/models:/models:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8900/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
   api:
     build:
       context: ..
@@ -85,6 +106,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+      ml-serving:
+        condition: service_started
 
   scheduler:
     build:
@@ -117,8 +140,15 @@ services:
       context: ..
       dockerfile: Dockerfile
       target: worker
+    ports:
+      # Worker metrics — kendi prosesindeki metrikler (ML breaker dahil)
+      - "8081:8081"
     environment:
       ENVIRONMENT: development
+      WORKER_METRICS_PORT: 8081
+      # ML serving — breaker metrikleri (MLServingUnavailable alert kaynağı)
+      ML_SERVING_URL: http://ml-serving:8900
+      ML_TIMEOUT: 2s
       S3_ENDPOINT: http://minio:9000
       S3_BUCKET: geolens-snapshots
       S3_REGION: us-east-1
@@ -142,6 +172,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      ml-serving:
+        condition: service_started
 
   web:
     build:
@@ -159,6 +191,7 @@ services:
       - "9090:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus-rules.yml:/etc/prometheus/prometheus-rules.yml:ro
       - promdata:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'

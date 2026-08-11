@@ -16,6 +16,7 @@ import (
 	"github.com/geolens/platform/internal/benchmark"
 	"github.com/geolens/platform/internal/dbiface"
 	"github.com/geolens/platform/internal/id"
+	"github.com/geolens/platform/internal/ml"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/httputil"
@@ -26,6 +27,8 @@ type Handler struct {
 	pool    dbiface.DB
 	rawPool *db.Pool
 	engines *engine.Registry
+	// mlClient — opsiyonel ML serving istemcisi (0421 A3-3 intent ağırlıklandırması).
+	mlClient *ml.Client
 }
 
 // NewHandler creates a new measure handler with the given DB interface.
@@ -34,11 +37,13 @@ func NewHandler(pool dbiface.DB, engines *engine.Registry) *Handler {
 }
 
 // NewProductionHandler creates a new measure handler with a *db.Pool for production use.
-func NewProductionHandler(pool *db.Pool, engines *engine.Registry) *Handler {
+// mlClient opsiyoneldir: nil ise intent ağırlıklandırması atlanır (0421 M-4 fallback).
+func NewProductionHandler(pool *db.Pool, engines *engine.Registry, mlClient *ml.Client) *Handler {
 	return &Handler{
-		pool:    dbiface.NewAdapter(pool),
-		rawPool: pool,
-		engines: engines,
+		pool:     dbiface.NewAdapter(pool),
+		rawPool:  pool,
+		engines:  engines,
+		mlClient: mlClient,
 	}
 }
 
@@ -46,7 +51,7 @@ func NewProductionHandler(pool *db.Pool, engines *engine.Registry) *Handler {
 // This is a demo convenience: the async worker pipeline handles the full flow,
 // but immediate scoring lets the UI show results right away.
 func (h *Handler) immediateMeasureAndScore(ctx context.Context, brandName, brandID, websiteURL, panelID, workspaceID, tenantID, promptText string) {
-	svc := NewService(h.rawPool, h.engines, nil)
+	svc := NewServiceWithML(h.rawPool, h.engines, nil, h.mlClient)
 
 	// n=3 Measurement (tek engine — mock engine hızlı yanıt verir)
 	result, err := svc.Measure(ctx, MeasurementRequest{

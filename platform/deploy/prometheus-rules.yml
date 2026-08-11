@@ -1,0 +1,23 @@
+# GeoLens Platform — Prometheus Alerting Rules
+# ML serving devre kesici metrikleri (0421 M-4 gözlemlenebilirlik):
+# geolens_ml_breaker_in_cooldown{component="sentiment"|"measure"} — serving kapalıyken
+# 1, erişilebilirken 0. Cooldown penceresi 60s olduğundan kural da 60s bekler:
+# tek seferlik bir timeout alarm üretmez, serving gerçekten erişilemezse uyarır.
+
+groups:
+  - name: ml-serving
+    rules:
+      - alert: MLServingUnavailable
+        # Devre kesici 60s boyunca açık kaldıysa serving erişilemez demektir.
+        # component label'ı ayrımı: sentiment ve measure ayrı ayrı alarm üretir.
+        # Anchored regex: yalnızca bilinen bileşenler eşleşir.
+        expr: geolens_ml_breaker_in_cooldown{component=~"^(sentiment|measure)$"} == 1
+        for: 1m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "ML serving erişilemez ({{ $labels.component }})"
+          description: "ML serving devre kesicisi '{{ $labels.component }}' bileşeni için 60s'den uzun süredir cooldown'da. Serving API'si kapalı veya yanıt vermiyor — kural tabanlı fallback aktif, ancak ML destekli analizler (sentiment, intent ağırlıklandırma, hallüsinasyon) devre dışı."
+          # Runbook: docker compose ps ml-serving + docker compose logs ml-serving
+          runbook_url: "https://github.com/geolens/platform/blob/main/docs/0421-ai-model-uygulama-plani.md"

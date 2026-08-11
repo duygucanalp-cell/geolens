@@ -82,6 +82,9 @@ type MeasurementResult struct {
 	PanelID      string               `json:"panel_id"`
 	WorkspaceID  string               `json:"workspace_id"`
 	TenantID     string               `json:"tenant_id"`
+	// PromptText — ölçümde kullanılan prompt (0421 A3-3 intent tabanlı
+	// ağırlıklandırma için serving'e gönderilir).
+	PromptText string `json:"prompt_text"`
 }
 
 // Service defines the interface for the measurement/scoring engine.

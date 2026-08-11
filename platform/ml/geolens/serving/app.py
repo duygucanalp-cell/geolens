@@ -9,6 +9,7 @@ import logging
 import os
 from contextlib import asynccontextmanager
 
+import numpy as np
 from fastapi import FastAPI, HTTPException
 
 from geolens.features.hallucination import cross_source_check
@@ -74,6 +75,86 @@ def health() -> dict:
 def list_models() -> dict:
     """Kayıtlı model ID listesi (Go client model_version doğrulaması için)."""
     return {"models": sorted(registry.ids())}
+
+
+def _parse_label_confidence(result: dict) -> tuple[str, float]:
+    """skl2onnx pipeline çıktısından etiket + güven çözer (0421 A2-3).
+
+    Tipik çıktı adları output_label (string dizi) ve output_probability
+    ([1, n_sınıf] sayısal dizi). Adlar modele göre değişebileceğinden bilinmeyen
+    adlar için string dizi → etiket, 2D sayısal dizi → olasılık fallback'i vardır.
+    """
+    outputs = result.get("outputs", {})
+    label = ""
+    conf = 0.0
+
+    label_arr = outputs.get("output_label")
+    if label_arr is not None:
+        flat = np.asarray(label_arr).reshape(-1)
+        if len(flat):
+            label = str(flat[0])
+
+    prob_arr = outputs.get("output_probability")
+    if prob_arr is not None:
+        # skl2onnx LabelEncoder + TreeEnsemble: seq(map(string,tensor(float)))
+        # biçiminde bir dict listesi döner: [{"presence": 0.62, ...}]. Eski
+        # sürümler 2D sayısal dizi döndürebilir — ikisi de desteklenir.
+        if isinstance(prob_arr, (list, tuple)) and prob_arr and isinstance(prob_arr[0], dict):
+            row = prob_arr[0]
+            if row and label in row:
+                conf = float(row[label])
+            elif row:
+                # Label dict'te yoksa (sınıf seti uyuşmazlığı) en yüksek olasılıklı
+                # sınıfı label ile UZLAŞTIR — yanıltıcı "label A, confidence B"
+                # eşleşmesi üretme.
+                top = max(row, key=row.get)
+                conf = float(row[top])
+                if not label:
+                    label = top
+        else:
+            probs = np.asarray(prob_arr, dtype=float)
+            if probs.ndim >= 1 and len(probs):
+                row = probs[0] if probs.ndim == 2 else probs
+                if row.size:
+                    conf = float(np.max(row))
+
+    if not label or conf == 0.0:
+        for name, value in outputs.items():
+            if name in ("output_label", "output_probability"):
+                continue
+            arr = np.asarray(value)
+            if arr.dtype.kind in "OUS" and not label:
+                flat = arr.reshape(-1)
+                if len(flat):
+                    label = str(flat[0])
+            elif arr.dtype.kind == "f" and arr.ndim >= 1 and conf == 0.0:
+                row = arr[0] if arr.ndim == 2 else arr
+                if row.size:
+                    conf = float(np.max(row))
+    return label, round(conf, 4)
+
+
+@app.post("/v1/prompt/classify")
+def classify_prompt(payload: dict) -> dict:
+    """Prompt sınıflandırma (0421 A2-3): intent/topic/persona/funnel.
+
+    İstek: {"text": "..."}
+    Yanıt: {"intent": {"label", "confidence"}, "topic": ..., "persona": ..., "funnel": ...}
+    Modeller (prompt_* ONNX) yüklü değilse 404 döner — Go tarafı varsayılan
+    VI ağırlıklarına düşer (0421 M-4).
+    """
+    text = payload.get("text", "")
+    if not isinstance(text, str) or not text.strip():
+        raise HTTPException(status_code=422, detail="'text' alanı zorunlu")
+    out = {}
+    for model_id in ("prompt_intent", "prompt_topic", "prompt_persona", "prompt_funnel"):
+        model = registry.get(model_id)
+        if model is None:
+            raise HTTPException(status_code=404, detail=f"model bulunamadı: {model_id}")
+        result = model.predict({"text": text})
+        label, conf = _parse_label_confidence(result)
+        out[model_id.removeprefix("prompt_")] = {"label": label, "confidence": conf}
+    return out
 
 
 @app.post("/v1/hallucination/detect")

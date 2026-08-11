@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -44,7 +45,7 @@ func TestAnalyzeWithML_MLFirst(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	e := &Engine{ml: ml.NewClient(srv.URL, 0)}
+	e := NewEngineWithML(nil, ml.NewClient(srv.URL, 0))
 	res := e.analyzeWithML(context.Background(), "gemini", "brand-1",
 		[]rawResp{{ID: "r1", Content: "bu metin serving ile analiz edilir"}})
 	if res.PositiveScore < 0.7 {
@@ -76,7 +77,7 @@ func TestAnalyzeWithML_PerResponseAggregation(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	e := &Engine{ml: ml.NewClient(srv.URL, 0)}
+	e := NewEngineWithML(nil, ml.NewClient(srv.URL, 0))
 	responses := []rawResp{
 		{ID: "r1", Content: "harika ürün tavsiye ederim"}, // 4 kelime, pozitif
 		{ID: "r2", Content: "kötü kalitesiz pahalı"},      // 3 kelime, negatif
@@ -111,7 +112,7 @@ func TestAnalyzeWithML_PartialFailure(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	e := &Engine{ml: ml.NewClient(srv.URL, 0)}
+	e := NewEngineWithML(nil, ml.NewClient(srv.URL, 0))
 	responses := []rawResp{
 		{ID: "r1", Content: "harika ürün"},
 		{ID: "r2", Content: "patla"},
@@ -135,7 +136,7 @@ func TestAnalyzeWithML_SkipsEmptyText(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	e := &Engine{ml: ml.NewClient(srv.URL, 0)}
+	e := NewEngineWithML(nil, ml.NewClient(srv.URL, 0))
 	responses := []rawResp{
 		{ID: "r1", Content: "   "}, // boş — atlanmalı
 		{ID: "r2", Content: ""},    // boş — atlanmalı
@@ -161,7 +162,7 @@ func TestAnalyzeWithML_EarlyAbortOnTotalFailure(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	e := &Engine{ml: ml.NewClient(srv.URL, 200*time.Millisecond)}
+	e := NewEngineWithML(nil, ml.NewClient(srv.URL, 200*time.Millisecond))
 	responses := make([]rawResp, 10)
 	for i := range responses {
 		responses[i] = rawResp{ID: fmt.Sprintf("r%d", i), Content: "Acme harika ürün"}
@@ -183,7 +184,7 @@ func TestAnalyzeWithML_FallbackOnError(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	e := &Engine{ml: ml.NewClient(srv.URL, 0)}
+	e := NewEngineWithML(nil, ml.NewClient(srv.URL, 0))
 	res := e.analyzeWithML(context.Background(), "perplexity", "brand-1",
 		[]rawResp{{ID: "r1", Content: "Acme harika bir ürün"}})
 	if res.OverallSentiment != 1.0 {
@@ -204,7 +205,7 @@ func TestAnalyzeWithML_CooldownSkipsML(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	e := &Engine{ml: ml.NewClient(srv.URL, 0)}
+	e := NewEngineWithML(nil, ml.NewClient(srv.URL, 0))
 	responses := []rawResp{{ID: "r1", Content: "Acme harika bir ürün"}}
 	// İlk çağrı: ML denenir, hata → fallback + cooldown başlar.
 	res := e.analyzeWithML(context.Background(), "chatgpt", "brand-1", responses)
@@ -231,7 +232,7 @@ func TestDetectHallucinationsWithML_Success(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	e := &Engine{ml: ml.NewClient(srv.URL, 0)}
+	e := NewEngineWithML(nil, ml.NewClient(srv.URL, 0))
 	targets := []checkTarget{
 		{ID: "r1", EngineName: "chatgpt", Content: "MobiTel %30 büyüme bildirdi"},
 		{ID: "r2", EngineName: "gemini", Content: "MobiTel %60 büyüme iddia ediyor"},
@@ -259,13 +260,152 @@ func TestDetectHallucinationsWithML_Error(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	e := &Engine{ml: ml.NewClient(srv.URL, 0)}
+	e := NewEngineWithML(nil, ml.NewClient(srv.URL, 0))
 	targets := []checkTarget{
 		{ID: "r1", EngineName: "chatgpt", Content: "a"},
 		{ID: "r2", EngineName: "gemini", Content: "b"},
 	}
 	if _, err := e.detectHallucinationsWithML(context.Background(), targets, "brand-1"); err == nil {
 		t.Fatal("serving 500 için hata bekleniyor")
+	}
+}
+
+// TestGroupByPrompt: hedefler prompt_text'e göre gruplanır (051), sıra korunur.
+func TestGroupByPrompt(t *testing.T) {
+	targets := []checkTarget{
+		{ID: "r1", EngineName: "chatgpt", Prompt: "P1", Content: "a"},
+		{ID: "r2", EngineName: "gemini", Prompt: "P2", Content: "b"},
+		{ID: "r3", EngineName: "perplexity", Prompt: "P1", Content: "c"},
+		{ID: "r4", EngineName: "grok", Prompt: "", Content: "d"},
+		{ID: "r5", EngineName: "claude", Prompt: "P2", Content: "e"},
+	}
+	groups := groupByPrompt(targets)
+	if len(groups) != 3 {
+		t.Fatalf("beklenen 3 grup (P1, P2, boş), gerçek %d", len(groups))
+	}
+	// İlk görülme sırası: P1, P2, boş
+	if groups[0][0].ID != "r1" || len(groups[0]) != 2 {
+		t.Errorf("P1 grubu yanlış: %+v", groups[0])
+	}
+	if groups[1][0].ID != "r2" || len(groups[1]) != 2 {
+		t.Errorf("P2 grubu yanlış: %+v", groups[1])
+	}
+	if groups[2][0].ID != "r4" || len(groups[2]) != 1 {
+		t.Errorf("boş prompt grubu yanlış: %+v", groups[2])
+	}
+}
+
+// TestApplyMLCrossSource_SamePromptOnly: serving'e yalnızca aynı prompt yanıtları
+// gönderilir; farklı prompt'tan gelen yanıt karıştırılmaz (yanlış pozitif riski).
+func TestApplyMLCrossSource_SamePromptOnly(t *testing.T) {
+	var mu sync.Mutex
+	var sent [][]string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var payload struct {
+			Responses []struct {
+				ID string `json:"id"`
+			} `json:"responses"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&payload)
+		mu.Lock()
+		ids := make([]string, 0, len(payload.Responses))
+		for _, resp := range payload.Responses {
+			ids = append(ids, resp.ID)
+		}
+		sent = append(sent, ids)
+		mu.Unlock()
+		_, _ = w.Write([]byte(`{"findings":[{"type":"T3","severity":"high","description":"Çelişik sayısal claim","confidence":0.7,"engine":"chatgpt"}]}`))
+	}))
+	defer srv.Close()
+
+	e := NewEngineWithML(nil, ml.NewClient(srv.URL, 0))
+	targets := []checkTarget{
+		{ID: "r1", EngineName: "chatgpt", Prompt: "P1", Content: "MobiTel %30 büyüme"},
+		{ID: "r2", EngineName: "gemini", Prompt: "P1", Content: "MobiTel %60 büyüme"},
+		{ID: "r3", EngineName: "perplexity", Prompt: "P2", Content: "farklı prompt yanıtı"},
+	}
+	res := e.applyMLCrossSource(context.Background(), nil, targets, "brand-1")
+	if len(res) != 1 {
+		t.Fatalf("beklenen 1 finding, gerçek %d", len(res))
+	}
+	// r3 (P2 tek yanıt) serving'e gitmemeli; r1+r2 birlikte gitmeli
+	mu.Lock()
+	defer mu.Unlock()
+	if len(sent) != 1 || len(sent[0]) != 2 {
+		t.Fatalf("tek çağrı, 2 yanıt beklenir, gerçek %+v", sent)
+	}
+	got := map[string]bool{}
+	for _, id := range sent[0] {
+		got[id] = true
+	}
+	if !got["r1"] || !got["r2"] || got["r3"] {
+		t.Errorf("prompt karışımı: %v", sent[0])
+	}
+}
+
+// TestApplyMLCrossSource_SingleGroupNoCall: tüm gruplar tek yanıtlıysa serving çağrısı yapılmaz.
+func TestApplyMLCrossSource_SingleGroupNoCall(t *testing.T) {
+	var calls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+		_, _ = w.Write([]byte(`{"findings":[]}`))
+	}))
+	defer srv.Close()
+
+	e := NewEngineWithML(nil, ml.NewClient(srv.URL, 0))
+	targets := []checkTarget{
+		{ID: "r1", EngineName: "chatgpt", Prompt: "P1", Content: "a"},
+		{ID: "r2", EngineName: "gemini", Prompt: "P2", Content: "b"},
+	}
+	if res := e.applyMLCrossSource(context.Background(), nil, targets, "brand-1"); len(res) != 0 {
+		t.Errorf("tek yanıtlı gruplarda finding beklenmez: %+v", res)
+	}
+	if calls.Load() != 0 {
+		t.Errorf("tek yanıtlı gruplarda serving çağrısı beklenmez, çağrı %d", calls.Load())
+	}
+}
+
+// TestApplyMLCrossSource_NilClient: serving yoksa kurallar aynen döner.
+func TestApplyMLCrossSource_NilClient(t *testing.T) {
+	e := &Engine{ml: nil}
+	targets := []checkTarget{
+		{ID: "r1", EngineName: "chatgpt", Prompt: "P1", Content: "a"},
+		{ID: "r2", EngineName: "gemini", Prompt: "P1", Content: "b"},
+	}
+	base := []HallucinationResult{{HallucinationType: "T2", Description: "kural"}}
+	if res := e.applyMLCrossSource(context.Background(), base, targets, "brand-1"); len(res) != 1 {
+		t.Errorf("ml nil iken base aynen dönmeli: %+v", res)
+	}
+}
+
+// TestApplyMLCrossSource_Error: serving hatasında cooldown başlar, base döner.
+func TestApplyMLCrossSource_Error(t *testing.T) {
+	var calls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+
+	e := NewEngineWithML(nil, ml.NewClient(srv.URL, 0))
+	targets := []checkTarget{
+		{ID: "r1", EngineName: "chatgpt", Prompt: "P1", Content: "a"},
+		{ID: "r2", EngineName: "gemini", Prompt: "P1", Content: "b"},
+	}
+	base := []HallucinationResult{{HallucinationType: "T1", Description: "kural"}}
+	res := e.applyMLCrossSource(context.Background(), base, targets, "brand-1")
+	if len(res) != 1 {
+		t.Errorf("hata sonrası base dönmeli: %+v", res)
+	}
+	if !e.breaker.InCooldown() {
+		t.Error("serving hatası sonrası cooldown başlamalı")
+	}
+	// Cooldown'da ikinci çağrı ML'yi denememeli
+	if res2 := e.applyMLCrossSource(context.Background(), base, targets, "brand-1"); len(res2) != 1 {
+		t.Errorf("cooldown'da base dönmeli: %+v", res2)
+	}
+	if calls.Load() != 1 {
+		t.Errorf("cooldown'da ikinci ML çağrısı beklenmez, çağrı %d", calls.Load())
 	}
 }
 
@@ -288,6 +428,34 @@ func TestRuleBasedHallucinations(t *testing.T) {
 	}
 	if !types["T1"] || !types["T3"] {
 		t.Errorf("beklenen T1 ve T3 flagleri, gerçek %v", res)
+	}
+}
+
+// TestMergeHallucinationResults: ML + kural sonuçları birleştirilir, aynı
+// (tip, açıklama) çifti tekrarlanmaz.
+func TestMergeHallucinationResults(t *testing.T) {
+	base := func(typ, desc string) HallucinationResult {
+		return HallucinationResult{HallucinationType: typ, Description: desc, EngineName: "chatgpt", BrandID: "brand-1"}
+	}
+	rules := []HallucinationResult{
+		base("T2", "AI yanıtı kaynak/citation referansı içeriyor"),
+		base("T4", "AI yanıtı doğrulanmamış olumsuz ifade içeriyor"),
+	}
+	ml := []HallucinationResult{
+		base("T3", "Çelişik sayısal claim: '%30' vs '%60'"),
+		// kural ile aynı (tip, açıklama) → elenmeli
+		base("T2", "AI yanıtı kaynak/citation referansı içeriyor"),
+	}
+	merged := mergeHallucinationResults(rules, ml)
+	if len(merged) != 3 {
+		t.Fatalf("beklenen 3 benzersiz sonuç, gerçek %d (%+v)", len(merged), merged)
+	}
+	types := map[string]int{}
+	for _, h := range merged {
+		types[h.HallucinationType]++
+	}
+	if types["T2"] != 1 || types["T3"] != 1 || types["T4"] != 1 {
+		t.Errorf("her tip bir kez bulunmalı: %v", types)
 	}
 }
 

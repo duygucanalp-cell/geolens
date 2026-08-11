@@ -377,6 +377,76 @@
           "min": 0
         }
       }
+    },
+    {
+      "title": "ML Serving Breaker — Cooldown State",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 36 },
+      "description": "geolens_ml_breaker_in_cooldown — 1 = serving erişilemez (devre kesici açık), 0 = normal. Herhangi bir component 1'de kalırsa ML serving down demektir (MLServingUnavailable alarmı).",
+      "targets": [
+        {
+          "expr": "sum(geolens_ml_breaker_in_cooldown{component=\"sentiment\"}) by (job)",
+          "legendFormat": "sentiment ({{job}})"
+        },
+        {
+          "expr": "sum(geolens_ml_breaker_in_cooldown{component=\"measure\"}) by (job)",
+          "legendFormat": "measure ({{job}})"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bool",
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          },
+          "custom": { "showPoints": "never" }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "sentiment" },
+            "properties": [
+              { "id": "custom.lineWidth", "value": 2 },
+              { "id": "custom.lineStyle", "value": { "fill": "solid" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "measure" },
+            "properties": [
+              { "id": "custom.lineWidth", "value": 2 },
+              { "id": "custom.lineStyle", "value": { "fill": "solid" } }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "title": "ML Serving Breaker — Failures",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 36 },
+      "description": "geolens_ml_breaker_failures_total — serving ardışık hatasında devre kesicinin açılma (Fail) sayısı. Kümülatif counter; artış hızı serving stabilitesini gösterir.",
+      "targets": [
+        {
+          "expr": "sum(increase(geolens_ml_breaker_failures_total{component=\"sentiment\"}[$__rate_interval])) by (job)",
+          "legendFormat": "sentiment ({{job}})"
+        },
+        {
+          "expr": "sum(increase(geolens_ml_breaker_failures_total{component=\"measure\"}[$__rate_interval])) by (job)",
+          "legendFormat": "measure ({{job}})"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "custom": { "showPoints": "never" }
+        }
+      }
     }
   ]
 }

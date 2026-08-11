@@ -3,6 +3,7 @@ package config
 
 import (
 	"log/slog"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -24,7 +25,11 @@ type ScoreWeightsV2 struct {
 
 // Config holds all application configuration loaded from environment variables.
 type Config struct {
-	Port                    string
+	Port string
+	// WorkerMetricsPort — worker prosesinin Prometheus /metrics endpoint'i.
+	// API'nin :8080/metrics'inden ayrıdır: worker kendi prosesindeki metrikleri
+	// (breaker metrikleri dahil) bu portta serve eder (0421 M-4 gözlemlenebilirlik).
+	WorkerMetricsPort       string
 	DatabaseURL             string
 	RedisURL                string
 	S3Endpoint              string
@@ -79,6 +84,13 @@ type Config struct {
 	// "2.0.0"=7 bileşenli VI (0409 v1.3, A3-5). Varsayılan 2.0.0; 1.0.0 geri dönüş için feature flag.
 	ScoreAlgorithmVersion string
 
+	// IntentWeightScaleRaw — INTENT_WEIGHT_SCALE: prompt intent'ine göre VI bileşen
+	// çarpanları (0421 A3-3). Biçim: "intent=v1,v2,...,v7;intent=..." — örn.
+	// "presence=1.25,1.00,0.90,0.90,1.10,0.90,0.90;comparison=0.90,1.00,0.90,1.40,0.90,0.90,1.30".
+	// Boş bırakılırsa varsayılan intentComponentScale kullanılır (pilot verisiyle kalibrasyon
+	// için env üzerinden override — 0404 §4).
+	IntentWeightScaleRaw string
+
 	// ML serving (0421 A0-3) — ML_SERVING_URL doluysa ML client aktifleşir,
 	// boşsa kural tabanlı bileşenler fallback olarak çalışmaya devam eder.
 	MLServingURL string // ML_SERVING_URL (varsayılan boş → fallback)
@@ -89,6 +101,7 @@ type Config struct {
 func LoadFromEnv() Config {
 	return Config{
 		Port:                    getEnv("PORT", "8080"),
+		WorkerMetricsPort:       getEnv("WORKER_METRICS_PORT", "8081"),
 		DatabaseURL:             getEnv("DATABASE_URL", "postgres://geolens:geolens@localhost:5432/geolens?sslmode=disable"),
 		RedisURL:                getEnv("REDIS_URL", "redis://localhost:6379/0"),
 		S3Endpoint:              getEnv("S3_ENDPOINT", "http://localhost:9000"),
@@ -139,6 +152,7 @@ func LoadFromEnv() Config {
 		StripePriceIDsRaw:       getEnv("STRIPE_PRICE_IDS", ""),
 		ScoreWeightsRaw:         getEnv("SCORE_WEIGHTS", ""),
 		ScoreAlgorithmVersion:   getEnv("SCORE_ALGORITHM_VERSION", "2.0.0"),
+		IntentWeightScaleRaw:    getEnv("INTENT_WEIGHT_SCALE", ""),
 		MLServingURL:            getEnv("ML_SERVING_URL", ""),
 		MLTimeOut:               parseDuration(getEnv("ML_TIMEOUT", "2s")),
 	}
@@ -219,6 +233,56 @@ func (c Config) ParseScoreWeightsV2() (weights ScoreWeightsV2, ok bool) {
 		Presence: vals[0], Position: vals[1], Source: vals[2], Competitor: vals[3],
 		Appearance: vals[4], Sentiment: vals[5], CompVis: vals[6],
 	}, true
+}
+
+// ParseIntentWeightScale parses the INTENT_WEIGHT_SCALE env into a per-intent
+// 7-component scale map (0421 A3-3). Biçim:
+//
+//	"presence=1.25,1.00,0.90,0.90,1.10,0.90,0.90;comparison=0.90,..."
+//
+// Boş/geçersiz girdide ok=false döner — varsayılan intentComponentScale kullanılır.
+func (c Config) ParseIntentWeightScale() (map[string][7]float64, bool) {
+	return ParseIntentWeightScaleRaw(c.IntentWeightScaleRaw)
+}
+
+// ParseIntentWeightScaleRaw parses a raw INTENT_WEIGHT_SCALE string. Ayrık olarak
+// test edilebilmesi için raw string üzerinde çalışır (service nil cfg ile de kullanabilir).
+func ParseIntentWeightScaleRaw(raw string) (map[string][7]float64, bool) {
+	if strings.TrimSpace(raw) == "" {
+		return nil, false
+	}
+	out := make(map[string][7]float64)
+	for _, entry := range strings.Split(raw, ";") {
+		entry = strings.TrimSpace(entry)
+		if entry == "" {
+			continue
+		}
+		kv := strings.SplitN(entry, "=", 2)
+		if len(kv) != 2 {
+			return nil, false
+		}
+		intent := strings.TrimSpace(kv[0])
+		if intent == "" {
+			return nil, false
+		}
+		parts := strings.Split(kv[1], ",")
+		if len(parts) != 7 {
+			return nil, false
+		}
+		var vals [7]float64
+		for i, p := range parts {
+			v, err := strconv.ParseFloat(strings.TrimSpace(p), 64)
+			if err != nil || v < 0 || math.IsNaN(v) || math.IsInf(v, 0) {
+				return nil, false
+			}
+			vals[i] = v
+		}
+		out[intent] = vals
+	}
+	if len(out) == 0 {
+		return nil, false
+	}
+	return out, true
 }
 
 func getEnv(key, fallback string) string {

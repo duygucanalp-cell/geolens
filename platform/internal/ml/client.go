@@ -55,45 +55,53 @@ type PredictResult struct {
 	Outputs      map[string]any `json:"outputs"`
 }
 
+// postJSON, baseURL'deki path'e JSON POST gönderir ve HTTP 200 yanıtını out'a çözer.
+// 200 dışı yanıtlar hata döndürür. (Predict / DetectHallucinations ortak yardımcısı)
+func (c *Client) postJSON(ctx context.Context, path string, payload any, out any) error {
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("ml: payload serialize hatası: %w", err)
+	}
+
+	u, err := url.JoinPath(c.baseURL, path)
+	if err != nil {
+		return fmt.Errorf("ml: url hatası: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("ml: istek oluşturma hatası: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("ml: serving çağrı hatası: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	raw, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("ml: yanıt okuma hatası: %w", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("ml: serving HTTP %d: %s", resp.StatusCode, string(raw))
+	}
+	if err := json.Unmarshal(raw, out); err != nil {
+		return fmt.Errorf("ml: yanıt çözümleme hatası: %w", err)
+	}
+	return nil
+}
+
 // Predict tek örnek inference çağrısı yapar.
 // payload örn: {"model": "sentiment", "lang": "tr", "text": "..."}
 func (c *Client) Predict(ctx context.Context, payload map[string]any) (*PredictResult, error) {
 	if c == nil {
 		return nil, ErrNotConfigured
 	}
-	body, err := json.Marshal(payload)
-	if err != nil {
-		return nil, fmt.Errorf("ml: payload serialize hatası: %w", err)
-	}
-
-	u, err := url.JoinPath(c.baseURL, "/v1/predict")
-	if err != nil {
-		return nil, fmt.Errorf("ml: url hatası: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, bytes.NewReader(body))
-	if err != nil {
-		return nil, fmt.Errorf("ml: istek oluşturma hatası: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("ml: serving çağrı hatası: %w", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	raw, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("ml: yanıt okuma hatası: %w", err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("ml: serving HTTP %d: %s", resp.StatusCode, string(raw))
-	}
-
 	var out PredictResult
-	if err := json.Unmarshal(raw, &out); err != nil {
-		return nil, fmt.Errorf("ml: yanıt çözümleme hatası: %w", err)
+	if err := c.postJSON(ctx, "/v1/predict", payload, &out); err != nil {
+		return nil, err
 	}
 	return &out, nil
 }
@@ -195,6 +203,34 @@ func softmaxRow(raw any) ([3]float64, error) {
 	return exp, nil
 }
 
+// PromptLabel — prompt sınıflandırıcıda tek hedefin (intent/topic/persona/funnel) tahmini.
+type PromptLabel struct {
+	Label      string  `json:"label"`
+	Confidence float64 `json:"confidence"`
+}
+
+// PromptClassification — serving /v1/prompt/classify çıktısı (0421 A2-3).
+type PromptClassification struct {
+	Intent  PromptLabel `json:"intent"`
+	Topic   PromptLabel `json:"topic"`
+	Persona PromptLabel `json:"persona"`
+	Funnel  PromptLabel `json:"funnel"`
+}
+
+// ClassifyPrompt, serving'deki prompt sınıflandırıcıyı (intent/topic/persona/funnel)
+// çağırır. Hata (serving yok/model eksik) dönerse çağıran varsayılan ağırlıkları
+// kullanır (0421 M-4).
+func (c *Client) ClassifyPrompt(ctx context.Context, text string) (*PromptClassification, error) {
+	if c == nil {
+		return nil, ErrNotConfigured
+	}
+	var out PromptClassification
+	if err := c.postJSON(ctx, "/v1/prompt/classify", map[string]any{"text": text}, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 // HallucinationResponse — serving cross-source tespiti için girdi yanıtı (0421 A2-4).
 type HallucinationResponse struct {
 	ID     string `json:"id"`
@@ -222,41 +258,11 @@ func (c *Client) DetectHallucinations(ctx context.Context, responses []Hallucina
 	if len(responses) < 2 {
 		return nil, nil
 	}
-	body, err := json.Marshal(map[string]any{"responses": responses})
-	if err != nil {
-		return nil, fmt.Errorf("ml: hallüsinasyon payload serialize hatası: %w", err)
-	}
-
-	u, err := url.JoinPath(c.baseURL, "/v1/hallucination/detect")
-	if err != nil {
-		return nil, fmt.Errorf("ml: url hatası: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, bytes.NewReader(body))
-	if err != nil {
-		return nil, fmt.Errorf("ml: istek oluşturma hatası: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("ml: serving çağrı hatası: %w", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	raw, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("ml: yanıt okuma hatası: %w", err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("ml: serving HTTP %d: %s", resp.StatusCode, string(raw))
-	}
-
 	var out struct {
 		Findings []HallucinationFinding `json:"findings"`
 	}
-	if err := json.Unmarshal(raw, &out); err != nil {
-		return nil, fmt.Errorf("ml: yanıt çözümleme hatası: %w", err)
+	if err := c.postJSON(ctx, "/v1/hallucination/detect", map[string]any{"responses": responses}, &out); err != nil {
+		return nil, err
 	}
 	return out.Findings, nil
 }

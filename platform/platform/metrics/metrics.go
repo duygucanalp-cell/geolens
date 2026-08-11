@@ -223,6 +223,25 @@ var (
 	}, []string{LabelType, "status"})
 )
 
+// ---- ML Serving Circuit Breaker Metrics (0421 M-4) ----
+
+var (
+	// MLBreakerFailuresTotal counts circuit breaker trips per component.
+	// Sentiment ve measure servisleri kendi breaker'larıyla (component: sentiment,
+	// measure) serving hatalarını sayar — cooldown'a kaç kez girildiği izlenir.
+	MLBreakerFailuresTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "geolens_ml_breaker_failures_total",
+		Help: "ML serving devre kesici hata sayısı (component ayrımıyla)",
+	}, []string{LabelComponent})
+
+	// MLBreakerInCooldown tracks whether the component's breaker is currently
+	// open (1=cooldown aktif, 0=normal). Serving erişilemezliği görünür kılar.
+	MLBreakerInCooldown = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "geolens_ml_breaker_in_cooldown",
+		Help: "ML serving devre kesici cooldown durumu (1=aktif, 0=normal)",
+	}, []string{LabelComponent})
+)
+
 // ---- SEO Sync Metrics (FR-B8 / HT2 sertleştirme) ----
 
 var (

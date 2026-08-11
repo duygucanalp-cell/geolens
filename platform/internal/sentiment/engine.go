@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/geolens/platform/internal/id"
@@ -16,10 +15,6 @@ import (
 	"github.com/geolens/platform/platform/metrics"
 )
 
-// mlCooldown — serving ardışık hatasında ML çağrılarını bu süre kadar askıya alır.
-// Böylece serving kapalıyken her ölçümde 8 motor × ML_TIMEOUT kadar gecikme birikmez.
-const mlCooldown = 60 * time.Second
-
 // Engine provides sentiment analysis and hallucination detection logic.
 type Engine struct {
 	pool *db.Pool
@@ -27,10 +22,10 @@ type Engine struct {
 	// nil kalır ve tüm analizler kural tabanlı çalışır (0421 M-4 fallback).
 	ml *ml.Client
 
-	// Basit devre kesici (circuit breaker): ardışık serving hatası sonrası
-	// ML çağrılarını mlCooldown süresince atlar, başarıda sıfırlanır.
-	mlMu          sync.Mutex
-	mlNextAttempt time.Time
+	// breaker — serving ardışık hatasında ML çağrılarını askıya alan ortak devre
+	// kesici (ml.CircuitBreaker). Sentiment ve measure servisleri paylaşır; serving
+	// kapalıyken 8 motor × ML_TIMEOUT gecikme birikmez (0421 M-4).
+	breaker *ml.CircuitBreaker
 }
 
 // NewEngine creates a new sentiment engine (kural tabanlı, ML serving yok).
@@ -43,7 +38,7 @@ func NewEngine(pool *db.Pool) *Engine {
 // dolu ise her analizde önce ML inference denenir, serving hatasında kural
 // tabanlıya düşülür (0421 M-4).
 func NewEngineWithML(pool *db.Pool, mlClient *ml.Client) *Engine {
-	return &Engine{pool: pool, ml: mlClient}
+	return &Engine{pool: pool, ml: mlClient, breaker: ml.NewCircuitBreakerFor("sentiment", ml.DefaultCooldown)}
 }
 
 // rawResp — ham AI yanıtı (AnalyzeSentiment sorgusundan).
@@ -55,10 +50,13 @@ type rawResp struct {
 }
 
 // checkTarget — hallüsinasyon kontrolü hedefi (raw response + marka profili).
+// Prompt alanı (051_raw_responses_prompt.sql): cross-source karşılaştırması
+// yalnızca aynı prompt'a ait yanıtlar arasında yapılır (yanlış pozitif riski).
 type checkTarget struct {
 	ID         string
 	EngineName string
 	Content    string
+	Prompt     string
 	BrandName  string
 	WebsiteURL string
 }
@@ -165,7 +163,7 @@ func (e *Engine) AnalyzeSentiment(ctx context.Context, brandID, workspaceID, ten
 // düşülür (operasyonel dayanıklılık). Kısmi başarıda (bazı yanıtlar hatalı)
 // başarılı olanlar birleştirilir.
 func (e *Engine) analyzeWithML(ctx context.Context, engineName, brandID string, responses []rawResp) SentimentResult {
-	if e.ml == nil || e.mlInCooldown() {
+	if e.ml == nil || e.breaker.InCooldown() {
 		return e.analyzeText(engineName, brandID, combineText(responses))
 	}
 
@@ -188,7 +186,7 @@ func (e *Engine) analyzeWithML(ctx context.Context, engineName, brandID string, 
 			if len(items) == 0 {
 				// Henüz başarı yok — serving erişilemez görünüyor. Cooldown başlat ve
 				// kalan yanıtlar için timeout beklemeyi önle (en kötü 50×ML_TIMEOUT birikimi).
-				e.mlFail()
+				e.breaker.Fail()
 				break
 			}
 			continue
@@ -202,11 +200,11 @@ func (e *Engine) analyzeWithML(ctx context.Context, engineName, brandID string, 
 
 	if len(items) == 0 {
 		// Serving erişilemez görünüyor — cooldown başlat, kural tabanlıya düş.
-		e.mlFail()
+		e.breaker.Fail()
 		return e.analyzeText(engineName, brandID, combineText(responses))
 	}
 
-	e.mlSuccess()
+	e.breaker.Success()
 	slog.Debug("sentiment: per-response ML sonucu", "engine", engineName,
 		"responses", len(items), "failed", failed)
 	return sentimentFromProbabilities(engineName, brandID, aggregateWeighted(items), len(items))
@@ -236,27 +234,6 @@ func combineText(responses []rawResp) string {
 		sb.WriteByte(' ')
 	}
 	return sb.String()
-}
-
-// mlInCooldown — serving cooldown penceresi aktif mi?
-func (e *Engine) mlInCooldown() bool {
-	e.mlMu.Lock()
-	defer e.mlMu.Unlock()
-	return time.Now().Before(e.mlNextAttempt)
-}
-
-// mlFail — serving hatasını kaydeder ve ML çağrılarını mlCooldown süresince askıya alır.
-func (e *Engine) mlFail() {
-	e.mlMu.Lock()
-	defer e.mlMu.Unlock()
-	e.mlNextAttempt = time.Now().Add(mlCooldown)
-}
-
-// mlSuccess — serving yanıt verdiğinde cooldown'ı sıfırlar (serving geri geldiyse hızlı dönüş).
-func (e *Engine) mlSuccess() {
-	e.mlMu.Lock()
-	defer e.mlMu.Unlock()
-	e.mlNextAttempt = time.Time{}
 }
 
 // sentimentFromProbabilities, (ağırlıklı ortalama) softmax olasılıklarını
@@ -356,7 +333,7 @@ func (e *Engine) saveSentimentResult(ctx context.Context, tenantID, workspaceID,
 func (e *Engine) DetectHallucinations(ctx context.Context, brandID, workspaceID, tenantID string) ([]HallucinationResult, error) {
 	// Get raw responses with brand profile for fact-checking
 	rows, err := e.pool.Query(ctx, `
-		SELECT rr.id, rr.engine_name, rr.content_text, COALESCE(b.name, ''), COALESCE(b.website_url, '')
+		SELECT rr.id, rr.engine_name, rr.content_text, COALESCE(rr.prompt_text, ''), COALESCE(b.name, ''), COALESCE(b.website_url, '')
 		FROM measure.raw_responses rr
 		JOIN config.brands b ON b.id = rr.brand_id
 		WHERE rr.tenant_id = $1 AND rr.brand_id = $2
@@ -371,7 +348,7 @@ func (e *Engine) DetectHallucinations(ctx context.Context, brandID, workspaceID,
 	var targets []checkTarget
 	for rows.Next() {
 		var t checkTarget
-		if err := rows.Scan(&t.ID, &t.EngineName, &t.Content, &t.BrandName, &t.WebsiteURL); err != nil {
+		if err := rows.Scan(&t.ID, &t.EngineName, &t.Content, &t.Prompt, &t.BrandName, &t.WebsiteURL); err != nil {
 			slog.Warn("hallüsinasyon satır okuma hatası", "error", err)
 			continue
 		}
@@ -386,23 +363,14 @@ func (e *Engine) DetectHallucinations(ctx context.Context, brandID, workspaceID,
 	}
 
 	// 0421 M-4: cross-source (A2-4) en az 2 yanıt gerektirir. Serving yapılandırılmış
-	// ve erişilebilirse önce serving cross_source_check çağrılır; tek yanıtta, serving
-	// yokken veya serving hatasında T1-T4 kural tabanlı kurallara düşülür.
-	var results []HallucinationResult
-	if len(targets) >= 2 && e.ml != nil && !e.mlInCooldown() {
-		mlResults, mlErr := e.detectHallucinationsWithML(ctx, targets, brandID)
-		if mlErr == nil {
-			results = mlResults
-			e.mlSuccess()
-			slog.Debug("hallüsinasyon: cross-source ML sonucu", "brand", brandID, "findings", len(results))
-		} else {
-			slog.Warn("hallüsinasyon: serving çağrısı başarısız, T1-T4 kurallarına düşülüyor", "error", mlErr)
-			e.mlFail()
-			results = e.ruleBasedHallucinations(targets, brandID)
-		}
-	} else {
-		results = e.ruleBasedHallucinations(targets, brandID)
-	}
+	// ve erişilebilirse önce serving cross_source_check çağrılır ve bulguları T1-T4
+	// kural sonuçlarıyla BİRLEŞTİRİLİR (kural seti T2/T4 sinyallerini de korur);
+	// tek yanıtta, serving yokken veya serving hatasında yalnızca T1-T4 kuralları kullanılır.
+	// 051_raw_responses_prompt.sql: cross-source karşılaştırması YALNIZCA aynı prompt'a
+	// ait yanıtlar arasında yapılır (prompt_text gruplaması) — farklı prompt'lardan gelen
+	// yanıtların birbiriyle çelişmesi yanlış pozitif üretir; tek yanıtlı gruplar
+	// (örn. henüz tüm motorlar yanıtlamamış) kurallarla değerlendirilir.
+	results := e.applyMLCrossSource(ctx, e.ruleBasedHallucinations(targets, brandID), targets, brandID)
 
 	// Save results to DB
 	for _, h := range results {
@@ -413,6 +381,75 @@ func (e *Engine) DetectHallucinations(ctx context.Context, brandID, workspaceID,
 	slog.Info("hallüsinasyon tespiti tamamlandı", "brand", brandID, "count", len(results))
 
 	return results, nil
+}
+
+// groupByPrompt — hedefleri prompt_text'e göre gruplar (051_raw_responses_prompt.sql).
+// Cross-source karşılaştırması farklı prompt'lardan gelen yanıtlara uygulanmaz;
+// böylece "aynı marka, farklı soru" senaryolarında yanlış pozitif üretilmez.
+// Grup sırası ilk görülme sırasına göredir (deterministik).
+func groupByPrompt(targets []checkTarget) [][]checkTarget {
+	order := make([]string, 0, len(targets))
+	groups := make(map[string][]checkTarget, len(targets))
+	for _, t := range targets {
+		if _, ok := groups[t.Prompt]; !ok {
+			order = append(order, t.Prompt)
+		}
+		groups[t.Prompt] = append(groups[t.Prompt], t)
+	}
+	out := make([][]checkTarget, 0, len(order))
+	for _, p := range order {
+		out = append(out, groups[p])
+	}
+	return out
+}
+
+// applyMLCrossSource — hedefleri prompt'a göre gruplar ve en az 2 yanıtlı her
+// grupta serving cross_source_check çağrısı yapar; bulguları base (kural sonuçları)
+// ile birleştirir. Tek yanıtlı gruplar yalnızca kurallarla değerlendirilir.
+// Serving hatasında cooldown başlatılır ve kalan gruplar için ML denenmez
+// (timeout birikimini önler — sentiment devre kesicisiyle aynı davranış).
+// Erişilebilir / yapılandırılmış serving yoksa base aynen döner.
+func (e *Engine) applyMLCrossSource(ctx context.Context, base []HallucinationResult, targets []checkTarget, brandID string) []HallucinationResult {
+	results := base
+	if e.ml == nil || e.breaker.InCooldown() {
+		return results
+	}
+	mlAttempted, mlFailed := false, false
+	for _, group := range groupByPrompt(targets) {
+		if len(group) < 2 {
+			continue // tek yanıtlı grupta cross-source yok — kurallar yeterli
+		}
+		mlAttempted = true
+		mlResults, mlErr := e.detectHallucinationsWithML(ctx, group, brandID)
+		if mlErr != nil {
+			slog.Warn("hallüsinasyon: serving çağrısı başarısız, T1-T4 kurallarına düşülüyor", "error", mlErr)
+			e.breaker.Fail()
+			mlFailed = true
+			break
+		}
+		results = mergeHallucinationResults(results, mlResults)
+	}
+	if mlAttempted && !mlFailed {
+		e.breaker.Success()
+		slog.Debug("hallüsinasyon: cross-source ML + kurallar birleştirildi", "brand", brandID, "findings", len(results))
+	}
+	return results
+}
+
+// mergeHallucinationResults — ML cross-source bulguları ile T1-T4 kural sonuçlarını
+// birleştirir; aynı (tip, açıklama) çifti bir kez kaydedilir.
+func mergeHallucinationResults(a, b []HallucinationResult) []HallucinationResult {
+	seen := make(map[string]struct{}, len(a)+len(b))
+	out := make([]HallucinationResult, 0, len(a)+len(b))
+	for _, h := range append(append([]HallucinationResult{}, a...), b...) {
+		key := h.HallucinationType + "|" + h.Description
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		out = append(out, h)
+	}
+	return out
 }
 
 // detectHallucinationsWithML — serving cross-source tespitini çağırır ve sonucu

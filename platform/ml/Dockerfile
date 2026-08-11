@@ -3,8 +3,19 @@
 # ./ml/models volume'undan /models'e bağlanır (image'a kopyalanmaz — büyük artefakt).
 FROM python:3.11-slim
 
+# ONNX Runtime'ın StringNormalizer operatörü (skl2onnx çıktıları) çalışma anında
+# locale gerektirir; slim imajında varsayılan locale yoktur → C++ exception:
+#   "Failed to construct locale with name:en_US.UTF-8"
+# locales paketi + en_US.UTF-8 üretimi bu hatayı giderir.
+RUN apt-get update && apt-get install -y --no-install-recommends locales \
+    && sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen \
+    && locale-gen \
+    && rm -rf /var/lib/apt/lists/*
+
 ENV PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1
+    PIP_NO_CACHE_DIR=1 \
+    LANG=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8
 
 WORKDIR /app
 

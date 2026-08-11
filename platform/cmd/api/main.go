@@ -174,7 +174,7 @@ func main() {
 	authHandler := auth.NewProductionHandler(pool, jwtService, redisClient, deliverySvc, cfg.BaseURL)
 	configHandler := config.NewProductionHandler(pool)
 	panelHandler := config.NewProductionPanelHandler(pool)
-	measureHandler := measure.NewProductionHandler(pool, engines)
+	measureHandler := measure.NewProductionHandler(pool, engines, mlClient)
 	auditHandler := audit.NewProductionHandler(pool)
 	deliveryHandler := delivery.NewProductionHandler(pool, emailCfg)
 	privacyHandler := privacy.NewProductionHandler(pool)

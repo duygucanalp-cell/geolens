@@ -78,6 +78,45 @@ func TestPredictSentiment_NilClient(t *testing.T) {
 	}
 }
 
+func TestClassifyPrompt_Success(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v1/prompt/classify" {
+			t.Errorf("beklenen /v1/prompt/classify, gerçek %s", r.URL.Path)
+		}
+		_, _ = w.Write([]byte(`{"intent":{"label":"comparison","confidence":0.92},"topic":{"label":"brand","confidence":0.88},"persona":{"label":"consumer","confidence":0.71},"funnel":{"label":"evaluation","confidence":0.65}}`))
+	}))
+	defer srv.Close()
+
+	cls, err := NewClient(srv.URL, 0).ClassifyPrompt(context.Background(), "Acme'nin en iyi rakibi kim?")
+	if err != nil {
+		t.Fatalf("ClassifyPrompt hata: %v", err)
+	}
+	if cls.Intent.Label != "comparison" || cls.Intent.Confidence != 0.92 {
+		t.Errorf("intent hatalı: %+v", cls.Intent)
+	}
+	if cls.Topic.Label != "brand" || cls.Funnel.Label != "evaluation" {
+		t.Errorf("topic/funnel hatalı: %+v", cls)
+	}
+}
+
+func TestClassifyPrompt_ModelMissing(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"detail":"model bulunamadı: prompt_intent"}`))
+	}))
+	defer srv.Close()
+
+	if _, err := NewClient(srv.URL, 0).ClassifyPrompt(context.Background(), "x"); err == nil {
+		t.Fatal("404 için hata bekleniyor")
+	}
+}
+
+func TestClassifyPrompt_NilClient(t *testing.T) {
+	if _, err := (*Client)(nil).ClassifyPrompt(context.Background(), "x"); err == nil {
+		t.Fatal("nil client için hata bekleniyor")
+	}
+}
+
 func TestDetectHallucinations_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/v1/hallucination/detect" {
