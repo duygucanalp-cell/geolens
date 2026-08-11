@@ -65,6 +65,30 @@ Bu doküman GeoLens Platform veri kalitesi standartlarını tanımlar: doğruluk
 
 ---
 
+## 5.1 Annotation Guide (ML etiketleme kılavuzu) — 0421 A1-2
+
+> Kaynak: 0420 İP-02, 0421 A1-2. Bu bölüm `ml/data/gold.jsonl` sentetik üretim
+> ve manuel etiketleme kurallarını tanımlar. Şema: `ml/data/SCHEMA.md`.
+
+Etiketleme kuralları (0420 İP-02 örnek kuralı temel alınmıştır):
+
+1. **mention**: AI cevabında bir marka/rakip adı geçiyorsa `mention[].text` +
+   `type` (brand|competitor) ile listelenir. Bir mention bir kez kaydedilir
+   (tekrar eden geçişler birleştirilir).
+2. **sentiment**: mention ile aynı cümcede olumlu sıfat ("güçlü", "takdir",
+   "recommended") varsa `positive`; olumsuz/şikayet varsa `negative`; tarafsız
+   ise `neutral`.
+3. **citation**: cevapta kaynak gösterimi varsa `url` + `type`
+   (direct|attribution; kaynak yoksa `none`).
+4. **entity**: NER regex/model çıktısıyla doğrulanan kavramlar
+   (brand, competitor, sector, technology, money, percent, date).
+5. **hallucination**: 0421 A2-4 cross-source doğrulamayla tespit edilen tutarsızlık
+   tipi (T1–T7; yoksa `none`).
+6. **IAA**: yeni etiket eklendikçe iki etiketleyici ayrı dosyaya etiketler,
+   `data/iaa.py` ile > %90 uyum zorunludur (0420 İP-02).
+
+---
+
 ## 6. Veri Kalitesi Raporlama
 
 | Rapor | Periyot | İçerik |
@@ -88,3 +112,4 @@ Bu doküman GeoLens Platform veri kalitesi standartlarını tanımlar: doğruluk
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: 5 kalite boyutu, DB mekanizmaları, süreç kontrolleri, metrikler. |
+| 1.1 | 11.08.2026 | Annotation Guide eklendi (§5.1, 0421 A1-2 çıktısı): mention/sentiment/citation/entity/hallucination etiketleme kuralları + IAA >%90 şartı. |

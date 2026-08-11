@@ -30,6 +30,7 @@ import (
 	"github.com/geolens/platform/internal/delivery"
 	"github.com/geolens/platform/internal/id"
 	"github.com/geolens/platform/internal/measure"
+	"github.com/geolens/platform/internal/ml"
 	"github.com/geolens/platform/internal/recommendation"
 	"github.com/geolens/platform/internal/sentiment"
 	"github.com/geolens/platform/platform/db"
@@ -138,8 +139,17 @@ func main() {
 	// Tavsiye servisi (kural değerlendirme)
 	recommendationSvc := recommendation.NewService(pool)
 
+	// ML serving istemcisi (0421 A0-3) — ML_SERVING_URL boşsa nil döner;
+	// sentiment motoru o zaman kural tabanlı fallback ile çalışır (0421 M-4).
+	mlClient := ml.NewClient(cfg.MLServingURL, cfg.MLTimeOut)
+	if mlClient != nil {
+		slog.Info("ML serving etkin", "url", cfg.MLServingURL, "timeout", cfg.MLTimeOut.String())
+	} else {
+		slog.Info("ML serving yapılandırılmadı — kural tabanlı analiz kullanılacak")
+	}
+
 	// AI Analiz motorları (sentiment, competitive gap)
-	sentimentEngine := sentiment.NewEngine(pool)
+	sentimentEngine := sentiment.NewEngineWithML(pool, mlClient)
 	competitiveEngine := competitive.NewEngine(pool)
 
 	// Benchmark sektör istatistikleri toplayıcı (FR-D5/C)

@@ -31,8 +31,11 @@ export function NotificationSettings({ workspaceId }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
+  // Not: Ayar formu ortak yenilemeye bağlanmaz — kaydedilmemiş düzenlemeler
+  // yenilemede kaybolmasın. Form yalnızca mount'ta yüklenir ve Kaydet ile güncellenir.
   useEffect(() => {
     loadSettings()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceId])
 
   async function loadSettings() {

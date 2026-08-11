@@ -1,0 +1,15 @@
+# Model artefaktları image'a kopyalanmaz — ml-serving servisi ./ml/models
+# volume'undan bağlar (büyük dosyalar build context'ini şişirir).
+models/
+data/
+geolens_ml.egg-info/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Test
+tests/

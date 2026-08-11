@@ -1,6 +1,6 @@
 # GeoLens Platform Makefile
 
-.PHONY: help build test lint dev db-up db-down migrate-up migrate-down clean
+.PHONY: help build test lint dev db-up db-down migrate-up migrate-down clean ml-serve ml-test
 
 APP_NAME := geolens
 
@@ -16,6 +16,7 @@ dev: ## Start dev environment (Docker + hot-reload)
 	@echo "MinIO:      localhost:9000 (console: 9001)"
 	@echo ""
 	@echo "Run 'go run ./cmd/api' to start API server"
+	@echo "Run 'make ml-serve' to start ML serving (Python gerekli)"
 
 db-up: ## Start database services only
 	docker compose up -d postgres redis minio
@@ -45,6 +46,12 @@ build-scheduler: ## Build scheduler only
 
 build-worker: ## Build worker only
 	go build -o bin/$(APP_NAME)-worker ./cmd/worker
+
+ml-serve: ## Start ML serving API (Aşama 0 — Python gerekli; modeller ./ml/models'dan yüklenir)
+	cd ml && MODELS="sentiment=models/sentiment/sentiment.onnx,prompt_intent=models/prompt_classifier/prompt_intent.onnx,prompt_topic=models/prompt_classifier/prompt_topic.onnx,prompt_persona=models/prompt_classifier/prompt_persona.onnx,prompt_funnel=models/prompt_classifier/prompt_funnel.onnx" python -m uvicorn geolens.serving.app:app --port 8900
+
+ml-test: ## Run ML tests (Python gerekli)
+	cd ml && python -m pytest
 
 ## === Test ===
 

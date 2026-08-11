@@ -1,12 +1,20 @@
 import { useTranslation } from 'react-i18next'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { PanelSkeleton } from './PanelSkeleton'
+import { Highlight } from './Highlight'
 import { listPromptAudits, runPromptAudit, getPromptAudit } from '../api/client'
+import { normalizeSearch } from '../utils/search'
 import type { PromptAudit } from '../types'
 
-interface Props { workspaceId: string }
+interface Props {
+  workspaceId: string
+  // Birleşik sayfada ortak arama + yenileme dışarıdan gelir
+  embedded?: boolean
+  searchQuery?: string
+  refreshTick?: number
+}
 
-export function PromptAuditPanel({ workspaceId: _ws }: Props) {
+export function PromptAuditPanel({ workspaceId: _ws, embedded, searchQuery = '', refreshTick = 0 }: Props) {
   const { t, i18n } = useTranslation()
   const dateLocale = i18n.language?.startsWith('en') ? 'en-US' : 'tr-TR'
 
@@ -23,7 +31,18 @@ export function PromptAuditPanel({ workspaceId: _ws }: Props) {
   const [detail, setDetail] = useState<PromptAudit | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
 
-  useEffect(() => { loadAudits() }, [])
+  useEffect(() => { loadAudits() }, [refreshTick])
+
+  // Ortak arama: prompt / model / kategoriye göre istemci tarafında filtrele
+  const filteredAudits = useMemo(() => {
+    const q = normalizeSearch(searchQuery.trim())
+    if (!q) return audits
+    return audits.filter(a =>
+      normalizeSearch(a.prompt_text).includes(q) ||
+      normalizeSearch(a.model).includes(q) ||
+      normalizeSearch(a.category).includes(q)
+    )
+  }, [audits, searchQuery])
 
   async function loadAudits() {
     try { setLoading(true); setError(null); const res = await listPromptAudits(); setAudits(res.data) }
@@ -73,7 +92,7 @@ export function PromptAuditPanel({ workspaceId: _ws }: Props) {
         <button className="refresh-btn" onClick={() => { setShowRun(!showRun); setDetail(null) }}>
           {showRun ? t('guardrails.cancel') : t('promptaudit.run')}
         </button>
-        <button className="refresh-btn" onClick={loadAudits}>{t('common.refresh')}</button>
+        {!embedded && <button className="refresh-btn" onClick={loadAudits}>{t('common.refresh')}</button>}
       </div>
 
       {showRun && (
@@ -137,15 +156,22 @@ export function PromptAuditPanel({ workspaceId: _ws }: Props) {
         </div>
       )}
 
-      {audits.length === 0 ? (
-        <div className="rec-empty">
-          <div className="rec-empty-icon">🔍</div>
-          <h4>{t('promptaudit.empty')}</h4>
-          <p>{t('promptaudit.empty_desc')}</p>
-        </div>
+      {filteredAudits.length === 0 ? (
+        searchQuery ? (
+          <div className="rec-empty">
+            <div className="rec-empty-icon">🔍</div>
+            <h4>{t('merged.no_results')}</h4>
+          </div>
+        ) : (
+          <div className="rec-empty">
+            <div className="rec-empty-icon">🔍</div>
+            <h4>{t('promptaudit.empty')}</h4>
+            <p>{t('promptaudit.empty_desc')}</p>
+          </div>
+        )
       ) : (
         <div className="rec-list">
-          {audits.map(a => (
+          {filteredAudits.map(a => (
             <div
               key={a.id}
               className="rec-card"
@@ -157,7 +183,7 @@ export function PromptAuditPanel({ workspaceId: _ws }: Props) {
               </div>
               <div className="rec-card-content">
                 <div className="rec-card-header">
-                  <span className="rec-category-badge">{a.category}</span>
+                  <span className="rec-category-badge"><Highlight text={a.category} query={searchQuery} /></span>
                   <span className="rec-status-badge" style={{
                     background: a.risk_score > 0.7 ? 'var(--danger-bg)' : a.risk_score > 0.4 ? '#fffbeb' : 'var(--success-bg)',
                     color: a.risk_score > 0.7 ? '#ef4444' : a.risk_score > 0.4 ? '#eab308' : '#22c55e',
@@ -166,10 +192,10 @@ export function PromptAuditPanel({ workspaceId: _ws }: Props) {
                   </span>
                 </div>
                 <p className="rec-title" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
-                  {a.prompt_text}
+                  <Highlight text={a.prompt_text} query={searchQuery} />
                 </p>
                 <div className="rec-meta">
-                  <span className="rec-confidence-label">{t('promptaudit.model')}: {a.model}</span>
+                  <span className="rec-confidence-label">{t('promptaudit.model')}: <Highlight text={a.model} query={searchQuery} /></span>
                   <span className="rec-date">{new Date(a.created_at).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short' })}</span>
                 </div>
               </div>

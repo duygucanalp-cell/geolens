@@ -192,7 +192,8 @@ func (h *Handler) analyze(scoreCount int) []map[string]interface{} {
 		recs = append(recs, map[string]interface{}{
 			"category": "measurement", "title": "Ölçüm sıklığını artırın",
 			"description": "Daha sık ölçüm, trend verisi ve erken uyarı sağlar. Haftada en az 1 ölçüm önerilir.",
-			"impact":      "high", "effort": "low", "score_potential": 15.0,
+			"impact":      "high", "effort": "low",
+			"score_potential": OpportunityScore(ImpactInt("high"), UrgencyFromEffort("low"), 0.8),
 		})
 	}
 
@@ -200,21 +201,24 @@ func (h *Handler) analyze(scoreCount int) []map[string]interface{} {
 	recs = append(recs, map[string]interface{}{
 		"category": "engine", "title": "Çoklu AI motoru kullanın",
 		"description": "Farklı motorlardan (Perplexity, ChatGPT, Gemini) veri almak görünürlük skorunun güvenilirliğini artırır.",
-		"impact":      "high", "effort": "medium", "score_potential": 20.0,
+		"impact":      "high", "effort": "medium",
+		"score_potential": OpportunityScore(ImpactInt("high"), UrgencyFromEffort("medium"), 0.85),
 	})
 
 	// Öneri 3: Prompt optimizasyonu
 	recs = append(recs, map[string]interface{}{
 		"category": "prompt", "title": "Prompt'ları optimize edin",
 		"description": "Marka adı, sektör ve kaynak talebi içeren prompt'lar daha doğru sonuçlar üretir.",
-		"impact":      "medium", "effort": "medium", "score_potential": 12.0,
+		"impact":      "medium", "effort": "medium",
+		"score_potential": OpportunityScore(ImpactInt("medium"), UrgencyFromEffort("medium"), 0.7),
 	})
 
 	// Öneri 4: Kaynak çeşitliliği
 	recs = append(recs, map[string]interface{}{
 		"category": "citation", "title": "Kaynak çeşitliliğini artırın",
 		"description": "Web sitesi, sosyal medya ve haber kaynaklarında marka varlığınızı güçlendirin.",
-		"impact":      "medium", "effort": "high", "score_potential": 18.0,
+		"impact":      "medium", "effort": "high",
+		"score_potential": OpportunityScore(ImpactInt("medium"), UrgencyFromEffort("high"), 0.75),
 	})
 
 	return recs

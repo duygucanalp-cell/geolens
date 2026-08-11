@@ -39,11 +39,22 @@ type CalculationRun struct {
 }
 
 // ComponentWeights defines the weight of each score component.
+// v2 (A3-5, 0409 v1.3): 7 bileşen — Varlık %30, Konum %20, Kaynak %15, Rakip %15,
+// Appearance %10, Sentiment %5, CompVis %5. v1 legacy: ilk 4 alan dolu, son 3 = 0.
 type ComponentWeights struct {
-	PresenceShare     float64 // Varlık Payı — default 0.35
-	PositionWeight    float64 // Konum Ağırlığı — default 0.25
-	SourceShare       float64 // Kaynak Payı — default 0.20
-	CompetitorContext float64 // Rakip Bağlamı — default 0.20
+	PresenceShare     float64 // Varlık Payı
+	PositionWeight    float64 // Konum Ağırlığı
+	SourceShare       float64 // Kaynak Payı
+	CompetitorContext float64 // Rakip Bağlamı
+	AppearanceRate    float64 // Appearance Rate (v2)
+	Sentiment         float64 // Sentiment / Algı (v2)
+	CompVisibility    float64 // Competitive Visibility (v2)
+}
+
+// IsV2 reports whether the profile uses the 7-component weights (any of the
+// v2-only fields is non-zero).
+func (w ComponentWeights) IsV2() bool {
+	return w.AppearanceRate != 0 || w.Sentiment != 0 || w.CompVisibility != 0
 }
 
 // ---- Engine Interface ----

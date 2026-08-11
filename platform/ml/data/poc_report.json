@@ -1,0 +1,32 @@
+[
+  {
+    "module": "poc.poc_citation",
+    "rc": 0,
+    "runtime_ms": 475.14,
+    "output": "[PASS] citation-type: n=8 acc=1.000 prec=1.000 recall=1.000 F1=1.000 (0.04 ms)\nörnek extraction: {'url': 'https://example.com/acme', 'type': 'direct'}\nURL doğrulama (çevrimdışı): {'url': 'https://example.com/acme', 'type': 'direct', 'reachable': 'False'}\n"
+  },
+  {
+    "module": "poc.poc_entity",
+    "rc": 0,
+    "runtime_ms": 4.22,
+    "output": "[PASS] entity-type: n=8 acc=1.000 prec=1.000 recall=1.000 F1=1.000 (0.42 ms)\nörnek summarize: {'brand': ['Turkcell', 'Vodafone']}\n"
+  },
+  {
+    "module": "poc.poc_recommendation",
+    "rc": 0,
+    "runtime_ms": 0.78,
+    "output": "[PASS] recommendation: n=8 acc=1.000 prec=1.000 recall=1.000 F1=1.000 (0.05 ms)\ngüç(Kesinlikle MobiTel'in premium planını ta…): (True, 9.0)\ngüç(Bu konuda VekoCom alternatif olarak değe…): (True, 6.0)\ngüç(Turkcell en iyi seçim olarak öne çıkıyor…): (True, 9.0)\n"
+  },
+  {
+    "module": "poc.poc_prompt",
+    "rc": 0,
+    "runtime_ms": 0.3,
+    "output": "[PASS] prompt-intent: n=5 acc=0.800 prec=0.875 recall=0.875 F1=0.875 (0.01 ms)\nmode: fallback\n"
+  },
+  {
+    "module": "poc.poc_visibility",
+    "rc": 0,
+    "runtime_ms": 23.98,
+    "output": "[PASS] vi-score-consistency: n=3 acc=1.000 prec=1.000 recall=1.000 F1=1.000 (0.02 ms)\nAHP CR=0.003, toplam ağırlık=1.000\nilk gold VI: 85.08\nduyarlılık (ilk gold): {'presence': '+1.06', 'position': '+0.93', 'citation': '+0.87', 'competitor': '-4.98', 'appearance': '+0.82', 'sentiment': '+0.78', 'compvis': '+0.78'}\n"
+  }
+]

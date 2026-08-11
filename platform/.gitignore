@@ -57,3 +57,19 @@ go.work.sum
 coverage.out
 coverage.html
 *.coverprofile
+
+# === ML Katmanı (0421) ===
+ml/.venv/
+ml/**/__pycache__/
+ml/.pytest_cache/
+ml/.ruff_cache/
+# Büyük model artefaktları (1GB+) repo'da tutulmaz — eğitimle yeniden üretilir
+# (GitHub LFS ücretsiz kotası ~1GB; bunlar kota dışı kalır). Orta/küçük model
+# dosyaları .gitattributes ile LFS'e yönlendirilir (*.onnx, *.joblib, model.pt, tokenizer.json).
+ml/models/**/*.onnx.data
+ml/models/**/model.pt
+ml/models/**/model.onnx
+ml/models/sentiment_serving/
+# gereken ONNX model dosyaları (küçük) istisna olarak commit edilir
+!ml/models/prompt_classifier/*.onnx
+# data/ dizini .gitignore'da değildir (SCHEMA.md §İlgili Kurallar) — dataset CI'da kullanılır

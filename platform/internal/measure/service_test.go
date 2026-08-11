@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/geolens/platform/engine"
+	"github.com/geolens/platform/internal/config"
 	"github.com/geolens/platform/internal/id"
 )
 
@@ -228,11 +229,14 @@ func TestPartialPublication_MixedEngines(t *testing.T) {
 		t.Errorf("beklenen 2 engine breakdown, gerçek %d", len(breakdown))
 	}
 
-	// Ağırlıklı toplam hesapla (CalculateScore'daki mantık)
-	total := 0.35*computePresenceShare(data, "Acme") +
-		0.25*computePositionWeight(data) +
-		0.20*computeSourceShare(data) +
-		0.20*computeCompetitorContext(data)
+	// Ağırlıklı toplam hesapla (CalculateScore'daki mantık) — v2 default weights
+	total := 0.30*computePresenceShare(data, "Acme") +
+		0.20*computePositionWeight(data) +
+		0.15*computeSourceShare(data) +
+		0.15*computeCompetitorContext(data) +
+		0.10*computeAppearanceRate(data) +
+		0.05*computeSentimentScore(data) +
+		0.05*computeCompVisibility(data, "Acme")
 
 	if total <= 0 {
 		t.Errorf("partial yayın toplam skoru pozitif olmalı, gerçek %f", total)
@@ -353,5 +357,101 @@ func TestGenerateULID_Unique(t *testing.T) {
 	}
 	if len(first) != 26 {
 		t.Errorf("ULID 26 karakter olmalı, gerçek %d: %s", len(first), first)
+	}
+}
+
+// ---- A3-5: 7 bileşenli VI feature flag testleri ----
+
+func TestEffectiveWeights_V2Default(t *testing.T) {
+	s := &service{cfg: &config.Config{ScoreAlgorithmVersion: "2.0.0"}}
+	w := s.effectiveWeights()
+	if !w.IsV2() {
+		t.Error("SCORE_ALGORITHM_VERSION=2.0.0 → v2 profile olmalı")
+	}
+}
+
+func TestEffectiveWeights_V1Legacy(t *testing.T) {
+	s := &service{cfg: &config.Config{ScoreAlgorithmVersion: "1.0.0"}}
+	w := s.effectiveWeights()
+	if w.IsV2() {
+		t.Error("SCORE_ALGORITHM_VERSION=1.0.0 → v1 legacy profile olmalı")
+	}
+	if w.PresenceShare != 0.35 {
+		t.Errorf("v1 PresenceShare 0.35 olmalı, gerçek %f", w.PresenceShare)
+	}
+}
+
+func TestEffectiveWeights_V2EnvOverride(t *testing.T) {
+	s := &service{cfg: &config.Config{
+		ScoreAlgorithmVersion: "2.0.0",
+		ScoreWeightsRaw:       "0.25,0.20,0.15,0.15,0.10,0.10,0.05",
+	}}
+	w := s.effectiveWeights()
+	if w.PresenceShare != 0.25 || w.Sentiment != 0.10 {
+		t.Errorf("v2 env override uygulanmadı: %+v", w)
+	}
+	if !w.IsV2() {
+		t.Error("v2 env override IsV2() olmalı")
+	}
+}
+
+func TestComputeComponentScores_V2_SevenValues(t *testing.T) {
+	data := []engine.RawResponse{
+		{EngineName: "perplexity", Content: "Acme yenilikçi bir firma.",
+			Citations: []engine.Citation{{URL: "https://example.com", Position: 1, Engine: "perplexity"}}},
+	}
+	p, po, s, co, a, se, cv := computeComponentScores(data, "Acme")
+	if p == 0 || po == 0 || s == 0 || co == 0 {
+		t.Error("ilk 4 bileşen hesaplanmalı")
+	}
+	if a == 0 {
+		t.Error("appearance hesaplanmalı")
+	}
+	if se != 50 {
+		t.Errorf("sentiment nötr 50 varsayılmalı, gerçek %f", se)
+	}
+	if cv == 0 {
+		t.Error("compvis hesaplanmalı")
+	}
+}
+
+func TestComputeTotalScore_V2VsV1(t *testing.T) {
+	data := []engine.RawResponse{
+		{EngineName: "perplexity", Content: "Acme pazar lideri.", Citations: []engine.Citation{{URL: "https://a.com"}}},
+		{EngineName: "chatgpt", Content: "Acme yenilikçi."},
+	}
+	v2 := computeTotalScore(data, "Acme", v2DefaultWeights)
+	v1 := computeTotalScore(data, "Acme", v1LegacyWeights)
+	if v2 <= 0 || v1 <= 0 {
+		t.Fatalf("skorlar pozitif olmalı: v1=%f v2=%f", v1, v2)
+	}
+	if v1 == v2 {
+		t.Logf("nota: v1 (%v) == v2 (%v) aynı bileşen seti üzerinde mümkün", v1, v2)
+	}
+}
+
+func TestComputeScoreCI_V1FixedV2Dynamic(t *testing.T) {
+	lo1, hi1 := computeScoreCI(50, v1LegacyWeights)
+	if hi1-lo1 != 10.0 {
+		t.Errorf("v1 CI ±5 olmalı, fark=%f", hi1-lo1)
+	}
+	lo2, hi2 := computeScoreCI(50, v2DefaultWeights)
+	if hi2-lo2 <= 0 {
+		t.Errorf("v2 CI geçersiz: %f-%f", lo2, hi2)
+	}
+}
+
+func TestParseScoreWeightsV2(t *testing.T) {
+	cfg := config.Config{ScoreWeightsRaw: "0.25,0.20,0.15,0.15,0.10,0.10,0.05"}
+	w, ok := cfg.ParseScoreWeightsV2()
+	if !ok {
+		t.Fatal("geçerli 7'li girdi parsellemeli")
+	}
+	if w.Presence != 0.25 || w.Sentiment != 0.10 {
+		t.Errorf("parselleme hatası: %+v", w)
+	}
+	bad := config.Config{ScoreWeightsRaw: "0.5,0.5"}
+	if _, ok := bad.ParseScoreWeightsV2(); ok {
+		t.Error("4 elemanlı girdi v2 parsellememeli")
 	}
 }

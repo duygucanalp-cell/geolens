@@ -1,7 +1,10 @@
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useSharedPageControls } from '../hooks/useSharedPageControls'
+import { MergedHeaderWithControls } from './MergedHeaderWithControls'
 import { PanelSkeleton } from './PanelSkeleton'
 import { PeriodSelect, type Period } from './PeriodSelect'
+import { SectionNav } from './SectionNav'
 
 const CostPanel = lazy(() => import('./CostPanel').then(m => ({ default: m.CostPanel })))
 const UsagePanel = lazy(() => import('./UsagePanel').then(m => ({ default: m.UsagePanel })))
@@ -16,32 +19,37 @@ interface Props {
 // göstermez, ortak durumu kullanır (bölümler arası paylaşılan state).
 export function MergedCostsTab({ workspaceId }: Props) {
   const { t } = useTranslation()
-  const [period, setPeriod] = useState<Period>('7d')
-  const [refreshTick, setRefreshTick] = useState(0)
+  const { value: period, setValue: setPeriod, refreshTick, refresh } = useSharedPageControls<Period>('7d')
 
   return (
     <div className="merged-tab">
-      <div className="merged-header merged-header-with-actions">
-        <div>
-          <h2>💰 {t('tab.costs')}</h2>
-          <p>{t('merged.costs_desc')}</p>
-        </div>
-        <div className="merged-controls">
-          <PeriodSelect value={period} onChange={setPeriod} label={t('merged.period_label')} />
-          <button
-            className="refresh-btn"
-            onClick={() => setRefreshTick(v => v + 1)}
-            title={t('common.refresh')}
-          >
-            <span aria-hidden="true">⟳</span> {t('common.refresh')}
-          </button>
-        </div>
-      </div>
+      <MergedHeaderWithControls
+        icon="💰"
+        title={t('tab.costs')}
+        description={t('merged.costs_desc')}
+        onRefresh={refresh}
+      >
+        <PeriodSelect value={period} onChange={setPeriod} label={t('merged.period_label')} />
+      </MergedHeaderWithControls>
+
+      <SectionNav
+        items={[
+          { id: 'costs-cost', label: t('cost.title') },
+          { id: 'costs-usage', label: t('usage.title') },
+          { id: 'costs-optimization', label: t('optimization.title') },
+        ]}
+      />
 
       <Suspense fallback={<PanelSkeleton compact message={t('dashboard.component_loading')} rows={2} />}>
-        <CostPanel workspaceId={workspaceId} embedded period={period} refreshTick={refreshTick} />
-        <UsagePanel workspaceId={workspaceId} embedded period={period} refreshTick={refreshTick} />
-        <OptimizationPanel workspaceId={workspaceId} />
+        <section id="costs-cost" className="merged-section">
+          <CostPanel workspaceId={workspaceId} embedded period={period} refreshTick={refreshTick} />
+        </section>
+        <section id="costs-usage" className="merged-section">
+          <UsagePanel workspaceId={workspaceId} embedded period={period} refreshTick={refreshTick} />
+        </section>
+        <section id="costs-optimization" className="merged-section">
+          <OptimizationPanel workspaceId={workspaceId} />
+        </section>
       </Suspense>
     </div>
   )

@@ -45,6 +45,30 @@ services:
       timeout: 5s
       retries: 5
 
+  ml-serving:
+    build:
+      context: ./ml
+      dockerfile: Dockerfile
+    ports:
+      - "8900:8900"
+    environment:
+      # 0421 A0-3 — ONNX modeller ./ml/models volume'undan bağlanır.
+      ML_MODEL_DIR: /models
+      # Sentiment processor'ı tokenizer dizinini buradan çözer (repo düzeni:
+      # models/sentiment/tokenizer).
+      ML_SENTIMENT_TOKENIZER_DIR: /models/sentiment/tokenizer
+      # id=path: repo'daki gerçek artefakt düzeni (sentiment.onnx, prompt_classifier/*.onnx).
+      MODELS: "sentiment=/models/sentiment/sentiment.onnx,prompt_intent=/models/prompt_classifier/prompt_intent.onnx,prompt_topic=/models/prompt_classifier/prompt_topic.onnx,prompt_persona=/models/prompt_classifier/prompt_persona.onnx,prompt_funnel=/models/prompt_classifier/prompt_funnel.onnx"
+    volumes:
+      # read-only: konteyner yalnızca inference yapar, modelleri değiştirmez
+      - ./ml/models:/models:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8900/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
   api:
     build:
       context: .
@@ -72,6 +96,9 @@ services:
       SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
       SENDGRID_FROM_EMAIL: geolens@example.com
       SENDGRID_FROM_NAME: GeoLens
+      # ML serving (0421 A0-3) — serving yoksa kural tabanlı fallback (M-4)
+      ML_SERVING_URL: http://ml-serving:8900
+      ML_TIMEOUT: 2s
       # ========== SOPS+Age ==========
       # AGE_KEY set edilirse, entrypoint.sh decrypt eder ve yukarıdaki
       # default'ları override eder (sadece dolu değerler override edilir).
@@ -86,6 +113,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+      ml-serving:
+        condition: service_started
 
   scheduler:
     build:
@@ -138,6 +167,9 @@ services:
       SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
       SENDGRID_FROM_EMAIL: geolens@example.com
       SENDGRID_FROM_NAME: GeoLens
+      # ML serving (0421 A0-3) — serving yoksa kural tabanlı fallback (M-4)
+      ML_SERVING_URL: http://ml-serving:8900
+      ML_TIMEOUT: 2s
       AGE_KEY: ${AGE_KEY:-}
     volumes:
       - ./docker/.env.secrets.enc:/etc/geolens/secrets/.env.secrets.enc:ro
@@ -149,6 +181,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+      ml-serving:
+        condition: service_started
 
   web:
     build:

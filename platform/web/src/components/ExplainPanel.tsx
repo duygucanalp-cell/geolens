@@ -1,14 +1,21 @@
 import { useTranslation } from 'react-i18next'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { PanelSkeleton } from './PanelSkeleton'
+import { Highlight } from './Highlight'
 import { explainEntity, listExplainResults } from '../api/client'
+import { normalizeSearch } from '../utils/search'
 import type { ExplainResult } from '../types'
 
-interface Props { workspaceId: string }
+interface Props {
+  workspaceId: string
+  // Birleşik sayfada ortak arama + yenileme dışarıdan gelir
+  searchQuery?: string
+  refreshTick?: number
+}
 
 const IMPACT_COLORS: Record<string, string> = { positive: '#22c55e', negative: '#ef4444', neutral: 'var(--text-faint)' }
 
-export function ExplainPanel({ workspaceId: _ws }: Props) {
+export function ExplainPanel({ workspaceId: _ws, searchQuery = '', refreshTick = 0 }: Props) {
   const { t } = useTranslation()
   const [analyses, setAnalyses] = useState<ExplainResult[]>([])
   const [loading, setLoading] = useState(true)
@@ -17,7 +24,19 @@ export function ExplainPanel({ workspaceId: _ws }: Props) {
   const [explainResult, setExplainResult] = useState<ExplainResult | null>(null)
   const [explainLoading, setExplainLoading] = useState(false)
 
-  useEffect(() => { loadAnalyses() }, [])
+  useEffect(() => { loadAnalyses() }, [refreshTick])
+
+  // Ortak arama: varlık adı / yöntem / tür / yoruma göre istemci tarafında filtrele
+  const filteredAnalyses = useMemo(() => {
+    const q = normalizeSearch(searchQuery.trim())
+    if (!q) return analyses
+    return analyses.filter(a =>
+      normalizeSearch(a.entity_name || a.entity_id).includes(q) ||
+      normalizeSearch(a.method).includes(q) ||
+      normalizeSearch(a.entity_type).includes(q) ||
+      normalizeSearch(a.interpretation || '').includes(q)
+    )
+  }, [analyses, searchQuery])
 
   async function loadAnalyses() {
     try { setLoading(true); setError(null); setAnalyses(await listExplainResults()) }
@@ -135,20 +154,20 @@ export function ExplainPanel({ workspaceId: _ws }: Props) {
       <h4 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.75rem', color: 'var(--text-strong)' }}>
         {t('explain.history')} ({analyses.length})
       </h4>
-      {analyses.length === 0 ? (
-        <div className="rec-empty"><div className="rec-empty-icon">🔎</div><h4>{t('explain.empty_title')}</h4></div>
+      {filteredAnalyses.length === 0 ? (
+        <div className="rec-empty"><div className="rec-empty-icon">🔎</div>{searchQuery ? <h4>{t('merged.no_results')}</h4> : <h4>{t('explain.empty_title')}</h4>}</div>
       ) : (
         <div className="rec-list">
-          {analyses.map((a, i) => (
+          {filteredAnalyses.map((a, i) => (
             <div key={a.analysis_id || i} className="rec-card" style={{ cursor: 'pointer' }} onClick={() => setExplainResult(a)}>
               <div className="rec-card-left"><div className="rec-severity-bar" style={{ backgroundColor: 'var(--accent)' }} /></div>
               <div className="rec-card-content">
                 <div className="rec-card-header">
-                  <span className="rec-category-badge">{a.method}</span>
-                  <span className="rec-category-badge">{a.entity_type}</span>
+                  <span className="rec-category-badge"><Highlight text={a.method} query={searchQuery} /></span>
+                  <span className="rec-category-badge"><Highlight text={a.entity_type} query={searchQuery} /></span>
                 </div>
-                <h4 className="rec-title">{a.entity_name || a.entity_id}</h4>
-                <p className="rec-detail">{a.interpretation}</p>
+                <h4 className="rec-title"><Highlight text={a.entity_name || a.entity_id} query={searchQuery} /></h4>
+                <p className="rec-detail"><Highlight text={a.interpretation || ''} query={searchQuery} /></p>
               </div>
             </div>
           ))}

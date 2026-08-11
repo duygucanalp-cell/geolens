@@ -1,14 +1,22 @@
 import { useTranslation } from 'react-i18next'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { PanelSkeleton } from './PanelSkeleton'
+import { Highlight } from './Highlight'
 import { listPolicyPacks, listPolicyControls, updatePolicyControl } from '../api/client'
+import { normalizeSearch } from '../utils/search'
 import type { PolicyPack, PolicyControl } from '../types'
 
-interface Props { workspaceId: string }
+interface Props {
+  workspaceId: string
+  // Birleşik sayfada ortak arama + yenileme dışarıdan gelir
+  embedded?: boolean
+  searchQuery?: string
+  refreshTick?: number
+}
 
 const STATUS_COLORS: Record<string, string> = { pending: '#eab308', passed: '#22c55e', failed: '#ef4444', not_applicable: '#94a3b8' }
 
-export function PolicyPacksPanel({ workspaceId: _ws }: Props) {
+export function PolicyPacksPanel({ workspaceId: _ws, searchQuery = '', refreshTick = 0 }: Props) {
   const { t, i18n } = useTranslation()
   const dateLocale = i18n.language?.startsWith('en') ? 'en-US' : 'tr-TR'
   const FRAMEWORK_LABELS: Record<string, string> = { eu_ai_act: t('policy.framework_eu_ai_act'), nist_ai_rmf: t('policy.framework_nist_ai_rmf'), kvkk: t('policy.framework_kvkk'), iso_42001: t('policy.framework_iso_42001'), custom: t('policy.framework_custom') }
@@ -19,8 +27,18 @@ export function PolicyPacksPanel({ workspaceId: _ws }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [selectedPack, setSelectedPack] = useState<PolicyPack | null>(null)
 
-  useEffect(() => { loadPacks() }, [])
+  useEffect(() => { loadPacks() }, [refreshTick])
   async function loadPacks() { try { setLoading(true); setError(null); const d = await listPolicyPacks(); setPacks(d.packs) } catch (e) { setError(e instanceof Error ? e.message : t('registry.load_error')) } finally { setLoading(false) } }
+
+  // Ortak arama: paket adı / açıklamasına göre istemci tarafında filtrele
+  const filteredPacks = useMemo(() => {
+    const q = normalizeSearch(searchQuery.trim())
+    if (!q) return packs
+    return packs.filter(p =>
+      normalizeSearch(p.name).includes(q) ||
+      normalizeSearch(p.description || '').includes(q)
+    )
+  }, [packs, searchQuery])
 
   async function handleSelectPack(pack: PolicyPack) {
     setSelectedPack(pack)
@@ -74,11 +92,15 @@ export function PolicyPacksPanel({ workspaceId: _ws }: Props) {
         </div>
       ) : (
         <>
-          {packs.length === 0 ? (
-            <div className="rec-empty"><div className="rec-empty-icon">📜</div><h4>{t('policy.empty_title')}</h4></div>
+          {filteredPacks.length === 0 ? (
+            searchQuery ? (
+              <div className="rec-empty"><div className="rec-empty-icon">🔍</div><h4>{t('merged.no_results')}</h4></div>
+            ) : (
+              <div className="rec-empty"><div className="rec-empty-icon">📜</div><h4>{t('policy.empty_title')}</h4></div>
+            )
           ) : (
             <div className="rec-list">
-              {packs.map(p => (
+              {filteredPacks.map(p => (
                 <div key={p.id} className="rec-card" style={{ cursor: 'pointer' }} onClick={() => handleSelectPack(p)}>
                   <div className="rec-card-left"><div className="rec-severity-bar" style={{ backgroundColor: p.enabled ? 'var(--accent)' : 'var(--text-faint)' }} /></div>
                   <div className="rec-card-content">
@@ -86,8 +108,8 @@ export function PolicyPacksPanel({ workspaceId: _ws }: Props) {
                       <span className="rec-category-badge" style={{ fontWeight: 600 }}>{FRAMEWORK_LABELS[p.framework] || p.framework}</span>
                       <span className="rec-status-badge" style={{ background: p.enabled ? 'var(--success-soft)' : 'var(--surface-hover)', color: p.enabled ? '#22c55e' : 'var(--text-faint)' }}>{p.enabled ? t('guardrails.enabled') : t('guardrails.disabled')}</span>
                     </div>
-                    <h4 className="rec-title">{p.name}</h4>
-                    <p className="rec-detail">{p.description}</p>
+                    <h4 className="rec-title"><Highlight text={p.name} query={searchQuery} /></h4>
+                    <p className="rec-detail"><Highlight text={p.description} query={searchQuery} /></p>
                     <div className="rec-meta">
                       <span className="rec-date">v{p.version}</span>
                       {p.applied_at && <span className="rec-date">{new Date(p.applied_at).toLocaleDateString(dateLocale)}</span>}

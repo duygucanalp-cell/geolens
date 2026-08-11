@@ -8,13 +8,25 @@ import { ENGINE_NAMES } from '../types'
 interface Props {
   workspaceId: string
   brands: Brand[]
+  // Birleşik sayfada dışarıdan kontrol edilir: marka + yenileme durumu
+  // ortak başlıktan gelir, panel kendi seçicisini gizler.
+  embedded?: boolean
+  brandId?: string
+  refreshTick?: number
 }
 
-export function ArchivePanel({ workspaceId: ws, brands }: Props) {
+export function ArchivePanel({
+  workspaceId: ws,
+  brands,
+  embedded,
+  brandId: controlledBrandId,
+  refreshTick = 0,
+}: Props) {
   const { t, i18n } = useTranslation()
   const dateLocale = i18n.language?.startsWith('en') ? 'en-US' : 'tr-TR'
 
-  const [brandId, setBrandId] = useState(brands[0]?.id ?? '')
+  const [internalBrandId, setInternalBrandId] = useState(brands[0]?.id ?? '')
+  const brandId = controlledBrandId ?? internalBrandId
   const [entries, setEntries] = useState<ArchiveEntry[]>([])
   const [versions, setVersions] = useState<ArchiveVersion[]>([])
   const [loading, setLoading] = useState(true)
@@ -32,14 +44,17 @@ export function ArchivePanel({ workspaceId: ws, brands }: Props) {
   const engineKeys = Object.keys(ENGINE_NAMES)
 
   useEffect(() => {
+    // Kontrollü modda marka düzeltmesini üst katman (MergedReplayTab) yapar;
+    // bağımsız kullanımda iç durum güncellenir.
     if (brands.length > 0 && !brands.some(b => b.id === brandId)) {
-      setBrandId(brands[0].id)
+      if (!embedded) setInternalBrandId(brands[0].id)
     }
-  }, [brands, brandId])
+  }, [brands, brandId, embedded])
 
   useEffect(() => {
     if (brandId) loadAll()
-  }, [brandId])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [brandId, refreshTick])
 
   async function loadAll() {
     try {
@@ -96,14 +111,17 @@ export function ArchivePanel({ workspaceId: ws, brands }: Props) {
       </div>
       {error && <div className="audit-error">{error}</div>}
 
-      <div className="dashboard-filters">
-        <select className="filter-select" value={brandId} onChange={e => setBrandId(e.target.value)}>
-          {brands.map(b => (
-            <option key={b.id} value={b.id}>{b.name}</option>
-          ))}
-        </select>
-        <button className="refresh-btn" onClick={loadAll}>{t('common.refresh')}</button>
-      </div>
+      {/* Marka + yenileme birleşik sayfada ortak başlıkta yönetilir */}
+      {!embedded && (
+        <div className="dashboard-filters">
+          <select className="filter-select" value={brandId} onChange={e => setInternalBrandId(e.target.value)}>
+            {brands.map(b => (
+              <option key={b.id} value={b.id}>{b.name}</option>
+            ))}
+          </select>
+          <button className="refresh-btn" onClick={loadAll}>{t('common.refresh')}</button>
+        </div>
+      )}
 
       {/* Archive form */}
       <form onSubmit={handleArchive} style={{ background: 'var(--surface-2)', padding: '1rem', borderRadius: '10px', marginBottom: '1rem' }}>

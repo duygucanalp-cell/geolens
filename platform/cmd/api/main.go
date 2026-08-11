@@ -46,6 +46,7 @@ import (
 	"github.com/geolens/platform/internal/guardrail"
 	"github.com/geolens/platform/internal/incident"
 	"github.com/geolens/platform/internal/measure"
+	"github.com/geolens/platform/internal/ml"
 	"github.com/geolens/platform/internal/optimize"
 	"github.com/geolens/platform/internal/pdf"
 	"github.com/geolens/platform/internal/pilot"
@@ -146,6 +147,15 @@ func main() {
 
 	slog.Info("motor kayıt defteri hazır", "engine_count", engines.Count(), "engines", engines.List())
 
+	// ML serving istemcisi (0421 A0-3) — ML_SERVING_URL boşsa nil döner;
+	// sentiment motoru o zaman kural tabanlı fallback ile çalışır (0421 M-4).
+	mlClient := ml.NewClient(cfg.MLServingURL, cfg.MLTimeOut)
+	if mlClient != nil {
+		slog.Info("ML serving etkin", "url", cfg.MLServingURL, "timeout", cfg.MLTimeOut.String())
+	} else {
+		slog.Info("ML serving yapılandırılmadı — kural tabanlı analiz kullanılacak")
+	}
+
 	quotaChecker := governance.NewQuotaChecker(pool)
 
 	redisClient, err := queue.NewRedisClient(cfg.RedisURL)
@@ -196,7 +206,7 @@ func main() {
 	optimizeHandler := optimize.NewProductionHandler(pool)
 	versionHandler := version.NewProductionHandler(pool)
 	incidentHandler := incident.NewProductionHandler(pool)
-	sentimentHandler := sentiment.NewProductionHandler(pool)
+	sentimentHandler := sentiment.NewProductionHandler(pool, mlClient)
 	replayHandler := replay.NewProductionHandler(pool)
 	archiveHandler := archive.NewProductionHandler(pool)
 	technicalgeoHandler := technicalgeo.NewProductionHandler(pool)

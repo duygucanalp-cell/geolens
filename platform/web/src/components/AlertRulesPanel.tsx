@@ -1,14 +1,25 @@
 import { useTranslation } from 'react-i18next'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { PanelSkeleton } from './PanelSkeleton'
+import { Highlight } from './Highlight'
 import { listAlertRules, createAlertRule, updateAlertRule, deleteAlertRule } from '../api/client'
+import { normalizeSearch } from '../utils/search'
 import type { AlertRule } from '../types'
 
 const METRICS = ['visibility_score', 'response_time', 'error_rate', 'uptime', 'coverage']
 const CONDITIONS = ['gt', 'lt', 'gte', 'lte', 'eq']
 const CHANNELS = ['email', 'slack', 'webhook', 'sms']
 
-export function AlertRulesPanel({ workspaceId, brands }: { workspaceId: string; brands: { id: string; name: string }[] }) {
+interface Props {
+  workspaceId: string
+  brands: { id: string; name: string }[]
+  // Birleşik sayfada ortak arama + yenileme dışarıdan gelir
+  embedded?: boolean
+  searchQuery?: string
+  refreshTick?: number
+}
+
+export function AlertRulesPanel({ workspaceId, brands, embedded, searchQuery = '', refreshTick = 0 }: Props) {
   const { t } = useTranslation()
   const [rules, setRules] = useState<AlertRule[]>([])
   const [loading, setLoading] = useState(true)
@@ -21,7 +32,25 @@ export function AlertRulesPanel({ workspaceId, brands }: { workspaceId: string; 
   const [newThreshold, setNewThreshold] = useState('')
   const [newChannel, setNewChannel] = useState('email')
 
-  useEffect(() => { loadRules() }, [workspaceId])
+  useEffect(() => { loadRules() }, [workspaceId, refreshTick])
+
+  // Ortak arama: kural adı / marka / metrik / kanala göre istemci tarafında filtrele
+  const filteredRules = useMemo(() => {
+    const q = normalizeSearch(searchQuery.trim())
+    if (!q) return rules
+    const brandMap = new Map(brands.map(b => [b.id, b.name]))
+    return rules.filter(r => {
+      const haystack = [
+        r.name,
+        brandMap.get(r.brand_id) || r.brand_id,
+        t(`alertrules.metric_${r.metric}`),
+        t(`alertrules.channel_${r.channel}`),
+        r.metric,
+        r.channel,
+      ].join(' ')
+      return normalizeSearch(haystack).includes(q)
+    })
+  }, [rules, searchQuery, brands, t])
 
   async function loadRules() {
     try {
@@ -94,7 +123,7 @@ export function AlertRulesPanel({ workspaceId, brands }: { workspaceId: string; 
         <button className="refresh-btn" onClick={() => setShowCreate(!showCreate)}>
           {showCreate ? t('alertrules.cancel') : t('alertrules.add')}
         </button>
-        <button className="refresh-btn" onClick={loadRules}>{t('alertrules.refresh')}</button>
+        {!embedded && <button className="refresh-btn" onClick={loadRules}>{t('alertrules.refresh')}</button>}
       </div>
 
       {showCreate && (
@@ -120,24 +149,30 @@ export function AlertRulesPanel({ workspaceId, brands }: { workspaceId: string; 
         </form>
       )}
 
-      {rules.length === 0 ? (
+      {filteredRules.length === 0 ? (
         <div className="rec-empty">
           <div className="rec-empty-icon">🔔</div>
-          <h4>{t('alertrules.empty_title')}</h4>
-          <p>{t('alertrules.empty_desc')}</p>
+          {searchQuery ? (
+            <h4>{t('merged.no_results')}</h4>
+          ) : (
+            <>
+              <h4>{t('alertrules.empty_title')}</h4>
+              <p>{t('alertrules.empty_desc')}</p>
+            </>
+          )}
         </div>
       ) : (
         <div className="rec-list">
-          {rules.map(r => (
+          {filteredRules.map(r => (
             <div key={r.id} className="rec-card">
               <div className="rec-card-content">
                 <div className="rec-card-header">
-                  <span className="rec-category-badge">{brandMap.get(r.brand_id) || r.brand_id}</span>
+                  <span className="rec-category-badge"><Highlight text={brandMap.get(r.brand_id) || r.brand_id} query={searchQuery} /></span>
                   <span className="rec-status-badge" style={{ background: r.enabled ? 'var(--success-soft)' : 'var(--danger-bg)', color: r.enabled ? '#22c55e' : '#ef4444' }}>
                     {r.enabled ? t('alertrules.enabled') : t('alertrules.disabled')}
                   </span>
                 </div>
-                <h4 className="rec-title">{r.name}</h4>
+                <h4 className="rec-title"><Highlight text={r.name} query={searchQuery} /></h4>
                 <p className="rec-detail">
                   {t(`alertrules.metric_${r.metric}`)} {r.condition} {r.threshold} &middot; {t(`alertrules.channel_${r.channel}`)}
                 </p>

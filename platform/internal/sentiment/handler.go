@@ -10,6 +10,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/geolens/platform/internal/dbiface"
+	"github.com/geolens/platform/internal/ml"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/httpmw"
 	"github.com/geolens/platform/platform/httputil"
@@ -27,10 +28,12 @@ func NewHandler(pool dbiface.DB) *Handler {
 }
 
 // NewProductionHandler creates a new sentiment Handler with a *db.Pool.
-func NewProductionHandler(pool *db.Pool) *Handler {
+// mlClient opsiyoneldir: nil ise (ML_SERVING_URL boş) kural tabanlı analiz
+// çalışır; dolu ise ML-first, serving hatasında fallback (0421 M-4).
+func NewProductionHandler(pool *db.Pool, mlClient *ml.Client) *Handler {
 	return &Handler{
 		pool: dbiface.NewAdapter(pool),
-		svc:  NewEngine(pool),
+		svc:  NewEngineWithML(pool, mlClient),
 	}
 }
 

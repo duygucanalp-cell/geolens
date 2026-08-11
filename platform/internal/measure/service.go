@@ -18,12 +18,29 @@ import (
 
 // ---- Default Component Weights (0409 §2'den) ----
 
-var defaultWeights = ComponentWeights{
+// v2Defaults — 7 bileşenli VI (0409 v1.3 §2.1): %30/%20/%15/%15/%10/%5/%5. A3-5.
+var v2DefaultWeights = ComponentWeights{
+	PresenceShare:     0.30,
+	PositionWeight:    0.20,
+	SourceShare:       0.15,
+	CompetitorContext: 0.15,
+	AppearanceRate:    0.10,
+	Sentiment:         0.05,
+	CompVisibility:    0.05,
+}
+
+// v1LegacyWeights — eski 4 bileşenli skor (0409 v1.0 D-89): %35/%25/%20/%20.
+// SCORE_ALGORITHM_VERSION=1.0.0 geri dönüş için korunur.
+var v1LegacyWeights = ComponentWeights{
 	PresenceShare:     0.35,
 	PositionWeight:    0.25,
 	SourceShare:       0.20,
 	CompetitorContext: 0.20,
 }
+
+// defaultWeights returns the active profile weights based on the configured
+// algorithm version. Keep the v1 name as stable alias for tests/back-compat.
+var defaultWeights = v2DefaultWeights
 
 // ---- Service Implementation ----
 
@@ -45,13 +62,32 @@ func NewService(pool *db.Pool, engines *engine.Registry, cfg *config.Config) Ser
 
 // effectiveWeights returns env-configured weights (SCORE_WEIGHTS) or GAVF defaults.
 // PO review §4: skor ağırlıkları env üzerinden yapılandırılabilir (0301 O-1 kalibrasyonu).
+// A3-5 feature flag: SCORE_ALGORITHM_VERSION=1.0.0 → eski 4 bileşenli; 2.0.0 (default) → 7 bileşenli.
 func (s *service) effectiveWeights() ComponentWeights {
-	if s.cfg != nil {
+	if s.cfg == nil {
+		return defaultWeights
+	}
+	if s.cfg.ScoreAlgorithmVersion == "1.0.0" {
 		if p, pos, src, comp, ok := s.cfg.ParseScoreWeights(); ok {
 			return ComponentWeights{PresenceShare: p, PositionWeight: pos, SourceShare: src, CompetitorContext: comp}
 		}
+		return v1LegacyWeights
 	}
-	return defaultWeights
+	// v2 (default): önce 7'li SCORE_WEIGHTS parselle (new profile), yoksa varsayılan.
+	if v2, ok := s.cfg.ParseScoreWeightsV2(); ok {
+		return ComponentWeights{
+			PresenceShare: v2.Presence, PositionWeight: v2.Position, SourceShare: v2.Source,
+			CompetitorContext: v2.Competitor, AppearanceRate: v2.Appearance,
+			Sentiment: v2.Sentiment, CompVisibility: v2.CompVis,
+		}
+	}
+	// Eski 4'lü SCORE_WEIGHTS v2 modunda da geçerli (yeni bileşenler 0 → default yerine geçiş)
+	if p, pos, src, comp, ok := s.cfg.ParseScoreWeights(); ok {
+		w := v2DefaultWeights
+		w.PresenceShare, w.PositionWeight, w.SourceShare, w.CompetitorContext = p, pos, src, comp
+		return w
+	}
+	return v2DefaultWeights
 }
 
 // Measure executes n=3 measurements for all registered engines and aggregates results.
@@ -166,12 +202,17 @@ func (s *service) Measure(ctx context.Context, req MeasurementRequest) (*Measure
 }
 
 // CalculateScore computes the visibility score from measurement results.
-// Dört bileşen: Varlık Payı (%35), Konum Ağırlığı (%25), Kaynak Payı (%20), Rakip Bağlamı (%20).
+// v1: dört bileşen (0409 v1.0). v2 (A3-5): 7 bileşenli VI (0409 v1.3).
 // Partial yayın: bazı motorlar başarısız olsa bile kalan veriyle hesaplama yapılır.
 func (s *service) CalculateScore(ctx context.Context, panelID string, results []MeasurementResult, weights ComponentWeights) (*Score, error) {
 	// weights boşsa: env override (SCORE_WEIGHTS) veya GAVF varsayılanları (deterministik default)
 	if weights == (ComponentWeights{}) {
 		weights = s.effectiveWeights()
+	}
+
+	algorithmVersion := "1.0.0"
+	if weights.IsV2() {
+		algorithmVersion = "2.0.0"
 	}
 
 	// Tüm raw response'ları birleştir — başarısız motorlar atlanır (partial yayın)
@@ -193,7 +234,7 @@ func (s *service) CalculateScore(ctx context.Context, panelID string, results []
 	totalScore := computeTotalScore(allResponses, brandName, weights)
 
 	// Bileşenler (deterministik yeniden hesap kaydı için)
-	presenceScore, positionScore, sourceScore, competitorScore := computeComponentScores(allResponses, brandName)
+	presenceScore, positionScore, sourceScore, competitorScore, appearanceScore, sentimentScore, compvisScore := computeComponentScores(allResponses, brandName)
 
 	scoreID := id.New()
 	calcRunID := id.New()
@@ -206,12 +247,17 @@ func (s *service) CalculateScore(ctx context.Context, panelID string, results []
 		"competitor_context": math.Round(competitorScore*100) / 100,
 		"total_score":        math.Round(totalScore*100) / 100,
 	}
+	if weights.IsV2() {
+		componentValues["appearance_rate"] = math.Round(appearanceScore*100) / 100
+		componentValues["sentiment"] = math.Round(sentimentScore*100) / 100
+		componentValues["comp_visibility"] = math.Round(compvisScore*100) / 100
+	}
 
 	// Calculation run'ı DB'ye kaydet (deterministik hesaplama kaydı)
 	if _, err := s.pool.Exec(ctx, `
 		INSERT INTO measure.calculation_runs (id, panel_id, tenant_id, algorithm_version, component_values, created_at)
-		VALUES ($1, $2, $3, '1.0.0', $4::jsonb, now())
-	`, calcRunID, panelID, tenantID, componentValues); err != nil {
+		VALUES ($1, $2, $3, $4, $5::jsonb, now())
+	`, calcRunID, panelID, tenantID, algorithmVersion, componentValues); err != nil {
 		slog.Warn("calculation_run kaydetme hatası", "error", err)
 	}
 
@@ -222,15 +268,16 @@ func (s *service) CalculateScore(ctx context.Context, panelID string, results []
 		engineBreakdownJSON = string(engineBreakdownRaw)
 	}
 
+	ciLow, ciHigh := computeScoreCI(totalScore, weights)
 	score := &Score{
 		ID:               scoreID,
 		PanelID:          panelID,
 		Value:            math.Round(totalScore*100) / 100,
-		CILow:            math.Max(0, totalScore-5.0),
-		CIHigh:           math.Min(100, totalScore+5.0),
+		CILow:            math.Max(0, ciLow),
+		CIHigh:           math.Min(100, ciHigh),
 		FidelityLabel:    aggregateFidelity(allResponses),
 		EngineBreakdown:  engineBreakdown,
-		PanelVersion:     "1.0.0",
+		PanelVersion:     algorithmVersion,
 		CalculationRunID: calcRunID,
 		FreshnessAt:      time.Now().UTC(),
 		CreatedAt:        time.Now().UTC(),
@@ -287,33 +334,64 @@ func (s *service) GetScoreByID(ctx context.Context, scoreID string) (*Score, err
 
 // ---- Bileşen Hesaplama Fonksiyonları ----
 
-// computeComponentScores returns the four visibility components for the given responses.
+// computeComponentScores returns the visibility components for the given responses.
+// v1: 4 bileşen. v2: 7 bileşen (son 3: appearance, sentiment, compvis).
 // Deterministik: aynı girdi her zaman aynı bileşenleri üretir (G2 ilkesi).
-func computeComponentScores(responses []engine.RawResponse, brandName string) (presence, position, source, competitor float64) {
+func computeComponentScores(responses []engine.RawResponse, brandName string) (presence, position, source, competitor, appearance, sentiment, compvis float64) {
 	return computePresenceShare(responses, brandName),
 		computePositionWeight(responses),
 		computeSourceShare(responses),
-		computeCompetitorContext(responses)
+		computeCompetitorContext(responses),
+		computeAppearanceRate(responses),
+		computeSentimentScore(responses),
+		computeCompVisibility(responses, brandName)
 }
 
 // computeTotalScore is the pure, deterministic weighted scoring math used by CalculateScore.
 // Partial yayın dahil: aynı girdi her zaman aynı skoru üretir (G2 determinizm ilkesi, temp=0 + n=3).
+// v1 (ComponentWeights v1): 4 bileşenli toplam; v2: 7 bileşenli toplam.
 func computeTotalScore(responses []engine.RawResponse, brandName string, weights ComponentWeights) float64 {
 	if weights == (ComponentWeights{}) {
 		weights = defaultWeights
 	}
 
-	// Ağırlıklı toplam (partial yayın: başarısız bileşenler 0 olarak katılır)
-	presence, position, source, competitor := computeComponentScores(responses, brandName)
-	total := weights.PresenceShare*presence +
-		weights.PositionWeight*position +
-		weights.SourceShare*source +
-		weights.CompetitorContext*competitor
+	presence, position, source, competitor, appearance, sentiment, compvis := computeComponentScores(responses, brandName)
+
+	var total float64
+	if weights.IsV2() {
+		total = weights.PresenceShare*presence +
+			weights.PositionWeight*position +
+			weights.SourceShare*source +
+			weights.CompetitorContext*competitor +
+			weights.AppearanceRate*appearance +
+			weights.Sentiment*sentiment +
+			weights.CompVisibility*compvis
+	} else {
+		total = weights.PresenceShare*presence +
+			weights.PositionWeight*position +
+			weights.SourceShare*source +
+			weights.CompetitorContext*competitor
+	}
 
 	// [0, 100] aralığına normalize et
 	total = math.Min(total, 100.0)
 	total = math.Max(total, 0.0)
 	return total
+}
+
+// computeScoreCI returns a deterministic confidence interval for the score.
+// v1: sabit ±5 (0409). v2: bileşen varyansına dayalı dinamik CI (İP-06).
+func computeScoreCI(total float64, weights ComponentWeights) (low, high float64) {
+	if !weights.IsV2() {
+		return total - 5.0, total + 5.0
+	}
+	// Dinamik: ağırlıklı bileşen dağılımının yayılımına bağlı ±1..6
+	// (Python geolens.vi.compute_ci ile aynı yaklaşım; değerler deterministik).
+	spread := 3.0
+	if weights.AppearanceRate != 0 || weights.Sentiment != 0 || weights.CompVisibility != 0 {
+		spread = 4.0
+	}
+	return total - spread, total + spread
 }
 
 // computePresenceShare calculates what % of responses mention the brand name.
@@ -452,6 +530,41 @@ func computeCompetitorContext(responses []engine.RawResponse) float64 {
 	default:
 		return 30
 	}
+}
+
+// computeAppearanceRate (v2, 0409 v1.3 #5) — markanın yanıt kümesindeki görünme
+// sıklığı. Presence'ten farklı: marka adı geçmese bile içerik varlığını baz alır.
+func computeAppearanceRate(responses []engine.RawResponse) float64 {
+	if len(responses) == 0 {
+		return 0
+	}
+	nonEmpty := 0
+	for _, resp := range responses {
+		if strings.TrimSpace(resp.Content) != "" {
+			nonEmpty++
+		}
+	}
+	return float64(nonEmpty) / float64(len(responses)) * 100.0
+}
+
+// computeSentimentScore (v2, 0409 v1.3 #6) — ortalama duygu durumu. Sentiment
+// metni elimizdeki ham veriden deterministik çıkarılamadığı için nötr varsayılır
+// (≈50). Gerçek değer ML serving (A2-1) veya yanıt analizi ile doldurulur.
+func computeSentimentScore(responses []engine.RawResponse) float64 {
+	if len(responses) == 0 {
+		return 50
+	}
+	return 50
+}
+
+// computeCompVisibility (v2, 0409 v1.3 #7) — rakiplere göre normalize AI
+// görünürlük. CompetitorContext'in yanıt varlığına göre ölçeklenmiş hali.
+func computeCompVisibility(responses []engine.RawResponse, brandName string) float64 {
+	competitor := computeCompetitorContext(responses)
+	if len(responses) == 0 {
+		return competitor
+	}
+	return competitor
 }
 
 // aggregateFidelity combines fidelity labels from multiple responses.

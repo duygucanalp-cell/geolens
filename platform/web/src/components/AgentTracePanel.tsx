@@ -1,14 +1,22 @@
 import { useTranslation } from 'react-i18next'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { PanelSkeleton } from './PanelSkeleton'
+import { Highlight } from './Highlight'
 import { listTraces, getTrace, startTrace } from '../api/client'
+import { normalizeSearch } from '../utils/search'
 import type { Trace, TraceDetail } from '../types'
 
-interface Props { workspaceId: string }
+interface Props {
+  workspaceId: string
+  // Birleşik sayfada ortak arama + yenileme dışarıdan gelir
+  embedded?: boolean
+  searchQuery?: string
+  refreshTick?: number
+}
 
 const STATUS_COLORS: Record<string, string> = { running: '#6366f1', completed: '#22c55e', failed: '#ef4444', cancelled: '#94a3b8' }
 
-export function AgentTracePanel({ workspaceId: _ws }: Props) {
+export function AgentTracePanel({ workspaceId: _ws, searchQuery = '', refreshTick = 0 }: Props) {
   const { t, i18n } = useTranslation()
   const dateLocale = i18n.language?.startsWith('en') ? 'en-US' : 'tr-TR'
   const STATUS_LABELS: Record<string, string> = { running: t('agenttrace.status_running'), completed: t('agenttrace.status_completed'), failed: t('agenttrace.status_failed'), cancelled: t('guardrails.cancel') }
@@ -22,7 +30,17 @@ export function AgentTracePanel({ workspaceId: _ws }: Props) {
   const [agentName, setAgentName] = useState('')
   const [workflowName, setWorkflowName] = useState('')
 
-  useEffect(() => { loadTraces() }, [statusFilter])
+  useEffect(() => { loadTraces() }, [statusFilter, refreshTick])
+
+  // Ortak arama: ajana / iş akışına göre istemci tarafında filtrele
+  const filteredTraces = useMemo(() => {
+    const q = normalizeSearch(searchQuery.trim())
+    if (!q) return traces
+    return traces.filter(tr =>
+      normalizeSearch(tr.agent_name).includes(q) ||
+      normalizeSearch(tr.workflow_name || '').includes(q)
+    )
+  }, [traces, searchQuery])
 
   async function loadTraces() {
     try { setLoading(true); setError(null); const d = await listTraces(statusFilter || undefined); setTraces(d.traces); setTotal(d.total) }
@@ -98,19 +116,23 @@ export function AgentTracePanel({ workspaceId: _ws }: Props) {
       ) : (
         <>
           <div style={{ marginBottom: '0.5rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>{t('agenttrace.total', { count: total })}</div>
-          {traces.length === 0 ? (
-            <div className="rec-empty"><div className="rec-empty-icon">🔍</div><h4>{t('agenttrace.empty_title')}</h4></div>
+          {filteredTraces.length === 0 ? (
+            searchQuery ? (
+              <div className="rec-empty"><div className="rec-empty-icon">🔍</div><h4>{t('merged.no_results')}</h4></div>
+            ) : (
+              <div className="rec-empty"><div className="rec-empty-icon">🔍</div><h4>{t('agenttrace.empty_title')}</h4></div>
+            )
           ) : (
             <div className="rec-list">
-              {traces.map(tr => (
+              {filteredTraces.map(tr => (
                 <div key={tr.trace_id} className="rec-card" style={{ cursor: 'pointer' }} onClick={() => handleSelect(tr.trace_id)}>
                   <div className="rec-card-left"><div className="rec-severity-bar" style={{ backgroundColor: STATUS_COLORS[tr.status] }} /></div>
                   <div className="rec-card-content">
                     <div className="rec-card-header">
-                      <span className="rec-category-badge">{tr.agent_name}</span>
+                      <span className="rec-category-badge"><Highlight text={tr.agent_name} query={searchQuery} /></span>
                       <span className="rec-status-badge" style={{ background: STATUS_COLORS[tr.status] + '20', color: STATUS_COLORS[tr.status] }}>{STATUS_LABELS[tr.status]}</span>
                     </div>
-                    <h4 className="rec-title">{tr.workflow_name || tr.agent_name}</h4>
+                    <h4 className="rec-title"><Highlight text={tr.workflow_name || tr.agent_name} query={searchQuery} /></h4>
                     <div className="rec-meta">
                       <span className="rec-date">{tr.completed_steps}/{tr.total_steps} {t('agenttrace.steps_unit')}</span>
                       <span className="rec-date">{tr.total_duration_ms}ms</span>

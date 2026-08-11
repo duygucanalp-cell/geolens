@@ -1,25 +1,35 @@
 import { useTranslation } from 'react-i18next'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { PanelSkeleton } from './PanelSkeleton'
+import { Highlight } from './Highlight'
 import { evaluateBias, listBiasTests } from '../api/client'
+import { normalizeSearch } from '../utils/search'
 import type { BiasTest } from '../types'
 
-interface Props { workspaceId: string }
+interface Props {
+  workspaceId: string
+  // Birleşik sayfada ortak arama + yenileme dışarıdan gelir
+  embedded?: boolean
+  searchQuery?: string
+  refreshTick?: number
+}
 
-export function BiasPanel({ workspaceId: _ws }: Props) {
+export function BiasPanel({ workspaceId: _ws, embedded, searchQuery = '', refreshTick = 0 }: Props) {
   const { t, i18n } = useTranslation()
   const dateLocale = i18n.language?.startsWith('en') ? 'en-US' : 'tr-TR'
-  const METRIC_LABELS: Record<string, string> = {
+  // Dil değişmedikçe kararlı kalır — filtre memo'sunun bağımlılığı boşa
+  // yeniden hesaplanmasın (t değişince etiketler de değişir, doğru davranış)
+  const METRIC_LABELS = useMemo<Record<string, string>>(() => ({
     demographic_parity: t('bias.metric_demographic_parity'),
     equal_opportunity: t('bias.metric_equal_opportunity'),
     disparate_impact: t('bias.metric_disparate_impact'),
-  }
+  }), [t])
 
-  const METRIC_DESCS: Record<string, string> = {
+  const METRIC_DESCS = useMemo<Record<string, string>>(() => ({
     demographic_parity: t('bias.metric_dp_desc'),
     equal_opportunity: t('bias.metric_eo_desc'),
     disparate_impact: t('bias.metric_di_desc'),
-  }
+  }), [t])
   const [tests, setTests] = useState<BiasTest[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -32,7 +42,21 @@ export function BiasPanel({ workspaceId: _ws }: Props) {
   const [evalResult, setEvalResult] = useState<any>(null)
   const [evalLoading, setEvalLoading] = useState(false)
 
-  useEffect(() => { loadTests() }, [])
+  useEffect(() => { loadTests() }, [refreshTick])
+
+  // Ortak arama: model kimliği / metrik etiketine göre istemci tarafında filtrele
+  const filteredTests = useMemo(() => {
+    const q = normalizeSearch(searchQuery.trim())
+    if (!q) return tests
+    return tests.filter(test => {
+      const metricLabel = METRIC_LABELS[test.metric_type] || test.metric_type
+      return (
+        normalizeSearch(test.model_id).includes(q) ||
+        normalizeSearch(metricLabel).includes(q) ||
+        normalizeSearch(test.metric_type).includes(q)
+      )
+    })
+  }, [tests, searchQuery, METRIC_LABELS])
 
   async function loadTests() {
     try { setLoading(true); setError(null); setTests(await listBiasTests()) }
@@ -92,7 +116,7 @@ const biasCount = tests.filter(item => item.has_bias).length
         <button className="refresh-btn" onClick={() => setShowEvaluate(!showEvaluate)}>
           {showEvaluate ? t('guardrails.cancel') : t('bias.new_eval')}
         </button>
-        <button className="refresh-btn" onClick={loadTests}>{t('bias.refresh')}</button>
+        {!embedded && <button className="refresh-btn" onClick={loadTests}>{t('bias.refresh')}</button>}
       </div>
 
       {showEvaluate && (
@@ -137,20 +161,20 @@ const biasCount = tests.filter(item => item.has_bias).length
         </div>
       )}
 
-      {tests.length === 0 ? (
-        <div className="rec-empty"><div className="rec-empty-icon">⚖️</div><h4>{t('bias.empty_title')}</h4></div>
+      {filteredTests.length === 0 ? (
+        <div className="rec-empty"><div className="rec-empty-icon">⚖️</div>{searchQuery ? <h4>{t('merged.no_results')}</h4> : <h4>{t('bias.empty_title')}</h4>}</div>
       ) : (
-        <div className="rec-list">            {tests.map((test) => (
+        <div className="rec-list">            {filteredTests.map((test) => (
             <div key={test.id} className="rec-card">
               <div className="rec-card-left"><div className="rec-severity-bar" style={{ backgroundColor: test.has_bias ? '#ef4444' : '#22c55e' }} /></div>
               <div className="rec-card-content">
                 <div className="rec-card-header">
-                  <span className="rec-category-badge">{METRIC_LABELS[test.metric_type] || test.metric_type}</span>
+                  <span className="rec-category-badge"><Highlight text={METRIC_LABELS[test.metric_type] || test.metric_type} query={searchQuery} /></span>
                   <span className="rec-status-badge" style={{ background: test.has_bias ? 'var(--danger-bg)' : 'var(--success-bg)', color: test.has_bias ? '#ef4444' : '#22c55e' }}>
                     {test.has_bias ? t('bias.tag_bias') : t('bias.tag_fair')}
                   </span>
                 </div>
-                <h4 className="rec-title">{t('bias.model_label')}: {test.model_id}</h4>
+                <h4 className="rec-title">{t('bias.model_label')}: <Highlight text={test.model_id} query={searchQuery} /></h4>
                 <div className="rec-meta">
                   <span className="rec-confidence-label">{t('bias.fairness_label')}: {(test.fairness_score * 100).toFixed(1)}%</span>
                   <span className="rec-date">{t('bias.max_gap_label')}: {(test.max_gap * 100).toFixed(1)}%</span>

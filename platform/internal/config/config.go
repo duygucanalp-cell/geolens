@@ -9,6 +9,19 @@ import (
 	"time"
 )
 
+// ScoreWeightsV2 holds normalized 7-component weights for the Visibility Index
+// v2 profile (0409 v1.3): presence, position, source, competitor, appearance,
+// sentiment, compvis. Sum should equal 1.0.
+type ScoreWeightsV2 struct {
+	Presence   float64
+	Position   float64
+	Source     float64
+	Competitor float64
+	Appearance float64
+	Sentiment  float64
+	CompVis    float64
+}
+
 // Config holds all application configuration loaded from environment variables.
 type Config struct {
 	Port                    string
@@ -62,6 +75,14 @@ type Config struct {
 	JWTTokenTTL       time.Duration // JWT_TOKEN_TTL (varsayılan 2h)
 	StripePriceIDsRaw string        // STRIPE_PRICE_IDS — "tier=priceId,..." (varsayılan boş → Stripe default map)
 	ScoreWeightsRaw   string        // SCORE_WEIGHTS — "presence,position,source,competitor" (varsayılan 35/25/20/20)
+	// ScoreAlgorithmVersion — SCORE_ALGORITHM_VERSION: "1.0.0"=eski 4 bileşenli,
+	// "2.0.0"=7 bileşenli VI (0409 v1.3, A3-5). Varsayılan 2.0.0; 1.0.0 geri dönüş için feature flag.
+	ScoreAlgorithmVersion string
+
+	// ML serving (0421 A0-3) — ML_SERVING_URL doluysa ML client aktifleşir,
+	// boşsa kural tabanlı bileşenler fallback olarak çalışmaya devam eder.
+	MLServingURL string // ML_SERVING_URL (varsayılan boş → fallback)
+	MLTimeOut    time.Duration
 }
 
 // LoadFromEnv reads configuration from environment variables with sensible defaults.
@@ -117,6 +138,9 @@ func LoadFromEnv() Config {
 		JWTTokenTTL:             parseDuration(getEnv("JWT_TOKEN_TTL", "2h")),
 		StripePriceIDsRaw:       getEnv("STRIPE_PRICE_IDS", ""),
 		ScoreWeightsRaw:         getEnv("SCORE_WEIGHTS", ""),
+		ScoreAlgorithmVersion:   getEnv("SCORE_ALGORITHM_VERSION", "2.0.0"),
+		MLServingURL:            getEnv("ML_SERVING_URL", ""),
+		MLTimeOut:               parseDuration(getEnv("ML_TIMEOUT", "2s")),
 	}
 }
 
@@ -163,6 +187,38 @@ func (c Config) ParseScoreWeights() (presence, position, source, competitor floa
 		vals[i] = v
 	}
 	return vals[0], vals[1], vals[2], vals[3], true
+}
+
+// ParseScoreWeightsV2 parses 7-component SCORE_WEIGHTS
+// ("presence,position,source,competitor,appearance,sentiment,compvis").
+// A3-5: 7 bileşenli VI profili (0409 v1.3). Geçersiz girdi → ok=false.
+func (c Config) ParseScoreWeightsV2() (weights ScoreWeightsV2, ok bool) {
+	if c.ScoreWeightsRaw == "" {
+		return ScoreWeightsV2{}, false
+	}
+	parts := strings.Split(c.ScoreWeightsRaw, ",")
+	if len(parts) != 7 {
+		return ScoreWeightsV2{}, false
+	}
+	vals := make([]float64, 7)
+	for i, p := range parts {
+		v, err := strconv.ParseFloat(strings.TrimSpace(p), 64)
+		if err != nil {
+			return ScoreWeightsV2{}, false
+		}
+		vals[i] = v
+	}
+	sum := 0.0
+	for _, v := range vals {
+		sum += v
+	}
+	if sum <= 0 {
+		return ScoreWeightsV2{}, false
+	}
+	return ScoreWeightsV2{
+		Presence: vals[0], Position: vals[1], Source: vals[2], Competitor: vals[3],
+		Appearance: vals[4], Sentiment: vals[5], CompVis: vals[6],
+	}, true
 }
 
 func getEnv(key, fallback string) string {

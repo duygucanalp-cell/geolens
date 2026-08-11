@@ -1,0 +1,14 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
+onnxruntime>=1.16
+pydantic>=2.5
+numpy>=1.26
+scikit-learn>=1.4
+
+[dev]
+pytest>=7.4
+httpx>=0.25
+ruff>=0.3
+transformers>=4.36
+torch>=2.1
+datasets>=2.14

@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { PanelSkeleton } from './PanelSkeleton'
+import { SectionNav } from './SectionNav'
 import { ScoreCard } from './ScoreCard'
 import { TrendChart } from './TrendChart'
 import { EngineComparison } from './EngineComparison'
@@ -8,11 +9,12 @@ import { BenchmarkWidget } from './BenchmarkWidget'
 import { getScores, getBrands, getPanels } from '../api/client'
 import type { Score, Brand, Panel } from '../types'
 import { ENGINE_NAMES } from '../types'
+import { normalizeSearch, findHighlightRange } from '../utils/search'
 
 // Lazy-loaded tab panels — each loads only when its tab is activated
 const BrandManagement = lazy(() => import('./BrandManagement').then(m => ({ default: m.BrandManagement })))
 const AuditPanel = lazy(() => import('./AuditPanel').then(m => ({ default: m.AuditPanel })))
-const NotificationSettings = lazy(() => import('./NotificationSettings').then(m => ({ default: m.NotificationSettings })))
+const MergedNotificationsTab = lazy(() => import('./MergedNotificationsTab').then(m => ({ default: m.MergedNotificationsTab })))
 const ReportsPanel = lazy(() => import('./ReportsPanel').then(m => ({ default: m.ReportsPanel })))
 const RecommendationsPanel = lazy(() => import('./RecommendationsPanel').then(m => ({ default: m.RecommendationsPanel })))
 const MonitoringPanel = lazy(() => import('./MonitoringPanel').then(m => ({ default: m.MonitoringPanel })))
@@ -20,28 +22,22 @@ const MergedCostsTab = lazy(() => import('./MergedCostsTab').then(m => ({ defaul
 const VersionPanel = lazy(() => import('./VersionPanel').then(m => ({ default: m.VersionPanel })))
 const IncidentPanel = lazy(() => import('./IncidentPanel').then(m => ({ default: m.IncidentPanel })))
 const GuardrailsPanel = lazy(() => import('./GuardrailsPanel').then(m => ({ default: m.GuardrailsPanel })))
-const AgentTracePanel = lazy(() => import('./AgentTracePanel').then(m => ({ default: m.AgentTracePanel })))
-const RegistryPanel = lazy(() => import('./RegistryPanel').then(m => ({ default: m.RegistryPanel })))
-const PolicyPacksPanel = lazy(() => import('./PolicyPacksPanel').then(m => ({ default: m.PolicyPacksPanel })))
-const BiasPanel = lazy(() => import('./BiasPanel').then(m => ({ default: m.BiasPanel })))
-const ExplainPanel = lazy(() => import('./ExplainPanel').then(m => ({ default: m.ExplainPanel })))
+const MergedTracesTab = lazy(() => import('./MergedTracesTab').then(m => ({ default: m.MergedTracesTab })))
+const MergedRegistryTab = lazy(() => import('./MergedRegistryTab').then(m => ({ default: m.MergedRegistryTab })))
+const MergedResultsTab = lazy(() => import('./MergedResultsTab').then(m => ({ default: m.MergedResultsTab })))
 const DiscoveryPanel = lazy(() => import('./DiscoveryPanel').then(m => ({ default: m.DiscoveryPanel })))
 const GatePanel = lazy(() => import('./GatePanel').then(m => ({ default: m.GatePanel })))
 const RedTeamPanel = lazy(() => import('./RedTeamPanel').then(m => ({ default: m.RedTeamPanel })))
 const DriftPanel = lazy(() => import('./DriftPanel').then(m => ({ default: m.DriftPanel })))
-const PromptAuditPanel = lazy(() => import('./PromptAuditPanel').then(m => ({ default: m.PromptAuditPanel })))
 const BenchmarkPanel = lazy(() => import('./BenchmarkPanel').then(m => ({ default: m.BenchmarkPanel })))
 const SentimentPanel = lazy(() => import('./SentimentPanel').then(m => ({ default: m.SentimentPanel })))
 const HallucinationPanel = lazy(() => import('./HallucinationPanel').then(m => ({ default: m.HallucinationPanel })))
-const AlertRulesPanel = lazy(() => import('./AlertRulesPanel'))
 const TenantSettingsPanel = lazy(() => import('./TenantSettingsPanel'))
 const CompliancePanel = lazy(() => import('./CompliancePanel'))
 const PromptSetsPanel = lazy(() => import('./PromptSetsPanel'))
 const BillingPanel = lazy(() => import('./BillingPanel'))
-const ReplayPanel = lazy(() => import('./ReplayPanel').then(m => ({ default: m.ReplayPanel })))
-const ArchivePanel = lazy(() => import('./ArchivePanel').then(m => ({ default: m.ArchivePanel })))
-const TechnicalGeoPanel = lazy(() => import('./TechnicalGeoPanel').then(m => ({ default: m.TechnicalGeoPanel })))
-const ContentGeoPanel = lazy(() => import('./ContentGeoPanel').then(m => ({ default: m.ContentGeoPanel })))
+const MergedReplayTab = lazy(() => import('./MergedReplayTab').then(m => ({ default: m.MergedReplayTab })))
+const MergedGeoTab = lazy(() => import('./MergedGeoTab').then(m => ({ default: m.MergedGeoTab })))
 const CompetitiveGapPanel = lazy(() => import('./CompetitiveGapPanel').then(m => ({ default: m.CompetitiveGapPanel })))
 
 interface ScoreDashboardProps {
@@ -378,36 +374,8 @@ export function ScoreDashboard({ workspaceId }: ScoreDashboardProps) {
     setNavOpen(true)
   }
 
-  // Türkçe 'İ' gibi büyük/küçük harf eşleşmeleri için normalleştirme:
-  // küçük harf + aksan işaretlerini ayır (NFD) + birleştirici karakterleri at.
-  // Böylece 'İçerik', 'içerik' ve 'icerik' aynı sonucu bulur.
-  function normalizeSearch(s: string): string {
-    return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-  }
-
-  // Normalize edilmiş dizideki eşleşmeyi orijinal label'daki karakter aralığına
-  // geri eşle (İ → i̇ gibi uzunluk farklarına dayanıklı) — vurgu için.
-  function findHighlightRange(label: string, query: string): [number, number] | null {
-    const normLabel = normalizeSearch(label)
-    const idx = normLabel.indexOf(query)
-    if (idx === -1) return null
-    const normEnd = idx + query.length
-    let start: number | null = null
-    let end: number | null = null
-    let normPos = 0
-    for (let i = 0; i < label.length; i++) {
-      const chunkLen = normalizeSearch(label[i]).length
-      if (start === null && normPos <= idx && idx < normPos + chunkLen) start = i
-      // Bitiş: eşleşme aralığı [idx, normEnd) yarı-açıktır. normPos === normEnd
-      // olduğunda karakter eşleşmenin DIŞINDADIR (örn. 'İçerik GEO'da 'İçerik'ten
-      // sonraki boşluk) — bu yüzden sol taraf sıkı (normPos < normEnd) olmalıdır.
-      if (normPos < normEnd && normEnd <= normPos + chunkLen) end = i + 1
-      normPos += chunkLen
-    }
-    if (start === null) start = 0
-    if (end === null) end = Math.min(start + query.length, label.length)
-    return [start, end]
-  }
+  // Türkçe 'İ' gibi büyük/küçük harf + aksan eşleşmeleri için normalleştirme
+  // (ortak yardımcı: utils/search.ts)
 
   // Arama sorgusuna göre filtrelenmiş gruplar + eşleşen metni vurgulama
   const query = normalizeSearch(navQuery.trim())
@@ -417,16 +385,16 @@ export function ScoreDashboard({ workspaceId }: ScoreDashboardProps) {
         .filter(g => g.tabs.length > 0)
     : groups
 
+  // Eşleşen aralığı ortak yardımcıdan alır (utils/search.findHighlightRange)
   function highlightLabel(label: string) {
     if (!query) return label
     const range = findHighlightRange(label, query)
     if (!range) return label
-    const [start, end] = range
     return (
       <>
-        {label.slice(0, start)}
-        <mark className="tab-nav-mark">{label.slice(start, end)}</mark>
-        {label.slice(end)}
+        {label.slice(0, range.start)}
+        <mark className="tab-nav-mark">{label.slice(range.start, range.end)}</mark>
+        {label.slice(range.end)}
       </>
     )
   }
@@ -439,17 +407,9 @@ export function ScoreDashboard({ workspaceId }: ScoreDashboardProps) {
       case 'audit': return <AuditPanel workspaceId={workspaceId} brands={brands} />
       case 'reports': return <ReportsPanel workspaceId={workspaceId} />
       case 'notifications':
-        // Bildirim kanalları + uyarı kuralları tek sayfada (birleşik sekme)
-        return (
-          <div className="merged-tab">
-            <div className="merged-header">
-              <h2>🔔 {t('tab.notifications')}</h2>
-              <p>{t('merged.notifications_desc')}</p>
-            </div>
-            <NotificationSettings workspaceId={workspaceId} />
-            <AlertRulesPanel workspaceId={workspaceId} brands={brands} />
-          </div>
-        )
+        // Bildirim kanalları + uyarı kuralları tek sayfada (birleşik sekme).
+        // Ortak arama (kural listesi) + yenileme butonu bölümler arasında paylaşılır.
+        return <MergedNotificationsTab workspaceId={workspaceId} brands={brands} />
       case 'recommendations': return <RecommendationsPanel workspaceId={workspaceId} brands={brands} />
       case 'monitoring': return <MonitoringPanel workspaceId={workspaceId} />
       case 'costs':
@@ -466,46 +426,32 @@ export function ScoreDashboard({ workspaceId }: ScoreDashboardProps) {
               <h2>{t('tab.guardrails')}</h2>
               <p>{t('merged.guardrails_desc')}</p>
             </div>
-            <GuardrailsPanel workspaceId={workspaceId} />
-            <GatePanel workspaceId={workspaceId} />
+            <SectionNav
+              items={[
+                { id: 'guardrails-rules', label: t('guardrails.title') },
+                { id: 'guardrails-gate', label: t('gate.title') },
+              ]}
+            />
+            <section id="guardrails-rules" className="merged-section">
+              <GuardrailsPanel workspaceId={workspaceId} />
+            </section>
+            <section id="guardrails-gate" className="merged-section">
+              <GatePanel workspaceId={workspaceId} />
+            </section>
           </div>
         )
       case 'traces':
-        // Agent izleri + prompt denetimi tek sayfada (birleşik sekme)
-        return (
-          <div className="merged-tab">
-            <div className="merged-header">
-              <h2>🕵️ {t('tab.traces')}</h2>
-              <p>{t('merged.traces_desc')}</p>
-            </div>
-            <AgentTracePanel workspaceId={workspaceId} />
-            <PromptAuditPanel workspaceId={workspaceId} />
-          </div>
-        )
+        // Agent izleri + prompt denetimi tek sayfada (birleşik sekme).
+        // Ortak arama + yenileme butonu bölümler arasında paylaşılır.
+        return <MergedTracesTab workspaceId={workspaceId} />
       case 'registry':
-        // Model kaydı + politika paketleri tek sayfada (birleşik sekme)
-        return (
-          <div className="merged-tab">
-            <div className="merged-header">
-              <h2>🗂️ {t('tab.registry')}</h2>
-              <p>{t('merged.registry_desc')}</p>
-            </div>
-            <RegistryPanel workspaceId={workspaceId} />
-            <PolicyPacksPanel workspaceId={workspaceId} />
-          </div>
-        )
+        // Model kaydı + politika paketleri tek sayfada (birleşik sekme).
+        // Ortak arama + yenileme butonu bölümler arasında paylaşılır.
+        return <MergedRegistryTab workspaceId={workspaceId} />
       case 'results':
-        // Bias testleri + açıklanabilirlik tek sayfada (birleşik sekme)
-        return (
-          <div className="merged-tab">
-            <div className="merged-header">
-              <h2>🔬 {t('tab.results')}</h2>
-              <p>{t('merged.results_desc')}</p>
-            </div>
-            <BiasPanel workspaceId={workspaceId} />
-            <ExplainPanel workspaceId={workspaceId} />
-          </div>
-        )
+        // Bias testleri + açıklanabilirlik tek sayfada (birleşik sekme).
+        // Ortak arama + yenileme butonu bölümler arasında paylaşılır.
+        return <MergedResultsTab workspaceId={workspaceId} />
       case 'discovery': return <DiscoveryPanel workspaceId={workspaceId} />
       case 'redteam': return <RedTeamPanel workspaceId={workspaceId} />
       case 'drift': return <DriftPanel workspaceId={workspaceId} />
@@ -517,29 +463,13 @@ export function ScoreDashboard({ workspaceId }: ScoreDashboardProps) {
       case 'prompts': return <PromptSetsPanel workspaceId={workspaceId} />
       case 'billing': return <BillingPanel workspaceId={workspaceId} />
       case 'replay':
-        // Konuşma kaydı + arşiv tek sayfada (birleşik sekme)
-        return (
-          <div className="merged-tab">
-            <div className="merged-header">
-              <h2>🗨️ {t('tab.replay')}</h2>
-              <p>{t('merged.replay_desc')}</p>
-            </div>
-            <ReplayPanel workspaceId={workspaceId} brands={brands} />
-            <ArchivePanel workspaceId={workspaceId} brands={brands} />
-          </div>
-        )
+        // Konuşma kaydı + arşiv tek sayfada (birleşik sekme).
+        // Ortak marka seçici + yenile butonu bölümler arasında paylaşılır.
+        return <MergedReplayTab workspaceId={workspaceId} brands={brands} />
       case 'geoanalysis':
-        // Teknik + içerik GEO analizleri tek sayfada (birleşik sekme)
-        return (
-          <div className="merged-tab">
-            <div className="merged-header">
-              <h2>🌐 {t('tab.geo')}</h2>
-              <p>{t('merged.geo_desc')}</p>
-            </div>
-            <TechnicalGeoPanel workspaceId={workspaceId} brands={brands} />
-            <ContentGeoPanel workspaceId={workspaceId} brands={brands} />
-          </div>
-        )
+        // Teknik + içerik GEO analizleri tek sayfada (birleşik sekme).
+        // Ortak marka seçici + yenile butonu bölümler arasında paylaşılır.
+        return <MergedGeoTab workspaceId={workspaceId} brands={brands} />
       case 'competitive': return <CompetitiveGapPanel workspaceId={workspaceId} brands={brands} />
       case 'scores':
         // 'scores' sekmesi: benchmark widget'ı + filtreler + skor ızgarası

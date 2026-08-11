@@ -9,6 +9,11 @@ import type { Brand, ContentHubScore, ContentGap, TopicCluster } from '../types'
 interface Props {
   workspaceId: string
   brands: Brand[]
+  // Birleşik sayfada dışarıdan kontrol edilir: marka + yenileme durumu
+  // ortak başlıktan gelir, panel kendi seçicisini gizler.
+  embedded?: boolean
+  brandId?: string
+  refreshTick?: number
 }
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -20,11 +25,18 @@ const GAP_TYPE_LABELS: Record<string, string> = {
   news: '📰 Haber/Basın', category: '🗂 Kategori sayfası', general: '📊 Genel',
 }
 
-export function ContentGeoPanel({ workspaceId: ws, brands }: Props) {
+export function ContentGeoPanel({
+  workspaceId: ws,
+  brands,
+  embedded,
+  brandId: controlledBrandId,
+  refreshTick = 0,
+}: Props) {
   const { t, i18n } = useTranslation()
   const dateLocale = i18n.language?.startsWith('en') ? 'en-US' : 'tr-TR'
 
-  const [brandId, setBrandId] = useState(brands[0]?.id ?? '')
+  const [internalBrandId, setInternalBrandId] = useState(brands[0]?.id ?? '')
+  const brandId = controlledBrandId ?? internalBrandId
   const [hub, setHub] = useState<ContentHubScore | null>(null)
   const [gaps, setGaps] = useState<ContentGap[]>([])
   const [topics, setTopics] = useState<TopicCluster[]>([])
@@ -33,14 +45,17 @@ export function ContentGeoPanel({ workspaceId: ws, brands }: Props) {
   const [analyzing, setAnalyzing] = useState(false)
 
   useEffect(() => {
+    // Kontrollü modda marka düzeltmesini üst katman (MergedGeoTab) yapar;
+    // bağımsız kullanımda iç durum güncellenir.
     if (brands.length > 0 && !brands.some(b => b.id === brandId)) {
-      setBrandId(brands[0].id)
+      if (!embedded) setInternalBrandId(brands[0].id)
     }
-  }, [brands, brandId])
+  }, [brands, brandId, embedded])
 
   useEffect(() => {
     if (brandId) loadAll()
-  }, [brandId])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [brandId, refreshTick])
 
   async function loadAll() {
     try {
@@ -84,13 +99,18 @@ export function ContentGeoPanel({ workspaceId: ws, brands }: Props) {
       </div>
       {error && <div className="audit-error">{error}</div>}
 
+      {/* Marka + yenileme birleşik sayfada ortak başlıkta; analiz butonu panele özeldir */}
       <div className="dashboard-filters">
-        <select className="filter-select" value={brandId} onChange={e => setBrandId(e.target.value)}>
-          {brands.map(b => (
-            <option key={b.id} value={b.id}>{b.name}</option>
-          ))}
-        </select>
-        <button className="refresh-btn" onClick={loadAll}>{t('common.refresh')}</button>
+        {!embedded && (
+          <select className="filter-select" value={brandId} onChange={e => setInternalBrandId(e.target.value)}>
+            {brands.map(b => (
+              <option key={b.id} value={b.id}>{b.name}</option>
+            ))}
+          </select>
+        )}
+        {!embedded && (
+          <button className="refresh-btn" onClick={loadAll}>{t('common.refresh')}</button>
+        )}
         <button className="audit-btn" onClick={runGapAnalysis} disabled={analyzing}>
           {analyzing ? t('contentgeo.analyzing') : t('contentgeo.analyze')}
         </button>

@@ -7,21 +7,66 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/geolens/platform/internal/id"
+	"github.com/geolens/platform/internal/ml"
 	"github.com/geolens/platform/platform/db"
 	"github.com/geolens/platform/platform/metrics"
 )
 
+// mlCooldown — serving ardışık hatasında ML çağrılarını bu süre kadar askıya alır.
+// Böylece serving kapalıyken her ölçümde 8 motor × ML_TIMEOUT kadar gecikme birikmez.
+const mlCooldown = 60 * time.Second
+
 // Engine provides sentiment analysis and hallucination detection logic.
 type Engine struct {
 	pool *db.Pool
+	// ml — opsiyonel ML serving istemcisi (0421 A0-3). ML_SERVING_URL boşsa
+	// nil kalır ve tüm analizler kural tabanlı çalışır (0421 M-4 fallback).
+	ml *ml.Client
+
+	// Basit devre kesici (circuit breaker): ardışık serving hatası sonrası
+	// ML çağrılarını mlCooldown süresince atlar, başarıda sıfırlanır.
+	mlMu          sync.Mutex
+	mlNextAttempt time.Time
 }
 
-// NewEngine creates a new sentiment engine.
+// NewEngine creates a new sentiment engine (kural tabanlı, ML serving yok).
 func NewEngine(pool *db.Pool) *Engine {
-	return &Engine{pool: pool}
+	return NewEngineWithML(pool, nil)
+}
+
+// NewEngineWithML, ML serving client ile sentiment motoru kurar.
+// mlClient nil ise (ML_SERVING_URL boş) kural tabanlı bileşenler kullanılır;
+// dolu ise her analizde önce ML inference denenir, serving hatasında kural
+// tabanlıya düşülür (0421 M-4).
+func NewEngineWithML(pool *db.Pool, mlClient *ml.Client) *Engine {
+	return &Engine{pool: pool, ml: mlClient}
+}
+
+// rawResp — ham AI yanıtı (AnalyzeSentiment sorgusundan).
+type rawResp struct {
+	ID         string
+	EngineName string
+	Content    string
+	CreatedAt  time.Time
+}
+
+// checkTarget — hallüsinasyon kontrolü hedefi (raw response + marka profili).
+type checkTarget struct {
+	ID         string
+	EngineName string
+	Content    string
+	BrandName  string
+	WebsiteURL string
+}
+
+// weightedProbs — ağırlıklı ortalama girdisi: softmax olasılıkları + ağırlık.
+type weightedProbs struct {
+	probs  [3]float64
+	weight float64
 }
 
 // SentimentResult represents the result of a sentiment analysis.
@@ -73,13 +118,6 @@ func (e *Engine) AnalyzeSentiment(ctx context.Context, brandID, workspaceID, ten
 	}
 	defer rows.Close()
 
-	type rawResp struct {
-		ID         string
-		EngineName string
-		Content    string
-		CreatedAt  time.Time
-	}
-
 	var rawResponses []rawResp
 	for rows.Next() {
 		var r rawResp
@@ -105,13 +143,8 @@ func (e *Engine) AnalyzeSentiment(ctx context.Context, brandID, workspaceID, ten
 
 	var results []SentimentResult
 	for engine, responses := range engineMap {
-		combined := ""
-		for _, r := range responses {
-			combined += r.Content + " "
-		}
-
-		// Simple rule-based sentiment analysis (MVP)
-		result := e.analyzeText(engine, brandID, combined)
+		// 0421 M-4: per-response ML serving; serving yok/hatalı ise kural tabanlı.
+		result := e.analyzeWithML(ctx, engine, brandID, responses)
 		results = append(results, result)
 
 		// Save to DB
@@ -122,6 +155,124 @@ func (e *Engine) AnalyzeSentiment(ctx context.Context, brandID, workspaceID, ten
 	slog.Info("sentiment analizi tamamlandı", "brand", brandID, "engines", len(results))
 
 	return results, nil
+}
+
+// analyzeWithML — 0421 M-4 uyumlu per-response ML sentiment analizi.
+// Her raw response serving'e AYRI gönderilir (128 token kırpma sorunu çözülür;
+// uzun birleşik metin yerine her yanıt kendi bütünlüğünde analiz edilir) ve
+// sonuçlar kelime sayısıyla ağırlıklı ortalama ile birleştirilir. Serving yok,
+// cooldown'da veya hiçbir çağrı başarılı olmadıysa kural tabanlı analyzeText'e
+// düşülür (operasyonel dayanıklılık). Kısmi başarıda (bazı yanıtlar hatalı)
+// başarılı olanlar birleştirilir.
+func (e *Engine) analyzeWithML(ctx context.Context, engineName, brandID string, responses []rawResp) SentimentResult {
+	if e.ml == nil || e.mlInCooldown() {
+		return e.analyzeText(engineName, brandID, combineText(responses))
+	}
+
+	items := make([]weightedProbs, 0, len(responses))
+	failed := 0
+	for _, r := range responses {
+		if ctx.Err() != nil {
+			slog.Warn("sentiment: ML analizi iptal edildi, kısmi sonuç birleştiriliyor", "error", ctx.Err())
+			break
+		}
+		text := strings.TrimSpace(r.Content)
+		if text == "" {
+			continue
+		}
+		pred, err := e.ml.PredictSentiment(ctx, text, "")
+		if err != nil {
+			failed++
+			slog.Warn("sentiment: per-response ML çağrısı başarısız",
+				"error", err, "engine", engineName, "response_id", r.ID)
+			if len(items) == 0 {
+				// Henüz başarı yok — serving erişilemez görünüyor. Cooldown başlat ve
+				// kalan yanıtlar için timeout beklemeyi önle (en kötü 50×ML_TIMEOUT birikimi).
+				e.mlFail()
+				break
+			}
+			continue
+		}
+		// Kelime sayısı ağırlığı: uzun yanıt daha fazla bilgi taşır.
+		items = append(items, weightedProbs{
+			probs:  pred.Probabilities,
+			weight: float64(len(strings.Fields(text))),
+		})
+	}
+
+	if len(items) == 0 {
+		// Serving erişilemez görünüyor — cooldown başlat, kural tabanlıya düş.
+		e.mlFail()
+		return e.analyzeText(engineName, brandID, combineText(responses))
+	}
+
+	e.mlSuccess()
+	slog.Debug("sentiment: per-response ML sonucu", "engine", engineName,
+		"responses", len(items), "failed", failed)
+	return sentimentFromProbabilities(engineName, brandID, aggregateWeighted(items), len(items))
+}
+
+// aggregateWeighted, per-response olasılıklarını ağırlıklı ortalama ile birleştirir.
+func aggregateWeighted(items []weightedProbs) [3]float64 {
+	var acc [3]float64
+	var total float64
+	for _, it := range items {
+		for i := 0; i < 3; i++ {
+			acc[i] += it.probs[i] * it.weight
+		}
+		total += it.weight
+	}
+	if total == 0 {
+		return [3]float64{}
+	}
+	return [3]float64{acc[0] / total, acc[1] / total, acc[2] / total}
+}
+
+// combineText — motor yanıtlarını kural tabanlı fallback için birleştirir.
+func combineText(responses []rawResp) string {
+	var sb strings.Builder
+	for _, r := range responses {
+		sb.WriteString(r.Content)
+		sb.WriteByte(' ')
+	}
+	return sb.String()
+}
+
+// mlInCooldown — serving cooldown penceresi aktif mi?
+func (e *Engine) mlInCooldown() bool {
+	e.mlMu.Lock()
+	defer e.mlMu.Unlock()
+	return time.Now().Before(e.mlNextAttempt)
+}
+
+// mlFail — serving hatasını kaydeder ve ML çağrılarını mlCooldown süresince askıya alır.
+func (e *Engine) mlFail() {
+	e.mlMu.Lock()
+	defer e.mlMu.Unlock()
+	e.mlNextAttempt = time.Now().Add(mlCooldown)
+}
+
+// mlSuccess — serving yanıt verdiğinde cooldown'ı sıfırlar (serving geri geldiyse hızlı dönüş).
+func (e *Engine) mlSuccess() {
+	e.mlMu.Lock()
+	defer e.mlMu.Unlock()
+	e.mlNextAttempt = time.Time{}
+}
+
+// sentimentFromProbabilities, (ağırlıklı ortalama) softmax olasılıklarını
+// [neg, nötr, poz] SentimentResult skorlarına çevirir. OverallSentiment aynı
+// ağırlıklandırmayı kullanır: poz*1.0 + nötr*0.5 + neg*0.0.
+func sentimentFromProbabilities(engineName, brandID string, probs [3]float64, mentionCount int) SentimentResult {
+	return SentimentResult{
+		BrandID:          brandID,
+		EngineName:       engineName,
+		OverallSentiment: probs[2] + probs[1]*0.5,
+		PositiveScore:    probs[2],
+		NeutralScore:     probs[1],
+		NegativeScore:    probs[0],
+		MentionCount:     mentionCount,
+		AnalyzedAt:       time.Now(),
+	}
 }
 
 // analyzeText performs a simple rule-based sentiment analysis.
@@ -217,14 +368,6 @@ func (e *Engine) DetectHallucinations(ctx context.Context, brandID, workspaceID,
 	}
 	defer rows.Close()
 
-	type checkTarget struct {
-		ID         string
-		EngineName string
-		Content    string
-		BrandName  string
-		WebsiteURL string
-	}
-
 	var targets []checkTarget
 	for rows.Next() {
 		var t checkTarget
@@ -242,10 +385,23 @@ func (e *Engine) DetectHallucinations(ctx context.Context, brandID, workspaceID,
 		return nil, nil
 	}
 
+	// 0421 M-4: cross-source (A2-4) en az 2 yanıt gerektirir. Serving yapılandırılmış
+	// ve erişilebilirse önce serving cross_source_check çağrılır; tek yanıtta, serving
+	// yokken veya serving hatasında T1-T4 kural tabanlı kurallara düşülür.
 	var results []HallucinationResult
-	for _, t := range targets {
-		halls := e.checkHallucinations(t.Content, t.BrandName, t.EngineName, brandID)
-		results = append(results, halls...)
+	if len(targets) >= 2 && e.ml != nil && !e.mlInCooldown() {
+		mlResults, mlErr := e.detectHallucinationsWithML(ctx, targets, brandID)
+		if mlErr == nil {
+			results = mlResults
+			e.mlSuccess()
+			slog.Debug("hallüsinasyon: cross-source ML sonucu", "brand", brandID, "findings", len(results))
+		} else {
+			slog.Warn("hallüsinasyon: serving çağrısı başarısız, T1-T4 kurallarına düşülüyor", "error", mlErr)
+			e.mlFail()
+			results = e.ruleBasedHallucinations(targets, brandID)
+		}
+	} else {
+		results = e.ruleBasedHallucinations(targets, brandID)
 	}
 
 	// Save results to DB
@@ -257,6 +413,42 @@ func (e *Engine) DetectHallucinations(ctx context.Context, brandID, workspaceID,
 	slog.Info("hallüsinasyon tespiti tamamlandı", "brand", brandID, "count", len(results))
 
 	return results, nil
+}
+
+// detectHallucinationsWithML — serving cross-source tespitini çağırır ve sonucu
+// HallucinationResult'a çevirir. Hata dönerse çağıran fallback'e düşer (0421 M-4).
+func (e *Engine) detectHallucinationsWithML(ctx context.Context, targets []checkTarget, brandID string) ([]HallucinationResult, error) {
+	responses := make([]ml.HallucinationResponse, 0, len(targets))
+	for _, t := range targets {
+		responses = append(responses, ml.HallucinationResponse{ID: t.ID, Engine: t.EngineName, Text: t.Content})
+	}
+	findings, err := e.ml.DetectHallucinations(ctx, responses)
+	if err != nil {
+		return nil, err
+	}
+	results := make([]HallucinationResult, 0, len(findings))
+	now := time.Now()
+	for _, f := range findings {
+		results = append(results, HallucinationResult{
+			BrandID:           brandID,
+			EngineName:        f.Engine,
+			HallucinationType: f.Type,
+			Severity:          f.Severity,
+			Description:       f.Description,
+			Confidence:        f.Confidence,
+			CreatedAt:         now,
+		})
+	}
+	return results, nil
+}
+
+// ruleBasedHallucinations — mevcut T1-T4 kural seti (serving yok/hatalı fallback).
+func (e *Engine) ruleBasedHallucinations(targets []checkTarget, brandID string) []HallucinationResult {
+	var results []HallucinationResult
+	for _, t := range targets {
+		results = append(results, e.checkHallucinations(t.Content, t.BrandName, t.EngineName, brandID)...)
+	}
+	return results
 }
 
 // checkHallucinations runs rule-based checks against response content.
