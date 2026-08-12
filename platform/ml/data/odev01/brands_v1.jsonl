@@ -1,0 +1,600 @@
+{"id": "brand_0001", "brand": "Ziraat Bankası", "sector": "Bankacılık", "country": "Türkiye", "website": "https://www.ziraatbank.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0002", "brand": "İş Bankası", "sector": "Bankacılık", "country": "Türkiye", "website": "https://www.isbank.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0003", "brand": "Garanti BBVA", "sector": "Bankacılık", "country": "Türkiye", "website": "https://www.garantibbva.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0004", "brand": "Akbank", "sector": "Bankacılık", "country": "Türkiye", "website": "https://www.akbank.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0005", "brand": "Yapı Kredi", "sector": "Bankacılık", "country": "Türkiye", "website": "https://www.yapikredi.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0006", "brand": "VakıfBank", "sector": "Bankacılık", "country": "Türkiye", "website": "https://www.vakifbank.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0007", "brand": "Halkbank", "sector": "Bankacılık", "country": "Türkiye", "website": "https://www.halkbank.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0008", "brand": "QNB Türkiye", "sector": "Bankacılık", "country": "Türkiye", "website": "https://www.qnb.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0009", "brand": "TEB", "sector": "Bankacılık", "country": "Türkiye", "website": "https://www.teb.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0010", "brand": "DenizBank", "sector": "Bankacılık", "country": "Türkiye", "website": "https://www.denizbank.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0011", "brand": "ING Türkiye", "sector": "Bankacılık", "country": "Türkiye", "website": "https://www.ing.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0012", "brand": "Şekerbank", "sector": "Bankacılık", "country": "Türkiye", "website": "https://www.sekerbank.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0013", "brand": "Fibabanka", "sector": "Bankacılık", "country": "Türkiye", "website": "https://www.fibabanka.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0014", "brand": "Alternatif Bank", "sector": "Bankacılık", "country": "Türkiye", "website": "https://www.alternatifbank.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0015", "brand": "Anadolubank", "sector": "Bankacılık", "country": "Türkiye", "website": "https://www.anadolubank.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0016", "brand": "Albaraka Türk", "sector": "Bankacılık", "country": "Türkiye", "website": "https://www.albaraka.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0017", "brand": "Kuveyt Türk", "sector": "Bankacılık", "country": "Türkiye", "website": "https://www.kuveytturk.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0018", "brand": "Türkiye Finans", "sector": "Bankacılık", "country": "Türkiye", "website": "https://www.turkiyefinans.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0019", "brand": "Hayat Finans", "sector": "Bankacılık", "country": "Türkiye", "website": "https://www.hayatfinans.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0020", "brand": "Odeabank", "sector": "Bankacılık", "country": "Türkiye", "website": "https://www.odeabank.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0021", "brand": "Anadolu Sigorta", "sector": "Sigortacılık", "country": "Türkiye", "website": "https://www.anadolusigorta.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0022", "brand": "Türkiye Sigorta", "sector": "Sigortacılık", "country": "Türkiye", "website": "https://www.turkiyesigorta.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0023", "brand": "Aksigorta", "sector": "Sigortacılık", "country": "Türkiye", "website": "https://www.aksigorta.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0024", "brand": "HDI Sigorta", "sector": "Sigortacılık", "country": "Almanya", "website": "https://www.hdisigorta.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0025", "brand": "Allianz Türkiye", "sector": "Sigortacılık", "country": "Almanya", "website": "https://www.allianz.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0026", "brand": "AXA Sigorta", "sector": "Sigortacılık", "country": "Fransa", "website": "https://www.axasigorta.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0027", "brand": "Mapfre Sigorta", "sector": "Sigortacılık", "country": "İspanya", "website": "https://www.mapfre.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0028", "brand": "Sompo Sigorta", "sector": "Sigortacılık", "country": "Japonya", "website": "https://www.somposigorta.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0029", "brand": "Quick Sigorta", "sector": "Sigortacılık", "country": "Türkiye", "website": "https://www.quicksigorta.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0030", "brand": "Ray Sigorta", "sector": "Sigortacılık", "country": "Türkiye", "website": "https://www.raysigorta.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0031", "brand": "Neova Katılım Sigorta", "sector": "Sigortacılık", "country": "Türkiye", "website": "https://www.neova.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0032", "brand": "Doğa Sigorta", "sector": "Sigortacılık", "country": "Türkiye", "website": "https://www.dogasigorta.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0033", "brand": "Ankara Sigorta", "sector": "Sigortacılık", "country": "Türkiye", "website": "https://www.ankarasigorta.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0034", "brand": "Koru Sigorta", "sector": "Sigortacılık", "country": "Türkiye", "website": "https://www.korusigorta.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0035", "brand": "Ana Sigorta", "sector": "Sigortacılık", "country": "Türkiye", "website": "https://www.anasigorta.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0036", "brand": "Arex Sigorta", "sector": "Sigortacılık", "country": "Türkiye", "website": "https://www.arexsigorta.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0037", "brand": "Zurich Sigorta", "sector": "Sigortacılık", "country": "İsviçre", "website": "https://www.zurichsigorta.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0038", "brand": "Generali Sigorta", "sector": "Sigortacılık", "country": "İtalya", "website": "https://www.generali.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0039", "brand": "Groupama Sigorta", "sector": "Sigortacılık", "country": "Fransa", "website": "https://www.groupama.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0040", "brand": "Unico Sigorta", "sector": "Sigortacılık", "country": "Türkiye", "website": "https://www.unicosigorta.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0041", "brand": "Turkcell", "sector": "Telekom", "country": "Türkiye", "website": "https://www.turkcell.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0042", "brand": "Türk Telekom", "sector": "Telekom", "country": "Türkiye", "website": "https://www.turktelekom.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0043", "brand": "Vodafone Türkiye", "sector": "Telekom", "country": "Birleşik Krallık", "website": "https://www.vodafone.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0044", "brand": "TurkNet", "sector": "Telekom", "country": "Türkiye", "website": "https://www.turk.net", "source": "odev01/brands.xlsx"}
+{"id": "brand_0045", "brand": "Türksat Kablo", "sector": "Telekom", "country": "Türkiye", "website": "https://www.turksatkablo.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0046", "brand": "Millenicom", "sector": "Telekom", "country": "Türkiye", "website": "https://www.milleni.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0047", "brand": "Netspeed", "sector": "Telekom", "country": "Türkiye", "website": "https://www.netspeed.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0048", "brand": "Comnet", "sector": "Telekom", "country": "Türkiye", "website": "https://www.comnet.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0049", "brand": "Superonline", "sector": "Telekom", "country": "Türkiye", "website": "https://www.superonline.net", "source": "odev01/brands.xlsx"}
+{"id": "brand_0050", "brand": "Netgsm", "sector": "Telekom", "country": "Türkiye", "website": "https://www.netgsm.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0051", "brand": "D-Smart Net", "sector": "Telekom", "country": "Türkiye", "website": "https://www.dsmart.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0052", "brand": "Türksat", "sector": "Telekom", "country": "Türkiye", "website": "https://www.turksat.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0053", "brand": "Starlink", "sector": "Telekom", "country": "ABD", "website": "https://www.starlink.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0054", "brand": "Orange", "sector": "Telekom", "country": "Fransa", "website": "https://www.orange.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0055", "brand": "Deutsche Telekom", "sector": "Telekom", "country": "Almanya", "website": "https://www.telekom.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0056", "brand": "Telefónica", "sector": "Telekom", "country": "İspanya", "website": "https://www.telefonica.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0057", "brand": "BT Group", "sector": "Telekom", "country": "Birleşik Krallık", "website": "https://www.bt.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0058", "brand": "Verizon", "sector": "Telekom", "country": "ABD", "website": "https://www.verizon.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0059", "brand": "T-Mobile", "sector": "Telekom", "country": "Almanya", "website": "https://www.t-mobile.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0060", "brand": "AT&T", "sector": "Telekom", "country": "ABD", "website": "https://www.att.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0061", "brand": "Trendyol", "sector": "E-Ticaret", "country": "Türkiye", "website": "https://www.trendyol.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0062", "brand": "Hepsiburada", "sector": "E-Ticaret", "country": "Türkiye", "website": "https://www.hepsiburada.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0063", "brand": "n11", "sector": "E-Ticaret", "country": "Türkiye", "website": "https://www.n11.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0064", "brand": "ÇiçekSepeti", "sector": "E-Ticaret", "country": "Türkiye", "website": "https://www.ciceksepeti.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0065", "brand": "PttAVM", "sector": "E-Ticaret", "country": "Türkiye", "website": "https://www.pttavm.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0066", "brand": "Pazarama", "sector": "E-Ticaret", "country": "Türkiye", "website": "https://www.pazarama.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0067", "brand": "Sahibinden", "sector": "E-Ticaret", "country": "Türkiye", "website": "https://www.sahibinden.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0068", "brand": "Modanisa", "sector": "E-Ticaret", "country": "Türkiye", "website": "https://www.modanisa.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0069", "brand": "Boyner", "sector": "E-Ticaret", "country": "Türkiye", "website": "https://www.boyner.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0070", "brand": "Teknosa", "sector": "E-Ticaret", "country": "Türkiye", "website": "https://www.teknosa.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0071", "brand": "Koçtaş", "sector": "E-Ticaret", "country": "Türkiye", "website": "https://www.koctas.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0072", "brand": "Vivense", "sector": "E-Ticaret", "country": "Türkiye", "website": "https://www.vivense.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0073", "brand": "Amazon Türkiye", "sector": "E-Ticaret", "country": "ABD", "website": "https://www.amazon.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0074", "brand": "AliExpress", "sector": "E-Ticaret", "country": "Çin", "website": "https://www.aliexpress.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0075", "brand": "Temu", "sector": "E-Ticaret", "country": "Çin", "website": "https://www.temu.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0076", "brand": "Etsy", "sector": "E-Ticaret", "country": "ABD", "website": "https://www.etsy.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0077", "brand": "eBay", "sector": "E-Ticaret", "country": "ABD", "website": "https://www.ebay.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0078", "brand": "Zalando", "sector": "E-Ticaret", "country": "Almanya", "website": "https://www.zalando.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0079", "brand": "ASOS", "sector": "E-Ticaret", "country": "Birleşik Krallık", "website": "https://www.asos.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0080", "brand": "Alibaba", "sector": "E-Ticaret", "country": "Çin", "website": "https://www.alibaba.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0081", "brand": "BİM", "sector": "Market Zincirleri", "country": "Türkiye", "website": "https://www.bim.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0082", "brand": "A101", "sector": "Market Zincirleri", "country": "Türkiye", "website": "https://www.a101.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0083", "brand": "ŞOK", "sector": "Market Zincirleri", "country": "Türkiye", "website": "https://www.sokmarket.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0084", "brand": "Migros", "sector": "Market Zincirleri", "country": "Türkiye", "website": "https://www.migros.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0085", "brand": "CarrefourSA", "sector": "Market Zincirleri", "country": "Türkiye", "website": "https://www.carrefoursa.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0086", "brand": "Tarım Kredi Kooperatif Market", "sector": "Market Zincirleri", "country": "Türkiye", "website": "https://www.tarimkredimarket.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0087", "brand": "Macrocenter", "sector": "Market Zincirleri", "country": "Türkiye", "website": "https://www.macrocenter.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0088", "brand": "Çağdaş Marketler", "sector": "Market Zincirleri", "country": "Türkiye", "website": "https://www.cagdasmarketler.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0089", "brand": "Onur Market", "sector": "Market Zincirleri", "country": "Türkiye", "website": "https://www.onurmarket.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0090", "brand": "Happy Center", "sector": "Market Zincirleri", "country": "Türkiye", "website": "https://www.happycenter.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0091", "brand": "Kim Market", "sector": "Market Zincirleri", "country": "Türkiye", "website": "https://www.kimmarket.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0092", "brand": "Hakmar", "sector": "Market Zincirleri", "country": "Türkiye", "website": "https://www.hakmar.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0093", "brand": "File Market", "sector": "Market Zincirleri", "country": "Türkiye", "website": "https://www.file.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0094", "brand": "Metro Türkiye", "sector": "Market Zincirleri", "country": "Almanya", "website": "https://www.metro-tr.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0095", "brand": "Bizim Toptan", "sector": "Market Zincirleri", "country": "Türkiye", "website": "https://www.bizimtoptan.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0096", "brand": "Seç Market", "sector": "Market Zincirleri", "country": "Türkiye", "website": "https://www.secmarket.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0097", "brand": "Özkuruşlar", "sector": "Market Zincirleri", "country": "Türkiye", "website": "https://www.ozkuruslar.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0098", "brand": "Peynirci Baba", "sector": "Market Zincirleri", "country": "Türkiye", "website": "https://www.peynircibaba.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0099", "brand": "Tesco", "sector": "Market Zincirleri", "country": "Birleşik Krallık", "website": "https://www.tesco.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0100", "brand": "Lidl", "sector": "Market Zincirleri", "country": "Almanya", "website": "https://www.lidl.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0101", "brand": "Togg", "sector": "Otomotiv", "country": "Türkiye", "website": "https://www.togg.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0102", "brand": "Ford Otosan", "sector": "Otomotiv", "country": "Türkiye", "website": "https://www.fordotosan.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0103", "brand": "Tofaş", "sector": "Otomotiv", "country": "Türkiye", "website": "https://www.tofas.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0104", "brand": "Karsan", "sector": "Otomotiv", "country": "Türkiye", "website": "https://www.karsan.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0105", "brand": "Temsa", "sector": "Otomotiv", "country": "Türkiye", "website": "https://www.temsa.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0106", "brand": "Otokar", "sector": "Otomotiv", "country": "Türkiye", "website": "https://www.otokar.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0107", "brand": "Anadolu Isuzu", "sector": "Otomotiv", "country": "Türkiye", "website": "https://www.anadoluisuzu.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0108", "brand": "Toyota", "sector": "Otomotiv", "country": "Japonya", "website": "https://www.toyota.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0109", "brand": "Renault", "sector": "Otomotiv", "country": "Fransa", "website": "https://www.renault.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0110", "brand": "Fiat", "sector": "Otomotiv", "country": "İtalya", "website": "https://www.fiat.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0111", "brand": "Hyundai", "sector": "Otomotiv", "country": "Güney Kore", "website": "https://www.hyundai.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0112", "brand": "Honda", "sector": "Otomotiv", "country": "Japonya", "website": "https://www.honda.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0113", "brand": "Volkswagen", "sector": "Otomotiv", "country": "Almanya", "website": "https://www.volkswagen.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0114", "brand": "BMW", "sector": "Otomotiv", "country": "Almanya", "website": "https://www.bmw.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0115", "brand": "Mercedes-Benz", "sector": "Otomotiv", "country": "Almanya", "website": "https://www.mercedes-benz.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0116", "brand": "Audi", "sector": "Otomotiv", "country": "Almanya", "website": "https://www.audi.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0117", "brand": "Peugeot", "sector": "Otomotiv", "country": "Fransa", "website": "https://www.peugeot.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0118", "brand": "Citroën", "sector": "Otomotiv", "country": "Fransa", "website": "https://www.citroen.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0119", "brand": "Skoda", "sector": "Otomotiv", "country": "Çekya", "website": "https://www.skoda.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0120", "brand": "Nissan", "sector": "Otomotiv", "country": "Japonya", "website": "https://www.nissan.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0121", "brand": "Togg", "sector": "Elektrikli Araçlar", "country": "Türkiye", "website": "https://www.togg.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0122", "brand": "Tesla", "sector": "Elektrikli Araçlar", "country": "ABD", "website": "https://www.tesla.com/tr_tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0123", "brand": "BYD", "sector": "Elektrikli Araçlar", "country": "Çin", "website": "https://www.bydauto.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0124", "brand": "MG", "sector": "Elektrikli Araçlar", "country": "Birleşik Krallık", "website": "https://www.mgmotor.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0125", "brand": "Volvo", "sector": "Elektrikli Araçlar", "country": "İsveç", "website": "https://www.volvocars.com/tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0126", "brand": "Polestar", "sector": "Elektrikli Araçlar", "country": "İsveç", "website": "https://www.polestar.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0127", "brand": "Kia", "sector": "Elektrikli Araçlar", "country": "Güney Kore", "website": "https://www.kia.com/tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0128", "brand": "Hyundai", "sector": "Elektrikli Araçlar", "country": "Güney Kore", "website": "https://www.hyundai.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0129", "brand": "Renault", "sector": "Elektrikli Araçlar", "country": "Fransa", "website": "https://www.renault.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0130", "brand": "Volkswagen", "sector": "Elektrikli Araçlar", "country": "Almanya", "website": "https://www.volkswagen.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0131", "brand": "BMW", "sector": "Elektrikli Araçlar", "country": "Almanya", "website": "https://www.bmw.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0132", "brand": "Mercedes-Benz", "sector": "Elektrikli Araçlar", "country": "Almanya", "website": "https://www.mercedes-benz.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0133", "brand": "Audi", "sector": "Elektrikli Araçlar", "country": "Almanya", "website": "https://www.audi.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0134", "brand": "Porsche", "sector": "Elektrikli Araçlar", "country": "Almanya", "website": "https://www.porsche.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0135", "brand": "Peugeot", "sector": "Elektrikli Araçlar", "country": "Fransa", "website": "https://www.peugeot.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0136", "brand": "Opel", "sector": "Elektrikli Araçlar", "country": "Almanya", "website": "https://www.opel.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0137", "brand": "Citroën", "sector": "Elektrikli Araçlar", "country": "Fransa", "website": "https://www.citroen.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0138", "brand": "Nissan", "sector": "Elektrikli Araçlar", "country": "Japonya", "website": "https://www.nissan.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0139", "brand": "Ford", "sector": "Elektrikli Araçlar", "country": "ABD", "website": "https://www.ford.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0140", "brand": "Zeekr", "sector": "Elektrikli Araçlar", "country": "Çin", "website": "https://www.zeekrglobal.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0141", "brand": "Türk Hava Yolları", "sector": "Havayolları", "country": "Türkiye", "website": "https://www.turkishairlines.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0142", "brand": "Pegasus", "sector": "Havayolları", "country": "Türkiye", "website": "https://www.flypgs.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0143", "brand": "AJet", "sector": "Havayolları", "country": "Türkiye", "website": "https://www.ajet.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0144", "brand": "SunExpress", "sector": "Havayolları", "country": "Türkiye", "website": "https://www.sunexpress.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0145", "brand": "Corendon Airlines", "sector": "Havayolları", "country": "Türkiye", "website": "https://www.corendonairlines.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0146", "brand": "Freebird Airlines", "sector": "Havayolları", "country": "Türkiye", "website": "https://www.freebirdairlines.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0147", "brand": "Tailwind Airlines", "sector": "Havayolları", "country": "Türkiye", "website": "https://www.tailwind.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0148", "brand": "Mavi Gök Airlines", "sector": "Havayolları", "country": "Türkiye", "website": "https://www.mga.aero", "source": "odev01/brands.xlsx"}
+{"id": "brand_0149", "brand": "Emirates", "sector": "Havayolları", "country": "BAE", "website": "https://www.emirates.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0150", "brand": "Qatar Airways", "sector": "Havayolları", "country": "Katar", "website": "https://www.qatarairways.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0151", "brand": "Lufthansa", "sector": "Havayolları", "country": "Almanya", "website": "https://www.lufthansa.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0152", "brand": "KLM", "sector": "Havayolları", "country": "Hollanda", "website": "https://www.klm.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0153", "brand": "Air France", "sector": "Havayolları", "country": "Fransa", "website": "https://www.airfrance.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0154", "brand": "British Airways", "sector": "Havayolları", "country": "Birleşik Krallık", "website": "https://www.britishairways.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0155", "brand": "Ryanair", "sector": "Havayolları", "country": "İrlanda", "website": "https://www.ryanair.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0156", "brand": "Wizz Air", "sector": "Havayolları", "country": "Macaristan", "website": "https://www.wizzair.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0157", "brand": "easyJet", "sector": "Havayolları", "country": "Birleşik Krallık", "website": "https://www.easyjet.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0158", "brand": "Etihad Airways", "sector": "Havayolları", "country": "BAE", "website": "https://www.etihad.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0159", "brand": "Singapore Airlines", "sector": "Havayolları", "country": "Singapur", "website": "https://www.singaporeair.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0160", "brand": "Delta Air Lines", "sector": "Havayolları", "country": "ABD", "website": "https://www.delta.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0161", "brand": "Divan", "sector": "Oteller", "country": "Türkiye", "website": "https://www.divan.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0162", "brand": "Rixos", "sector": "Oteller", "country": "Türkiye", "website": "https://www.rixos.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0163", "brand": "Dedeman", "sector": "Oteller", "country": "Türkiye", "website": "https://www.dedeman.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0164", "brand": "Titanic Hotels", "sector": "Oteller", "country": "Türkiye", "website": "https://www.titanic.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0165", "brand": "Barut Hotels", "sector": "Oteller", "country": "Türkiye", "website": "https://www.baruthotels.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0166", "brand": "NG Hotels", "sector": "Oteller", "country": "Türkiye", "website": "https://www.nghotels.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0167", "brand": "Kaya Hotels", "sector": "Oteller", "country": "Türkiye", "website": "https://www.kayahotels.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0168", "brand": "Maxx Royal", "sector": "Oteller", "country": "Türkiye", "website": "https://www.maxxroyal.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0169", "brand": "Regnum Carya", "sector": "Oteller", "country": "Türkiye", "website": "https://www.regnumhotels.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0170", "brand": "Akra Hotels", "sector": "Oteller", "country": "Türkiye", "website": "https://www.akrahotels.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0171", "brand": "Hilton", "sector": "Oteller", "country": "ABD", "website": "https://www.hilton.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0172", "brand": "Marriott", "sector": "Oteller", "country": "ABD", "website": "https://www.marriott.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0173", "brand": "Hyatt", "sector": "Oteller", "country": "ABD", "website": "https://www.hyatt.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0174", "brand": "Accor", "sector": "Oteller", "country": "Fransa", "website": "https://all.accor.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0175", "brand": "Radisson", "sector": "Oteller", "country": "ABD", "website": "https://www.radissonhotels.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0176", "brand": "Four Seasons", "sector": "Oteller", "country": "Kanada", "website": "https://www.fourseasons.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0177", "brand": "Mandarin Oriental", "sector": "Oteller", "country": "Hong Kong", "website": "https://www.mandarinoriental.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0178", "brand": "InterContinental", "sector": "Oteller", "country": "Birleşik Krallık", "website": "https://www.ihg.com/intercontinental", "source": "odev01/brands.xlsx"}
+{"id": "brand_0179", "brand": "Kempinski", "sector": "Oteller", "country": "İsviçre", "website": "https://www.kempinski.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0180", "brand": "Wyndham", "sector": "Oteller", "country": "ABD", "website": "https://www.wyndhamhotels.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0181", "brand": "Köfteci Yusuf", "sector": "Restoran Zincirleri", "country": "Türkiye", "website": "https://www.kofteciyusuf.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0182", "brand": "Baydöner", "sector": "Restoran Zincirleri", "country": "Türkiye", "website": "https://www.baydoner.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0183", "brand": "HD İskender", "sector": "Restoran Zincirleri", "country": "Türkiye", "website": "https://www.hdiskender.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0184", "brand": "Tavuk Dünyası", "sector": "Restoran Zincirleri", "country": "Türkiye", "website": "https://www.tavukdunyasi.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0185", "brand": "BigChefs", "sector": "Restoran Zincirleri", "country": "Türkiye", "website": "https://www.bigchefs.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0186", "brand": "Midpoint", "sector": "Restoran Zincirleri", "country": "Türkiye", "website": "https://www.midpoint.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0187", "brand": "Cookshop", "sector": "Restoran Zincirleri", "country": "Türkiye", "website": "https://www.cookshop.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0188", "brand": "Simit Sarayı", "sector": "Restoran Zincirleri", "country": "Türkiye", "website": "https://www.simitsarayi.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0189", "brand": "Komagene", "sector": "Restoran Zincirleri", "country": "Türkiye", "website": "https://www.komagene.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0190", "brand": "Usta Dönerci", "sector": "Restoran Zincirleri", "country": "Türkiye", "website": "https://www.ustadonerci.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0191", "brand": "McDonald's", "sector": "Restoran Zincirleri", "country": "ABD", "website": "https://www.mcdonalds.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0192", "brand": "Burger King", "sector": "Restoran Zincirleri", "country": "ABD", "website": "https://www.burgerking.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0193", "brand": "KFC", "sector": "Restoran Zincirleri", "country": "ABD", "website": "https://www.kfcturkiye.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0194", "brand": "Popeyes", "sector": "Restoran Zincirleri", "country": "ABD", "website": "https://www.popeyes.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0195", "brand": "Domino's", "sector": "Restoran Zincirleri", "country": "ABD", "website": "https://www.dominos.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0196", "brand": "Pizza Hut", "sector": "Restoran Zincirleri", "country": "ABD", "website": "https://www.pizzahut.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0197", "brand": "Starbucks", "sector": "Restoran Zincirleri", "country": "ABD", "website": "https://www.starbucks.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0198", "brand": "Arby's", "sector": "Restoran Zincirleri", "country": "ABD", "website": "https://www.arbys.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0199", "brand": "Subway", "sector": "Restoran Zincirleri", "country": "ABD", "website": "https://www.subway.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0200", "brand": "Little Caesars", "sector": "Restoran Zincirleri", "country": "ABD", "website": "https://www.littlecaesars.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0201", "brand": "Yurtiçi Kargo", "sector": "Kargo", "country": "Türkiye", "website": "https://www.yurticikargo.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0202", "brand": "Aras Kargo", "sector": "Kargo", "country": "Türkiye", "website": "https://www.araskargo.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0203", "brand": "MNG Kargo", "sector": "Kargo", "country": "Türkiye", "website": "https://www.mngkargo.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0204", "brand": "Sürat Kargo", "sector": "Kargo", "country": "Türkiye", "website": "https://www.suratkargo.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0205", "brand": "PTT Kargo", "sector": "Kargo", "country": "Türkiye", "website": "https://www.ptt.gov.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0206", "brand": "Kolay Gelsin", "sector": "Kargo", "country": "Türkiye", "website": "https://www.kolaygelsin.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0207", "brand": "HepsiJET", "sector": "Kargo", "country": "Türkiye", "website": "https://www.hepsijet.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0208", "brand": "Trendyol Express", "sector": "Kargo", "country": "Türkiye", "website": "https://www.trendyolexpress.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0209", "brand": "KargomSende", "sector": "Kargo", "country": "Türkiye", "website": "https://www.kargomsende.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0210", "brand": "Scotty", "sector": "Kargo", "country": "Türkiye", "website": "https://www.scotty.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0211", "brand": "UPS", "sector": "Kargo", "country": "ABD", "website": "https://www.ups.com/tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0212", "brand": "DHL Express", "sector": "Kargo", "country": "Almanya", "website": "https://www.dhl.com/tr-tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0213", "brand": "FedEx", "sector": "Kargo", "country": "ABD", "website": "https://www.fedex.com/tr-tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0214", "brand": "TNT", "sector": "Kargo", "country": "Hollanda", "website": "https://www.tnt.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0215", "brand": "DPD", "sector": "Kargo", "country": "Fransa", "website": "https://www.dpd.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0216", "brand": "GLS", "sector": "Kargo", "country": "Hollanda", "website": "https://gls-group.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0217", "brand": "USPS", "sector": "Kargo", "country": "ABD", "website": "https://www.usps.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0218", "brand": "Royal Mail", "sector": "Kargo", "country": "Birleşik Krallık", "website": "https://www.royalmail.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0219", "brand": "Evri", "sector": "Kargo", "country": "Birleşik Krallık", "website": "https://www.evri.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0220", "brand": "Cainiao", "sector": "Kargo", "country": "Çin", "website": "https://www.cainiao.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0221", "brand": "Netlog Lojistik", "sector": "Lojistik", "country": "Türkiye", "website": "https://www.netloglogistics.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0222", "brand": "Ekol Lojistik", "sector": "Lojistik", "country": "Türkiye", "website": "https://www.ekol.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0223", "brand": "Borusan Lojistik", "sector": "Lojistik", "country": "Türkiye", "website": "https://www.borusanlojistik.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0224", "brand": "Omsan Lojistik", "sector": "Lojistik", "country": "Türkiye", "website": "https://www.omsan.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0225", "brand": "Mars Logistics", "sector": "Lojistik", "country": "Türkiye", "website": "https://www.marslogistics.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0226", "brand": "Reysaş Lojistik", "sector": "Lojistik", "country": "Türkiye", "website": "https://www.reysas.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0227", "brand": "Horoz Lojistik", "sector": "Lojistik", "country": "Türkiye", "website": "https://www.horoz.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0228", "brand": "Arkas Lojistik", "sector": "Lojistik", "country": "Türkiye", "website": "https://www.arkaslojistik.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0229", "brand": "Alışan Lojistik", "sector": "Lojistik", "country": "Türkiye", "website": "https://www.alisanlojistik.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0230", "brand": "Solmaz", "sector": "Lojistik", "country": "Türkiye", "website": "https://www.solmaz.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0231", "brand": "CEVA Logistics", "sector": "Lojistik", "country": "Fransa", "website": "https://www.cevalogistics.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0232", "brand": "DHL Supply Chain", "sector": "Lojistik", "country": "Almanya", "website": "https://www.dhl.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0233", "brand": "Kuehne+Nagel", "sector": "Lojistik", "country": "İsviçre", "website": "https://www.kuehne-nagel.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0234", "brand": "DB Schenker", "sector": "Lojistik", "country": "Almanya", "website": "https://www.dbschenker.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0235", "brand": "Maersk", "sector": "Lojistik", "country": "Danimarka", "website": "https://www.maersk.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0236", "brand": "DSV", "sector": "Lojistik", "country": "Danimarka", "website": "https://www.dsv.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0237", "brand": "UPS Supply Chain Solutions", "sector": "Lojistik", "country": "ABD", "website": "https://www.ups.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0238", "brand": "FedEx Logistics", "sector": "Lojistik", "country": "ABD", "website": "https://www.fedex.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0239", "brand": "CMA CGM", "sector": "Lojistik", "country": "Fransa", "website": "https://www.cma-cgm.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0240", "brand": "Expeditors", "sector": "Lojistik", "country": "ABD", "website": "https://www.expeditors.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0241", "brand": "Memorial Sağlık Grubu", "sector": "Sağlık", "country": "Türkiye", "website": "https://www.memorial.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0242", "brand": "Acıbadem Sağlık Grubu", "sector": "Sağlık", "country": "Türkiye", "website": "https://www.acibadem.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0243", "brand": "Medical Park", "sector": "Sağlık", "country": "Türkiye", "website": "https://www.medicalpark.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0244", "brand": "Liv Hospital", "sector": "Sağlık", "country": "Türkiye", "website": "https://www.livhospital.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0245", "brand": "Medicana", "sector": "Sağlık", "country": "Türkiye", "website": "https://www.medicana.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0246", "brand": "Florence Nightingale", "sector": "Sağlık", "country": "Türkiye", "website": "https://www.florence.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0247", "brand": "Bayındır Sağlık Grubu", "sector": "Sağlık", "country": "Türkiye", "website": "https://www.bayindirhastanesi.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0248", "brand": "Dünyagöz", "sector": "Sağlık", "country": "Türkiye", "website": "https://www.dunyagoz.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0249", "brand": "DentGroup", "sector": "Sağlık", "country": "Türkiye", "website": "https://www.dentgroup.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0250", "brand": "Moodist", "sector": "Sağlık", "country": "Türkiye", "website": "https://www.moodisthastanesi.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0251", "brand": "Mayo Clinic", "sector": "Sağlık", "country": "ABD", "website": "https://www.mayoclinic.org", "source": "odev01/brands.xlsx"}
+{"id": "brand_0252", "brand": "Cleveland Clinic", "sector": "Sağlık", "country": "ABD", "website": "https://my.clevelandclinic.org", "source": "odev01/brands.xlsx"}
+{"id": "brand_0253", "brand": "Johns Hopkins Medicine", "sector": "Sağlık", "country": "ABD", "website": "https://www.hopkinsmedicine.org", "source": "odev01/brands.xlsx"}
+{"id": "brand_0254", "brand": "HCA Healthcare", "sector": "Sağlık", "country": "ABD", "website": "https://hcahealthcare.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0255", "brand": "Bupa", "sector": "Sağlık", "country": "Birleşik Krallık", "website": "https://www.bupa.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0256", "brand": "Fresenius", "sector": "Sağlık", "country": "Almanya", "website": "https://www.fresenius.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0257", "brand": "Ramsay Health Care", "sector": "Sağlık", "country": "Avustralya", "website": "https://www.ramsayhealth.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0258", "brand": "Apollo Hospitals", "sector": "Sağlık", "country": "Hindistan", "website": "https://www.apollohospitals.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0259", "brand": "Fortis Healthcare", "sector": "Sağlık", "country": "Hindistan", "website": "https://www.fortishealthcare.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0260", "brand": "Mediclinic", "sector": "Sağlık", "country": "Güney Afrika", "website": "https://www.mediclinic.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0261", "brand": "Ankara Bilkent Şehir Hastanesi", "sector": "Hastaneler", "country": "Türkiye", "website": "https://ankarasehir.saglik.gov.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0262", "brand": "Ankara Etlik Şehir Hastanesi", "sector": "Hastaneler", "country": "Türkiye", "website": "https://etliksehir.saglik.gov.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0263", "brand": "Ankara Güven Hastanesi", "sector": "Hastaneler", "country": "Türkiye", "website": "https://www.guven.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0264", "brand": "Memorial Ankara Hastanesi", "sector": "Hastaneler", "country": "Türkiye", "website": "https://www.memorial.com.tr/hastaneler-ve-tip-merkezleri/ankara", "source": "odev01/brands.xlsx"}
+{"id": "brand_0265", "brand": "Medicana International Ankara Hastanesi", "sector": "Hastaneler", "country": "Türkiye", "website": "https://www.medicana.com.tr/international-ankara", "source": "odev01/brands.xlsx"}
+{"id": "brand_0266", "brand": "Liv Hospital Ankara", "sector": "Hastaneler", "country": "Türkiye", "website": "https://www.livhospital.com/liv-hospital-ankara", "source": "odev01/brands.xlsx"}
+{"id": "brand_0267", "brand": "Başkent Üniversitesi Ankara Hastanesi", "sector": "Hastaneler", "country": "Türkiye", "website": "https://www.baskent.edu.tr/tr/icerik/saglik-kuruluslari/ankara-hastanesi/22", "source": "odev01/brands.xlsx"}
+{"id": "brand_0268", "brand": "TOBB ETÜ Tıp Fakültesi Hastanesi", "sector": "Hastaneler", "country": "Türkiye", "website": "https://hastane.etu.edu.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0269", "brand": "Hacettepe Üniversitesi Hastaneleri", "sector": "Hastaneler", "country": "Türkiye", "website": "https://hastane.hacettepe.edu.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0270", "brand": "Gazi Üniversitesi Hastanesi", "sector": "Hastaneler", "country": "Türkiye", "website": "https://hastane.gazi.edu.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0271", "brand": "Ankara Üniversitesi İbni Sina Hastanesi", "sector": "Hastaneler", "country": "Türkiye", "website": "https://hastane.ankara.edu.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0272", "brand": "Ankara Üniversitesi Cebeci Hastanesi", "sector": "Hastaneler", "country": "Türkiye", "website": "https://hastane.ankara.edu.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0273", "brand": "Koru Ankara Hastanesi", "sector": "Hastaneler", "country": "Türkiye", "website": "https://www.koruhastanesi.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0274", "brand": "Lokman Hekim Akay Hastanesi", "sector": "Hastaneler", "country": "Türkiye", "website": "https://www.lokmanhekim.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0275", "brand": "Medical Park Ankara Hastanesi", "sector": "Hastaneler", "country": "Türkiye", "website": "https://www.medicalpark.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0276", "brand": "Acıbadem Ankara Hastanesi", "sector": "Hastaneler", "country": "Türkiye", "website": "https://www.acibadem.com.tr/hastane/ankara-hastanesi", "source": "odev01/brands.xlsx"}
+{"id": "brand_0277", "brand": "Bayındır Söğütözü Hastanesi", "sector": "Hastaneler", "country": "Türkiye", "website": "https://www.bayindirhastanesi.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0278", "brand": "Ankara Eğitim ve Araştırma Hastanesi", "sector": "Hastaneler", "country": "Türkiye", "website": "https://ankaraism.saglik.gov.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0279", "brand": "Acıbadem Maslak Hastanesi", "sector": "Hastaneler", "country": "Türkiye", "website": "https://www.acibadem.com.tr/hastane/maslak-hastanesi", "source": "odev01/brands.xlsx"}
+{"id": "brand_0280", "brand": "Koç Üniversitesi Hastanesi", "sector": "Hastaneler", "country": "Türkiye", "website": "https://www.kuh.ku.edu.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0281", "brand": "Abdi İbrahim", "sector": "İlaç", "country": "Türkiye", "website": "https://www.abdiibrahim.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0282", "brand": "Deva Holding", "sector": "İlaç", "country": "Türkiye", "website": "https://www.deva.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0283", "brand": "Nobel İlaç", "sector": "İlaç", "country": "Türkiye", "website": "https://www.nobel.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0284", "brand": "Bilim İlaç", "sector": "İlaç", "country": "Türkiye", "website": "https://www.bilimilac.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0285", "brand": "Santa Farma", "sector": "İlaç", "country": "Türkiye", "website": "https://www.santafarma.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0286", "brand": "Koçak Farma", "sector": "İlaç", "country": "Türkiye", "website": "https://www.kocakfarma.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0287", "brand": "World Medicine", "sector": "İlaç", "country": "Türkiye", "website": "https://www.worldmedicine.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0288", "brand": "İLKO İlaç", "sector": "İlaç", "country": "Türkiye", "website": "https://www.ilko.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0289", "brand": "Gen İlaç", "sector": "İlaç", "country": "Türkiye", "website": "https://www.genilac.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0290", "brand": "Atabay", "sector": "İlaç", "country": "Türkiye", "website": "https://www.atabay.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0291", "brand": "Pfizer", "sector": "İlaç", "country": "ABD", "website": "https://www.pfizer.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0292", "brand": "Novartis", "sector": "İlaç", "country": "İsviçre", "website": "https://www.novartis.com/tr-tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0293", "brand": "Roche", "sector": "İlaç", "country": "İsviçre", "website": "https://www.roche.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0294", "brand": "Sanofi", "sector": "İlaç", "country": "Fransa", "website": "https://www.sanofi.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0295", "brand": "Bayer", "sector": "İlaç", "country": "Almanya", "website": "https://www.bayer.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0296", "brand": "AstraZeneca", "sector": "İlaç", "country": "Birleşik Krallık", "website": "https://www.astrazeneca.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0297", "brand": "GSK", "sector": "İlaç", "country": "Birleşik Krallık", "website": "https://tr.gsk.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0298", "brand": "Eli Lilly", "sector": "İlaç", "country": "ABD", "website": "https://www.lilly.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0299", "brand": "Merck", "sector": "İlaç", "country": "ABD", "website": "https://www.merck.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0300", "brand": "Takeda", "sector": "İlaç", "country": "Japonya", "website": "https://www.takeda.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0301", "brand": "Vestel", "sector": "Teknoloji", "country": "Türkiye", "website": "https://www.vestel.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0302", "brand": "Arçelik", "sector": "Teknoloji", "country": "Türkiye", "website": "https://www.arcelik.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0303", "brand": "Casper", "sector": "Teknoloji", "country": "Türkiye", "website": "https://www.casper.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0304", "brand": "Monster Notebook", "sector": "Teknoloji", "country": "Türkiye", "website": "https://www.monsternotebook.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0305", "brand": "Reeder", "sector": "Teknoloji", "country": "Türkiye", "website": "https://reeder.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0306", "brand": "General Mobile", "sector": "Teknoloji", "country": "Türkiye", "website": "https://www.generalmobile.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0307", "brand": "Teknosa", "sector": "Teknoloji", "country": "Türkiye", "website": "https://www.teknosa.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0308", "brand": "Apple", "sector": "Teknoloji", "country": "ABD", "website": "https://www.apple.com/tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0309", "brand": "Samsung", "sector": "Teknoloji", "country": "Güney Kore", "website": "https://www.samsung.com/tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0310", "brand": "Microsoft", "sector": "Teknoloji", "country": "ABD", "website": "https://www.microsoft.com/tr-tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0311", "brand": "Google", "sector": "Teknoloji", "country": "ABD", "website": "https://www.google.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0312", "brand": "Sony", "sector": "Teknoloji", "country": "Japonya", "website": "https://www.sony.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0313", "brand": "LG", "sector": "Teknoloji", "country": "Güney Kore", "website": "https://www.lg.com/tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0314", "brand": "Huawei", "sector": "Teknoloji", "country": "Çin", "website": "https://consumer.huawei.com/tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0315", "brand": "Xiaomi", "sector": "Teknoloji", "country": "Çin", "website": "https://www.mi.com/tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0316", "brand": "Lenovo", "sector": "Teknoloji", "country": "Çin", "website": "https://www.lenovo.com/tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0317", "brand": "Dell", "sector": "Teknoloji", "country": "ABD", "website": "https://www.dell.com/tr-tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0318", "brand": "HP", "sector": "Teknoloji", "country": "ABD", "website": "https://www.hp.com/tr-tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0319", "brand": "Asus", "sector": "Teknoloji", "country": "Tayvan", "website": "https://www.asus.com/tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0320", "brand": "Acer", "sector": "Teknoloji", "country": "Tayvan", "website": "https://www.acer.com/tr-tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0321", "brand": "Logo Yazılım", "sector": "Yazılım", "country": "Türkiye", "website": "https://www.logo.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0322", "brand": "Mikro Yazılım", "sector": "Yazılım", "country": "Türkiye", "website": "https://www.mikro.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0323", "brand": "Nebim", "sector": "Yazılım", "country": "Türkiye", "website": "https://www.nebim.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0324", "brand": "Uyumsoft", "sector": "Yazılım", "country": "Türkiye", "website": "https://www.uyumsoft.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0325", "brand": "Paraşüt", "sector": "Yazılım", "country": "Türkiye", "website": "https://www.parasut.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0326", "brand": "KolayBi", "sector": "Yazılım", "country": "Türkiye", "website": "https://www.kolaybi.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0327", "brand": "Etiya", "sector": "Yazılım", "country": "Türkiye", "website": "https://www.etiya.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0328", "brand": "Softtech", "sector": "Yazılım", "country": "Türkiye", "website": "https://www.softtech.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0329", "brand": "Netsis", "sector": "Yazılım", "country": "Türkiye", "website": "https://www.logo.com.tr/cozumler/netsis", "source": "odev01/brands.xlsx"}
+{"id": "brand_0330", "brand": "CBKSoft", "sector": "Yazılım", "country": "Türkiye", "website": "https://www.cbksoft.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0331", "brand": "Microsoft", "sector": "Yazılım", "country": "ABD", "website": "https://www.microsoft.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0332", "brand": "SAP", "sector": "Yazılım", "country": "Almanya", "website": "https://www.sap.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0333", "brand": "Oracle", "sector": "Yazılım", "country": "ABD", "website": "https://www.oracle.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0334", "brand": "Salesforce", "sector": "Yazılım", "country": "ABD", "website": "https://www.salesforce.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0335", "brand": "Adobe", "sector": "Yazılım", "country": "ABD", "website": "https://www.adobe.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0336", "brand": "Atlassian", "sector": "Yazılım", "country": "Avustralya", "website": "https://www.atlassian.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0337", "brand": "ServiceNow", "sector": "Yazılım", "country": "ABD", "website": "https://www.servicenow.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0338", "brand": "Intuit", "sector": "Yazılım", "country": "ABD", "website": "https://www.intuit.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0339", "brand": "Autodesk", "sector": "Yazılım", "country": "ABD", "website": "https://www.autodesk.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0340", "brand": "Zoho", "sector": "Yazılım", "country": "Hindistan", "website": "https://www.zoho.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0341", "brand": "Turkcell Bulut", "sector": "Bulut Servisleri", "country": "Türkiye", "website": "https://www.turkcell.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0342", "brand": "Türk Telekom Bulut", "sector": "Bulut Servisleri", "country": "Türkiye", "website": "https://www.turktelekom.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0343", "brand": "Vodafone Business Cloud", "sector": "Bulut Servisleri", "country": "Birleşik Krallık", "website": "https://www.vodafone.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0344", "brand": "Bulutistan", "sector": "Bulut Servisleri", "country": "Türkiye", "website": "https://bulutistan.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0345", "brand": "Radore", "sector": "Bulut Servisleri", "country": "Türkiye", "website": "https://radore.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0346", "brand": "DorukNet", "sector": "Bulut Servisleri", "country": "Türkiye", "website": "https://www.doruk.net.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0347", "brand": "Turhost", "sector": "Bulut Servisleri", "country": "Türkiye", "website": "https://www.turhost.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0348", "brand": "Veridyen", "sector": "Bulut Servisleri", "country": "Türkiye", "website": "https://www.veridyen.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0349", "brand": "Natro", "sector": "Bulut Servisleri", "country": "Türkiye", "website": "https://www.natro.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0350", "brand": "Guzel Hosting", "sector": "Bulut Servisleri", "country": "Türkiye", "website": "https://www.guzel.net.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0351", "brand": "AWS", "sector": "Bulut Servisleri", "country": "ABD", "website": "https://aws.amazon.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0352", "brand": "Microsoft Azure", "sector": "Bulut Servisleri", "country": "ABD", "website": "https://azure.microsoft.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0353", "brand": "Google Cloud", "sector": "Bulut Servisleri", "country": "ABD", "website": "https://cloud.google.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0354", "brand": "Oracle Cloud", "sector": "Bulut Servisleri", "country": "ABD", "website": "https://www.oracle.com/cloud", "source": "odev01/brands.xlsx"}
+{"id": "brand_0355", "brand": "IBM Cloud", "sector": "Bulut Servisleri", "country": "ABD", "website": "https://www.ibm.com/cloud", "source": "odev01/brands.xlsx"}
+{"id": "brand_0356", "brand": "Cloudflare", "sector": "Bulut Servisleri", "country": "ABD", "website": "https://www.cloudflare.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0357", "brand": "DigitalOcean", "sector": "Bulut Servisleri", "country": "ABD", "website": "https://www.digitalocean.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0358", "brand": "Alibaba Cloud", "sector": "Bulut Servisleri", "country": "Çin", "website": "https://www.alibabacloud.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0359", "brand": "OVHcloud", "sector": "Bulut Servisleri", "country": "Fransa", "website": "https://www.ovhcloud.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0360", "brand": "Hetzner", "sector": "Bulut Servisleri", "country": "Almanya", "website": "https://www.hetzner.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0361", "brand": "Tazi AI", "sector": "Yapay Zeka", "country": "Türkiye", "website": "https://tazi.ai", "source": "odev01/brands.xlsx"}
+{"id": "brand_0362", "brand": "Sestek", "sector": "Yapay Zeka", "country": "Türkiye", "website": "https://www.sestek.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0363", "brand": "CBOT", "sector": "Yapay Zeka", "country": "Türkiye", "website": "https://www.cbot.ai", "source": "odev01/brands.xlsx"}
+{"id": "brand_0364", "brand": "Vispera", "sector": "Yapay Zeka", "country": "Türkiye", "website": "https://vispera.co", "source": "odev01/brands.xlsx"}
+{"id": "brand_0365", "brand": "Insider", "sector": "Yapay Zeka", "country": "Türkiye", "website": "https://useinsider.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0366", "brand": "Picus Security", "sector": "Yapay Zeka", "country": "Türkiye", "website": "https://www.picussecurity.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0367", "brand": "Büyütech", "sector": "Yapay Zeka", "country": "Türkiye", "website": "https://www.buyutech.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0368", "brand": "OpenAI", "sector": "Yapay Zeka", "country": "ABD", "website": "https://openai.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0369", "brand": "Google DeepMind", "sector": "Yapay Zeka", "country": "Birleşik Krallık", "website": "https://deepmind.google", "source": "odev01/brands.xlsx"}
+{"id": "brand_0370", "brand": "Anthropic", "sector": "Yapay Zeka", "country": "ABD", "website": "https://www.anthropic.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0371", "brand": "Microsoft AI", "sector": "Yapay Zeka", "country": "ABD", "website": "https://www.microsoft.com/ai", "source": "odev01/brands.xlsx"}
+{"id": "brand_0372", "brand": "Meta AI", "sector": "Yapay Zeka", "country": "ABD", "website": "https://ai.meta.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0373", "brand": "Mistral AI", "sector": "Yapay Zeka", "country": "Fransa", "website": "https://mistral.ai", "source": "odev01/brands.xlsx"}
+{"id": "brand_0374", "brand": "Cohere", "sector": "Yapay Zeka", "country": "Kanada", "website": "https://cohere.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0375", "brand": "Hugging Face", "sector": "Yapay Zeka", "country": "ABD", "website": "https://huggingface.co", "source": "odev01/brands.xlsx"}
+{"id": "brand_0376", "brand": "Perplexity", "sector": "Yapay Zeka", "country": "ABD", "website": "https://www.perplexity.ai", "source": "odev01/brands.xlsx"}
+{"id": "brand_0377", "brand": "xAI", "sector": "Yapay Zeka", "country": "ABD", "website": "https://x.ai", "source": "odev01/brands.xlsx"}
+{"id": "brand_0378", "brand": "Stability AI", "sector": "Yapay Zeka", "country": "Birleşik Krallık", "website": "https://stability.ai", "source": "odev01/brands.xlsx"}
+{"id": "brand_0379", "brand": "Midjourney", "sector": "Yapay Zeka", "country": "ABD", "website": "https://www.midjourney.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0380", "brand": "DeepSeek", "sector": "Yapay Zeka", "country": "Çin", "website": "https://www.deepseek.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0381", "brand": "TED Ankara Koleji Vakfı Özel Lisesi", "sector": "Eğitim", "country": "Türkiye", "website": "https://www.tedankara.k12.tr/index.php/tr/lise", "source": "odev01/brands.xlsx"}
+{"id": "brand_0382", "brand": "Robert Kolej", "sector": "Eğitim", "country": "Türkiye", "website": "https://website.robcol.k12.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0383", "brand": "Üsküdar Amerikan Lisesi", "sector": "Eğitim", "country": "Türkiye", "website": "https://www.uaa.k12.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0384", "brand": "Tarsus Amerikan Koleji", "sector": "Eğitim", "country": "Türkiye", "website": "https://www.tac.k12.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0385", "brand": "İzmir Amerikan Koleji", "sector": "Eğitim", "country": "Türkiye", "website": "https://www.aci.k12.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0386", "brand": "Koç Lisesi", "sector": "Eğitim", "country": "Türkiye", "website": "https://www.kocschool.k12.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0387", "brand": "Hisar Lisesi", "sector": "Eğitim", "country": "Türkiye", "website": "https://tur.hisarschool.k12.tr/okullar-lise/", "source": "odev01/brands.xlsx"}
+{"id": "brand_0388", "brand": "ENKA Lisesi", "sector": "Eğitim", "country": "Türkiye", "website": "https://www.enka.k12.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0389", "brand": "ODTÜ Geliştirme Vakfı Özel Lisesi", "sector": "Eğitim", "country": "Türkiye", "website": "https://www.odtugvo.k12.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0390", "brand": "Bahçeşehir Koleji Anadolu Lisesi", "sector": "Eğitim", "country": "Türkiye", "website": "https://bahcesehir.k12.tr/lise", "source": "odev01/brands.xlsx"}
+{"id": "brand_0391", "brand": "Bilfen Liseleri", "sector": "Eğitim", "country": "Türkiye", "website": "https://www.bilfen.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0392", "brand": "MEF Lisesi", "sector": "Eğitim", "country": "Türkiye", "website": "https://www.mef.k12.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0393", "brand": "Galatasaray Lisesi", "sector": "Eğitim", "country": "Türkiye", "website": "https://gsl.gsu.edu.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0394", "brand": "İstanbul Erkek Lisesi", "sector": "Eğitim", "country": "Türkiye", "website": "https://istanbulerkeklisesi.meb.k12.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0395", "brand": "Kabataş Erkek Lisesi", "sector": "Eğitim", "country": "Türkiye", "website": "https://kabataserkeklisesi.meb.k12.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0396", "brand": "Ankara Fen Lisesi", "sector": "Eğitim", "country": "Türkiye", "website": "https://ankarafenlisesi.meb.k12.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0397", "brand": "Ankara Atatürk Lisesi", "sector": "Eğitim", "country": "Türkiye", "website": "https://ankaraataturklisesi.meb.k12.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0398", "brand": "İstanbul Saint-Joseph Fransız Lisesi", "sector": "Eğitim", "country": "Türkiye", "website": "https://www.sj.k12.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0399", "brand": "Notre Dame de Sion Fransız Lisesi", "sector": "Eğitim", "country": "Türkiye", "website": "https://www.nds.k12.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0400", "brand": "İstanbul Alman Lisesi", "sector": "Eğitim", "country": "Türkiye", "website": "https://www.ds-istanbul.de", "source": "odev01/brands.xlsx"}
+{"id": "brand_0401", "brand": "ODTÜ", "sector": "Üniversiteler", "country": "Türkiye", "website": "https://www.metu.edu.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0402", "brand": "Boğaziçi Üniversitesi", "sector": "Üniversiteler", "country": "Türkiye", "website": "https://bogazici.edu.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0403", "brand": "İTÜ", "sector": "Üniversiteler", "country": "Türkiye", "website": "https://www.itu.edu.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0404", "brand": "Hacettepe Üniversitesi", "sector": "Üniversiteler", "country": "Türkiye", "website": "https://www.hacettepe.edu.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0405", "brand": "Ankara Üniversitesi", "sector": "Üniversiteler", "country": "Türkiye", "website": "https://www.ankara.edu.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0406", "brand": "Bilkent Üniversitesi", "sector": "Üniversiteler", "country": "Türkiye", "website": "https://www.bilkent.edu.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0407", "brand": "Koç Üniversitesi", "sector": "Üniversiteler", "country": "Türkiye", "website": "https://www.ku.edu.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0408", "brand": "Sabancı Üniversitesi", "sector": "Üniversiteler", "country": "Türkiye", "website": "https://www.sabanciuniv.edu", "source": "odev01/brands.xlsx"}
+{"id": "brand_0409", "brand": "TED Üniversitesi", "sector": "Üniversiteler", "country": "Türkiye", "website": "https://www.tedu.edu.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0410", "brand": "Yıldız Teknik Üniversitesi", "sector": "Üniversiteler", "country": "Türkiye", "website": "https://www.yildiz.edu.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0411", "brand": "Harvard University", "sector": "Üniversiteler", "country": "ABD", "website": "https://www.harvard.edu", "source": "odev01/brands.xlsx"}
+{"id": "brand_0412", "brand": "MIT", "sector": "Üniversiteler", "country": "ABD", "website": "https://www.mit.edu", "source": "odev01/brands.xlsx"}
+{"id": "brand_0413", "brand": "Stanford University", "sector": "Üniversiteler", "country": "ABD", "website": "https://www.stanford.edu", "source": "odev01/brands.xlsx"}
+{"id": "brand_0414", "brand": "University of Oxford", "sector": "Üniversiteler", "country": "Birleşik Krallık", "website": "https://www.ox.ac.uk", "source": "odev01/brands.xlsx"}
+{"id": "brand_0415", "brand": "University of Cambridge", "sector": "Üniversiteler", "country": "Birleşik Krallık", "website": "https://www.cam.ac.uk", "source": "odev01/brands.xlsx"}
+{"id": "brand_0416", "brand": "ETH Zürich", "sector": "Üniversiteler", "country": "İsviçre", "website": "https://ethz.ch", "source": "odev01/brands.xlsx"}
+{"id": "brand_0417", "brand": "Imperial College London", "sector": "Üniversiteler", "country": "Birleşik Krallık", "website": "https://www.imperial.ac.uk", "source": "odev01/brands.xlsx"}
+{"id": "brand_0418", "brand": "UCL", "sector": "Üniversiteler", "country": "Birleşik Krallık", "website": "https://www.ucl.ac.uk", "source": "odev01/brands.xlsx"}
+{"id": "brand_0419", "brand": "Politecnico di Milano", "sector": "Üniversiteler", "country": "İtalya", "website": "https://www.polimi.it", "source": "odev01/brands.xlsx"}
+{"id": "brand_0420", "brand": "Università Cattolica", "sector": "Üniversiteler", "country": "İtalya", "website": "https://www.unicatt.it", "source": "odev01/brands.xlsx"}
+{"id": "brand_0421", "brand": "Enerjisa Enerji", "sector": "Enerji", "country": "Türkiye", "website": "https://www.enerjisa.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0422", "brand": "Aksa Enerji", "sector": "Enerji", "country": "Türkiye", "website": "https://www.aksaenerji.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0423", "brand": "Zorlu Enerji", "sector": "Enerji", "country": "Türkiye", "website": "https://www.zorluenerji.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0424", "brand": "Kalyon Enerji", "sector": "Enerji", "country": "Türkiye", "website": "https://www.kalyonenerji.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0425", "brand": "Limak Enerji", "sector": "Enerji", "country": "Türkiye", "website": "https://www.limakenerji.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0426", "brand": "Akenerji", "sector": "Enerji", "country": "Türkiye", "website": "https://www.akenerji.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0427", "brand": "Aydem Enerji", "sector": "Enerji", "country": "Türkiye", "website": "https://www.aydemenerji.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0428", "brand": "Eksim Enerji", "sector": "Enerji", "country": "Türkiye", "website": "https://www.eksim.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0429", "brand": "Güriş", "sector": "Enerji", "country": "Türkiye", "website": "https://www.guris.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0430", "brand": "Borusan EnBW Enerji", "sector": "Enerji", "country": "Türkiye", "website": "https://www.borusanenbw.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0431", "brand": "Shell Energy", "sector": "Enerji", "country": "Birleşik Krallık", "website": "https://www.shell.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0432", "brand": "BP", "sector": "Enerji", "country": "Birleşik Krallık", "website": "https://www.bp.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0433", "brand": "TotalEnergies", "sector": "Enerji", "country": "Fransa", "website": "https://totalenergies.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0434", "brand": "Enel", "sector": "Enerji", "country": "İtalya", "website": "https://www.enel.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0435", "brand": "Iberdrola", "sector": "Enerji", "country": "İspanya", "website": "https://www.iberdrola.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0436", "brand": "ENGIE", "sector": "Enerji", "country": "Fransa", "website": "https://www.engie.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0437", "brand": "RWE", "sector": "Enerji", "country": "Almanya", "website": "https://www.rwe.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0438", "brand": "Ørsted", "sector": "Enerji", "country": "Danimarka", "website": "https://orsted.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0439", "brand": "NextEra Energy", "sector": "Enerji", "country": "ABD", "website": "https://www.nexteraenergy.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0440", "brand": "EDF", "sector": "Enerji", "country": "Fransa", "website": "https://www.edf.fr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0441", "brand": "Petrol Ofisi", "sector": "Akaryakıt", "country": "Türkiye", "website": "https://www.petrolofisi.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0442", "brand": "Opet", "sector": "Akaryakıt", "country": "Türkiye", "website": "https://www.opet.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0443", "brand": "Aytemiz", "sector": "Akaryakıt", "country": "Türkiye", "website": "https://www.aytemiz.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0444", "brand": "Türkiye Petrolleri", "sector": "Akaryakıt", "country": "Türkiye", "website": "https://www.tppd.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0445", "brand": "Alpet", "sector": "Akaryakıt", "country": "Türkiye", "website": "https://www.alpet.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0446", "brand": "Kadoil", "sector": "Akaryakıt", "country": "Türkiye", "website": "https://www.kadoil.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0447", "brand": "Lukoil Türkiye", "sector": "Akaryakıt", "country": "Rusya", "website": "https://www.lukoil.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0448", "brand": "Sunpet", "sector": "Akaryakıt", "country": "Türkiye", "website": "https://www.sunpettr.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0449", "brand": "Soil", "sector": "Akaryakıt", "country": "Türkiye", "website": "https://www.soil.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0450", "brand": "Petline", "sector": "Akaryakıt", "country": "Türkiye", "website": "https://www.petline.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0451", "brand": "Shell", "sector": "Akaryakıt", "country": "Birleşik Krallık", "website": "https://www.shell.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0452", "brand": "BP", "sector": "Akaryakıt", "country": "Birleşik Krallık", "website": "https://www.bp.com/tr_tr/turkey/home.html", "source": "odev01/brands.xlsx"}
+{"id": "brand_0453", "brand": "TotalEnergies", "sector": "Akaryakıt", "country": "Fransa", "website": "https://totalenergies.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0454", "brand": "ExxonMobil", "sector": "Akaryakıt", "country": "ABD", "website": "https://corporate.exxonmobil.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0455", "brand": "Chevron", "sector": "Akaryakıt", "country": "ABD", "website": "https://www.chevron.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0456", "brand": "Eni", "sector": "Akaryakıt", "country": "İtalya", "website": "https://www.eni.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0457", "brand": "Repsol", "sector": "Akaryakıt", "country": "İspanya", "website": "https://www.repsol.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0458", "brand": "Q8", "sector": "Akaryakıt", "country": "Kuveyt", "website": "https://www.q8.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0459", "brand": "Circle K", "sector": "Akaryakıt", "country": "Kanada", "website": "https://www.circlek.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0460", "brand": "Aral", "sector": "Akaryakıt", "country": "Almanya", "website": "https://www.aral.de", "source": "odev01/brands.xlsx"}
+{"id": "brand_0461", "brand": "LC Waikiki", "sector": "Giyim", "country": "Türkiye", "website": "https://www.lcwaikiki.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0462", "brand": "Koton", "sector": "Giyim", "country": "Türkiye", "website": "https://www.koton.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0463", "brand": "Mavi", "sector": "Giyim", "country": "Türkiye", "website": "https://www.mavi.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0464", "brand": "DeFacto", "sector": "Giyim", "country": "Türkiye", "website": "https://www.defacto.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0465", "brand": "Kiğılı", "sector": "Giyim", "country": "Türkiye", "website": "https://www.kigili.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0466", "brand": "Sarar", "sector": "Giyim", "country": "Türkiye", "website": "https://www.sarar.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0467", "brand": "D'S damat", "sector": "Giyim", "country": "Türkiye", "website": "https://www.dsdamat.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0468", "brand": "Altınyıldız Classics", "sector": "Giyim", "country": "Türkiye", "website": "https://www.altinyildizclassics.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0469", "brand": "Colin's", "sector": "Giyim", "country": "Türkiye", "website": "https://www.colins.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0470", "brand": "Penti", "sector": "Giyim", "country": "Türkiye", "website": "https://www.penti.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0471", "brand": "Zara", "sector": "Giyim", "country": "İspanya", "website": "https://www.zara.com/tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0472", "brand": "H&M", "sector": "Giyim", "country": "İsveç", "website": "https://www2.hm.com/tr_tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0473", "brand": "Mango", "sector": "Giyim", "country": "İspanya", "website": "https://shop.mango.com/tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0474", "brand": "Uniqlo", "sector": "Giyim", "country": "Japonya", "website": "https://www.uniqlo.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0475", "brand": "Massimo Dutti", "sector": "Giyim", "country": "İspanya", "website": "https://www.massimodutti.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0476", "brand": "Pull&Bear", "sector": "Giyim", "country": "İspanya", "website": "https://www.pullandbear.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0477", "brand": "Bershka", "sector": "Giyim", "country": "İspanya", "website": "https://www.bershka.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0478", "brand": "Levi's", "sector": "Giyim", "country": "ABD", "website": "https://www.levi.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0479", "brand": "Tommy Hilfiger", "sector": "Giyim", "country": "ABD", "website": "https://tr.tommy.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0480", "brand": "Calvin Klein", "sector": "Giyim", "country": "ABD", "website": "https://www.calvinklein.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0481", "brand": "Lescon", "sector": "Spor Markaları", "country": "Türkiye", "website": "https://www.lescon.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0482", "brand": "Kinetix", "sector": "Spor Markaları", "country": "Türkiye", "website": "https://www.kinetix.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0483", "brand": "Hummel Türkiye", "sector": "Spor Markaları", "country": "Danimarka", "website": "https://www.hummel.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0484", "brand": "Lotto Türkiye", "sector": "Spor Markaları", "country": "İtalya", "website": "https://www.lotto.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0485", "brand": "Sportive", "sector": "Spor Markaları", "country": "Türkiye", "website": "https://www.sportive.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0486", "brand": "Bilcee", "sector": "Spor Markaları", "country": "Türkiye", "website": "https://www.bilcee.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0487", "brand": "Slazenger Türkiye", "sector": "Spor Markaları", "country": "Birleşik Krallık", "website": "https://www.slazenger.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0488", "brand": "Nike", "sector": "Spor Markaları", "country": "ABD", "website": "https://www.nike.com/tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0489", "brand": "Adidas", "sector": "Spor Markaları", "country": "Almanya", "website": "https://www.adidas.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0490", "brand": "Puma", "sector": "Spor Markaları", "country": "Almanya", "website": "https://tr.puma.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0491", "brand": "Under Armour", "sector": "Spor Markaları", "country": "ABD", "website": "https://www.underarmour.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0492", "brand": "New Balance", "sector": "Spor Markaları", "country": "ABD", "website": "https://www.newbalance.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0493", "brand": "Reebok", "sector": "Spor Markaları", "country": "ABD", "website": "https://www.reebok.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0494", "brand": "Asics", "sector": "Spor Markaları", "country": "Japonya", "website": "https://www.asics.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0495", "brand": "Salomon", "sector": "Spor Markaları", "country": "Fransa", "website": "https://www.salomon.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0496", "brand": "The North Face", "sector": "Spor Markaları", "country": "ABD", "website": "https://www.thenorthface.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0497", "brand": "Decathlon", "sector": "Spor Markaları", "country": "Fransa", "website": "https://www.decathlon.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0498", "brand": "Columbia", "sector": "Spor Markaları", "country": "ABD", "website": "https://www.columbia.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0499", "brand": "Skechers", "sector": "Spor Markaları", "country": "ABD", "website": "https://www.skechers.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0500", "brand": "Lululemon", "sector": "Spor Markaları", "country": "Kanada", "website": "https://shop.lululemon.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0501", "brand": "Gratis", "sector": "Kozmetik", "country": "Türkiye", "website": "https://www.gratis.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0502", "brand": "Watsons Türkiye", "sector": "Kozmetik", "country": "Hong Kong", "website": "https://www.watsons.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0503", "brand": "Flormar", "sector": "Kozmetik", "country": "Türkiye", "website": "https://www.flormar.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0504", "brand": "Golden Rose", "sector": "Kozmetik", "country": "Türkiye", "website": "https://www.goldenrose.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0505", "brand": "Farmasi", "sector": "Kozmetik", "country": "Türkiye", "website": "https://www.farmasi.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0506", "brand": "Pastel", "sector": "Kozmetik", "country": "Türkiye", "website": "https://www.pastelcosmetics.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0507", "brand": "Note Cosmetics", "sector": "Kozmetik", "country": "Türkiye", "website": "https://notecosmetics.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0508", "brand": "Atelier Rebul", "sector": "Kozmetik", "country": "Türkiye", "website": "https://www.atelierrebul.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0509", "brand": "Eyüp Sabri Tuncer", "sector": "Kozmetik", "country": "Türkiye", "website": "https://www.eyupsabrituncer.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0510", "brand": "Dalan", "sector": "Kozmetik", "country": "Türkiye", "website": "https://www.dalan.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0511", "brand": "L'Oréal", "sector": "Kozmetik", "country": "Fransa", "website": "https://www.loreal.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0512", "brand": "Maybelline", "sector": "Kozmetik", "country": "ABD", "website": "https://www.maybelline.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0513", "brand": "MAC", "sector": "Kozmetik", "country": "ABD", "website": "https://www.maccosmetics.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0514", "brand": "NARS", "sector": "Kozmetik", "country": "ABD", "website": "https://www.narscosmetics.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0515", "brand": "Estée Lauder", "sector": "Kozmetik", "country": "ABD", "website": "https://www.esteelauder.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0516", "brand": "Clinique", "sector": "Kozmetik", "country": "ABD", "website": "https://www.clinique.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0517", "brand": "Sephora", "sector": "Kozmetik", "country": "Fransa", "website": "https://www.sephora.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0518", "brand": "The Body Shop", "sector": "Kozmetik", "country": "Birleşik Krallık", "website": "https://www.thebodyshop.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0519", "brand": "Kiehl's", "sector": "Kozmetik", "country": "ABD", "website": "https://www.kiehls.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0520", "brand": "La Roche-Posay", "sector": "Kozmetik", "country": "Fransa", "website": "https://www.larocheposay.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0521", "brand": "İstikbal", "sector": "Mobilya", "country": "Türkiye", "website": "https://www.istikbal.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0522", "brand": "Bellona", "sector": "Mobilya", "country": "Türkiye", "website": "https://www.bellona.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0523", "brand": "Doğtaş", "sector": "Mobilya", "country": "Türkiye", "website": "https://www.dogtas.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0524", "brand": "Kelebek Mobilya", "sector": "Mobilya", "country": "Türkiye", "website": "https://www.kelebek.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0525", "brand": "Enza Home", "sector": "Mobilya", "country": "Türkiye", "website": "https://www.enzahome.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0526", "brand": "Çilek", "sector": "Mobilya", "country": "Türkiye", "website": "https://www.cilek.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0527", "brand": "Alfemo", "sector": "Mobilya", "country": "Türkiye", "website": "https://www.alfemo.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0528", "brand": "Modalife", "sector": "Mobilya", "country": "Türkiye", "website": "https://www.modalife.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0529", "brand": "Vivense", "sector": "Mobilya", "country": "Türkiye", "website": "https://www.vivense.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0530", "brand": "Lazzoni", "sector": "Mobilya", "country": "Türkiye", "website": "https://www.lazzoni.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0531", "brand": "IKEA", "sector": "Mobilya", "country": "İsveç", "website": "https://www.ikea.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0532", "brand": "Ashley Furniture", "sector": "Mobilya", "country": "ABD", "website": "https://www.ashleyfurniture.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0533", "brand": "Natuzzi", "sector": "Mobilya", "country": "İtalya", "website": "https://www.natuzzi.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0534", "brand": "BoConcept", "sector": "Mobilya", "country": "Danimarka", "website": "https://www.boconcept.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0535", "brand": "Roche Bobois", "sector": "Mobilya", "country": "Fransa", "website": "https://www.roche-bobois.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0536", "brand": "Herman Miller", "sector": "Mobilya", "country": "ABD", "website": "https://www.hermanmiller.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0537", "brand": "Steelcase", "sector": "Mobilya", "country": "ABD", "website": "https://www.steelcase.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0538", "brand": "West Elm", "sector": "Mobilya", "country": "ABD", "website": "https://www.westelm.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0539", "brand": "Pottery Barn", "sector": "Mobilya", "country": "ABD", "website": "https://www.potterybarn.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0540", "brand": "Muuto", "sector": "Mobilya", "country": "Danimarka", "website": "https://www.muuto.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0541", "brand": "Arçelik", "sector": "Beyaz Eşya", "country": "Türkiye", "website": "https://www.arcelik.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0542", "brand": "Beko", "sector": "Beyaz Eşya", "country": "Türkiye", "website": "https://www.beko.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0543", "brand": "Vestel", "sector": "Beyaz Eşya", "country": "Türkiye", "website": "https://www.vestel.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0544", "brand": "Altus", "sector": "Beyaz Eşya", "country": "Türkiye", "website": "https://www.altus.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0545", "brand": "Profilo", "sector": "Beyaz Eşya", "country": "Türkiye", "website": "https://www.profilo.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0546", "brand": "Regal", "sector": "Beyaz Eşya", "country": "Türkiye", "website": "https://www.regal-tr.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0547", "brand": "Grundig", "sector": "Beyaz Eşya", "country": "Almanya", "website": "https://www.grundig.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0548", "brand": "Simfer", "sector": "Beyaz Eşya", "country": "Türkiye", "website": "https://www.simfer.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0549", "brand": "Kumtel", "sector": "Beyaz Eşya", "country": "Türkiye", "website": "https://www.kumtel.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0550", "brand": "Termikel", "sector": "Beyaz Eşya", "country": "Türkiye", "website": "https://www.termikel.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0551", "brand": "Bosch", "sector": "Beyaz Eşya", "country": "Almanya", "website": "https://www.bosch-home.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0552", "brand": "Siemens", "sector": "Beyaz Eşya", "country": "Almanya", "website": "https://www.siemens-home.bsh-group.com/tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0553", "brand": "Samsung", "sector": "Beyaz Eşya", "country": "Güney Kore", "website": "https://www.samsung.com/tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0554", "brand": "LG", "sector": "Beyaz Eşya", "country": "Güney Kore", "website": "https://www.lg.com/tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0555", "brand": "Electrolux", "sector": "Beyaz Eşya", "country": "İsveç", "website": "https://www.electrolux.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0556", "brand": "Miele", "sector": "Beyaz Eşya", "country": "Almanya", "website": "https://www.miele.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0557", "brand": "Whirlpool", "sector": "Beyaz Eşya", "country": "ABD", "website": "https://www.whirlpool.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0558", "brand": "Haier", "sector": "Beyaz Eşya", "country": "Çin", "website": "https://www.haier.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0559", "brand": "Hisense", "sector": "Beyaz Eşya", "country": "Çin", "website": "https://www.hisense.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0560", "brand": "Gorenje", "sector": "Beyaz Eşya", "country": "Slovenya", "website": "https://www.gorenje.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0561", "brand": "Emlak Konut GYO", "sector": "Gayrimenkul", "country": "Türkiye", "website": "https://www.emlakkonut.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0562", "brand": "Sinpaş GYO", "sector": "Gayrimenkul", "country": "Türkiye", "website": "https://www.sinpas.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0563", "brand": "Torunlar GYO", "sector": "Gayrimenkul", "country": "Türkiye", "website": "https://www.torunlargyo.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0564", "brand": "Rönesans Gayrimenkul", "sector": "Gayrimenkul", "country": "Türkiye", "website": "https://www.ronesans.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0565", "brand": "Kuzu Grup", "sector": "Gayrimenkul", "country": "Türkiye", "website": "https://www.kuzugrup.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0566", "brand": "Tahincioğlu", "sector": "Gayrimenkul", "country": "Türkiye", "website": "https://www.tahincioglu.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0567", "brand": "Ağaoğlu", "sector": "Gayrimenkul", "country": "Türkiye", "website": "https://www.agaoglu.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0568", "brand": "Mesa", "sector": "Gayrimenkul", "country": "Türkiye", "website": "https://www.mesa.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0569", "brand": "Sur Yapı", "sector": "Gayrimenkul", "country": "Türkiye", "website": "https://www.suryapi.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0570", "brand": "Nef", "sector": "Gayrimenkul", "country": "Türkiye", "website": "https://www.nef.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0571", "brand": "JLL", "sector": "Gayrimenkul", "country": "ABD", "website": "https://www.jll.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0572", "brand": "CBRE", "sector": "Gayrimenkul", "country": "ABD", "website": "https://www.cbre.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0573", "brand": "Colliers", "sector": "Gayrimenkul", "country": "Kanada", "website": "https://www.colliers.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0574", "brand": "Cushman & Wakefield", "sector": "Gayrimenkul", "country": "ABD", "website": "https://www.cushmanwakefield.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0575", "brand": "Knight Frank", "sector": "Gayrimenkul", "country": "Birleşik Krallık", "website": "https://www.knightfrank.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0576", "brand": "Savills", "sector": "Gayrimenkul", "country": "Birleşik Krallık", "website": "https://www.savills.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0577", "brand": "Emaar Properties", "sector": "Gayrimenkul", "country": "BAE", "website": "https://www.emaar.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0578", "brand": "DAMAC", "sector": "Gayrimenkul", "country": "BAE", "website": "https://www.damacproperties.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0579", "brand": "Brookfield Properties", "sector": "Gayrimenkul", "country": "Kanada", "website": "https://www.brookfieldproperties.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0580", "brand": "Prologis", "sector": "Gayrimenkul", "country": "ABD", "website": "https://www.prologis.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0581", "brand": "Rönesans Holding", "sector": "İnşaat", "country": "Türkiye", "website": "https://www.ronesans.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0582", "brand": "Limak", "sector": "İnşaat", "country": "Türkiye", "website": "https://www.limak.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0583", "brand": "Kalyon Holding", "sector": "İnşaat", "country": "Türkiye", "website": "https://www.kalyonholding.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0584", "brand": "Cengiz Holding", "sector": "İnşaat", "country": "Türkiye", "website": "https://www.cengizholding.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0585", "brand": "Tekfen", "sector": "İnşaat", "country": "Türkiye", "website": "https://www.tekfen.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0586", "brand": "Yapı Merkezi", "sector": "İnşaat", "country": "Türkiye", "website": "https://www.ym.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0587", "brand": "ENKA", "sector": "İnşaat", "country": "Türkiye", "website": "https://www.enka.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0588", "brand": "Gülermak", "sector": "İnşaat", "country": "Türkiye", "website": "https://www.gulermak.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0589", "brand": "Nurol İnşaat", "sector": "İnşaat", "country": "Türkiye", "website": "https://www.nurolinsaat.com.tr", "source": "odev01/brands.xlsx"}
+{"id": "brand_0590", "brand": "Ant Yapı", "sector": "İnşaat", "country": "Türkiye", "website": "https://www.antyapi.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0591", "brand": "Bechtel", "sector": "İnşaat", "country": "ABD", "website": "https://www.bechtel.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0592", "brand": "Fluor", "sector": "İnşaat", "country": "ABD", "website": "https://www.fluor.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0593", "brand": "VINCI", "sector": "İnşaat", "country": "Fransa", "website": "https://www.vinci.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0594", "brand": "Bouygues", "sector": "İnşaat", "country": "Fransa", "website": "https://www.bouygues.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0595", "brand": "Skanska", "sector": "İnşaat", "country": "İsveç", "website": "https://group.skanska.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0596", "brand": "HOCHTIEF", "sector": "İnşaat", "country": "Almanya", "website": "https://www.hochtief.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0597", "brand": "ACS Group", "sector": "İnşaat", "country": "İspanya", "website": "https://www.grupoacs.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0598", "brand": "Samsung C&T", "sector": "İnşaat", "country": "Güney Kore", "website": "https://www.samsungcnt.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0599", "brand": "Larsen & Toubro", "sector": "İnşaat", "country": "Hindistan", "website": "https://www.larsentoubro.com", "source": "odev01/brands.xlsx"}
+{"id": "brand_0600", "brand": "Obayashi", "sector": "İnşaat", "country": "Japonya", "website": "https://www.obayashi.co.jp/en", "source": "odev01/brands.xlsx"}

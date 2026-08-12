@@ -29,7 +29,10 @@ type Config struct {
 	// WorkerMetricsPort — worker prosesinin Prometheus /metrics endpoint'i.
 	// API'nin :8080/metrics'inden ayrıdır: worker kendi prosesindeki metrikleri
 	// (breaker metrikleri dahil) bu portta serve eder (0421 M-4 gözlemlenebilirlik).
-	WorkerMetricsPort       string
+	WorkerMetricsPort string
+	// SchedulerMetricsPort — scheduler prosesinin Prometheus /metrics endpoint'i.
+	// Worker'ın :8081'inden ayrıdır (aynı host üzerinde çakışmamak için 8082).
+	SchedulerMetricsPort    string
 	DatabaseURL             string
 	RedisURL                string
 	S3Endpoint              string
@@ -95,6 +98,11 @@ type Config struct {
 	// boşsa kural tabanlı bileşenler fallback olarak çalışmaya devam eder.
 	MLServingURL string // ML_SERVING_URL (varsayılan boş → fallback)
 	MLTimeOut    time.Duration
+
+	// BenchmarkMinTenants — BENCHMARK_MIN_TENANTS: sektör benchmark istatistiklerinin
+	// yayınlanması için gereken minimum kiracı sayısı (NFR-13 diferansiyel gizlilik eşiği).
+	// Pilot döneminde düşürülebilir (ör. 2), üretimde ≥5 kalmalıdır.
+	BenchmarkMinTenants int
 }
 
 // LoadFromEnv reads configuration from environment variables with sensible defaults.
@@ -102,6 +110,7 @@ func LoadFromEnv() Config {
 	return Config{
 		Port:                    getEnv("PORT", "8080"),
 		WorkerMetricsPort:       getEnv("WORKER_METRICS_PORT", "8081"),
+		SchedulerMetricsPort:    getEnv("SCHEDULER_METRICS_PORT", "8082"),
 		DatabaseURL:             getEnv("DATABASE_URL", "postgres://geolens:geolens@localhost:5432/geolens?sslmode=disable"),
 		RedisURL:                getEnv("REDIS_URL", "redis://localhost:6379/0"),
 		S3Endpoint:              getEnv("S3_ENDPOINT", "http://localhost:9000"),
@@ -154,7 +163,8 @@ func LoadFromEnv() Config {
 		ScoreAlgorithmVersion:   getEnv("SCORE_ALGORITHM_VERSION", "2.0.0"),
 		IntentWeightScaleRaw:    getEnv("INTENT_WEIGHT_SCALE", ""),
 		MLServingURL:            getEnv("ML_SERVING_URL", ""),
-		MLTimeOut:               parseDuration(getEnv("ML_TIMEOUT", "2s")),
+		MLTimeOut:               parseDuration(getEnv("ML_TIMEOUT", "5s")),
+		BenchmarkMinTenants:     GetEnvInt("BENCHMARK_MIN_TENANTS", 5),
 	}
 }
 

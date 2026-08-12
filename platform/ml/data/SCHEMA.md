@@ -64,6 +64,40 @@ veri dosyalarının şema tanımı. Format: **JSON Lines** (her satır tek JSON 
 - `entities[].type`: `brand|product|competitor|technology|organization|location|person|event`
 - `hallucination.type`: `none|T1|T2|T3|T4|T5|contradiction|fabrication|outdated`
 
+## Gerçek Veri Etiketleme Akışı (0421 A1-2 kapanışı)
+
+`gold.jsonl` sentetik üreticinin çıktısıdır — şema + ölçüm pipeline'ı için.
+Üretime alınacak gerçek gold dataset şu akışla oluşur:
+
+```bash
+# 1) Gerçek motor cevaplarını etiketlenmemiş şablonlara export et
+#    (measure.raw_responses → GoldRecord şeması; mention/citation/entity
+#    boş, etiketleyici doldurur). --dsn verilmezse örnek veriyle çalışır.
+python data/export_unlabeled.py --dsn "$DATABASE_URL" \
+    --tenant T01 --workspace WS01 --brand B01 --limit 200 \
+    --out real/real_20260812.jsonl
+
+# 2) İki etiketleyici şablonu bağımsız doldurur (Annotation Guide 0606 §5.1 kurallarıyla)
+cp real/real_20260812.jsonl real/annotator1.jsonl
+cp real/real_20260812.jsonl real/annotator2.jsonl
+#    ... editör ile mentions/citations/entities/hallucination doldurulur ...
+
+# 3) Şema doğrulama (hatalı satırları yakalar)
+python data/validate_labeled.py real/annotator1.jsonl real/annotator2.jsonl
+
+# 4) IAA ölçümü — hedef >%90 (0420 İP-02)
+python data/iaa.py --label sentiment real/annotator1.jsonl real/annotator2.jsonl
+
+# 5) Uzlaşılan kayıtlar gold.jsonl'e birleştirilir → train/test split (split_data.py)
+```
+
+Notlar:
+- `export_unlabeled.py` DB'ye `psycopg` ile bağlanır (dev bağımlılığı, 0421 A1-2).
+- Etiketleme kuralları `docs/06-data/0606-data-quality.md §5.1` Annotation Guide'dır;
+  IAA eşiği aşılmadan kayıt gold setine alınmaz.
+- Çıktı dizini `data/real/` `.gitignore`'da değildir — etiketli kayıtlar CI'da
+  `ml-eval` job'ıyla ölçülebilir.
+
 ## İlgili Kurallar
 
 - Train/test split **%80/%20** (0420 İP-02), dil dengesi (%50 TR / %50 EN).

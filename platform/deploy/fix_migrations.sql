@@ -6,6 +6,48 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- ============================================================================
+-- gen_ulid — migration'lar DEFAULT gen_ulid() kullanır ama fonksiyon tanımı
+-- hiçbir migration'da yok; Docker initdb yalnızca boş volume'de çalıştığından
+-- mevcut DB'lerde eksik kalır ve bu tabloları kullanan INSERT'ler (örn. 044
+-- benchmark.industry_stats) 'function gen_ulid() does not exist' hatası verir.
+-- UUID tabanlı pratik karşılık (kronolojik sıralama gerektirmeyen id'ler için).
+-- ============================================================================
+CREATE OR REPLACE FUNCTION gen_ulid() RETURNS TEXT AS $$
+BEGIN
+    RETURN gen_random_uuid()::text;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ============================================================================
+-- 044_benchmark_stats.sql — Eksik sektör istatistikleri önbelleği (FR-D5/C)
+-- benchmark.industry_stats: NFR-13 eşiği + DP Laplace noise korumalı anonim
+-- toplulaştırma tablosu. Worker'daki aggregator yazmadan önce tablonun var
+-- olması gerekir (42P01 hatasını önler).
+-- ============================================================================
+CREATE SCHEMA IF NOT EXISTS benchmark;
+
+CREATE TABLE IF NOT EXISTS benchmark.industry_stats (
+    id              TEXT PRIMARY KEY DEFAULT gen_ulid(),
+    computed_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+    tenant_count    INTEGER NOT NULL DEFAULT 0,
+    brand_count     INTEGER NOT NULL DEFAULT 0,
+    sector_avg      DOUBLE PRECISION NOT NULL DEFAULT 0,
+    sector_median   DOUBLE PRECISION NOT NULL DEFAULT 0,
+    sector_min      DOUBLE PRECISION NOT NULL DEFAULT 0,
+    sector_max      DOUBLE PRECISION NOT NULL DEFAULT 0,
+    sector_stddev   DOUBLE PRECISION NOT NULL DEFAULT 0,
+    percentile_25   DOUBLE PRECISION NOT NULL DEFAULT 0,
+    percentile_75   DOUBLE PRECISION NOT NULL DEFAULT 0,
+    percentile_90   DOUBLE PRECISION NOT NULL DEFAULT 0,
+    score_count     INTEGER NOT NULL DEFAULT 0,
+    error_message   TEXT,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_industry_stats_computed
+    ON benchmark.industry_stats(computed_at DESC);
+
 CREATE SCHEMA IF NOT EXISTS governance;
 
 -- 005_panels.sql

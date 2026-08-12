@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/robfig/cron/v3"
 
 	"github.com/geolens/platform/engine"
@@ -45,7 +47,10 @@ func main() {
 		slog.Error("veritabanı bağlantısı kurulamadı", "error", err)
 		return
 	}
-	pool.Close()
+	// NOT: pool kapatma yalnızca shutdown'da (defer) yapılır — önceden burada
+	// çağrılan pool.Close(), dispatcher'ın tüm DB işlemlerini "closed pool"
+	// hatasıyla kırıyordu (outbox iletimi, cron job'ları çalışmıyordu).
+	defer pool.Close()
 
 	rdb, err := queue.NewRedisClient(cfg.RedisURL)
 	if err != nil {
@@ -106,12 +111,36 @@ func main() {
 		runDigestScheduler(ctx, pool.Pool, deliverySvc)
 	}()
 
+	// Scheduler metrics sunucusu — kendi prosesindeki Prometheus metriklerini
+	// /metrics üzerinden serve eder. Worker (:8081) ve API'den (:8080) ayrıdır;
+	// scrape için SCHEDULER_METRICS_PORT (varsayılan 8082) kullanılır.
+	metricsSrv := &http.Server{
+		Addr:         ":" + cfg.SchedulerMetricsPort,
+		Handler:      promhttp.Handler(),
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  30 * time.Second,
+	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		slog.Info("scheduler metrics sunucusu başlatılıyor", "port", cfg.SchedulerMetricsPort)
+		if err := metricsSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("scheduler metrics sunucusu hatası", "error", err)
+		}
+	}()
+
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
 	slog.Info("zamanlayıcı kapatılıyor...")
 	cancel()
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer shutdownCancel()
+	if err := metricsSrv.Shutdown(shutdownCtx); err != nil {
+		slog.Warn("scheduler metrics sunucusu kapatılamadı", "error", err)
+	}
 	wg.Wait()
 	slog.Info("zamanlayıcı durduruldu")
 }

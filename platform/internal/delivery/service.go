@@ -2,6 +2,7 @@ package delivery
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 
+	"github.com/geolens/platform/internal/dbiface"
 	"github.com/geolens/platform/platform/db"
 )
 
@@ -16,6 +18,10 @@ import (
 type service struct {
 	config EmailConfig
 	pool   *db.Pool
+	// testPool — dbiface.DB uyumlu test/mock havuzu; nil ise pool kullanılır.
+	// db.Pool.Begin imzası dbiface.Tx ile uyuşmadığından pool dbiface.DB olarak
+	// atanamaz; in-app metotları her iki havuzla da çalışır (mock test desteği).
+	testPool dbiface.DB
 }
 
 // NewService creates a new delivery service.
@@ -39,8 +45,7 @@ func (s *service) SendNotification(notif Notification) error {
 		notif.SentAt = &now
 		return nil
 	case ChannelInApp:
-		slog.Debug("in-app notification (not yet implemented)", "id", notif.ID)
-		return nil
+		return s.saveInAppNotification(&notif)
 	default:
 		return fmt.Errorf("delivery: bilinmeyen kanal: %s", notif.Channel)
 	}
@@ -392,6 +397,113 @@ func (s *service) UpdateSettings(ctx context.Context, settings *NotificationSett
 	}
 
 	slog.Info("notification settings saved to DB", "workspace", settings.WorkspaceID, "tenant", tenantID, "enabled", settings.DigestEnabled)
+	return nil
+}
+
+// inAppExec executes on the test pool (mock) or production pool.
+func (s *service) inAppExec(ctx context.Context, sql string, args ...any) error {
+	if s.testPool != nil {
+		_, err := s.testPool.Exec(ctx, sql, args...)
+		return err
+	}
+	_, err := s.pool.Exec(ctx, sql, args...)
+	return err
+}
+
+// inAppQuery runs a query on the test pool (mock) or production pool.
+func (s *service) inAppQuery(ctx context.Context, sql string, args ...any) (dbiface.RowsIter, error) {
+	if s.testPool != nil {
+		return s.testPool.Query(ctx, sql, args...)
+	}
+	return s.pool.Query(ctx, sql, args...)
+}
+
+// saveInAppNotification stores an in-app notification in delivery.notifications
+// (FR-D10 in-app kanalı — önceden pasifti, yalnızca debug log yazıyordu).
+// Bildirim, web UI'nin API üzerinden okuyabildiği kalıcı tabloya yazılır.
+func (s *service) saveInAppNotification(notif *Notification) error {
+	dataJSON := "{}"
+	if notif.Data != nil {
+		if b, err := json.Marshal(notif.Data); err == nil {
+			dataJSON = string(b)
+		}
+	}
+
+	ctx := context.Background()
+	err := s.inAppExec(ctx, `
+		INSERT INTO delivery.notifications (id, tenant_id, workspace_id, user_id, type, title, body, data, is_read, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, false, now())
+	`, notif.ID, notif.TenantID, notif.WorkspaceID, notif.UserID,
+		string(notif.Type), notif.Title, notif.Body, dataJSON)
+	if err != nil {
+		slog.Warn("in-app bildirim kaydedilemedi", "id", notif.ID, "error", err)
+		return fmt.Errorf("delivery: in-app bildirim kaydedilemedi: %w", err)
+	}
+
+	now := time.Now()
+	notif.Status = DeliverySent
+	notif.SentAt = &now
+	slog.Info("in-app bildirim kaydedildi", "id", notif.ID, "type", notif.Type)
+	return nil
+}
+
+// ListInAppNotifications returns unread (or all) in-app notifications for a workspace.
+func (s *service) ListInAppNotifications(ctx context.Context, tenantID, workspaceID string, unreadOnly bool, limit int) ([]Notification, error) {
+	if limit <= 0 || limit > 100 {
+		limit = 50
+	}
+	query := `
+		SELECT id, COALESCE(user_id, ''), type, title, body, data, is_read, created_at
+		FROM delivery.notifications
+		WHERE tenant_id = $1 AND workspace_id = $2`
+	args := []interface{}{tenantID, workspaceID}
+	if unreadOnly {
+		query += ` AND is_read = false`
+	}
+	query += ` ORDER BY created_at DESC LIMIT $` + fmt.Sprint(len(args)+1)
+	args = append(args, limit)
+
+	rows, err := s.inAppQuery(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("delivery: in-app bildirim listesi: %w", err)
+	}
+	defer rows.Close()
+
+	out := []Notification{}
+	for rows.Next() {
+		var n Notification
+		var id, userID, typ, title, body string
+		var dataJSON []byte
+		var isRead bool
+		var createdAt time.Time
+		if err := rows.Scan(&id, &userID, &typ, &title, &body, &dataJSON, &isRead, &createdAt); err != nil {
+			slog.Warn("in-app bildirim satırı okunamadı", "error", err)
+			continue
+		}
+		n.ID = id
+		n.UserID = userID
+		n.Type = NotificationType(typ)
+		n.Title = title
+		n.Body = body
+		n.IsRead = isRead
+		n.CreatedAt = createdAt
+		if len(dataJSON) > 0 && string(dataJSON) != "{}" {
+			_ = json.Unmarshal(dataJSON, &n.Data)
+		}
+		out = append(out, n)
+	}
+	return out, rows.Err()
+}
+
+// MarkInAppNotificationRead marks a single in-app notification as read.
+func (s *service) MarkInAppNotificationRead(ctx context.Context, tenantID, notificationID string) error {
+	err := s.inAppExec(ctx, `
+		UPDATE delivery.notifications SET is_read = true
+		WHERE id = $1 AND tenant_id = $2
+	`, notificationID, tenantID)
+	if err != nil {
+		return fmt.Errorf("delivery: in-app bildirim okundu işaretlenemedi: %w", err)
+	}
 	return nil
 }
 

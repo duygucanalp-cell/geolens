@@ -28,6 +28,12 @@ dev = [
     "onnx>=1.15",
     "skl2onnx>=1.16",
     "onnxscript>=0.1",
+    # A1-2 gerçek veri etiketleme pipeline'ı: export_unlabeled.py PostgreSQL
+    # erişimi için (measure.raw_responses → etiketlenmemiş gold şablonları).
+    "psycopg[binary]>=3.1",
+    # A2-5 LLM-as-Judge: GEOLENS_JUDGE_API_KEY yapılandırıldığında OpenAI-uyumlu
+    # chat completions çağrısı için (import lazy — key yoksa kurulması gerekmez).
+    "openai>=1.30",
 ]
 
 [dependency-groups]

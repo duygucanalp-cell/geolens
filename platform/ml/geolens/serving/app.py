@@ -13,6 +13,7 @@ import numpy as np
 from fastapi import FastAPI, HTTPException
 
 from geolens.features.hallucination import cross_source_check
+from geolens.features.judge import EvidenceBag, build_judge
 from geolens.serving.registry import ModelRegistry
 
 logger = logging.getLogger(__name__)
@@ -57,6 +58,11 @@ async def lifespan(_app: FastAPI):
         if os.path.exists(path):
             registry.load(model_id, path)
             logger.info("model yüklendi: %s (%s)", model_id, path)
+            # İlk run maliyeti peşin ödenir — Go ML_TIMEOUT=2s içinde ilk isteğin
+            # timeout olmasını önler (ilkinference soğukta 5-10s sürebilir).
+            model = registry.get(model_id)
+            if model is not None:
+                model.warmup()
         else:
             logger.warning("model bulunamadı: %s", path)
     yield
@@ -194,7 +200,20 @@ def detect_hallucinations(payload: dict) -> dict:
         }
         for f in cross_source_check(responses)
     ]
-    return {"findings": findings}
+
+    # A2-5 LLM-as-Judge: şüphe eşiği (varsayılan 3) aşılırsa pahalı LLM yargıcı
+    # tetiklenir (0421 §6 maliyet eşikli tetikleme). GEOLENS_JUDGE_API_KEY yoksa
+    # kural tabanlı fallback döner — serving key'siz çalışır (M-1 fallback ilkesi).
+    threshold = int(os.getenv("GEOLENS_JUDGE_THRESHOLD", "3"))
+    judge = build_judge(threshold=threshold, lang=payload.get("lang", "tr"))
+    verdict = judge.judge(
+        EvidenceBag(
+            prompt_id=payload.get("prompt_id", ""),
+            responses=responses,
+            cross_flags=findings,
+        )
+    )
+    return {"findings": findings, "judge": {"verdict": verdict.verdict, "triggered": verdict.triggered, "confidence": verdict.confidence}}
 
 
 @app.post("/v1/predict")

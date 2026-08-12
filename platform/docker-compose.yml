@@ -59,6 +59,11 @@ services:
       ML_SENTIMENT_TOKENIZER_DIR: /models/sentiment/tokenizer
       # id=path: repo'daki gerçek artefakt düzeni (sentiment.onnx, prompt_classifier/*.onnx).
       MODELS: "sentiment=/models/sentiment/sentiment.onnx,prompt_intent=/models/prompt_classifier/prompt_intent.onnx,prompt_topic=/models/prompt_classifier/prompt_topic.onnx,prompt_persona=/models/prompt_classifier/prompt_persona.onnx,prompt_funnel=/models/prompt_classifier/prompt_funnel.onnx"
+      # A2-5 LLM-as-Judge (opsiyonel): boşsa kural tabanlı fallback (M-1)
+      GEOLENS_JUDGE_API_KEY: ${GEOLENS_JUDGE_API_KEY:-}
+      GEOLENS_JUDGE_MODEL: ${GEOLENS_JUDGE_MODEL:-gpt-4o-mini}
+      GEOLENS_JUDGE_BASE_URL: ${GEOLENS_JUDGE_BASE_URL:-}
+      GEOLENS_JUDGE_THRESHOLD: ${GEOLENS_JUDGE_THRESHOLD:-3}
     volumes:
       # read-only: konteyner yalnızca inference yapar, modelleri değiştirmez
       - ./ml/models:/models:ro
@@ -98,7 +103,7 @@ services:
       SENDGRID_FROM_NAME: GeoLens
       # ML serving (0421 A0-3) — serving yoksa kural tabanlı fallback (M-4)
       ML_SERVING_URL: http://ml-serving:8900
-      ML_TIMEOUT: 2s
+      ML_TIMEOUT: 5s
       # Intent çarpanları (0421 A3-3) — boşsa varsayılan tablo
       INTENT_WEIGHT_SCALE: ${INTENT_WEIGHT_SCALE:-}
       # ========== SOPS+Age ==========
@@ -175,7 +180,7 @@ services:
       SENDGRID_FROM_NAME: GeoLens
       # ML serving (0421 A0-3) — serving yoksa kural tabanlı fallback (M-4)
       ML_SERVING_URL: http://ml-serving:8900
-      ML_TIMEOUT: 2s
+      ML_TIMEOUT: 5s
       # Intent çarpanları (0421 A3-3) — boşsa varsayılan tablo
       INTENT_WEIGHT_SCALE: ${INTENT_WEIGHT_SCALE:-}
       AGE_KEY: ${AGE_KEY:-}

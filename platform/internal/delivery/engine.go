@@ -64,6 +64,7 @@ type Notification struct {
 	Status      DeliveryStatus         `json:"status"`
 	SentAt      *time.Time             `json:"sent_at,omitempty"`
 	CreatedAt   time.Time              `json:"created_at"`
+	IsRead      bool                   `json:"is_read"`
 
 	// Webhook alanları (HT2 webhook çeşitlendirme — Teams/Discord/PagerDuty/custom).
 	// Channel = webhook iken URL zorunludur.
@@ -209,4 +210,10 @@ type Service interface {
 	// SendGovernanceEvent forwards a Faz 4 governance event (guardrail, gate, incident,
 	// drift, redteam) to all webhook-active workspaces of the tenant (O-6 bildirim tüketicisi).
 	SendGovernanceEvent(ctx context.Context, tenantID, eventType string, payload map[string]interface{}) error
+
+	// ListInAppNotifications returns in-app notifications for a workspace (FR-D10).
+	ListInAppNotifications(ctx context.Context, tenantID, workspaceID string, unreadOnly bool, limit int) ([]Notification, error)
+
+	// MarkInAppNotificationRead marks a single in-app notification as read.
+	MarkInAppNotificationRead(ctx context.Context, tenantID, notificationID string) error
 }

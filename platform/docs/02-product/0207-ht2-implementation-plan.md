@@ -25,9 +25,15 @@ Bu doküman, HT1'de kod seviyesine çıkamamış 3 FR'nin (FR-D5 benchmark, FR-A
 | # | FR | Başlık | Mevcut Durum | Eksik | Tahmini İş Yükü |
 |:-:|:--:|--------|:------------:|-------|:---------------:|
 | 1 | FR-D5 | Benchmark bağlamı (anonim sektör kıyası) | 🟢 Backend API + DP katmanı + aggregator + collector + migration + BenchmarkWidget UI | Yok (tamamlandı) | 0 gün kaldı ✅ |
-| 2 | FR-A6 | Self-serve ödeme (paket yükseltme) | 🟡 Backend Stripe entegrasyonu mevcut (checkout, webhook, subscription) | Frontend billing UI, e-Fatura/e-Arşiv, ödeme geçmişi, vergi hesaplama | 5-7 gün |
-| 3 | — | Google AI Mode (Kademe 3 directional) | 🔴 Kod yok (yalnızca 0308 dokümanında plan olarak tanımlı) | `aiModeAdapter` implementasyonu, Gemini API AI Mode endpoint, test, maliyet değerlendirme | 3-5 gün |
-| | | **Toplam** | | | **13-20 gün** |
+| 2 | FR-A6 | Self-serve ödeme (paket yükseltme) | 🟢 Backend Stripe + e-Fatura/e-Arşiv + BillingPanel UI + fatura geçmişi | Yok (tamamlandı) | 0 gün kaldı ✅ |
+| 3 | — | Google AI Mode (Kademe 3 directional) | 🟢 `aiModeAdapter` kodlandı (`WithAIMode()`, `google_ai_mode`) | Yok (tamamlandı; maliyet değerlendirmesi üretim verisiyle) | 0 gün kaldı ✅ |
+| | | **Toplam** | | | **0 gün kaldı** |
+
+> **Durum güncellemesi (12.08.2026):** Bu dokümandaki 3 FR de kod seviyesinde
+> tamamlanmıştır — FR-A6 `BillingPanel.tsx` + `internal/billing/efatura.go`
+> (045/046 migration'ları) ile, Google AI Mode `engine/gemini/adapter.go`
+> `WithAIMode()` ile. Kalan iş üretim verisiyle kalibrasyondur (benchmark eşiği,
+> AI Mode maliyet değerlendirmesi).
 
 ---
 
@@ -168,9 +174,9 @@ Yanıt:
 | `POST /v1/billing/checkout` | ✅ Mevcut | Checkout oturumu oluşturma |
 | `POST /v1/billing/webhook` | ✅ Mevcut | Stripe webhook işleme |
 | `GET /v1/billing/subscription` | ✅ Mevcut | Abonelik sorgulama |
-| **Frontend billing UI** | ❌ Eksik | Ödeme sayfası, abonelik yönetimi, fatura geçmişi |
-| **e-Fatura/e-Arşiv** | ❌ Eksik | TR yasal fatura zorunluluğu |
-| **Vergi hesaplama** | ❌ Eksik | KDV/KV hesaplama |
+| `web/src/components/BillingPanel.tsx` | ✅ **TAMAMLANDI** | Ödeme sayfası, abonelik yönetimi, fatura geçmişi UI |
+| `internal/billing/efatura.go` | ✅ **TAMAMLANDI** | e-Fatura/e-Arşiv entegrasyonu (GİB uyumlu XML) + mock mod |
+| `internal/billing/tax.go` | ✅ **TAMAMLANDI** | KDV/KV hesaplama (045/046 migration'ları) |
 
 ### 4.2 Yapılması Gerekenler
 
@@ -305,7 +311,7 @@ CREATE TABLE billing.invoices (
 |---------|:-----:|----------|
 | Gemini adapter | ✅ Mevcut | `engine/gemini/adapter.go` — Kademe 1 (direct) |
 | Google AI Overview | ✅ Mevcut | `aiOverviewAdapter` — Kademe 3 (directional) |
-| **Google AI Mode adapter** | ❌ Eksik | `aiModeAdapter` — Kademe 3 (directional) |
+| **Google AI Mode adapter** | ✅ **TAMAMLANDI** | `aiModeAdapter` (`WithAIMode()` — engine/gemini/adapter.go:335), `google_ai_mode` adıyla registry'de |
 
 ### 5.2 Yapılması Gerekenler
 
@@ -410,11 +416,11 @@ google_ai_mode:
 | P1 · Benchmark DP katmanı | FR-D5 | 2 gün | Yüksek | Pilot verisi |
 | P2 · Benchmark widget UI | FR-D5 | 2 gün | Yüksek | P1 |
 | P3 · Benchmark veri toplama | FR-D5 | 2 gün | ✅ Tamamlandı | P1 |
-| P4 · Fatura/abonelik UI | FR-A6 | 3 gün | Yüksek | — |
-| P5 · e-Fatura entegrasyonu | FR-A6 | 3 gün | Orta | Entegratör seçimi |
-| P6 · AI Mode adapter | — | 2 gün | Düşük | Maliyet değerlendirmesi |
-| P7 · AI Mode test + deploy | — | 1 gün | Düşük | P6 |
-| | **Toplam** | **15 gün** | | |
+| P4 · Fatura/abonelik UI | FR-A6 | 3 gün | Yüksek | ✅ Tamamlandı (BillingPanel.tsx) |
+| P5 · e-Fatura entegrasyonu | FR-A6 | 3 gün | Orta | ✅ Tamamlandı (efatura.go, mock mod) |
+| P6 · AI Mode adapter | — | 2 gün | Düşük | ✅ Tamamlandı (WithAIMode) |
+| P7 · AI Mode test + deploy | — | 1 gün | Düşük | ✅ Tamamlandı (adapter_test.go) |
+| | **Toplam** | **0 gün kaldı** | | |
 
 ### Önerilen Sıralama
 
@@ -459,3 +465,4 @@ Hafta 3: P3 (Benchmark veri toplama) + P5 (e-Fatura) + P7 (AI Mode deploy)
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 28.07.2026 | İlk yayın: HT2 implementasyon planı. FR-D5 (benchmark DP, widget, veri toplama), FR-A6 (ödeme UI, e-Fatura, Stripe genişletme), Google AI Mode (aiModeAdapter). Toplam 13-20 gün, 3 haftalık sıralama. |
+| 1.1 | 12.08.2026 | **Durum senkronu:** 3 FR de kod seviyesinde tamamlandı — FR-A6 BillingPanel.tsx + efatura.go (mock mod), Google AI Mode WithAIMode(). Özet tablo, mevcut durum ve iş paketi tabloları güncel durumu yansıtacak şekilde düzenlendi. Kalan iş üretim verisiyle kalibrasyon. |

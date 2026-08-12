@@ -122,18 +122,45 @@ class HallucinationJudge:
 
 
 def default_llm_caller() -> Optional[Callable[[str], str]]:
-    """Env'de api key varsa OpenAI-uyumlu client kurar; yoksa None (fallback)."""
+    """Env'de api key varsa OpenAI-uyumlu chat client kurar; yoksa None (fallback).
+
+    Yapılandırma (A2-5 üretim aktifleştirmesi):
+      GEOLENS_JUDGE_API_KEY  — OpenAI-uyumlu key (zorunlu; yoksa fallback)
+      GEOLENS_JUDGE_MODEL    — model adı (varsayılan gpt-4o-mini)
+      GEOLENS_JUDGE_BASE_URL — OpenAI-uyumlu base URL (varsayılan OpenAI; yerel
+                               veya alternatif sağlayıcı için override)
+      GEOLENS_JUDGE_TIMEOUT  — saniye (varsayılan 20)
+
+    Chat Completions kullanır (completions API'si deprecated). Import'u lazy —
+    `openai` paketi yalnızca key yapılandırılmışsa kurulur (0421 M-1 fallback:
+    key yoksa serving/testler key'siz çalışır).
+    """
     key = os.environ.get("GEOLENS_JUDGE_API_KEY") or os.environ.get("OPENAI_API_KEY")
     if not key:
         return None
     try:
         from openai import OpenAI  # type: ignore
 
-        client = OpenAI(api_key=key)
-        return lambda prompt: str(
-            client.completions.create(model=os.environ.get("GEOLENS_JUDGE_MODEL", "gpt-4o-mini"), prompt=prompt)
-            .choices[0].text
+        client = OpenAI(
+            api_key=key,
+            base_url=os.environ.get("GEOLENS_JUDGE_BASE_URL") or None,
+            timeout=float(os.environ.get("GEOLENS_JUDGE_TIMEOUT", "20")),
         )
+        model = os.environ.get("GEOLENS_JUDGE_MODEL", "gpt-4o-mini")
+
+        def _call(prompt: str) -> str:
+            resp = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": "You are a strict hallucination verifier."},
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.0,
+            )
+            content = resp.choices[0].message.content if resp.choices else ""
+            return content or ""
+
+        return _call
     except Exception:
         return None
 

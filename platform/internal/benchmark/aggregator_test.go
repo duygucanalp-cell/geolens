@@ -34,6 +34,25 @@ func TestNewAggregator_CustomConfig(t *testing.T) {
 	}
 }
 
+// TestNewAggregator_PartialConfigMerge — yalnızca MinTenants doldurulmuş kısmi
+// DPConfig varsayılan DP parametrelerini (Epsilon, Clamp aralığı) sıfırlamamalıdır.
+// Aksi halde AddLaplaceNoise tüm istatistikleri 0'a kırpar (regresyon).
+func TestNewAggregator_PartialConfigMerge(t *testing.T) {
+	a := NewAggregator(nil, &DPConfig{MinTenants: 2})
+	if a.dpCfg.MinTenants != 2 {
+		t.Errorf("MinTenants 2 olmalı, gerçek %d", a.dpCfg.MinTenants)
+	}
+	if a.dpCfg.Epsilon != 1.0 {
+		t.Errorf("kısmi config varsayılan epsilon 1.0 korumalı, gerçek %f", a.dpCfg.Epsilon)
+	}
+	if a.dpCfg.Sensitivity != 100.0 {
+		t.Errorf("kısmi config varsayılan sensitivity 100 korumalı, gerçek %f", a.dpCfg.Sensitivity)
+	}
+	if a.dpCfg.ClampMin != 0.0 || a.dpCfg.ClampMax != 100.0 {
+		t.Errorf("kısmi config clamp aralığını [0,100] korumalı, gerçek [%f, %f]", a.dpCfg.ClampMin, a.dpCfg.ClampMax)
+	}
+}
+
 func TestAggregate_QueryError(t *testing.T) {
 	a := NewAggregator(&testutil.MockPool{
 		QueryRowFunc: func(_ context.Context, _ string, _ ...any) dbiface.RowScanner {

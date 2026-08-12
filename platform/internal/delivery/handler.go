@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strconv"
+
+	"github.com/go-chi/chi/v5"
 
 	"github.com/geolens/platform/internal/dbiface"
 	"github.com/geolens/platform/platform/db"
@@ -111,4 +114,46 @@ func (h *Handler) SendTestEmail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, map[string]string{"status": "sent", "to": req.Email})
+}
+
+// ListNotifications handles GET /v1/workspaces/{ws}/notifications
+// In-app bildirimleri listeler (FR-D10): ?unread=true yalnızca okunmamışları döner.
+func (h *Handler) ListNotifications(w http.ResponseWriter, r *http.Request) {
+	workspaceID := httpmw.GetWorkspaceID(r.Context())
+	tenantID := httpmw.GetTenantID(r.Context())
+
+	unreadOnly := r.URL.Query().Get("unread") == "true"
+	limit := 50
+	if v := r.URL.Query().Get("limit"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			limit = n
+		}
+	}
+
+	notifs, err := h.svc.ListInAppNotifications(r.Context(), tenantID, workspaceID, unreadOnly, limit)
+	if err != nil {
+		slog.Error("in-app bildirim listesi hatası", "error", err)
+		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "bildirimler alınamadı"})
+		return
+	}
+	if notifs == nil {
+		notifs = []Notification{}
+	}
+	httputil.WriteJSON(w, http.StatusOK, notifs)
+}
+
+// MarkNotificationRead handles POST /v1/workspaces/{ws}/notifications/{notificationId}/read
+func (h *Handler) MarkNotificationRead(w http.ResponseWriter, r *http.Request) {
+	tenantID := httpmw.GetTenantID(r.Context())
+	notificationID := chi.URLParam(r, "notificationId")
+	if notificationID == "" {
+		httputil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "notificationId gerekli"})
+		return
+	}
+	if err := h.svc.MarkInAppNotificationRead(r.Context(), tenantID, notificationID); err != nil {
+		slog.Error("in-app bildirim okundu işaretlenemedi", "error", err)
+		httputil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "işaretlenemedi"})
+		return
+	}
+	httputil.WriteJSON(w, http.StatusOK, map[string]string{"status": "read"})
 }

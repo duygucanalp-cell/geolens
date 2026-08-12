@@ -169,11 +169,15 @@ func TestPartialPublication_SingleEngine(t *testing.T) {
 
 	// Engine breakdown da partial veriyle çalışmalı
 	breakdown := computeEngineBreakdown(partialData)
-	if len(breakdown) != 1 {
-		t.Errorf("beklenen 1 engine breakdown, gerçek %d", len(breakdown))
+	// 0309 §6.2: tek motor da olsa weighted_average üretilir (deterministik).
+	if len(breakdown) != 2 {
+		t.Errorf("beklenen 1 engine + weighted_average = 2 breakdown, gerçek %d", len(breakdown))
 	}
 	if _, ok := breakdown["perplexity"]; !ok {
 		t.Error("perplexity engine breakdown'da bulunmalı")
+	}
+	if _, ok := breakdown["weighted_average"]; !ok {
+		t.Error("weighted_average breakdown'da bulunmalı (0309 §6.2)")
 	}
 }
 
@@ -201,8 +205,12 @@ func TestPartialPublication_EmptyData(t *testing.T) {
 	}
 
 	breakdown := computeEngineBreakdown(nil)
+	// 0309 §6.2: veri yoksa weighted_average de üretilmez (boş kalır).
 	if len(breakdown) != 0 {
 		t.Errorf("boş data ile breakdown boş olmalı, gerçek %d", len(breakdown))
+	}
+	if _, ok := breakdown["weighted_average"]; ok {
+		t.Error("boş data ile weighted_average üretilmemeli")
 	}
 }
 
@@ -225,8 +233,12 @@ func TestPartialPublication_MixedEngines(t *testing.T) {
 	}
 
 	breakdown := computeEngineBreakdown(data)
-	if len(breakdown) != 2 {
-		t.Errorf("beklenen 2 engine breakdown, gerçek %d", len(breakdown))
+	// 0309 §6.2: per-motor ağırlıklı weighted_average da breakdown'a eklenir.
+	if len(breakdown) != 3 {
+		t.Errorf("beklenen 2 engine + weighted_average = 3 breakdown, gerçek %d", len(breakdown))
+	}
+	if _, ok := breakdown["weighted_average"]; !ok {
+		t.Error("weighted_average breakdown'da bulunmalı (0309 §6.2)")
 	}
 
 	// Ağırlıklı toplam hesapla (CalculateScore'daki mantık) — v2 default weights
@@ -438,6 +450,48 @@ func TestComputeScoreCI_V1FixedV2Dynamic(t *testing.T) {
 	lo2, hi2 := computeScoreCI(50, v2DefaultWeights)
 	if hi2-lo2 <= 0 {
 		t.Errorf("v2 CI geçersiz: %f-%f", lo2, hi2)
+	}
+}
+
+// ---- 0309 §6.2: Per-motor ağırlıklı weighted_average testleri ----
+
+func TestComputeEngineBreakdown_WeightedAverage(t *testing.T) {
+	// perplexity ve gemini yanıt verdi (chatgpt başarısız — partial yayın)
+	data := []engine.RawResponse{
+		{EngineName: "perplexity", Content: "Acme yenilikçi bir firma."},
+		{EngineName: "gemini", Content: "Acme pazar lideridir."},
+	}
+	bd := computeEngineBreakdown(data)
+	// 0309 §6.2 ağırlıkları: perplexity 0.30, gemini 0.25. İkisi de 75 puan.
+	// weighted_average = (75×0.30 + 75×0.25) / (0.30+0.25) = 75
+	if bd["weighted_average"] != 75 {
+		t.Errorf("beklenen 75, gerçek %f", bd["weighted_average"])
+	}
+}
+
+func TestComputeEngineBreakdown_WeightedAverage_DifferentScores(t *testing.T) {
+	// perplexity dolu (75), chatgpt boş (40). Ağırlıklar: 0.30/0.30.
+	data := []engine.RawResponse{
+		{EngineName: "perplexity", Content: "Acme yenilikçi."},
+		{EngineName: "chatgpt", Content: ""},
+	}
+	bd := computeEngineBreakdown(data)
+	want := (75*0.30 + 40*0.30) / 0.60 // 57.5
+	if bd["weighted_average"] != want {
+		t.Errorf("beklenen %v, gerçek %v", want, bd["weighted_average"])
+	}
+}
+
+func TestComputeEngineBreakdown_UnknownEngineEqualWeight(t *testing.T) {
+	// Bilinmeyen motor (registry'ye sonradan eklenmiş) — eşit ağırlıkla katılır.
+	data := []engine.RawResponse{
+		{EngineName: "perplexity", Content: "Acme yenilikçi."},
+		{EngineName: "future_engine", Content: "Acme lider."},
+	}
+	bd := computeEngineBreakdown(data)
+	// İkisi de 75; ağırlık dağılımı ne olursa olsun sonuç 75 olmalı (simetrik).
+	if bd["weighted_average"] != 75 {
+		t.Errorf("beklenen 75, gerçek %f", bd["weighted_average"])
 	}
 }
 

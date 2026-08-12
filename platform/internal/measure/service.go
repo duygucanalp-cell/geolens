@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"math"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -741,7 +742,62 @@ func aggregateFidelity(responses []engine.RawResponse) string {
 	return lowestLabel
 }
 
-// computeEngineBreakdown creates per-engine score map.
+// engineWeightsV130 — 0309 §6.2 v1.3 motor ağırlıkları (0308 v1.3 ile senkron).
+// Per-motor ağırlıklı weighted_average, panel düzeyinde yapılandırılabilir tasarım
+// hedefidir — ENGINE_WEIGHTS env'i ile override edilebilir (pilot kalibrasyonu).
+// Kademe 3 (directional) motorlar düşük ağırlıkta tutulur; doğrulama verisi
+// toplandıkça artırılır (0309 §6.2 not).
+var engineWeightsV130 = map[string]float64{
+	"perplexity":         0.30, // Tier 1, web arama
+	"chatgpt":            0.30, // Tier 2, search grounding — TR'de en yaygın
+	"gemini":             0.25, // Tier 1, Google Search grounding
+	"google_ai_overview": 0.10, // Tier 3, directional — Gemini vekili
+	"claude":             0.05, // Tier 2
+	"grok":               0.05, // Tier 2
+	"mistral":            0.05, // Tier 2
+	"copilot":            0.05, // Tier 3
+	"google_ai_mode":     0.00, // Tier 3, directional — Faz 4 üretimde (opsiyonel)
+}
+
+// engineWeightOverride — ENGINE_WEIGHTS env'inden çözülen motor ağırlıkları
+// (biçim: "perplexity=0.30,chatgpt=0.30,..."). Boşsa varsayılan tablo kullanılır.
+func engineWeightOverride() map[string]float64 {
+	raw := os.Getenv("ENGINE_WEIGHTS")
+	if strings.TrimSpace(raw) == "" {
+		return nil
+	}
+	out := make(map[string]float64)
+	for _, part := range strings.Split(raw, ",") {
+		kv := strings.SplitN(strings.TrimSpace(part), "=", 2)
+		if len(kv) != 2 {
+			continue
+		}
+		v, err := strconv.ParseFloat(strings.TrimSpace(kv[1]), 64)
+		if err != nil || v < 0 {
+			continue
+		}
+		out[strings.TrimSpace(kv[0])] = v
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+// engineWeightsActive — aktif motor ağırlık tablosu (env override varsa onu,
+// yoksa 0309 §6.2 varsayılanlarını döner).
+func engineWeightsActive() map[string]float64 {
+	if ov := engineWeightOverride(); ov != nil {
+		return ov
+	}
+	return engineWeightsV130
+}
+
+// computeEngineBreakdown creates per-engine score map with a per-engine
+// weighted_average (0309 §6.2). Motor bazlı varlık skoru (içerik varsa 75, yoksa 40,
+// örnekler ortalamalanır) motor ağırlığıyla çarpılır; weighted_average tüm
+// mevcut motorların ağırlıklı ortalamasıdır (ağırlıklar bilinmeyen motorlar eşit
+// ağırlıkta sayılır — partial yayında kalan motorlarla tutarlı).
 func computeEngineBreakdown(responses []engine.RawResponse) map[string]float64 {
 	breakdown := make(map[string]float64)
 	for _, resp := range responses {
@@ -755,6 +811,23 @@ func computeEngineBreakdown(responses []engine.RawResponse) map[string]float64 {
 		} else {
 			breakdown[key] = present
 		}
+	}
+
+	// 0309 §6.2: per-motor ağırlıklı ortalama — yalnızca bu ölçümde yer alan motorlar
+	weights := engineWeightsActive()
+	var weightedSum, weightTotal float64
+	for name, score := range breakdown {
+		w, known := weights[name]
+		if !known {
+			// Bilinmeyen motor (registry'ye sonradan eklenmiş): eşit ağırlık — kısmi
+			// yayında weighted_average'in bilinmeyen motorları dışlamaması için.
+			w = 1.0 / float64(len(breakdown))
+		}
+		weightedSum += score * w
+		weightTotal += w
+	}
+	if weightTotal > 0 {
+		breakdown["weighted_average"] = math.Round(weightedSum/weightTotal*100) / 100
 	}
 	return breakdown
 }

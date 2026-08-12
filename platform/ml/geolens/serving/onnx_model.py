@@ -40,6 +40,21 @@ class ONNXModel:
         self._output_names = [o.name for o in self._session.get_outputs()]
         logger.info("model %s yüklendi: inputs=%s outputs=%s", self._id, self._input_names, self._output_names)
 
+    def warmup(self) -> None:
+        """İlk inference maliyetini serving başlangıcında öder.
+
+        ONNX Runtime'ın ilk run() çağrısı ortam/profiler başlatma içerdiğinden
+        soğuk ilk istek 5-10s sürebilir — Go tarafındaki ML_TIMEOUT (2s) bu
+        çağrıyı keser ve breaker açılır (0421 M-4 fallback'e düşer). Dummy bir
+        predict ile bu maliyet başlangıçta peşin ödenir; hata durumunda istek
+        zamanı yeniden denenir (warm-up ölümcül değildir).
+        """
+        try:
+            self.predict({"text": "warmup"})
+            logger.info("model %s warm-up tamamlandı", self._id)
+        except Exception:  # pragma: no cover
+            logger.warning("model %s warm-up başarısız (istek zamanı tekrar denenir)", self._id)
+
     @property
     def model_id(self) -> str:
         return self._id

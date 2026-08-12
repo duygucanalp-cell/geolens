@@ -242,6 +242,27 @@ var (
 	}, []string{LabelComponent})
 )
 
+// ---- Benchmark Sector Stats Metrics (FR-D5/C, NFR-13) ----
+
+var (
+	// BenchmarkMinTenants is the configured NFR-13 differential privacy threshold
+	// (BENCHMARK_MIN_TENANTS env). Aggregator tarafından NewAggregator'da set
+	// edilir — sektör istatistiklerinin yayınlanması için gereken minimum kiracı.
+	// Grafana'da geolens_benchmark_tenant_count >= bu değer koşulu sufficient_data
+	// durumunu gösterir (0422 pilot kalibrasyonu).
+	BenchmarkMinTenants = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "geolens_benchmark_min_tenants",
+		Help: "NFR-13 sektör benchmark eşiği — minimum kiracı sayısı (BENCHMARK_MIN_TENANTS env)",
+	})
+
+	// BenchmarkTenantCount is the tenant count of the latest sector aggregation.
+	// Aggregator tarafından her Aggregate koşusunda güncellenir.
+	BenchmarkTenantCount = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "geolens_benchmark_tenant_count",
+		Help: "Son sektör toplulaştırmasındaki kiracı sayısı (eşikle karşılaştırılabilir)",
+	})
+)
+
 // ---- SEO Sync Metrics (FR-B8 / HT2 sertleştirme) ----
 
 var (

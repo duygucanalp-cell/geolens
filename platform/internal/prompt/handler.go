@@ -2,6 +2,7 @@
 package prompt
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"math/rand"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/geolens/platform/engine"
 	"github.com/geolens/platform/internal/dbiface"
 	"github.com/geolens/platform/internal/id"
 	"github.com/geolens/platform/platform/db"
@@ -20,11 +22,19 @@ import (
 )
 
 type Handler struct {
-	pool dbiface.DB
+	pool    dbiface.DB
+	engines *engine.Registry // opsiyonel: gerçek engine çağrısı için (nil → simülasyon)
 }
 
 func NewHandler(pool dbiface.DB) *Handler {
 	return &Handler{pool: pool}
+}
+
+// NewHandlerWithEngines, gerçek engine çağrısı yapabilen prompt audit handler'ı kurar.
+// Denetim, prompt'u seçili motora gönderir ve token/latency'yi gerçek ölçümle doldurur
+// (simülasyon yerine — 0421 kapanışı). engines nil ise simülasyon devam eder (testler/geri uyum).
+func NewHandlerWithEngines(pool dbiface.DB, engines *engine.Registry) *Handler {
+	return &Handler{pool: pool, engines: engines}
 }
 
 func NewProductionHandler(pool *db.Pool) *Handler {
@@ -59,12 +69,40 @@ func (h *Handler) RunAudit(w http.ResponseWriter, r *http.Request) {
 	// Prompt denetimini gerçekleştir
 	score, issues, status := h.auditPrompt(input.PromptText)
 
-	// Token ve latency simülasyonu (gerçek engine çağrısı yapılmadığı için)
-	tokenCount := len(input.PromptText) / 4 // yaklaşık token sayısı
+	// Token ve latency: engine registry varsa gerçek engine çağrısı ile ölçülür
+	// (0421 kapanışı — simülasyon yerine gerçek denetim), yoksa simülasyon korunur.
+	tokenCount := len(input.PromptText) / 4 // yaklaşık token sayısı (fallback)
 	if tokenCount < 1 {
 		tokenCount = 1
 	}
-	latencyMs := 100 + rand.Intn(900) // 100-1000ms simülasyon
+	latencyMs := 100 + rand.Intn(900) // 100-1000ms simülasyon (fallback)
+
+	if h.engines != nil {
+		adapter := h.engines.Get(input.EngineName)
+		if adapter != nil {
+			ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+			start := time.Now()
+			resp, err := adapter.Execute(ctx, input.PromptText)
+			latency := time.Since(start)
+			cancel()
+			if err != nil {
+				slog.Warn("prompt audit: engine çağrısı başarısız, simülasyon kullanılıyor", "engine", input.EngineName, "error", err)
+			} else if resp != nil {
+				// Gerçek ölçüm: yanıt metni üzerinden token tahmini + gerçek gecikme.
+				tokenCount = len(input.PromptText)/4 + len(resp.Content)/4
+				if tokenCount < 1 {
+					tokenCount = 1
+				}
+				latencyMs = int(latency.Milliseconds())
+				if latencyMs < 1 {
+					latencyMs = 1
+				}
+				slog.Info("prompt audit: gerçek engine çağrısı", "engine", input.EngineName, "latency_ms", latencyMs, "tokens", tokenCount)
+			}
+		} else {
+			slog.Debug("prompt audit: motor bulunamadı, simülasyon kullanılıyor", "engine", input.EngineName)
+		}
+	}
 
 	// Sonucu DB'ye yaz
 	issuesJSON, _ := json.Marshal(issues)

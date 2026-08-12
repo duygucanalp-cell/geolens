@@ -37,6 +37,7 @@ import (
 	"github.com/geolens/platform/internal/config"
 	"github.com/geolens/platform/internal/contentgeo"
 	"github.com/geolens/platform/internal/cost"
+	"github.com/geolens/platform/internal/dbiface"
 	"github.com/geolens/platform/internal/delivery"
 	"github.com/geolens/platform/internal/discovery"
 	"github.com/geolens/platform/internal/drift"
@@ -199,7 +200,9 @@ func main() {
 	gateHandler := gate.NewProductionHandler(pool)
 	explainHandler := explain.NewProductionHandler(pool)
 	agentHandler := agent.NewProductionHandler(pool)
-	promptHandler := prompt.NewProductionHandler(pool)
+	// Prompt audit: engine registry verilir — denetim prompt'u gerçek motora gönderip
+	// token/latency'yi simülasyon yerine gerçek ölçümle doldurur (0421 kapanışı).
+	promptHandler := prompt.NewHandlerWithEngines(dbiface.NewAdapter(pool), engines)
 	benchmarkHandler := benchmark.NewProductionHandler(pool)
 	costHandler := cost.NewProductionHandler(pool)
 	usageHandler := usage.NewProductionHandler(pool)
@@ -487,6 +490,7 @@ func main() {
 					r.Get("/trends", measureHandler.ListTrends)
 					r.Get("/brands/{brandID}/scores", measureHandler.ListBrandScores)
 					r.Get("/notifications/settings", deliveryHandler.GetSettings)
+					r.Get("/notifications", deliveryHandler.ListNotifications)
 					r.Get("/recommendations", recommendationHandler.ListRecommendations)
 				})
 
@@ -583,6 +587,7 @@ func main() {
 					r.Post("/audit", auditHandler.RunAudit)
 					r.Put("/notifications/settings", deliveryHandler.UpdateSettings)
 					r.Post("/notifications/test", deliveryHandler.SendTestEmail)
+					r.Post("/notifications/{notificationId}/read", deliveryHandler.MarkNotificationRead)
 					r.Post("/recommendations/{recId}/apply", recommendationHandler.MarkApplied)
 					r.Post("/recommendations/{recId}/dismiss", recommendationHandler.MarkDismissed)
 					r.Post("/reports", pdfHandler.RequestReport)

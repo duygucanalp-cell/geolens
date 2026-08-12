@@ -61,6 +61,11 @@ services:
       ML_MODEL_DIR: /models
       ML_SENTIMENT_TOKENIZER_DIR: /models/sentiment/tokenizer
       MODELS: "sentiment=/models/sentiment/sentiment.onnx,prompt_intent=/models/prompt_classifier/prompt_intent.onnx,prompt_topic=/models/prompt_classifier/prompt_topic.onnx,prompt_persona=/models/prompt_classifier/prompt_persona.onnx,prompt_funnel=/models/prompt_classifier/prompt_funnel.onnx"
+      # A2-5 LLM-as-Judge (opsiyonel): boşsa kural tabanlı fallback (M-1)
+      GEOLENS_JUDGE_API_KEY: ${GEOLENS_JUDGE_API_KEY:-}
+      GEOLENS_JUDGE_MODEL: ${GEOLENS_JUDGE_MODEL:-gpt-4o-mini}
+      GEOLENS_JUDGE_BASE_URL: ${GEOLENS_JUDGE_BASE_URL:-}
+      GEOLENS_JUDGE_THRESHOLD: ${GEOLENS_JUDGE_THRESHOLD:-3}
     volumes:
       - ../ml/models:/models:ro
     healthcheck:
@@ -114,8 +119,12 @@ services:
       context: ..
       dockerfile: Dockerfile
       target: scheduler
+    ports:
+      # Scheduler metrics — kendi prosesindeki metrikler (scrape için)
+      - "8082:8082"
     environment:
       ENVIRONMENT: development
+      SCHEDULER_METRICS_PORT: 8082
       S3_ENDPOINT: http://minio:9000
       S3_BUCKET: geolens-snapshots
       S3_REGION: us-east-1
@@ -148,7 +157,10 @@ services:
       WORKER_METRICS_PORT: 8081
       # ML serving — breaker metrikleri (MLServingUnavailable alert kaynağı)
       ML_SERVING_URL: http://ml-serving:8900
-      ML_TIMEOUT: 2s
+      ML_TIMEOUT: 5s
+      # NFR-13 sektör benchmark eşiği — pilot senaryosu: 2 tenant ile demo
+      # (0422 §3; üretimde ≥5 kalmalıdır)
+      BENCHMARK_MIN_TENANTS: 2
       S3_ENDPOINT: http://minio:9000
       S3_BUCKET: geolens-snapshots
       S3_REGION: us-east-1

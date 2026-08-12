@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/geolens/platform/internal/dbiface"
+	"github.com/geolens/platform/platform/metrics"
 )
 
 // Aggregator computes sector-level statistics from measure.scores and caches
@@ -17,12 +18,29 @@ type Aggregator struct {
 }
 
 // NewAggregator creates a new Aggregator with the given DB pool and DP config.
-// If dpCfg is nil, DefaultDPConfig() is used.
+// If dpCfg is nil, DefaultDPConfig() is used. If dpCfg is provided, its non-zero
+// fields are merged over the defaults — a partial config (e.g. only MinTenants)
+// must NOT zero out Epsilon/Clamp bounds, which would clamp all stats to 0.
 func NewAggregator(pool dbiface.DB, dpCfg *DPConfig) *Aggregator {
 	cfg := DefaultDPConfig()
 	if dpCfg != nil {
-		cfg = *dpCfg
+		if dpCfg.Epsilon != 0 {
+			cfg.Epsilon = dpCfg.Epsilon
+		}
+		if dpCfg.Sensitivity != 0 {
+			cfg.Sensitivity = dpCfg.Sensitivity
+		}
+		if dpCfg.ClampMin != 0 || dpCfg.ClampMax != 0 {
+			cfg.ClampMin = dpCfg.ClampMin
+			cfg.ClampMax = dpCfg.ClampMax
+		}
+		if dpCfg.MinTenants != 0 {
+			cfg.MinTenants = dpCfg.MinTenants
+		}
 	}
+	// NFR-13 eşiğini Prometheus gauge olarak expose et — Grafana'da
+	// tenant_count >= min_tenants koşulu sufficient_data durumunu gösterir (0422).
+	metrics.BenchmarkMinTenants.Set(float64(cfg.MinTenants))
 	return &Aggregator{pool: pool, dpCfg: cfg}
 }
 
@@ -51,6 +69,9 @@ func (a *Aggregator) Aggregate(ctx context.Context) (string, error) {
 		"tenant_count", tenantCount,
 		"brand_count", brandCount,
 	)
+
+	// Son koşudaki kiracı sayısını gauge'a yaz — eşikle karşılaştırılabilir.
+	metrics.BenchmarkTenantCount.Set(float64(tenantCount))
 
 	// Adım 2: Yeterli veri yoksa hiçbir şey ekleme (NFR-13)
 	if tenantCount < a.dpCfg.MinTenants {
@@ -200,7 +221,7 @@ func (a *Aggregator) GetLatestSectorStats(ctx context.Context) (*AggregatedSecto
 	stats.Difference = 0
 	stats.Trend = ""
 
-	stats.SufficientData = stats.TenantCount >= DefaultDPConfig().MinTenants
+	stats.SufficientData = stats.TenantCount >= a.dpCfg.MinTenants
 	return &stats, nil
 }
 

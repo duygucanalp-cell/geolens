@@ -15,10 +15,11 @@ from geolens.serving.onnx_model import ONNXModel
 
 MODEL_ID_TO_VERSION: Dict[str, str] = {
     # 0421 Aşama 2 model kayıtları: eğitim tamamlandıkça sürüm artırılır.
-    "prompt_intent": "1.0.0",
-    "prompt_topic": "1.0.0",
-    "prompt_persona": "1.0.0",
-    "prompt_funnel": "1.0.0",
+    # 1.1.0 — Ödev-01 verisiyle yeniden eğitim (ml/data/odev01, 2026-08-12).
+    "prompt_intent": "1.1.0",
+    "prompt_topic": "1.1.0",
+    "prompt_persona": "1.1.0",
+    "prompt_funnel": "1.1.0",
     # Sentiment ONNX input'ları (input_ids/attention_mask) özel processor
     # gerektirir; registry'ye alınınca processor aşağıdaki harita üzerinden gelir.
     "sentiment": "1.0.0",

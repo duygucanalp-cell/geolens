@@ -160,7 +160,13 @@ func main() {
 	competitiveEngine := competitive.NewEngine(pool)
 
 	// Benchmark sektör istatistikleri toplayıcı (FR-D5/C)
-	benchmarkAggregator := benchmark.NewAggregator(dbiface.NewAdapter(pool), nil)
+	// NFR-13 eşiği BENCHMARK_MIN_TENANTS env'inden yapılandırılır (pilotta düşürülebilir,
+	// üretimde ≥5). Sadece MinTenants override edilir — diğer DP parametreleri (Epsilon,
+	// Clamp aralığı vb.) varsayılandan (DefaultDPConfig) devralınır; eksik DPConfig geçmek
+	// Epsilon=0 → tüm istatistiklerin 0'a kırpılmasına yol açar (regresyon).
+	dpCfg := benchmark.DefaultDPConfig()
+	dpCfg.MinTenants = cfg.BenchmarkMinTenants
+	benchmarkAggregator := benchmark.NewAggregator(dbiface.NewAdapter(pool), &dpCfg)
 	// Benchmark collector ticker-based'dir, Redis Stream gerektirmez
 	benchmarkCollector := benchmark.NewCollector(benchmarkAggregator, 1*time.Hour)
 
