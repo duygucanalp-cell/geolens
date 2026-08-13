@@ -22,3 +22,12 @@ management:
     web:
       exposure:
         include: health,info,threaddump
+
+recommendation:
+  batch:
+    # Go worker'da ölçüm tamamlanınca tetiklenen Evaluate() akışının planlı batch karşılığı.
+    # Varsayılan kapalı; açmak için: recommendation.batch.enabled=true + workspaces="WS01:T01,WS02:T01"
+    enabled: ${RECOMMENDATION_BATCH_ENABLED:false}
+    workspaces: ${RECOMMENDATION_BATCH_WORKSPACES:}
+    interval-ms: ${RECOMMENDATION_BATCH_INTERVAL_MS:900000}
+    initial-delay-ms: ${RECOMMENDATION_BATCH_INITIAL_DELAY_MS:60000}

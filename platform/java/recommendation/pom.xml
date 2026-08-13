@@ -15,10 +15,13 @@
   <artifactId>recommendation</artifactId>
   <version>0.1.0-SNAPSHOT</version>
   <name>recommendation</name>
-  <description>GeoLens recommendation spike (Go port evaluation) — JDK 21 + Spring Boot 3 + virtual threads</description>
+  <description>GeoLens recommendation spike (Go port evaluation) — JDK 25 + Spring Boot 3 + virtual threads</description>
 
   <properties>
-    <java.version>21</java.version>
+    <java.version>25</java.version>
+    <!-- Varsayılan çalıştırmada integration grubu dışlanır.
+         Docker ile entegrasyon: mvnw test -Dsurefire.groups=integration -->
+    <surefire.groups>!integration</surefire.groups>
   </properties>
 
   <dependencies>
@@ -50,6 +53,16 @@
       <artifactId>spring-boot-starter-test</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>postgresql</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -62,7 +75,14 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
-          <release>21</release>
+          <release>25</release>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <groups>${surefire.groups}</groups>
         </configuration>
       </plugin>
     </plugins>

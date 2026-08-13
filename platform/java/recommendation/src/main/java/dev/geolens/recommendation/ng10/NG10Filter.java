@@ -5,6 +5,7 @@ import dev.geolens.recommendation.domain.Recommendation;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * NG10 — İddia Dili Filtresi. Go {@code NG10Filter} portu (birebir).
@@ -69,7 +70,7 @@ public final class NG10Filter {
         if (text == null || text.isEmpty()) {
             return ClaimLang.NG;
         }
-        String t = Turkish.toLowerCase(text);
+        String t = text.toLowerCase(Locale.forLanguageTag("tr"));
 
         for (Ng10Rule rule : rules) {
             if (rule.category() == ClaimLang.N && matchKeywords(t, rule.keywords())) {

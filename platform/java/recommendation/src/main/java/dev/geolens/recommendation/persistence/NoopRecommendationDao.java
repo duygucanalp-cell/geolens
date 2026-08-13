@@ -5,6 +5,7 @@ import dev.geolens.recommendation.domain.Brand;
 import dev.geolens.recommendation.domain.Recommendation;
 import dev.geolens.recommendation.domain.ScoreSnapshot;
 
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -41,5 +42,15 @@ public final class NoopRecommendationDao implements RecommendationDao {
     @Override
     public void markDismissed(String id, String tenantId, String workspaceId) {
         throw new UnsupportedOperationException("DB bağlantısı yok");
+    }
+
+    @Override
+    public AppliedRecommendation loadApplied(String id, String workspaceId, String tenantId) {
+        return null;
+    }
+
+    @Override
+    public ScoreAt loadScoreAt(String brandId, String workspaceId, String tenantId, Instant at, boolean before) {
+        return null;
     }
 }

@@ -6,11 +6,11 @@ import dev.geolens.recommendation.domain.EvidenceLabel;
 import dev.geolens.recommendation.domain.Recommendation;
 import dev.geolens.recommendation.domain.Severity;
 import dev.geolens.recommendation.ng10.NG10Filter;
-import dev.geolens.recommendation.ng10.Turkish;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -173,16 +173,17 @@ class NG10ClassifierTest {
 
     @Test
     void turkishToLowerCaseMatchesGo() {
-        assertEquals("i", Turkish.toLowerCase("İ"));
-        assertEquals("ı", Turkish.toLowerCase("I"));
-        assertEquals("ş", Turkish.toLowerCase("Ş"));
-        assertEquals("ç", Turkish.toLowerCase("Ç"));
-        assertEquals("ü", Turkish.toLowerCase("Ü"));
-        assertEquals("ö", Turkish.toLowerCase("Ö"));
-        assertEquals("ğ", Turkish.toLowerCase("Ğ"));
-        assertEquals("abc", Turkish.toLowerCase("ABC"));
-        assertEquals("istanbul", Turkish.toLowerCase("İSTANBUL"));
-        assertEquals("türkçe karakterler", Turkish.toLowerCase("TÜRKÇE KARAKTERLER"));
+        Locale tr = Locale.forLanguageTag("tr");
+        assertEquals("i", "İ".toLowerCase(tr));
+        assertEquals("ı", "I".toLowerCase(tr));
+        assertEquals("ş", "Ş".toLowerCase(tr));
+        assertEquals("ç", "Ç".toLowerCase(tr));
+        assertEquals("ü", "Ü".toLowerCase(tr));
+        assertEquals("ö", "Ö".toLowerCase(tr));
+        assertEquals("ğ", "Ğ".toLowerCase(tr));
+        assertEquals("abc", "ABC".toLowerCase(tr));
+        assertEquals("istanbul", "İSTANBUL".toLowerCase(tr));
+        assertEquals("türkçe karakterler", "TÜRKÇE KARAKTERLER".toLowerCase(tr));
     }
 
     private static Recommendation rec(String title, String detail) {
