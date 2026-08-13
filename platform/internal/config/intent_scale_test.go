@@ -6,7 +6,9 @@ import (
 )
 
 func TestParseIntentWeightScale_Valid(t *testing.T) {
-	raw := "presence=1.25,1.00,0.90,0.90,1.10,0.90,0.90;comparison=0.90,1.00,0.90,1.40,0.90,0.90,1.30"
+	// 0421-8INTENT: yeni intent anahtarları (information, opinion) da key-agnostik
+	// parser ile çözülür.
+	raw := "information=1.25,1.00,0.90,0.90,1.10,0.90,0.90;opinion=1.00,1.00,1.00,1.00,1.25,1.00,1.00"
 	scale, ok := ParseIntentWeightScaleRaw(raw)
 	if !ok {
 		t.Fatal("geçerli girdi ok=true olmalı")
@@ -14,11 +16,11 @@ func TestParseIntentWeightScale_Valid(t *testing.T) {
 	if len(scale) != 2 {
 		t.Fatalf("beklenen 2 intent, gerçek %d", len(scale))
 	}
-	if scale["presence"][0] != 1.25 || scale["presence"][6] != 0.90 {
-		t.Errorf("presence çarpanları hatalı: %v", scale["presence"])
+	if scale["information"][0] != 1.25 || scale["information"][6] != 0.90 {
+		t.Errorf("information çarpanları hatalı: %v", scale["information"])
 	}
-	if scale["comparison"][3] != 1.40 {
-		t.Errorf("comparison rakip çarpanı 1.40 olmalı: %v", scale["comparison"])
+	if scale["opinion"][4] != 1.25 {
+		t.Errorf("opinion appearance çarpanı 1.25 olmalı: %v", scale["opinion"])
 	}
 }
 

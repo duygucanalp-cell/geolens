@@ -99,6 +99,23 @@ func TestClassifyPrompt_Success(t *testing.T) {
 	}
 }
 
+// TestClassifyPrompt_NewIntentLabel: 0421-8INTENT yeni intent etiketi (opinion)
+// serbest string olarak client'tan aynen geçer (enum yok).
+func TestClassifyPrompt_NewIntentLabel(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"intent":{"label":"opinion","confidence":0.81},"topic":{"label":"brand","confidence":0.7},"persona":{"label":"executive","confidence":0.6},"funnel":{"label":"consideration","confidence":0.55}}`))
+	}))
+	defer srv.Close()
+
+	cls, err := NewClient(srv.URL, 0).ClassifyPrompt(context.Background(), "Acme hakkında ne düşünüyorsun?")
+	if err != nil {
+		t.Fatalf("ClassifyPrompt hata: %v", err)
+	}
+	if cls.Intent.Label != "opinion" || cls.Intent.Confidence != 0.81 {
+		t.Errorf("yeni intent etiketi aynen geçmeli: %+v", cls.Intent)
+	}
+}
+
 func TestClassifyPrompt_ModelMissing(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)

@@ -38,16 +38,52 @@ func TestApplyIntentWeights_Renormalizes(t *testing.T) {
 	}
 }
 
-// TestApplyIntentWeights_Presence: presence intenti varlık ağırlığını öne çıkarır.
-func TestApplyIntentWeights_Presence(t *testing.T) {
-	out := applyIntentWeights(v2DefaultWeights, "presence")
+// TestApplyIntentWeights_Information: information intenti (eski presence)
+// varlık ağırlığını öne çıkarır (0421-8INTENT).
+func TestApplyIntentWeights_Information(t *testing.T) {
+	out := applyIntentWeights(v2DefaultWeights, "information")
 	sum := out.PresenceShare + out.PositionWeight + out.SourceShare + out.CompetitorContext +
 		out.AppearanceRate + out.Sentiment + out.CompVisibility
 	if !almostEqual(sum, 1.0) {
 		t.Errorf("toplam 1.0 olmalı, gerçek %f", sum)
 	}
 	if out.PresenceShare <= v2DefaultWeights.PresenceShare {
-		t.Errorf("presence intenti varlık ağırlığını yükseltmeli: %f", out.PresenceShare)
+		t.Errorf("information intenti varlık ağırlığını yükseltmeli: %f", out.PresenceShare)
+	}
+}
+
+// TestApplyIntentWeights_NewIntents: 0421-8INTENT ile eklenen intent'lerin
+// ayırt edici bileşenleri yükseltmeli ve toplam 1.0'a normalize olmalı.
+func TestApplyIntentWeights_NewIntents(t *testing.T) {
+	cases := []struct {
+		intent    string
+		component func(ComponentWeights) float64
+	}{
+		{"opinion", func(w ComponentWeights) float64 { return w.AppearanceRate }},     // eski category
+		{"complaint", func(w ComponentWeights) float64 { return w.Sentiment }},        // sentiment ağırlıklı
+		{"purchase", func(w ComponentWeights) float64 { return w.CompetitorContext }}, // karar yönlendirmesi
+		{"news", func(w ComponentWeights) float64 { return w.SourceShare }},           // kaynak/güncellik
+	}
+	for _, tc := range cases {
+		out := applyIntentWeights(v2DefaultWeights, tc.intent)
+		sum := out.PresenceShare + out.PositionWeight + out.SourceShare + out.CompetitorContext +
+			out.AppearanceRate + out.Sentiment + out.CompVisibility
+		if !almostEqual(sum, 1.0) {
+			t.Errorf("%s: toplam 1.0 olmalı, gerçek %f", tc.intent, sum)
+		}
+		if tc.component(out) <= tc.component(v2DefaultWeights) {
+			t.Errorf("%s intenti ilgili bileşeni yükseltmeli", tc.intent)
+		}
+	}
+}
+
+// TestApplyIntentWeights_RemovedLegacyKeys: eski presence/category anahtarları
+// 0421-8INTENT'te kaldırıldı — bilinmeyen intent gibi varsayılanı döndürmeli.
+func TestApplyIntentWeights_RemovedLegacyKeys(t *testing.T) {
+	for _, legacy := range []string{"presence", "category"} {
+		if out := applyIntentWeights(v2DefaultWeights, legacy); out != v2DefaultWeights {
+			t.Errorf("%s kaldırılmış anahtar varsayılanı döndürmeli: %+v", legacy, out)
+		}
 	}
 }
 
@@ -55,9 +91,9 @@ func TestApplyIntentWeights_Presence(t *testing.T) {
 // uygulanır ve normalize edilir (0421 A3-3 pilot kalibrasyonu).
 func TestApplyIntentWeightsWithScale_EnvOverride(t *testing.T) {
 	scale := map[string][7]float64{
-		"presence": {1.50, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00}, // varlığı daha fazla öne çıkar
+		"information": {1.50, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00}, // varlığı daha fazla öne çıkar
 	}
-	out := applyIntentWeightsWithScale(v2DefaultWeights, "presence", scale)
+	out := applyIntentWeightsWithScale(v2DefaultWeights, "information", scale)
 	sum := out.PresenceShare + out.PositionWeight + out.SourceShare + out.CompetitorContext +
 		out.AppearanceRate + out.Sentiment + out.CompVisibility
 	if !almostEqual(sum, 1.0) {
@@ -68,7 +104,7 @@ func TestApplyIntentWeightsWithScale_EnvOverride(t *testing.T) {
 		t.Errorf("1.50 çarpanı varlığı yükseltmeli: %f", out.PresenceShare)
 	}
 	// Varsayılan tabloyla karşılaştır: 1.25 vs 1.50 çarpanı fark yaratmalı
-	def := applyIntentWeights(v2DefaultWeights, "presence")
+	def := applyIntentWeights(v2DefaultWeights, "information")
 	if almostEqual(out.PresenceShare, def.PresenceShare) {
 		t.Errorf("env override çarpanları varsayılandan farklı sonuç üretmeli")
 	}
@@ -77,7 +113,7 @@ func TestApplyIntentWeightsWithScale_EnvOverride(t *testing.T) {
 // TestApplyIntentWeightsWithScale_UnknownIntent: env tablosunda olmayan intent
 // ağırlıkları değiştirmez.
 func TestApplyIntentWeightsWithScale_UnknownIntent(t *testing.T) {
-	scale := map[string][7]float64{"presence": {1.50, 1, 1, 1, 1, 1, 1}}
+	scale := map[string][7]float64{"information": {1.50, 1, 1, 1, 1, 1, 1}}
 	base := v2DefaultWeights
 	if out := applyIntentWeightsWithScale(base, "comparison", scale); out != base {
 		t.Errorf("env tablosunda olmayan intent varsayılanı döndürmeli: %+v", out)
@@ -130,6 +166,29 @@ func TestIntentWeights_MLFirst(t *testing.T) {
 	}
 }
 
+// TestIntentWeights_NewIntentScale (0421-8INTENT Faz D): serving 8-intent
+// taksonomisinden bir etiket (opinion) döndüğünde ölçek uygulanır — fallback'e
+// düşülmez (appearance yükselir, ok=true).
+func TestIntentWeights_NewIntentScale(t *testing.T) {
+	var calls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+		_, _ = w.Write([]byte(`{"intent":{"label":"opinion","confidence":0.81},"topic":{"label":"brand","confidence":0.7},"persona":{"label":"executive","confidence":0.6},"funnel":{"label":"consideration","confidence":0.55}}`))
+	}))
+	defer srv.Close()
+
+	s := &service{ml: ml.NewClient(srv.URL, 0), breaker: ml.NewCircuitBreaker(ml.DefaultCooldown)}
+	results := []MeasurementResult{{PromptText: "Acme hakkında ne düşünüyorsun?"}}
+
+	adjusted, ok := s.intentWeights(context.Background(), results, v2DefaultWeights)
+	if !ok {
+		t.Fatal("8-intent etiketi (opinion) için ok=true olmalı — fallback'e düşülmemeli")
+	}
+	if adjusted.AppearanceRate <= v2DefaultWeights.AppearanceRate {
+		t.Errorf("opinion intenti appearance ağırlığını yükseltmeli: %+v", adjusted)
+	}
+}
+
 // TestIntentWeights_EmptyPromptNoCall: prompt boşsa çağrı yapılmaz.
 func TestIntentWeights_EmptyPromptNoCall(t *testing.T) {
 	s := &service{ml: ml.NewClient("http://localhost:1", 0), breaker: ml.NewCircuitBreaker(ml.DefaultCooldown)}
@@ -166,25 +225,25 @@ func TestIntentWeights_FallbackOnErrorAndCooldown(t *testing.T) {
 // TestNewServiceWithML_EnvIntentScale: INTENT_WEIGHT_SCALE env'i doluysa servis
 // env çarpanlarını kullanır; nil cfg ile de env doğrudan okunur (handler yolu).
 func TestNewServiceWithML_EnvIntentScale(t *testing.T) {
-	t.Setenv("INTENT_WEIGHT_SCALE", "presence=1.50,1,1,1,1,1,1")
+	t.Setenv("INTENT_WEIGHT_SCALE", "information=1.50,1,1,1,1,1,1")
 	s := NewServiceWithML(nil, nil, nil, nil)
 	svc := s.(*service)
 	if len(svc.intentScale) != 1 {
 		t.Fatalf("env çarpanları çözülmeli: %+v", svc.intentScale)
 	}
-	if svc.effectiveIntentScale()["presence"][0] != 1.50 {
-		t.Errorf("presence çarpanı env'den gelmeli: %v", svc.intentScale["presence"])
+	if svc.effectiveIntentScale()["information"][0] != 1.50 {
+		t.Errorf("information çarpanı env'den gelmeli: %v", svc.intentScale["information"])
 	}
 }
 
 // TestNewServiceWithML_CfgIntentScale: cfg üzerinden verilen INTENT_WEIGHT_SCALE
 // env'den öncelikli kullanılır.
 func TestNewServiceWithML_CfgIntentScale(t *testing.T) {
-	t.Setenv("INTENT_WEIGHT_SCALE", "presence=1.99,1,1,1,1,1,1")
-	cfg := &config.Config{IntentWeightScaleRaw: "presence=1.50,1,1,1,1,1,1"}
+	t.Setenv("INTENT_WEIGHT_SCALE", "information=1.99,1,1,1,1,1,1")
+	cfg := &config.Config{IntentWeightScaleRaw: "information=1.50,1,1,1,1,1,1"}
 	svc := NewServiceWithML(nil, nil, cfg, nil).(*service)
-	if svc.intentScale["presence"][0] != 1.50 {
-		t.Errorf("cfg değeri env'den öncelikli olmalı: %v", svc.intentScale["presence"])
+	if svc.intentScale["information"][0] != 1.50 {
+		t.Errorf("cfg değeri env'den öncelikli olmalı: %v", svc.intentScale["information"])
 	}
 }
 

@@ -46,16 +46,22 @@ var v1LegacyWeights = ComponentWeights{
 var defaultWeights = v2DefaultWeights
 
 // defaultIntentComponentScale — prompt intent'inin VI bileşenlerine varsayılan
-// etkisi (0421 A3-3, 0404 prompt ağırlıkları ile hizalı). Sıra: [varlık, konum,
-// kaynak, rakip, appearance, sentiment, compvis]. Çarpanlar uygulandıktan sonra
-// toplam 1.0'a normalize edilir; değerler pilot verisiyle kalibre edilir (0404 §4).
+// etkisi (0421 A3-3, 0404 prompt ağırlıkları ile hizalı). 0421-8INTENT ile
+// taksonomi 5→8 intent'e genişletildi (information, recommendation, comparison,
+// opinion, problem, complaint, purchase, news); eski presence→information,
+// category→opinion olarak eşlendi. Sıra: [varlık, konum, kaynak, rakip,
+// appearance, sentiment, compvis]. Çarpanlar uygulandıktan sonra toplam 1.0'a
+// normalize edilir; değerler pilot verisiyle kalibre edilir (0404 §4).
 // INTENT_WEIGHT_SCALE env'i ile override edilebilir (pilot kalibrasyonu için).
 var defaultIntentComponentScale = map[string][7]float64{
-	"presence":       {1.25, 1.00, 0.90, 0.90, 1.10, 0.90, 0.90}, // varlık sinyali öne çıkar
-	"comparison":     {0.90, 1.00, 0.90, 1.40, 0.90, 0.90, 1.30}, // rakip bağlamı + compvis öne çıkar
+	"information":    {1.25, 1.00, 0.90, 0.90, 1.10, 0.90, 0.90}, // eski presence — varlık sinyali öne çıkar
 	"recommendation": {1.00, 1.00, 1.15, 1.00, 0.95, 1.10, 0.95}, // kaynak güveni + sentiment öne çıkar
-	"category":       {1.00, 1.00, 1.00, 1.00, 1.25, 1.00, 1.00}, // appearance (kategori görünürlüğü) öne çıkar
+	"comparison":     {0.90, 1.00, 0.90, 1.40, 0.90, 0.90, 1.30}, // rakip bağlamı + compvis öne çıkar
+	"opinion":        {1.00, 1.00, 1.00, 1.00, 1.25, 1.00, 1.00}, // eski category — appearance (görünürlük) öne çıkar
 	"problem":        {1.00, 1.15, 1.10, 1.00, 0.90, 1.00, 1.00}, // konum (çözüm bulunabilirliği) öne çıkar
+	"complaint":      {1.00, 1.10, 1.15, 1.00, 0.90, 1.20, 1.00}, // problem + sentiment ağırlıklı
+	"purchase":       {1.00, 1.00, 1.10, 1.10, 1.00, 1.10, 1.00}, // karar yönlendirmesi
+	"news":           {1.10, 1.00, 1.20, 1.00, 0.95, 1.00, 0.95}, // kaynak/güncellik
 }
 
 // ---- Service Implementation ----
