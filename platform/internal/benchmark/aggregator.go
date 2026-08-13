@@ -75,7 +75,7 @@ func (a *Aggregator) Aggregate(ctx context.Context) (string, error) {
 
 	// Adım 2: Yeterli veri yoksa hiçbir şey ekleme (NFR-13)
 	if tenantCount < a.dpCfg.MinTenants {
-		logger.Debug("aggregator: yetersiz veri, atlanıyor",
+		logger.Info("aggregator: yetersiz veri, sektör istatistikleri yayınlanmıyor (NFR-13)",
 			"tenant_count", tenantCount,
 			"min_tenants", a.dpCfg.MinTenants,
 		)
@@ -185,6 +185,7 @@ func (a *Aggregator) Aggregate(ctx context.Context) (string, error) {
 	logger.Info("aggregator: sektör istatistikleri hesaplandı ve kaydedildi",
 		"stats_id", id,
 		"tenant_count", dp.TenantCount,
+		"min_tenants", a.dpCfg.MinTenants,
 		"brand_count", brandCount,
 		"score_count", scoreCount,
 		"sector_avg", dp.SectorAvg,

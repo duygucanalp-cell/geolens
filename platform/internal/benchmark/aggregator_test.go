@@ -6,8 +6,11 @@ import (
 	"testing"
 	"time"
 
+	promtestutil "github.com/prometheus/client_golang/prometheus/testutil"
+
 	"github.com/geolens/platform/internal/dbiface"
 	"github.com/geolens/platform/internal/testutil"
+	"github.com/geolens/platform/platform/metrics"
 )
 
 func TestNewAggregator_DefaultConfig(t *testing.T) {
@@ -20,6 +23,21 @@ func TestNewAggregator_DefaultConfig(t *testing.T) {
 	}
 	if a.dpCfg.MinTenants != 5 {
 		t.Errorf("varsayılan MinTenants 5 olmalı, gerçek %d", a.dpCfg.MinTenants)
+	}
+}
+
+// TestNewAggregator_SetsMinTenantsMetric — NFR-13 eşiği Prometheus gauge'ına
+// yazılmalıdır (0422 pilot kalibrasyonu: Grafana'da tenant_count >= eşik koşulu).
+func TestNewAggregator_SetsMinTenantsMetric(t *testing.T) {
+	// Önceki testlerden kalan değeri temizle ve yeniden kur
+	metrics.BenchmarkMinTenants.Set(0)
+	t.Cleanup(func() { metrics.BenchmarkMinTenants.Set(0) })
+	NewAggregator(nil, &DPConfig{MinTenants: 3})
+
+	// prometheus/testutil ile gauge değerini oku
+	val := promtestutil.ToFloat64(metrics.BenchmarkMinTenants)
+	if val != 3.0 {
+		t.Errorf("BenchmarkMinTenants gauge 3 olmalı, gerçek %v", val)
 	}
 }
 
