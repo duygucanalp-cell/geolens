@@ -135,7 +135,11 @@ jobs:
         run: ruff check .
       - name: Pytest
         run: pytest
-      - name: Gold dataset eval
+      - name: Gold dataset eval (8-intent per-sınıf F1 dahil)
+        env:
+          # Sıkı mod: 0421-8INTENT 8-intent model per-sınıf F1 eşiği ve legacy
+          # eval zorunlu — eksik veri/model veya eşik altı sınıf CI'yı kırar.
+          ML_REQUIRE_MODELS: "1"
         run: |
           python -m geolens.eval.main
 

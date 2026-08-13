@@ -1,8 +1,14 @@
-"""Gold dataset üzerinde model değerlendirme giriş noktası (0421 A0-5, A2).
+"""Model değerlendirme giriş noktası (0421 A0-5, A2, 0421-8INTENT Faz D).
 
 Dataset hazır değilse elegant geçer ve CI'da fail etmez. Dataset mevcutken
-(data/train/ + data/test/) her model için eşik kontrolü yapar — geçemeyen model
-CI'yi kırar (0421 M-5). Eşikler 0421 A2 hedeflerinden gelir.
+her model için eşik kontrolü yapar — geçemeyen model CI'yi kırar (0421 M-5).
+Eşikler 0421 A2 hedeflerinden gelir.
+
+0421-8INTENT: intent/persona/funnel (2.0.0) modelleri odev01 raw split'i
+(8/5/5 sınıf) üzerinde **per-sınıf F1** ile değerlendirilir — tek sınıfın
+çökmesi (ör. comparison ↔ opinion karışımı) makro ortalamada gizlenmesin diye.
+Commit edilmiş .joblib artefaktları yüklenir; sınıf kümesi taksonomiyle
+uyuşmazsa fail. Eşik: ML_PROMPT_PER_CLASS_F1 (varsayılan 0.85).
 
 Kullanım:  python -m geolens.eval.main
 """
@@ -21,8 +27,15 @@ MODEL_DIR = os.getenv("ML_MODEL_DIR", os.path.join(os.getcwd(), "models"))
 # Sentifik veride (şablon) modeller →1.0 ölçülür; gerçek veriyle eşik anlamlıdır.
 SENTIMENT_F1_THRESHOLD = 0.90
 PROMPT_F1_THRESHOLD = 0.85
+# 0421-8INTENT: per-sınıf F1 eşiği — her sınıf bu değerin altına inerse CI kırılır.
+PROMPT_PER_CLASS_F1_THRESHOLD = float(os.getenv("ML_PROMPT_PER_CLASS_F1", "0.85"))
 # A0-5 concatenate: mecbur değil; eğitim tamamlanmamışsa atla (bool).
 REQUIRE_MODELS = os.getenv("ML_REQUIRE_MODELS", "0") == "1"
+
+# 0421-8INTENT taksonomisi (serving 2.0.0 sınıf kümeleri).
+INTENT_CLASSES = ["information", "recommendation", "comparison", "complaint", "problem", "purchase", "opinion", "news"]
+PERSONA_CLASSES = ["end_user", "technical_expert", "executive", "journalist", "investor"]
+FUNNEL_CLASSES = ["awareness", "consideration", "decision", "purchase", "loyalty"]
 
 
 def _load_jsonl(path: str) -> list[dict]:
@@ -42,7 +55,7 @@ def _f1_macro(y_true: list, y_pred: list) -> float:
 
 
 def _eval_prompt_classifier(test_dir: str) -> float:
-    """test/prompts.jsonl üzerinden 4 hedefint F1 ortalaması."""
+    """test/prompts.jsonl üzerinden 4 hedefin F1 ortalaması (legacy 5-intent seti)."""
     from sklearn.feature_extraction.text import TfidfVectorizer
     from sklearn.linear_model import LogisticRegression
 
@@ -58,6 +71,47 @@ def _eval_prompt_classifier(test_dir: str) -> float:
         pred = clf.predict(vec.transform([r["text"] for r in test_p]))
         f1s.append(_f1_macro([r[target] for r in test_p], pred))
     return sum(f1s) / len(f1s)
+
+
+def _eval_prompt_classifier_8intent() -> tuple[dict[str, dict[str, float]], float] | None:
+    """0421-8INTENT: commit edilmiş intent/persona/funnel (2.0.0) per-sınıf F1.
+
+    odev01 raw split'i (data/odev01/split/) üzerinde değerlendirir. Dönen:
+    (hedef -> {sınıf: F1}, en düşük sınıf F1). Veri veya model yoksa None döner
+    (REQUIRE_MODELS=1 ise çağıran fail eder).
+    """
+    import joblib
+    from sklearn.metrics import f1_score
+
+    split_dir = os.path.join(DATA_DIR, "odev01", "split")
+    train_p = _load_jsonl(os.path.join(split_dir, "train_prompts_v1.jsonl"))
+    test_p = _load_jsonl(os.path.join(split_dir, "test_prompts_v1.jsonl"))
+    if not train_p or not test_p:
+        logger.info("8-intent split yok (%s) — eval atlandı", split_dir)
+        return None
+
+    model_dir = os.path.join(MODEL_DIR, "prompt_classifier")
+    classes_map = {"intent": INTENT_CLASSES, "persona": PERSONA_CLASSES, "funnel": FUNNEL_CLASSES}
+    per_target: dict[str, dict[str, float]] = {}
+    worst = 1.0
+    for target, expected in classes_map.items():
+        model_path = os.path.join(model_dir, f"prompt_{target}.joblib")
+        if not os.path.exists(model_path):
+            logger.info("8-intent model yok (%s) — eval atlandı", model_path)
+            return None
+        model = joblib.load(model_path)
+        if set(model.classes_) != set(expected):
+            raise ValueError(f"{target} model sınıfları taksonomiyle uyuşmuyor: "
+                             f"{sorted(model.classes_)} beklenen: {expected}")
+        y_true = [r[target] for r in test_p]
+        y_pred = model.predict([r["text"] for r in test_p])
+        per_class = {
+            cls: float(f1_score(y_true, y_pred, labels=[cls], average=None, zero_division=0)[0])
+            for cls in expected
+        }
+        per_target[target] = per_class
+        worst = min(worst, min(per_class.values()))
+    return per_target, worst
 
 
 def _sentiment_from_gold(rec: dict) -> str:
@@ -76,7 +130,7 @@ def run() -> int:
 
     passed = True
 
-    # A2-3 prompt sınıflandırıcı (4 hedefin macro-F1 ortalaması)
+    # A2-3 prompt sınıflandırıcı (4 hedefin macro-F1 ortalaması — legacy 5-intent)
     try:
         f1_prompt = _eval_prompt_classifier(test_dir)
         ok = f1_prompt >= PROMPT_F1_THRESHOLD
@@ -85,6 +139,24 @@ def run() -> int:
                     f1_prompt, PROMPT_F1_THRESHOLD, "✓" if ok else "✗")
     except Exception as exc:
         logger.warning("prompt_classifier eval atlandı: %s", exc)
+        if REQUIRE_MODELS:
+            passed = False
+
+    # 0421-8INTENT (Faz D): 8-intent model per-sınıf F1 — tek sınıf eşiğin
+    # altında kalırsa CI kırılır (comparison ↔ opinion karışımı takibi).
+    try:
+        res = _eval_prompt_classifier_8intent()
+        if res is not None:
+            per_target, worst = res
+            ok = worst >= PROMPT_PER_CLASS_F1_THRESHOLD
+            passed &= ok
+            logger.info("prompt_classifier 8-intent per-sınıf F1: en düşük %.3f (eşik %.2f) %s",
+                        worst, PROMPT_PER_CLASS_F1_THRESHOLD, "✓" if ok else "✗")
+            for target, per_class in per_target.items():
+                detail = ", ".join(f"{c}={v:.3f}" for c, v in sorted(per_class.items()))
+                logger.info("  8-intent %s: %s", target, detail)
+    except Exception as exc:
+        logger.warning("8-intent eval atlandı: %s", exc)
         if REQUIRE_MODELS:
             passed = False
 
