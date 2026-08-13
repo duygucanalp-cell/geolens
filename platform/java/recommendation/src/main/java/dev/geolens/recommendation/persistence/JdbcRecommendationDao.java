@@ -10,6 +10,7 @@ import dev.geolens.recommendation.domain.ScoreSnapshot;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCallback;
+import org.springframework.stereotype.Repository;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.sql.Timestamp;
@@ -25,6 +26,7 @@ import java.util.function.Supplier;
  * ile transaction-scoped tenant bağlamında çalışır. Tüm sorgularda tenant_id/workspace_id
  * WHERE kısıtı da açıkça korunur.
  */
+@Repository
 public class JdbcRecommendationDao implements RecommendationDao {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();

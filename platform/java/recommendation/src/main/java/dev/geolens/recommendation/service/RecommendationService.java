@@ -13,6 +13,7 @@ import dev.geolens.recommendation.persistence.RecommendationDao;
 import dev.geolens.recommendation.rules.DefaultRules;
 import dev.geolens.recommendation.rules.SectorRules;
 import dev.geolens.recommendation.util.Ulid;
+import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -23,7 +24,8 @@ import java.util.Map;
  * Öneri servisi — Go {@code service} portu (birebir davranış).
  * <p>Sonuçlar NG10 filtresinden geçirilir: sadece NG (nötr) ve P (pozitif) öneriler döner.
  */
-public final class RecommendationService {
+@Service
+public class RecommendationService {
 
     private final List<Rule> rules;
     private final Map<String, List<Rule>> sectorRules;
