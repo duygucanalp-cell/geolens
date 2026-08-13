@@ -5,8 +5,16 @@ Ekran: intent/topic/persona/funnel sınıflandırması (0420 WP-04, İP-01).
 - Değerlendirme: ml/data/test/prompts.jsonl (>%85 F1 hedefi)
 - Export: her hedef için ONNX (skl2onnx) / fallback joblib
 
+0421-8INTENT (Faz B): 8-intent taksonomisiyle yeniden eğitim —
+- intent/persona/funnel, odev01/prompts_v1.jsonl split'inden (8/5/5 sınıf)
+- sınıf dengesizliği için LogisticRegression(class_weight='balanced')
+  (opinion 2400 vs complaint 600)
+- topic, data/full üzerinde kalır (1.1.0)
+
 Kullanım:
     python -m geolens.prompt_classifier.train
+    python -m geolens.prompt_classifier.train --train data/odev01/split/train_prompts_v1.jsonl \
+        --test data/odev01/split/test_prompts_v1.jsonl --targets intent,persona,funnel
 """
 from __future__ import annotations
 
@@ -29,11 +37,13 @@ def load_jsonl(path: str) -> list[dict]:
         return [json.loads(line) for line in fh if line.strip()]
 
 
-def train_target(train_records: list[dict], y_key: str, seed: int = 42) -> Pipeline:
+def train_target(train_records: list[dict], y_key: str, seed: int = 42, class_weight: str = "balanced") -> Pipeline:
+    # "none" → None (varsayılan eşit sınıf ağırlığı); "balanced" → otomatik dengeleme.
+    cw = None if class_weight == "none" else class_weight
     pipeline = Pipeline(
         [
             ("tfidf", TfidfVectorizer(ngram_range=(1, 2), min_df=1, sublinear_tf=True)),
-            ("clf", LogisticRegression(max_iter=1000, C=1.0, random_state=seed)),
+            ("clf", LogisticRegression(max_iter=1000, C=1.0, random_state=seed, class_weight=cw)),
         ]
     )
     X = [r["text"] for r in train_records]
@@ -63,16 +73,25 @@ def main() -> None:
     parser.add_argument("--test", default=os.path.join(os.path.dirname(__file__), "..", "..", "data", "test", "prompts.jsonl"))
     parser.add_argument("--out", default=OUTPUT_DIR)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--class-weight", default="balanced", choices=["none", "balanced"],
+                        help="LogisticRegression class_weight (0421-8INTENT Faz B: dengesiz sınıflar)")
+    parser.add_argument("--targets", default=",".join(TARGETS),
+                        help="Eğitilecek hedefler (virgülle ayrılmış); topic ayrı çalıştırılır")
     args = parser.parse_args()
+
+    targets = [t.strip() for t in args.targets.split(",") if t.strip()]
+    unknown = set(targets) - set(TARGETS)
+    if unknown:
+        parser.error(f"bilinmeyen hedef: {sorted(unknown)}")
 
     train = load_jsonl(args.train)
     test = load_jsonl(args.test)
     os.makedirs(args.out, exist_ok=True)
 
     X_test = [r["text"] for r in test]
-    for target in TARGETS:
+    for target in targets:
         print(f"=== {target} ===")
-        model = train_target(train, target, seed=args.seed)
+        model = train_target(train, target, seed=args.seed, class_weight=args.class_weight)
         y_true = [r[target] for r in test]
         y_pred = model.predict(X_test)
 

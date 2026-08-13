@@ -73,18 +73,19 @@ class _FakePromptModel:
 def test_prompt_classify_success():
     import geolens.serving.app as app_module
 
+    # 0421-8INTENT: 8-intent / 5-persona / 5-funnel etiketleri (2.0.0).
     app_module.registry._models = {
         "prompt_intent": _FakePromptModel("prompt_intent", "comparison", [0.05, 0.92, 0.03]),
         "prompt_topic": _FakePromptModel("prompt_topic", "brand", [0.88, 0.12]),
-        "prompt_persona": _FakePromptModel("prompt_persona", "consumer", [0.71, 0.29]),
-        "prompt_funnel": _FakePromptModel("prompt_funnel", "evaluation", [0.65, 0.35]),
+        "prompt_persona": _FakePromptModel("prompt_persona", "end_user", [0.71, 0.29]),
+        "prompt_funnel": _FakePromptModel("prompt_funnel", "consideration", [0.65, 0.35]),
     }
     resp = client.post("/v1/prompt/classify", json={"text": "Acme'nin en iyi rakibi kim?"})
     assert resp.status_code == 200
     body = resp.json()
     assert body["intent"] == {"label": "comparison", "confidence": 0.92}
     assert body["topic"] == {"label": "brand", "confidence": 0.88}
-    assert body["funnel"] == {"label": "evaluation", "confidence": 0.65}
+    assert body["funnel"] == {"label": "consideration", "confidence": 0.65}
 
 
 def test_prompt_classify_model_missing():
@@ -109,16 +110,19 @@ def test_prompt_classify_dict_probability():
         def predict(self, payload):
             return {
                 "model": "prompt_intent",
-                "model_version": "1.0.0",
+                "model_version": "2.0.0",
                 "outputs": {
                     "output_label": ["comparison"],
                     "output_probability": [
                         {
-                            "category": 0.06,
+                            "information": 0.01,
+                            "recommendation": 0.01,
                             "comparison": 0.92,
-                            "presence": 0.01,
+                            "complaint": 0.01,
                             "problem": 0.01,
-                            "recommendation": 0.0,
+                            "purchase": 0.01,
+                            "opinion": 0.02,
+                            "news": 0.01,
                         }
                     ],
                 },
@@ -150,12 +154,12 @@ def test_prompt_classify_dict_label_missing_from_row():
         def predict(self, payload):
             return {
                 "model": "prompt_intent",
-                "model_version": "1.0.0",
+                "model_version": "2.0.0",
                 "outputs": {
-                    # label dict'te yok ("presence" yerine "unknown")
+                    # label dict'te yok (8-intent sınıflarından değil)
                     "output_label": ["unknown"],
                     "output_probability": [
-                        {"category": 0.1, "comparison": 0.85, "presence": 0.05}
+                        {"opinion": 0.1, "comparison": 0.85, "information": 0.05}
                     ],
                 },
             }
