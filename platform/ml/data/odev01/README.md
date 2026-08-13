@@ -22,10 +22,12 @@ sağlamak.
 
 | Dosya                                  | İçerik                                     |
 |----------------------------------------|--------------------------------------------|
-| `prompts_v1.jsonl`                     | 9.000 soru — zengin taksonomi (kayıpsız)   |
-| `prompts_v1.mapped.jsonl`              | 9.000 soru — platform 5'li taksonomisine haritalanmış |
-| `split/train_prompts_v1.mapped.jsonl`  | Haritalı verinin %80'i (7200)              |
-| `split/test_prompts_v1.mapped.jsonl`   | Haritalı verinin %20'si (1800)             |
+| `prompts_v1.jsonl`                     | 9.000 soru — zengin taksonomi (kayıpsız) — **kanonik eğitim kaynağı** (0421-8INTENT Faz A) |
+| `prompts_v1.mapped.jsonl`              | 9.000 soru — platform 5'li taksonomisine haritalanmış — **deprecated** (geri dönüş için tutulur) |
+| `split/train_prompts_v1.jsonl`         | Kayıpsız verinin %80'i (7200) — **8-intent eğitimi için split** (0421-8INTENT Faz B) |
+| `split/test_prompts_v1.jsonl`          | Kayıpsız verinin %20'si (1800) — **8-intent eğitimi için split** (0421-8INTENT Faz B) |
+| `split/train_prompts_v1.mapped.jsonl`  | Haritalı verinin %80'i (7200) — **deprecated** |
+| `split/test_prompts_v1.mapped.jsonl`   | Haritalı verinin %20'si (1800) — **deprecated** |
 | `brands_v1.jsonl`                      | 600 markalık katalog                       |
 
 ## Şema
@@ -74,9 +76,14 @@ aşağıdaki kayıplı haritalamayla üretildi; kayıpsız sürüm `prompts_v1.j
   `SERVICE_SECTORS` kümesiyle yapılır; liste script içinde belgelenmiştir)
 
 > Not: Bu haritalama kayıplıdır; `opinion/news/purchase/complaint` ayrımı
-> 5'li taksonomide erir. Zengin taksonomiye geçiş kararında `prompts_v1.jsonl`
-> kaynak olarak kullanılmalı, `measure` intent ağırlık haritası
-> (`internal/measure/service.go`) buna göre genişletilmelidir.
+> 5'li taksonomide erir.
+
+> **Deprecate notu (0421-8INTENT Faz A):** `prompts_v1.jsonl` kanonik eğitim
+> kaynağı ilan edilmiştir; `prompts_v1.mapped.jsonl` ve `split/` altındaki
+> haritalı dosyalar **deprecated** — yalnızca 5-intent modeline geri dönüş için
+> tutulur. Zengin taksonomiye geçişte intent modeli doğrudan `prompts_v1.jsonl`
+> üzerinden 8 sınıfla eğitilir; `measure` intent ağırlık haritası
+> (`internal/measure/service.go`) 8 anahtara genişletildi (0421-8INTENT Faz C).
 
 ## Kullanım
 
@@ -105,3 +112,4 @@ cat ml/data/odev01/split/train_prompts_v1.mapped.jsonl ml/data/train/prompts.jso
 |----------|-----------|--------------------------------------------------|-------|
 | 1.0      | 2026-08-12| Ödev-01 verisi ml/data taksonomisine entegre edildi | Eğitmen |
 | 1.1      | 2026-08-12| Tüm veriyle model yeniden eğitildi (8000 train / 2000 test, `data/full/`); model sürümü 1.1.0 | Eğitmen |
+| 1.2      | 2026-08-13| **0421-8INTENT Faz B:** kayıpsız veri için stratifiye split üretildi (`split_odev01.py`, intent×sector, çekirdek 42, 7200/1800); intent/persona/funnel modelleri `prompts_v1.jsonl` üzerinden 8/5/5 sınıfla `class_weight='balanced'` ile yeniden eğitildi → sürüm **2.0.0** (topic 1.1.0 kalır). Faz D: per-sınıf F1=1.000, serving uçtan uca 8/8 uyumlu — rapor `data/8intent_f1_report.md`. | Eğitmen |

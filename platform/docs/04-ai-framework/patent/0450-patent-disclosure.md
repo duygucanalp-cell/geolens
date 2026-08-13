@@ -45,10 +45,10 @@ motorlu (multi-engine) bir skorlama sistemi.
 
 ### 4.1 Çok Motorlu (Multi-Engine) Ölçüm Paneli
 
-Bir marka için aynı prompt taksonomisi (0421 A1-1: 5×5×5×4×2 = 1000 kombinasyon)
-üzerinden N adet AI motora (Perplexity, ChatGPT, Gemini, Claude, Grok, Mistral,
-Copilot, Google AI Overview) paralel istek gönderilir. Her motor, kademe
-(fidelity tier) etiketi üretir.
+Bir marka için aynı prompt taksonomisi (0421 A1-1, 0421-8INTENT ile genişletilmiş:
+5 sektör × 8 intent × 5 topic × 5 persona × 5 funnel) üzerinden N adet AI motora
+(Perplexity, ChatGPT, Gemini, Claude, Grok, Mistral, Copilot, Google AI Overview)
+paralel istek gönderilir. Her motor, kademe (fidelity tier) etiketi üretir.
 
 ### 4.2 7 Bileşenli Visibility Index (VI)
 

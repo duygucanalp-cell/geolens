@@ -27,7 +27,7 @@
 | Sentiment Analizi | `internal/sentiment/engine.go:129-134` — 20 kelimelik keyword listesi | 🟡 Kural tabanlı | Transformer (XLM-R/mBERT), >%90 F1 |
 | Hallüsinasyon Tespiti | `internal/sentiment/engine.go:263` — T1-T5 heuristic kurallar | 🟡 Kural tabanlı | Cross-source validation + LLM-as-Judge |
 | Entity Tanıma (NER) | `internal/measure/service.go` — string match (`computePresenceShare`) | 🟡 Kural tabanlı | Çok dilli NER, >%85 F1 |
-| Prompt Sınıflandırma | `internal/prompt/handler.go` — el yazımı prompt yönetimi | 🟡 Kural tabanlı | intent/topic/persona/funnel modeli, >%85 F1 |
+| Prompt Sınıflandırma | `internal/prompt/handler.go` — el yazımı prompt yönetimi | 🟡 Kural tabanlı | 8-intent / 5-persona / 5-funnel modeli, >%85 F1 (0421-8INTENT) |
 | Visibility Index | `internal/measure/service.go` — 4 bileşen, keyfi ağırlık (0.35/0.25/0.20/0.20) | 🟡 Kural tabanlı | 7 bileşenli matematiksel model (AHP/regresyon) |
 | Öneri Motoru | `internal/recommendation/service.go` — statik kurallar | 🟡 Kural tabanlı | ML tabanlı Opportunity Scoring |
 | Büyük Model (PoC) | — | 🔴 Yok | 5 çalışan Python prototipi, >%80 metrik |
@@ -70,7 +70,7 @@
 |:-:|-----|:------------:|:---------------:|:----------:|
 | A2-1 | **Sentiment**: fine-tune XLM-R/mBERT (TR+EN) + ONNX export | >%90 F1 | İP-03 | A1-4 |
 | A2-2 | **NER**: çok dilli NER (7+ entity tipi) + hibrit regex/LLM fallback | >%85 F1 | İP-05, WP-08 | A1-4, A1-5 |
-| A2-3 | **Prompt sınıflandırma**: intent/topic/persona/funnel modeli | >%85 F1 | İP-01, WP-04 | A1-4 |
+| A2-3 | **Prompt sınıflandırma**: intent (8) / topic / persona (5) / funnel (5) modeli | >%85 F1 | İP-01, WP-04 | A1-4 |
 | A2-4 | **Cross-source hallüsinasyon**: motor cevaplarını çapraz referans + URL doğrulama | Tespit recall %80+ | İP-04, WP-06 | A2-3 |
 | A2-5 | **LLM-as-Judge pipeline** (maliyet eşikli tetikleme) | Judge uyum raporu | İP-04 | A2-4 |
 
@@ -80,7 +80,7 @@
 |:-:|:-----:|-------|
 | A2-1 | 🟢 Kod tamam, sentetik veride **F1=1.000** | `ml/geolens/sentiment/train.py` — XLM-R fine-tune (weighted loss), torch ONNX export, tokenizer cache; serving'e processor eklendi. F1 sentetik şablon verisinde 1.0'dır; gerçek veriyle eşik anlamlı olur. |
 | A2-2 | 🟢 Pipeline kod tamam | `ml/geolens/features/ner.py` — regex (A1-5) + opsiyonel model + LLM fallback zinciri; entity span pozisyonları. Model ayağı gold span birikiminde eğitilir. |
-| A2-3 | 🟢 Kod tamam + ONNX serving, **F1=1.000** | `ml/geolens/prompt_classifier/train.py` → 4 hedef TF-IDF+LR, ONNX+joblib export; serving `/v1/predict` ile doğrulandı (uçtan uca 200). |
+| A2-3 | 🟢 Kod tamam + ONNX serving, **F1=1.000** | `ml/geolens/prompt_classifier/train.py` → 4 hedef TF-IDF+LR, ONNX+joblib export; serving `/v1/predict` ile doğrulandı (uçtan uca 200). Taksonomi 8-intent'e taşınıyor (0421-8INTENT): intent/persona/funnel modeli `odev01/prompts_v1.jsonl` ile 2.0.0 sürümüne yeniden eğitilecek (Faz B); Go ölçek tablosu 8 anahtara genişletildi (Faz C tamam). |
 | A2-4 | 🟢 Kod tamam | `ml/geolens/features/hallucination.py` — cross-source sayısal çelişki (T3), marka anma tutarsızlığı (T1), URL doğrulama (T2). |
 | A2-5 | 🟢 Kod tamam (çevrimdışı fallback) | `ml/geolens/features/judge.py` — şüphe eşiği bazlı LLM tetikleme; API key yoksa kural tabanlı sonuç. |
 
@@ -168,7 +168,7 @@ Hafta 15-19: Aşama 4 — PoC, patent, whitepaper
 
 - [x] `ml/serving/` ayağa kalkıyor, Go client mevcut (A0) — ML_SERVING_URL + warm-up + breaker (M-4)
 - [x] Gold dataset v1 (500+ prompt) + 1000 prompt taksonomisi hazır, IAA >%90 (A1) — sentetik gold + gerçek veri etiketleme pipeline'ı (`data/export_unlabeled.py`, `data/validate_labeled.py`); IAA >%90 eşiği insan etiketlemesiyle sağlanır
-- [x] Sentiment %90+, NER %85+, prompt sınıflandırma %85+ F1 (A2) — sentetik veride F1=1.000; gerçek veriyle eşikler anlamlanır (A0-3)
+- [x] Sentiment %90+, NER %85+, prompt sınıflandırma %85+ F1 (A2) — sentetik veride F1=1.000; gerçek veriyle eşikler anlamlanır (A0-3). 8-intent taksonomi geçişi (0421-8INTENT) planlandı: Go tarafı tamam, model yeniden eğitimi (Faz B) bekliyor
 - [x] 7 bileşenli VI gold dataset üzerinde doğrulanmış, regression geçmiş (A3) — `SCORE_ALGORITHM_VERSION` feature flag + `ml/data/vi_validation_report.md` (R²=0.809)
 - [x] 5 PoC tüm metriklerde >%80 (A4) — `ml/data/poc_report.md` 5/5 geçti
 - [x] Patent disclosure + prior art raporu + whitepaper v1 teslim (A4) — `patent/` (0450+0451) + `0452-whitepaper-package.md`
@@ -193,3 +193,6 @@ Hafta 15-19: Aşama 4 — PoC, patent, whitepaper
 | 1.2 | 11.08.2026 | **Aşama 1 tamamlandı + Aşama 2 kod teslimi:** A1-1..A1-5 (1000 prompt, gold v1, IAA raporu, split, regex NER) ile A2-1..A2-5 çekirdek modeller (sentiment XLM-R + ONNX, NER hybrid, prompt TF-IDF+LR + ONNX serving, cross-source hallüsinasyon, LLM-as-Judge) kod seviyesinde işaretlendi. Sentetik veride eval metrikleri F1=1.000; gerçek veriyle eşikler anlamlanır. `0606` Annotation Guide eklendi. |
 | 1.3 | 11.08.2026 | **Aşama 3 + 4 tamamlandı (kod/doküman seviyesi):** A3-1..A3-5 (7 bileşenli VI: `ml/geolens/vi/` model+AHP+profiles+validation; A3-2 sektör profilleri + duyarlılık; A3-3 gold doğrulama; A3-4 opportunity `ml/geolens/opportunity/` + `internal/optimize/opportunity.go`; A3-5 Go `CalculateScore()` `SCORE_ALGORITHM_VERSION` feature flag). A4-1 `ml/poc/` 5/5 PoC >%80; A4-2 patent paketi `patent/` (0450+0451); A4-3 whitepaper paketi (0452). Raporlar: `ml/data/vi_*.md`, `poc_report.md`. |
 | 1.4 | 12.08.2026 | **Kabul kriterleri kapanışı + operasyonel tamamlamalar:** Tüm `- [ ]` kriterleri `- [x]` (kod/doküman seviyesi). Sentiment serving ilk-inference timeout'u çözüldü (ONNX warm-up + ML_TIMEOUT 2s→5s). Gerçek veri etiketleme pipeline'ı eklendi (`data/export_unlabeled.py` + `data/validate_labeled.py`, psycopg dev bağımlılığı). LLM-as-Judge üretim aktifleştirmesi (`GEOLENS_JUDGE_*` env, chat completions, serving entegrasyonu, `tests/test_judge.py`). Per-motor ağırlıklı `weighted_average` (0309 §6.2, `ENGINE_WEIGHTS` env override). Scheduler `/metrics` (8082) + erken `pool.Close()` bug fix. |
+| 1.5 | 13.08.2026 | **8-intent taksonomi geçişi başladı (0421-8INTENT):** Go ölçek tablosu (`defaultIntentComponentScale`) 5→8 anahtara genişletildi — information/recommendation/comparison/opinion/problem/complaint/purchase/news (presence→information, category→opinion); ilgili testler güncellendi (Faz C). Veri/doküman tarafı: `SCHEMA.md` 8/5/5 şemasına güncellendi, `odev01/prompts_v1.jsonl` kanonik kaynak ilan edildi (Faz A), mapped dosyalar deprecate edildi (Faz E). Kalan: intent/persona/funnel modelinin `prompts_v1.jsonl` ile 2.0.0'a yeniden eğitimi (Faz B) + Faz D doğrulama. |
+| 1.6 | 13.08.2026 | **8-intent geçişi tamamlandı (0421-8INTENT Faz B + D):** intent/persona/funnel modelleri `odev01/prompts_v1.jsonl` split'inden 8/5/5 sınıfla `class_weight='balanced'` ile yeniden eğitildi → sürüm 2.0.0 (`registry.py`), topic 1.1.0. Per-sınıf F1=1.000, serving uçtan uca 8/8 uyumlu (`/v1/prompt/classify`), `measure.intentWeights` yeni etiketlerde scale uyguluyor (`TestIntentWeights_NewIntentScale`), model_version 2.0.0 doğrulandı. Rapor: `ml/data/8intent_f1_report.md`. |
+| 1.7 | 13.08.2026 | **8-intent CI eşiği (0421-8INTENT Faz D ek):** `ml-eval` job'ındaki `geolens.eval.main` commit edilmiş 8-intent modellerini odev01 split'i üzerinde per-sınıf F1 ile değerlendirir — `ML_PROMPT_PER_CLASS_F1` (0.85) altına düşen sınıf veya taksonomi uyuşmazlığı CI'yı kırar; eval adımında `ML_REQUIRE_MODELS=1`. |

@@ -19,19 +19,21 @@ veri dosyalarının şema tanımı. Format: **JSON Lines** (her satır tek JSON 
   "lang": "tr",
   "text": "Acme'nin en iyi rakibi kim?",
   "intent": "comparison",
-  "topic": "competitor",
-  "persona": "consumer",
-  "funnel": "evaluation",
+  "topic": "brand",
+  "persona": "end_user",
+  "funnel": "consideration",
   "sector": "telekom"
 }
 ```
 
 - `lang`: `tr|en` (+ün gelecekte `de|fr|es` — dil embedding'i ile genişletilebilir)
-- `intent`: `presence|comparison|recommendation|category|problem`
+- `intent`: `information|recommendation|comparison|complaint|problem|purchase|opinion|news` (0421-8INTENT ile 5→8 genişletildi)
 - `topic`: `product|service|brand|sector|technology`
-- `persona`: `consumer|expert|journalist|investor`
-- `funnel`: `awareness|decision`
-- Sektör × intent × topic × persona × funnel çapraz dağılımı: 5×5×5×4×2 = **1000 örnek** (0420 İP-01), dil dağılımı 500 TR / 500 EN.
+- `persona`: `end_user|technical_expert|executive|journalist|investor`
+- `funnel`: `awareness|consideration|decision|purchase|loyalty`
+- Çapraz dağılım: 1000 örnekli sentetik set eski taksonomiyle üretildi (5×5×5×4×2,
+  0420 İP-01, 500 TR / 500 EN); kanonik kaynak `odev01/prompts_v1.jsonl` ise
+  8-intent / 5-persona / 5-funnel ile **9.000 örnek** içerir (0421-8INTENT Faz A).
 
 ## Şema — GoldRecord (A1-2)
 
