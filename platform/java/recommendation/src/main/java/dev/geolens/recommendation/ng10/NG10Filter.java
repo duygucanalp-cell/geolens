@@ -53,18 +53,6 @@ public final class NG10Filter {
                 P_ACTIONABLE, P_CONSTRUCTIVE, P_RECOMMENDATION));
     }
 
-    public static NG10Filter withDefaults() {
-        return new NG10Filter();
-    }
-
-    public List<Ng10Rule> rules() {
-        return List.copyOf(rules);
-    }
-
-    public void addRule(Ng10Rule rule) {
-        rules.add(rule);
-    }
-
     /** Metni NG10 kurallarına göre sınıflandırır. Öncelik: N &gt; P &gt; NG. */
     public ClaimLang classify(String text) {
         if (text == null || text.isEmpty()) {

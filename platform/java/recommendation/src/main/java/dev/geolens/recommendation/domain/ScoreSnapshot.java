@@ -14,12 +14,4 @@ public record ScoreSnapshot(
     public static ScoreSnapshot empty() {
         return new ScoreSnapshot(0, 0, null, null, null);
     }
-
-    public boolean hasData() {
-        return freshnessAt != null;
-    }
-
-    public boolean hasPrevious() {
-        return previousValue != 0 && previousAt != null;
-    }
 }

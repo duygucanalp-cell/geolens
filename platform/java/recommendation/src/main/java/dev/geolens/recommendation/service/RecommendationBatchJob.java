@@ -36,7 +36,7 @@ public class RecommendationBatchJob {
     @Scheduled(fixedDelayString = "${recommendation.batch.interval-ms:900000}",
                initialDelayString = "${recommendation.batch.initial-delay-ms:60000}")
     public void runBatch() {
-        if (!enabled || service == null) {
+        if (!enabled) {
             LOG.debug("recommendation.batch.enabled=false; batch çalıştırılmadı");
             return;
         }

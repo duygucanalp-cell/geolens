@@ -37,10 +37,6 @@ public final class RecommendationService {
         this.ng10 = new NG10Filter();
     }
 
-    public static RecommendationService withDao(RecommendationDao dao) {
-        return new RecommendationService(dao);
-    }
-
     public static RecommendationService withoutDatabase() {
         return new RecommendationService(new NoopRecommendationDao());
     }
