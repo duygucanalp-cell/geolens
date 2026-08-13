@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /** Go {@code ng10_test.go} portu. */
 class NG10ClassifierTest {
 
-    private final NG10Filter filter = NG10Filter.withDefaults();
+    private final NG10Filter filter = new NG10Filter();
 
     @Test
     void negativeAbsolutes() {
