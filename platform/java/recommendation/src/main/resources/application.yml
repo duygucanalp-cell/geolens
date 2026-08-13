@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: geolens-recommendation
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/geolens}
+    username: ${DATABASE_USER:geolens}
+    password: ${DATABASE_PASSWORD:geolens}
+    hikari:
+      maximum-pool-size: 10
+  jackson:
+    default-property-inclusion: non_null
+    property-naming-strategy: SNAKE_CASE
+
+server:
+  port: ${PORT:8081}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,threaddump
