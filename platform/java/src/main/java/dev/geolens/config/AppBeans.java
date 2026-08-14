@@ -5,6 +5,7 @@ import dev.geolens.benchmark.BenchmarkAggregator;
 import dev.geolens.archive.ArchiveEngine;
 import dev.geolens.replay.ReplayEngine;
 import dev.geolens.registry.EntityIndexer;
+import dev.geolens.retention.RetentionWorker;
 import dev.geolens.benchmark.DpConfig;
 import dev.geolens.auth.JWTService;
 import dev.geolens.auth.TokenBlacklist;
@@ -246,5 +247,12 @@ public class AppBeans {
     @Bean
     public ArchiveEngine archiveEngine(DSLContext dsl) {
         return new ArchiveEngine(dsl);
+    }
+
+    /** Retention (K3): veri saklama işçisi — retention.worker.enabled=true ise çalışır (varsayılan kapalı). */
+    @Bean
+    @ConditionalOnProperty(name = "retention.worker.enabled", havingValue = "true")
+    public RetentionWorker retentionWorker(DSLContext dsl) {
+        return new RetentionWorker(dsl);
     }
 }
