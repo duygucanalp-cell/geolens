@@ -61,6 +61,13 @@
       <version>1.3.30</version>
     </dependency>
 
+    <!-- sso: X.509 sertifika üretimi (Go crypto/x509 karşılığı) -->
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcpkix-jdk18on</artifactId>
+      <version>1.85</version>
+    </dependency>
+
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
