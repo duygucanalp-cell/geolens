@@ -6,13 +6,9 @@ import dev.geolens.testutil.JooqTestData;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.LinkedHashMap;
@@ -32,16 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /** Go registry/handler_test.go parity testleri — AI Registry REST (R1). */
 @WebMvcTest(RegistryController.class)
-@Import(RegistryControllerTest.IndexerConfig.class)
 class RegistryControllerTest {
-
-    @TestConfiguration
-    static class IndexerConfig {
-        @Bean
-        public EntityIndexer entityIndexer() {
-            return Mockito.mock(EntityIndexer.class);
-        }
-    }
 
     @Autowired
     private MockMvc mockMvc;
@@ -49,7 +36,7 @@ class RegistryControllerTest {
     @MockBean(answer = Answers.RETURNS_DEEP_STUBS)
     private DSLContext dsl;
 
-    @Autowired
+    @MockBean
     private EntityIndexer indexer;
 
     private static final String TENANT = "T01";

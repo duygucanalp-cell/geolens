@@ -2,6 +2,7 @@ package dev.geolens.config;
 
 import dev.geolens.audit.AuditService;
 import dev.geolens.benchmark.BenchmarkAggregator;
+import dev.geolens.archive.ArchiveEngine;
 import dev.geolens.replay.ReplayEngine;
 import dev.geolens.registry.EntityIndexer;
 import dev.geolens.benchmark.DpConfig;
@@ -239,5 +240,11 @@ public class AppBeans {
     @Bean
     public EntityIndexer entityIndexer() {
         return EntityIndexer.noop();
+    }
+
+    /** Archive (FR-D13): yanıt arşivleme motoru — DSLContext üzerinden çalışır. */
+    @Bean
+    public ArchiveEngine archiveEngine(DSLContext dsl) {
+        return new ArchiveEngine(dsl);
     }
 }
