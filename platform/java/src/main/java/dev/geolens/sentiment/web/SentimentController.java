@@ -32,7 +32,8 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 @RestController
 @RequestMapping("/v1/workspaces/{workspaceId}/sentiment")
-public class SentimentController {
+public class
+SentimentController {
 
     private final SentimentEngine engine;
     private final SentimentDao dao;

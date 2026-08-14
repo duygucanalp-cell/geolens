@@ -2,7 +2,10 @@ package dev.geolens.audit.web;
 
 import dev.geolens.audit.AuditResult;
 import dev.geolens.audit.AuditService;
+import org.jooq.DSL;
 import org.jooq.DSLContext;
+import org.jooq.Field;
+import org.jooq.JSON;
 import org.jooq.Record;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +24,10 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import static dev.geolens.jooq.config.tables.Brands.BRANDS;
+import static dev.geolens.jooq.governance.tables.AuditLog.AUDIT_LOG;
+import static dev.geolens.jooq.governance.tables.AuditResults.AUDIT_RESULTS;
 
 /**
  * Site denetimi REST controller'ı — Go {@code audit.handler} portu.
@@ -52,10 +59,12 @@ public class AuditController {
         String brandName = req.brandName();
         if (brandName == null || brandName.isBlank()) {
             try {
-                Map<String, Object> row = map("""
-                        SELECT name FROM config.brands
-                        WHERE id = ? AND workspace_id = ? AND tenant_id = ? AND is_active = true
-                        """, req.brandId(), workspaceId, tenantId);
+                Record brandRec = dsl.select(List.of(BRANDS.NAME))
+                        .from(BRANDS)
+                        .where(BRANDS.ID.eq(req.brandId()).and(BRANDS.WORKSPACE_ID.eq(workspaceId))
+                                .and(BRANDS.TENANT_ID.eq(tenantId)).and(BRANDS.IS_ACTIVE.eq(true)))
+                        .fetchOne();
+                Map<String, Object> row = brandRec == null ? null : brandRec.intoMap();
                 brandName = String.valueOf(row.get("name"));
             } catch (RuntimeException e) {
                 return error(HttpStatus.NOT_FOUND, "marka bulunamadı");
@@ -87,17 +96,20 @@ public class AuditController {
         }
         Map<String, Object> row;
         try {
-            row = map("""
-                    SELECT COALESCE(robots_txt::text, '{}') AS robots_txt,
-                           COALESCE(bot_access::text, '{}') AS bot_access,
-                           COALESCE(ssr::text, '{}') AS ssr,
-                           COALESCE(ssrf::text, '{}') AS ssrf,
-                           COALESCE(issues::text, '[]') AS issues,
-                           overall_score
-                    FROM governance.audit_results
-                    WHERE brand_id = ? AND workspace_id = ? AND tenant_id = ?
-                    ORDER BY created_at DESC LIMIT 1
-                    """, brandId, workspaceId, tenantId);
+            Record rec = dsl.select(List.of(
+                            DSL.coalesce(jsonText(AUDIT_RESULTS.ROBOTS_TXT), DSL.inline("{}")).as("robots_txt"),
+                            DSL.coalesce(jsonText(AUDIT_RESULTS.BOT_ACCESS), DSL.inline("{}")).as("bot_access"),
+                            DSL.coalesce(jsonText(AUDIT_RESULTS.SSR), DSL.inline("{}")).as("ssr"),
+                            DSL.coalesce(jsonText(AUDIT_RESULTS.SSRF), DSL.inline("{}")).as("ssrf"),
+                            DSL.coalesce(jsonText(AUDIT_RESULTS.ISSUES), DSL.inline("[]")).as("issues"),
+                            AUDIT_RESULTS.OVERALL_SCORE))
+                    .from(AUDIT_RESULTS)
+                    .where(AUDIT_RESULTS.BRAND_ID.eq(brandId).and(AUDIT_RESULTS.WORKSPACE_ID.eq(workspaceId))
+                            .and(AUDIT_RESULTS.TENANT_ID.eq(tenantId)))
+                    .orderBy(AUDIT_RESULTS.CREATED_AT.desc())
+                    .limit(1)
+                    .fetchOne();
+            row = rec == null ? null : rec.intoMap();
         } catch (RuntimeException e) {
             return ResponseEntity.ok(Map.of(
                     "brand_id", brandId,
@@ -155,18 +167,23 @@ public class AuditController {
         int limit = 100;
         List<Map<String, Object>> rows;
         try {
-            rows = list("""
-                    SELECT id, COALESCE(user_id, '') AS user_id, event_type, resource_type,
-                           COALESCE(resource_id, '') AS resource_id, action,
-                           COALESCE(metadata::text, '{}') AS metadata,
-                           COALESCE(ip_address, '') AS ip_address, created_at
-                    FROM governance.audit_log
-                    WHERE tenant_id = ?
-                        AND (? = '' OR event_type = ?)
-                        AND (? = '' OR resource_type = ?)
-                    ORDER BY created_at DESC
-                    LIMIT ?
-                    """, tenantId, evt, evt, res, res, limit + 1);
+            rows = dsl.select(List.of(
+                            AUDIT_LOG.ID,
+                            DSL.coalesce(AUDIT_LOG.USER_ID, "").as("user_id"),
+                            AUDIT_LOG.EVENT_TYPE,
+                            AUDIT_LOG.RESOURCE_TYPE,
+                            DSL.coalesce(AUDIT_LOG.RESOURCE_ID, "").as("resource_id"),
+                            AUDIT_LOG.ACTION,
+                            DSL.coalesce(jsonText(AUDIT_LOG.METADATA), DSL.inline("{}")).as("metadata"),
+                            DSL.coalesce(AUDIT_LOG.IP_ADDRESS, "").as("ip_address"),
+                            AUDIT_LOG.CREATED_AT))
+                    .from(AUDIT_LOG)
+                    .where(AUDIT_LOG.TENANT_ID.eq(tenantId)
+                            .and(evt.isEmpty() ? DSL.noCondition() : AUDIT_LOG.EVENT_TYPE.eq(evt))
+                            .and(res.isEmpty() ? DSL.noCondition() : AUDIT_LOG.RESOURCE_TYPE.eq(res)))
+                    .orderBy(AUDIT_LOG.CREATED_AT.desc())
+                    .limit(limit + 1)
+                    .fetch().intoMaps();
         } catch (RuntimeException e) {
             return ResponseEntity.ok(Map.of("entries", List.of(), "has_more", false, "count", 0));
         }
@@ -200,15 +217,19 @@ public class AuditController {
     public ResponseEntity<String> exportAuditTrail(@RequestHeader("X-Tenant-ID") String tenantId) {
         List<Map<String, Object>> rows;
         try {
-            rows = list("""
-                    SELECT COALESCE(user_id, 'system') AS user_id, event_type, resource_type,
-                           COALESCE(resource_id, '') AS resource_id, action,
-                           COALESCE(ip_address, '') AS ip_address, created_at
-                    FROM governance.audit_log
-                    WHERE tenant_id = ?
-                    ORDER BY created_at DESC
-                    LIMIT 1000
-                    """, tenantId);
+            rows = dsl.select(List.of(
+                            DSL.coalesce(AUDIT_LOG.USER_ID, "system").as("user_id"),
+                            AUDIT_LOG.EVENT_TYPE,
+                            AUDIT_LOG.RESOURCE_TYPE,
+                            DSL.coalesce(AUDIT_LOG.RESOURCE_ID, "").as("resource_id"),
+                            AUDIT_LOG.ACTION,
+                            DSL.coalesce(AUDIT_LOG.IP_ADDRESS, "").as("ip_address"),
+                            AUDIT_LOG.CREATED_AT))
+                    .from(AUDIT_LOG)
+                    .where(AUDIT_LOG.TENANT_ID.eq(tenantId))
+                    .orderBy(AUDIT_LOG.CREATED_AT.desc())
+                    .limit(1000)
+                    .fetch().intoMaps();
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
@@ -257,14 +278,9 @@ public class AuditController {
         return o == null ? "" : String.valueOf(o);
     }
 
-    /** ADR-014: plain SQL üzerinden jOOQ — satır erişimi Map ile korunur. */
-    private List<Map<String, Object>> list(String sql, Object... args) {
-        return dsl.fetch(sql, args).intoMaps();
-    }
-
-    private Map<String, Object> map(String sql, Object... args) {
-        Record r = dsl.fetchOne(sql, args);
-        return r == null ? null : r.intoMap();
+    /** JSONB kolonu {@code ::text} cast'iyle okur (orijinal SQL davranışı). */
+    private static Field<String> jsonText(Field<JSON> col) {
+        return DSL.field("{0}::text", String.class, col);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

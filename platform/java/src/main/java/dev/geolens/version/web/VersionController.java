@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -22,11 +24,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static dev.geolens.jooq.version.tables.Entries.ENTRIES;
+
 /**
  * Versiyon takibi REST controller'ı — Go {@code version.handler} portu.
  * <p>Route'lar (go cmd/api): POST /v1/versions/entries, GET /v1/versions/entries,
  * GET /v1/versions/entries/{entryId} (R14).
  * <p>Tenant {@code X-Tenant-ID} başlığından gelir.
+ * <p>ADR-014 v3.0: sorgular tip güvenli jOOQ DSL (generated {@code version.entries}).
  */
 @RestController
 public class VersionController {
@@ -49,15 +54,18 @@ public class VersionController {
         Instant now = Instant.now();
 
         try {
-            dsl.execute("""
-                    INSERT INTO version.entries (id, tenant_id, entity_type, entity_id, entity_name, old_version, new_version, change_notes, changed_by, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """, entryId, tenantId, req.entityType(), req.entityId(),
-                    req.entityName() == null ? "" : req.entityName(),
-                    req.oldVersion() == null ? "" : req.oldVersion(),
-                    req.newVersion() == null ? "" : req.newVersion(),
-                    req.changeNotes() == null ? "" : req.changeNotes(),
-                    req.changedBy() == null ? "" : req.changedBy(), now);
+            dsl.insertInto(ENTRIES)
+                    .columns(List.of(ENTRIES.ID, ENTRIES.TENANT_ID, ENTRIES.ENTITY_TYPE, ENTRIES.ENTITY_ID,
+                            ENTRIES.ENTITY_NAME, ENTRIES.OLD_VERSION, ENTRIES.NEW_VERSION,
+                            ENTRIES.CHANGE_NOTES, ENTRIES.CHANGED_BY, ENTRIES.CREATED_AT))
+                    .values(entryId, tenantId, req.entityType(), req.entityId(),
+                            req.entityName() == null ? "" : req.entityName(),
+                            req.oldVersion() == null ? "" : req.oldVersion(),
+                            req.newVersion() == null ? "" : req.newVersion(),
+                            req.changeNotes() == null ? "" : req.changeNotes(),
+                            req.changedBy() == null ? "" : req.changedBy(),
+                            now.atOffset(ZoneOffset.UTC))
+                    .execute();
         } catch (RuntimeException e) {
             return error(HttpStatus.INTERNAL_SERVER_ERROR, "versiyon kaydedilemedi");
         }
@@ -92,13 +100,16 @@ public class VersionController {
 
         List<Map<String, Object>> rows;
         try {
-            rows = list("""
-                    SELECT id, entity_type, entity_id, entity_name, old_version, new_version, change_notes, changed_by, created_at
-                    FROM version.entries WHERE tenant_id = ?
-                        AND (? = '' OR entity_type = ?)
-                        AND (? = '' OR entity_id = ?)
-                    ORDER BY created_at DESC LIMIT ?
-                    """, tenantId, type, type, eid, eid, limit + 1);
+            rows = dsl.select(List.of(ENTRIES.ID, ENTRIES.ENTITY_TYPE, ENTRIES.ENTITY_ID, ENTRIES.ENTITY_NAME,
+                            ENTRIES.OLD_VERSION, ENTRIES.NEW_VERSION, ENTRIES.CHANGE_NOTES,
+                            ENTRIES.CHANGED_BY, ENTRIES.CREATED_AT))
+                    .from(ENTRIES)
+                    .where(ENTRIES.TENANT_ID.eq(tenantId)
+                            .and(type.isEmpty() ? org.jooq.impl.DSL.noCondition() : ENTRIES.ENTITY_TYPE.eq(type))
+                            .and(eid.isEmpty() ? org.jooq.impl.DSL.noCondition() : ENTRIES.ENTITY_ID.eq(eid)))
+                    .orderBy(ENTRIES.CREATED_AT.desc())
+                    .limit(limit + 1)
+                    .fetch().intoMaps();
         } catch (RuntimeException e) {
             return ResponseEntity.ok(Map.of("data", List.of(), "has_more", false));
         }
@@ -134,10 +145,13 @@ public class VersionController {
                                             @PathVariable String entryId) {
         Map<String, Object> row;
         try {
-            row = map("""
-                    SELECT id, entity_type, entity_id, entity_name, old_version, new_version, change_notes, changed_by, created_at
-                    FROM version.entries WHERE id = ? AND tenant_id = ?
-                    """, entryId, tenantId);
+            Record r = dsl.select(List.of(ENTRIES.ID, ENTRIES.ENTITY_TYPE, ENTRIES.ENTITY_ID, ENTRIES.ENTITY_NAME,
+                            ENTRIES.OLD_VERSION, ENTRIES.NEW_VERSION, ENTRIES.CHANGE_NOTES,
+                            ENTRIES.CHANGED_BY, ENTRIES.CREATED_AT))
+                    .from(ENTRIES)
+                    .where(ENTRIES.ID.eq(entryId).and(ENTRIES.TENANT_ID.eq(tenantId)))
+                    .fetchOne();
+            row = r == null ? null : r.intoMap();
         } catch (RuntimeException e) {
             return error(HttpStatus.NOT_FOUND, "versiyon kaydı bulunamadı");
         }
@@ -163,16 +177,6 @@ public class VersionController {
         body.put("entry", entry);
         body.put("has_changes", !java.util.Objects.equals(oldV, newV));
         return ResponseEntity.ok(body);
-    }
-
-    /** ADR-014: plain SQL üzerinden jOOQ — satır erişimi Map ile korunur. */
-    private List<Map<String, Object>> list(String sql, Object... args) {
-        return dsl.fetch(sql, args).intoMaps();
-    }
-
-    private Map<String, Object> map(String sql, Object... args) {
-        Record r = dsl.fetchOne(sql, args);
-        return r == null ? null : r.intoMap();
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

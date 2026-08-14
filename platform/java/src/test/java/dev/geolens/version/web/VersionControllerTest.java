@@ -1,16 +1,23 @@
 package dev.geolens.version.web;
 
 import dev.geolens.testutil.JooqTestData;
+import org.jooq.Condition;
 import org.jooq.DSLContext;
+import org.jooq.Field;
+import org.jooq.OrderField;
+import org.jooq.Table;
+import org.jooq.TableLike;
 import org.junit.jupiter.api.Test;
+import org.mockito.Answers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.Collection;
+
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -24,7 +31,7 @@ class VersionControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockBean(answer = Answers.RETURNS_DEEP_STUBS)
     private DSLContext dsl;
 
     private static final String TENANT = "T01";
@@ -66,7 +73,8 @@ class VersionControllerTest {
 
     @Test
     void recordVersionDBErrorReturns500() throws Exception {
-        when(dsl.execute(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db error"));
+        when(dsl.insertInto(any(Table.class)).columns(any(Collection.class)).values(any(Object[].class)).execute())
+                .thenThrow(new RuntimeException("db error"));
 
         mockMvc.perform(post("/v1/versions/entries")
                         .header("X-Tenant-ID", TENANT)
@@ -80,7 +88,8 @@ class VersionControllerTest {
 
     @Test
     void listVersionsSuccess() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
+        when(dsl.select(any(Collection.class)).from(any(TableLike.class)).where(any(Condition.class))
+                .orderBy(any(OrderField.class)).limit(anyInt()).fetch())
                 .thenReturn(JooqTestData.records(versionRow("V01", "engine", "E01", "1.0", "1.1")));
 
         mockMvc.perform(get("/v1/versions/entries")
@@ -94,7 +103,9 @@ class VersionControllerTest {
 
     @Test
     void listVersionsQueryErrorReturnsEmpty() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db error"));
+        when(dsl.select(any(Collection.class)).from(any(TableLike.class)).where(any(Condition.class))
+                .orderBy(any(OrderField.class)).limit(anyInt()).fetch())
+                .thenThrow(new RuntimeException("db error"));
 
         mockMvc.perform(get("/v1/versions/entries")
                         .header("X-Tenant-ID", TENANT))
@@ -107,8 +118,9 @@ class VersionControllerTest {
 
     @Test
     void getVersionDiffNotFoundReturns404() throws Exception {
-        when(dsl.fetchOne(contains("FROM version.entries"), any(Object[].class)))
-                .thenThrow(new RuntimeException("not found"));
+        // jOOQ fetchOne boş sonuçta null döner — deep-stub'ta açıkça null stub'lanmalı
+        when(dsl.select(any(Collection.class)).from(any(TableLike.class)).where(any(Condition.class)).fetchOne())
+                .thenReturn(null);
 
         mockMvc.perform(get("/v1/versions/entries/none")
                         .header("X-Tenant-ID", TENANT))
@@ -118,7 +130,7 @@ class VersionControllerTest {
 
     @Test
     void getVersionDiffSuccess() throws Exception {
-        when(dsl.fetchOne(contains("FROM version.entries"), any(Object[].class)))
+        when(dsl.select(any(Collection.class)).from(any(TableLike.class)).where(any(Condition.class)).fetchOne())
                 .thenReturn(JooqTestData.record(versionRow("V01", "engine", "E01", "1.0", "1.1")));
 
         mockMvc.perform(get("/v1/versions/entries/V01")
@@ -131,7 +143,7 @@ class VersionControllerTest {
 
     @Test
     void getVersionDiffNoChange() throws Exception {
-        when(dsl.fetchOne(contains("FROM version.entries"), any(Object[].class)))
+        when(dsl.select(any(Collection.class)).from(any(TableLike.class)).where(any(Condition.class)).fetchOne())
                 .thenReturn(JooqTestData.record(versionRow("V02", "engine", "E01", "1.1", "1.1")));
 
         mockMvc.perform(get("/v1/versions/entries/V02")

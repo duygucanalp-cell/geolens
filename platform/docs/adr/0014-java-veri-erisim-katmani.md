@@ -4,9 +4,9 @@
 |------|-------|
 | ADR ID | ADR-014 |
 | Proje | GeoLens |
-| Durum | Draft |
+| Durum | Review |
 | Tarih | 14.08.2026 |
-| Karar veren | TL (onay bekliyor) |
+| Karar veren | TL (PO onayı bekliyor — Approved için gerekli) |
 | İlişkili | ADR-003, ADR-004 (RLS), 0507-multi-tenancy, 0602-postgresql-schema, 10-engineering, `platform/java/` |
 
 ---
@@ -23,12 +23,12 @@ Karar sorusu: **Veri erişim katmanı için en uygun araç hangisidir?** Önceki
 
 | Bulgu | Detay |
 |-------|-------|
-| Bağımlılık | `spring-boot-starter-jdbc` (pom.xml) — JPA/JOOQ yok |
-| JdbcTemplate kullanımı | ~17 sınıf (`*Controller`, `*Service`, `*Dao`) |
-| RLS deseni | `set_config('app.tenant_id', ?, true)` + `TransactionTemplate` — ~10 sınıfta (`JdbcScoreDao`, `JdbcSentimentDao`, `JdbcRecommendationDao`, `DeliveryService`, `AuditService`, `AuditLogger`, `UsageRecorder`, `QuotaChecker`, `ConfigController`, `SentimentController`) |
-| JSONB | `?::jsonb` cast + elle `ObjectMapper` serialize/parse (`JdbcScoreDao`) |
+| Bağımlılık | `spring-boot-starter-jooq` + `jooq-codegen-maven` (pom.xml) — JPA yok |
+| JdbcTemplate kullanımı | **Yok** — DAO + kontrolör/service katmanlarının tamamı jOOQ/DSLContext'e taşındı (kademeli geçiş tamamlandı) |
+| RLS deseni | `set_config('app.tenant_id', ?, true)` + `TransactionTemplate` — tüm veri erişiminde (`JooqScoreDao`, `JooqSentimentDao`, `JooqRecommendationDao`, `DeliveryService`, `AuditService`, `AuditLogger`, `UsageRecorder`, `QuotaChecker`, tüm kontrolörler) |
+| JSONB | `?::jsonb` cast + elle `ObjectMapper` serialize/parse (`JooqScoreDao`) |
 | Sorgu profili | CRUD + ağır sorgular: marka arama (count + sayfalama), panorama agregasyonu, skor yazma/okuma, digest sorguları |
-| DB'siz çalışma | `AppBeans` — `ObjectProvider<JdbcTemplate>` ile Noop/null fallback (spike DB'siz çalışabilir) |
+| DB'siz çalışma | `AppBeans` — `ObjectProvider<DSLContext>` ile Noop/null fallback (spike DB'siz çalışabilir) |
 
 ---
 
@@ -116,16 +116,32 @@ Bu analiz, Hibernate'in bu projede "en iyi" olmasını zorlaştıran birincil te
 
 ---
 
-## Öneri
+## Karar
 
-**JOOQ (Seçenek C)** — uygulama profiline (RLS güvenlik sınırı, sorgu ağırlıklı, JSONB, Go tarafında zaten sqlc ile SQL-first felsefesi) en uygun araçtır. JdbcTemplate'in SQL kontrolünü korur, üzerine derleme zamanı tip güvenliği ve daha az boilerplate ekler.
+| | |
+|---|---|
+| **Seçenekler** | (a) JdbcTemplate (mevcut), (b) JPA/Hibernate, (c) JOOQ, (d) Spring Data JDBC |
+| **Karar** | **(c) JOOQ** — DAO katmanı (`ScoreDao`, `RecommendationDao`, `SentimentDao`) JOOQ/DSLContext'e taşındı |
+| **Gerekçe** | RLS güvenlik sınırı ile sıfır çakışma (saf SQL), karmaşık sorgularda en güçlü ifade gücü, derleme zamanı tip güvenliği, JSONB native destek; Go tarafındaki sqlc (ADR-003) ile aynı SQL-first felsefe |
+| **Etki** | `pom.xml` (starter + codegen), 3 DAO dönüşümü, entegrasyon testleri, kontrolör/service katmanı dönüşümü (kademeli geçiş tamamlandı) |
 
-İkincil alternatifler:
-- **JdbcTemplate'te kalmak**: geçiş maliyeti 0; üretkenlik ve tip güvenliği kaybı kabul edilirse makul.
-- **Spring Data JDBC**: JPA'ya kıyasla hafif bir repository katmanı istenirse; ağır sorgular yine elle SQL'e döneceğinden JOOQ'un gerisinde.
-- **Hibernate**: yalnızca ekibin JPA'da güçlü deneyimi varsa ve CRUD ağırlığı ileride artarsa tekrar değerlendirilmeli; L2 cache kısıtı ve RLS wiring'i göz önünde bulundurulmalı.
+## Uygulama Notları
 
-> **Not:** Bu bölüm bir **öneridir**, karar değildir. Karar, TL/PO onayı sonrası bu ADR'nin "Kararlar" bölümüne işlenecek ve Durum `Approved`'a alınacaktır.
+1. **Codegen (DDLDatabase):** `jooq-codegen-maven` `generate-sources` fazına bağlıdır; canlı DB gerektirmez. Kaynak `src/main/resources/ddl/geolens.sql` — DAO'ların kullandığı 13 tablonun üretim migration'larından küratörlü kopyası (RLS/function/extension ifadeleri hariç; OSS jOOQ parser'ı `CREATE FUNCTION`'ı çözemez). `defaultNameCase=lower` (PostgreSQL küçük harf tanımlayıcılar). Üretilen kod `target/generated-sources/jooq` altındadır, commit edilmez.
+2. **Türkçe locale tuzağı:** H2, unquoted identifier'ları Türkçe locale ile büyütünce `identity` → `İdentity` üretiyordu. `.mvn/jvm.config` ile Maven JVM'i İngilizce locale'de başlatılır (deterministik).
+3. **JSONB:** DDLDatabase JSONB'yi `org.jooq.JSON` olarak üretir; yazmada `?::jsonb` cast'i (önceki JDBC SQL'iyle birebir) uygulanır.
+4. **RLS:** `set_config('app.tenant_id', ?, true)` + `TransactionTemplate` deseni aynen korundu; `DSLContext` Spring transaction'ına bağlı bağlantıyı kullandığından tenant bağlamı tüm sorguları kapsar.
+5. **SetTenant bind düzeltmesi:** `dsl.fetchValue(sql, Class, ...)` overload'u jOOQ'da yoktur — `String.class` bind değeri olarak bağlanıp runtime'da `SQLDialectNotSupportedException` üretiyordu; `dsl.fetch(sql, bind...)` ile değiştirildi. Bu düzeltme, entegrasyon testlerinin (17/17) gerçek PostgreSQL'de geçmesini sağlar.
+6. **Doğrulama:** unit 434/434 + entegrasyon 17/17 (`mvnw test -Dsurefire.groups=integration`, Docker/Testcontainers) geçti.
+7. **Kademeli geçiş (tamamlandı):** Kontrolör/service katmanındaki tüm JdbcTemplate kullanımları plain SQL üzerinden jOOQ `DSLContext`'e taşındı: `queryForList`→`dsl.fetch(...).intoMaps()`, `queryForMap`→`dsl.fetchOne(...).intoMap()`, `queryForObject`→`dsl.fetchOne(...).get(0, Class)` (`fetchValue(String, Object...)` jOOQ 3.19'da raw `Object` döndüğü için `value()` helper'ı), `update`→`dsl.execute`. Satır erişimi Map ile korunduğundan davranış birebir; unit testler `DSLContext` mock'larına çevrildi (paylaşılan `JooqTestData` test helper'ı).
+
+## Açık Sorular
+
+1. ~~Ekip deneyimi: JPA mı JOOQ mu?~~ → JOOQ uygulandı.
+2. ~~Cache ihtiyacı: uygulama katmanında cache planlanıyor mu?~~ → DAO katmanında cache yok; JOOQ kararı bundan bağımsız.
+3. ~~Sorgu/CRUD oranı~~ → Sorgu ağırlıklı olduğu uygulama sırasında doğrulandı.
+4. ~~Codegen kabulü~~ → DDLDatabase canlı DB gerektirmediğinden build'e maliyeti düşüktür; kabul edildi.
+5. ~~Kademeli geçiş~~ → Tamamlandı: kontrolör/service katmanı da JOOQ/DSLContext'e taşındı (v3.0).
 
 ---
 
@@ -140,7 +156,7 @@ Bu analiz, Hibernate'in bu projede "en iyi" olmasını zorlaştıran birincil te
 
 ## Kapanış
 
-Bu doküman, kod değişikliği yapılmadan önce veri erişim katmanı seçeneklerinin maliyet/fayda analizini sunar. Karar verildiğinde bu ADR'ye "Kararlar" bölümü eklenecek ve uygulama planı (`platform/java/`) ona göre güncellenecektir.
+Karşılaştırma analizi sonrası JOOQ kararı verilmiş, DAO katmanına uygulanmış ve kademeli geçişle kontrolör/service katmanına da taşınmıştır (`platform/java/`). Durum `Review`'da kalmıştır; `Approved` için PO onayı beklenir (AGENTS.md kuralı).
 
 ---
 
@@ -149,3 +165,5 @@ Bu doküman, kod değişikliği yapılmadan önce veri erişim katmanı seçenek
 | Versiyon | Tarih | Açıklama |
 |:--------:|:-----:|----------|
 | 1.0 | 14.08.2026 | İlk taslak — karşılaştırma analizi (Draft) |
+| 2.0 | 14.08.2026 | Karar: JOOQ — uygulama notları + setTenant bind düzeltmesi (Review) |
+| 3.0 | 14.08.2026 | Kademeli geçiş tamamlandı — kontrolör/service katmanı DSLContext'e taşındı, JdbcTemplate kalmadı; test mock'ları güncellendi; doğrulama 434/434 + 17/17 (Review) |

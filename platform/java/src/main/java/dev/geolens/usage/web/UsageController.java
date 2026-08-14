@@ -1,6 +1,8 @@
 package dev.geolens.usage.web;
 
+import org.jooq.DSL;
 import org.jooq.DSLContext;
+import org.jooq.Field;
 import org.jooq.Record;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,7 +15,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -21,11 +26,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static dev.geolens.jooq.usage.tables.Metrics.METRICS;
+
 /**
  * Kullanım analitiği REST controller'ı — Go {@code usage.handler} portu.
  * <p>Route'lar (go cmd/api): POST /v1/usage/metrics, GET /v1/usage/metrics,
  * GET /v1/usage/summary (R12).
  * <p>Tenant {@code X-Tenant-ID} başlığından gelir.
+ * <p>ADR-014 v4.0: sorgular tip güvenli jOOQ DSL (generated {@code usage.metrics}).
  */
 @RestController
 public class UsageController {
@@ -51,11 +59,14 @@ public class UsageController {
         Instant now = Instant.now();
 
         try {
-            dsl.execute("""
-                    INSERT INTO usage.metrics (id, tenant_id, endpoint, method, status_code, latency_ms, user_id, request_size, response_size, recorded_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """, entryId, tenantId, req.endpoint(), method, statusCode,
-                    latency, userId, req.requestSize(), req.responseSize(), now);
+            dsl.insertInto(METRICS)
+                    .columns(List.of(METRICS.ID, METRICS.TENANT_ID, METRICS.ENDPOINT, METRICS.METHOD,
+                            METRICS.STATUS_CODE, METRICS.LATENCY_MS, METRICS.USER_ID,
+                            METRICS.REQUEST_SIZE, METRICS.RESPONSE_SIZE, METRICS.RECORDED_AT))
+                    .values(entryId, tenantId, req.endpoint(), method, statusCode,
+                            latency, userId, req.requestSize(), req.responseSize(),
+                            now.atOffset(ZoneOffset.UTC))
+                    .execute();
         } catch (RuntimeException e) {
             return error(HttpStatus.INTERNAL_SERVER_ERROR, "kullanım kaydedilemedi");
         }
@@ -85,10 +96,13 @@ public class UsageController {
 
         List<Map<String, Object>> rows;
         try {
-            rows = list("""
-                    SELECT id, endpoint, method, status_code, latency_ms, recorded_at
-                    FROM usage.metrics WHERE tenant_id = ? ORDER BY recorded_at DESC LIMIT ?
-                    """, tenantId, limit + 1);
+            rows = dsl.select(List.of(METRICS.ID, METRICS.ENDPOINT, METRICS.METHOD, METRICS.STATUS_CODE,
+                            METRICS.LATENCY_MS, METRICS.RECORDED_AT))
+                    .from(METRICS)
+                    .where(METRICS.TENANT_ID.eq(tenantId))
+                    .orderBy(METRICS.RECORDED_AT.desc())
+                    .limit(limit + 1)
+                    .fetch().intoMaps();
         } catch (RuntimeException e) {
             return ResponseEntity.ok(Map.of("data", List.of(), "has_more", false));
         }
@@ -139,11 +153,16 @@ public class UsageController {
         double totalErrors = 0;
         double avgLatency = 0;
         try {
-            Map<String, Object> agg = map("""
-                    SELECT COUNT(*) AS total, COALESCE(AVG(CASE WHEN status_code >= 400 THEN 1.0 ELSE 0 END), 0) * 100 AS error_rate,
-                           COALESCE(AVG(latency_ms), 0) AS avg_latency
-                    FROM usage.metrics WHERE tenant_id = ? AND recorded_at > NOW() - ?::INTERVAL
-                    """, tenantId, interval);
+            Field<OffsetDateTime> cutoff = intervalCutoff(interval);
+            Record aggRec = dsl.select(List.of(
+                            DSL.count().as("total"),
+                            DSL.avg(DSL.when(METRICS.STATUS_CODE.greaterOrEqual(400), 1.0).otherwise(0.0))
+                                    .coalesce(BigDecimal.ZERO).multiply(100).as("error_rate"),
+                            DSL.avg(METRICS.LATENCY_MS).coalesce(BigDecimal.ZERO).as("avg_latency"))
+                    .from(METRICS)
+                    .where(METRICS.TENANT_ID.eq(tenantId).and(METRICS.RECORDED_AT.gt(cutoff)))
+                    .fetchOne();
+            Map<String, Object> agg = aggRec == null ? null : aggRec.intoMap();
             totalRequests = ((Number) agg.get("total")).doubleValue();
             totalErrors = ((Number) agg.get("error_rate")).doubleValue();
             avgLatency = ((Number) agg.get("avg_latency")).doubleValue();
@@ -153,11 +172,17 @@ public class UsageController {
 
         List<Map<String, Object>> topEndpoints = new ArrayList<>();
         try {
-            List<Map<String, Object>> rows = list("""
-                    SELECT endpoint, COUNT(*) AS hits, COALESCE(AVG(latency_ms), 0) AS avg_latency
-                    FROM usage.metrics WHERE tenant_id = ? AND recorded_at > NOW() - ?::INTERVAL
-                    GROUP BY endpoint ORDER BY hits DESC LIMIT 10
-                    """, tenantId, interval);
+            Field<OffsetDateTime> cutoff = intervalCutoff(interval);
+            List<Map<String, Object>> rows = dsl.select(List.of(
+                            METRICS.ENDPOINT,
+                            DSL.count().as("hits"),
+                            DSL.avg(METRICS.LATENCY_MS).coalesce(BigDecimal.ZERO).as("avg_latency")))
+                    .from(METRICS)
+                    .where(METRICS.TENANT_ID.eq(tenantId).and(METRICS.RECORDED_AT.gt(cutoff)))
+                    .groupBy(METRICS.ENDPOINT)
+                    .orderBy(DSL.field("hits").desc())
+                    .limit(10)
+                    .fetch().intoMaps();
             for (Map<String, Object> r : rows) {
                 Map<String, Object> item = new LinkedHashMap<>();
                 item.put("endpoint", r.get("endpoint"));
@@ -177,14 +202,11 @@ public class UsageController {
         return ResponseEntity.ok(body);
     }
 
-    /** ADR-014: plain SQL üzerinden jOOQ — satır erişimi Map ile korunur. */
-    private List<Map<String, Object>> list(String sql, Object... args) {
-        return dsl.fetch(sql, args).intoMaps();
-    }
-
-    private Map<String, Object> map(String sql, Object... args) {
-        Record r = dsl.fetchOne(sql, args);
-        return r == null ? null : r.intoMap();
+    /** {@code NOW() - ?::INTERVAL} karşılığı — PG'ye özgü cast, şablon field ile. */
+    private static Field<OffsetDateTime> intervalCutoff(String interval) {
+        return DSL.currentTimestamp()
+                .minus(DSL.field("{0}::INTERVAL", org.jooq.types.DayToSecond.class, DSL.inline(interval)))
+                .cast(OffsetDateTime.class);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
