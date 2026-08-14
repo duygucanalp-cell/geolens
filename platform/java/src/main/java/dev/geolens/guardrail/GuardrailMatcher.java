@@ -68,7 +68,7 @@ public final class GuardrailMatcher {
         }
         String t = text.toString();
 
-        if (cp.isRegex() && cp.pattern() != null) {
+        if (cp.regex() && cp.pattern() != null) {
             return cp.pattern().matcher(t).find();
         }
 
