@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: geolens
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/geolens}
+    username: ${DATABASE_USER:geolens}
+    password: ${DATABASE_PASSWORD:geolens}
+    hikari:
+      maximum-pool-size: 10
+  jackson:
+    default-property-inclusion: non_null
+    property-naming-strategy: SNAKE_CASE
+
+server:
+  port: ${PORT:8081}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,threaddump
+
+recommendation:
+  batch:
+    # Go worker'da ölçüm tamamlanınca tetiklenen Evaluate() akışının planlı batch karşılığı.
+    # Varsayılan kapalı; açmak için: recommendation.batch.enabled=true + workspaces="WS01:T01,WS02:T01"
+    enabled: ${RECOMMENDATION_BATCH_ENABLED:false}
+    workspaces: ${RECOMMENDATION_BATCH_WORKSPACES:}
+    interval-ms: ${RECOMMENDATION_BATCH_INTERVAL_MS:900000}
+    initial-delay-ms: ${RECOMMENDATION_BATCH_INITIAL_DELAY_MS:60000}
+
+sentiment:
+  ml:
+    # ML serving URL'si boşsa kural tabanlı analiz çalışır (0421 M-4 fallback).
+    serving-url: ${ML_SERVING_URL:}
+    timeout-ms: ${ML_TIMEOUT:5000}
+    breaker-cooldown-ms: ${ML_BREAKER_COOLDOWN:60000}
