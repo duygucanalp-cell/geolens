@@ -3,6 +3,7 @@ package dev.geolens.config;
 import dev.geolens.audit.AuditService;
 import dev.geolens.benchmark.BenchmarkAggregator;
 import dev.geolens.replay.ReplayEngine;
+import dev.geolens.registry.EntityIndexer;
 import dev.geolens.benchmark.DpConfig;
 import dev.geolens.auth.JWTService;
 import dev.geolens.auth.TokenBlacklist;
@@ -232,5 +233,11 @@ public class AppBeans {
     @Bean
     public ReplayEngine replayEngine(DSLContext dsl) {
         return new ReplayEngine(dsl);
+    }
+
+    /** Registry (R1): varlık indeksleyici — spike'ta noop (Go noopIndexer; üretimde Elasticsearch). */
+    @Bean
+    public EntityIndexer entityIndexer() {
+        return EntityIndexer.noop();
     }
 }
