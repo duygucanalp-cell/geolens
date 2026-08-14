@@ -21,6 +21,8 @@ import dev.geolens.measure.persistence.NoopScoreDao;
 import dev.geolens.measure.persistence.ScoreDao;
 import dev.geolens.ml.HttpMlClient;
 import dev.geolens.ml.MlClient;
+import dev.geolens.seo.GoogleOAuthClient;
+import dev.geolens.seo.SeoStateStore;
 import org.jooq.DSLContext;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
@@ -197,5 +199,18 @@ public class AppBeans {
     @Bean
     public TransactionalMailer transactionalMailer(DeliveryService delivery) {
         return delivery::sendEmail;
+    }
+
+    /** SEO (FR-B8): Google OAuth2 istemcisi — GOOGLE_OAUTH_CLIENT_ID boşsa yapılandırılmamış sayılır. */
+    @Bean
+    public GoogleOAuthClient googleOAuthClient(@Value("${GOOGLE_OAUTH_CLIENT_ID:}") String clientId,
+                                               @Value("${GOOGLE_OAUTH_CLIENT_SECRET:}") String clientSecret) {
+        return new GoogleOAuthClient(clientId, clientSecret);
+    }
+
+    /** SEO (FR-B8): OAuth state token deposu — spike'ta in-memory TTL (Go: governance.cache_store). */
+    @Bean
+    public SeoStateStore seoStateStore() {
+        return new SeoStateStore();
     }
 }
