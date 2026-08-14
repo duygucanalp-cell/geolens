@@ -2,8 +2,8 @@ package dev.geolens.audit.web;
 
 import dev.geolens.audit.AuditResult;
 import dev.geolens.audit.AuditService;
-import org.jooq.DSL;
 import org.jooq.DSLContext;
+import org.jooq.impl.DSL;
 import org.jooq.Field;
 import org.jooq.JSON;
 import org.jooq.Record;

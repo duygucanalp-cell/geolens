@@ -1,30 +1,37 @@
 package dev.geolens.usage.web;
 
 import dev.geolens.testutil.JooqTestData;
+import org.jooq.Condition;
 import org.jooq.DSLContext;
+import org.jooq.OrderField;
+import org.jooq.Table;
+import org.jooq.TableLike;
 import org.junit.jupiter.api.Test;
+import org.mockito.Answers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.Collection;
+import java.util.Map;
+
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** Go usage/handler_test.go parity testleri — kullanım analitiği. */
+/** Go usage/handler_test.go parity testleri — kullanım analitiği (ADR-014 v4.0 typed DSL). */
 @WebMvcTest(UsageController.class)
 class UsageControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockBean(answer = Answers.RETURNS_DEEP_STUBS)
     private DSLContext dsl;
 
     private static final String TENANT = "T01";
@@ -53,6 +60,9 @@ class UsageControllerTest {
 
     @Test
     void recordUsageSuccess() throws Exception {
+        when(dsl.insertInto(any(Table.class)).columns(any(Collection.class)).values(any(Object[].class)).execute())
+                .thenReturn(1);
+
         mockMvc.perform(post("/v1/usage/metrics")
                         .header("X-Tenant-ID", TENANT)
                         .contentType("application/json")
@@ -66,7 +76,8 @@ class UsageControllerTest {
 
     @Test
     void recordUsageDBErrorReturns500() throws Exception {
-        when(dsl.execute(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db error"));
+        when(dsl.insertInto(any(Table.class)).columns(any(Collection.class)).values(any(Object[].class)).execute())
+                .thenThrow(new RuntimeException("db error"));
 
         mockMvc.perform(post("/v1/usage/metrics")
                         .header("X-Tenant-ID", TENANT)
@@ -80,7 +91,8 @@ class UsageControllerTest {
 
     @Test
     void listUsageSuccess() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
+        when(dsl.select(any(Collection.class)).from(any(TableLike.class)).where(any(Condition.class))
+                .orderBy(any(OrderField.class)).limit(anyInt()).fetch())
                 .thenReturn(JooqTestData.records(usageRow("M01", "/v1/measurements", "POST", 201, 120)));
 
         mockMvc.perform(get("/v1/usage/metrics")
@@ -93,7 +105,9 @@ class UsageControllerTest {
 
     @Test
     void listUsageQueryErrorReturnsEmpty() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db error"));
+        when(dsl.select(any(Collection.class)).from(any(TableLike.class)).where(any(Condition.class))
+                .orderBy(any(OrderField.class)).limit(anyInt()).fetch())
+                .thenThrow(new RuntimeException("db error"));
 
         mockMvc.perform(get("/v1/usage/metrics")
                         .header("X-Tenant-ID", TENANT))
@@ -104,7 +118,8 @@ class UsageControllerTest {
 
     @Test
     void listUsageWithLimit() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
+        when(dsl.select(any(Collection.class)).from(any(TableLike.class)).where(any(Condition.class))
+                .orderBy(any(OrderField.class)).limit(anyInt()).fetch())
                 .thenReturn(JooqTestData.records(usageRow("M01", "/v1/a", "GET", 200, 10)));
 
         mockMvc.perform(get("/v1/usage/metrics")
@@ -118,11 +133,11 @@ class UsageControllerTest {
 
     @Test
     void getUsageSummarySuccess() throws Exception {
-        when(dsl.fetchOne(contains("FROM usage.metrics"), any(Object[].class)))
-                .thenReturn(JooqTestData.record(java.util.Map.of("total", 100L, "error_rate", 5.0, "avg_latency", 42.5)));
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(java.util.Map.<String, Object>of(
-                        "endpoint", "/v1/a", "hits", 60L, "avg_latency", 30.0)));
+        when(dsl.select(any(Collection.class)).from(any(TableLike.class)).where(any(Condition.class)).fetchOne())
+                .thenReturn(JooqTestData.record(Map.of("total", 100L, "error_rate", 5.0, "avg_latency", 42.5)));
+        when(dsl.select(any(Collection.class)).from(any(TableLike.class)).where(any(Condition.class))
+                .groupBy(any(org.jooq.GroupField.class)).orderBy(any(OrderField.class)).limit(anyInt()).fetch())
+                .thenReturn(JooqTestData.records(Map.of("endpoint", "/v1/a", "hits", 60L, "avg_latency", 30.0)));
 
         mockMvc.perform(get("/v1/usage/summary")
                         .header("X-Tenant-ID", TENANT))
@@ -136,9 +151,10 @@ class UsageControllerTest {
 
     @Test
     void getUsageSummaryPeriod30d() throws Exception {
-        when(dsl.fetchOne(contains("FROM usage.metrics"), any(Object[].class)))
-                .thenReturn(JooqTestData.record(java.util.Map.of("total", 0L, "error_rate", 0.0, "avg_latency", 0.0)));
-        when(dsl.fetch(anyString(), any(Object[].class)))
+        when(dsl.select(any(Collection.class)).from(any(TableLike.class)).where(any(Condition.class)).fetchOne())
+                .thenReturn(JooqTestData.record(Map.of("total", 0L, "error_rate", 0.0, "avg_latency", 0.0)));
+        when(dsl.select(any(Collection.class)).from(any(TableLike.class)).where(any(Condition.class))
+                .groupBy(any(org.jooq.GroupField.class)).orderBy(any(OrderField.class)).limit(anyInt()).fetch())
                 .thenReturn(JooqTestData.records());
 
         mockMvc.perform(get("/v1/usage/summary")
@@ -150,8 +166,8 @@ class UsageControllerTest {
 
     // ---------- helpers ----------
 
-    private static java.util.Map<String, Object> usageRow(String id, String ep, String method, int code, int latency) {
-        java.util.Map<String, Object> m = new java.util.LinkedHashMap<>();
+    private static Map<String, Object> usageRow(String id, String ep, String method, int code, int latency) {
+        Map<String, Object> m = new java.util.LinkedHashMap<>();
         m.put("id", id);
         m.put("endpoint", ep);
         m.put("method", method);

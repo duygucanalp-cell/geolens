@@ -1,7 +1,7 @@
 package dev.geolens.usage.web;
 
-import org.jooq.DSL;
 import org.jooq.DSLContext;
+import org.jooq.impl.DSL;
 import org.jooq.Field;
 import org.jooq.Record;
 import org.springframework.http.HttpStatus;
@@ -158,7 +158,7 @@ public class UsageController {
                             DSL.count().as("total"),
                             DSL.avg(DSL.when(METRICS.STATUS_CODE.greaterOrEqual(400), 1.0).otherwise(0.0))
                                     .coalesce(BigDecimal.ZERO).multiply(100).as("error_rate"),
-                            DSL.avg(METRICS.LATENCY_MS).coalesce(BigDecimal.ZERO).as("avg_latency"))
+                            DSL.avg(METRICS.LATENCY_MS).coalesce(BigDecimal.ZERO).as("avg_latency")))
                     .from(METRICS)
                     .where(METRICS.TENANT_ID.eq(tenantId).and(METRICS.RECORDED_AT.gt(cutoff)))
                     .fetchOne();

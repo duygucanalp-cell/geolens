@@ -4,6 +4,8 @@ import dev.geolens.audit.AuditService;
 import dev.geolens.auth.JWTService;
 import dev.geolens.auth.TokenBlacklist;
 import dev.geolens.auth.web.TransactionalMailer;
+import dev.geolens.billing.EFaturaProvider;
+import dev.geolens.billing.StripeClient;
 import dev.geolens.delivery.DeliveryService;
 import dev.geolens.delivery.EmailConfig;
 import dev.geolens.engine.Registry;
@@ -28,6 +30,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Duration;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Yeni taşınan bağlamların (engine/measure/governance/audit/delivery) Spring kablolaması.
@@ -123,6 +127,44 @@ public class AppBeans {
     public JWTService jwtService(@Value("${JWT_SECRET:dev-secret-change-me}") String secret,
                                  @Value("${JWT_TOKEN_TTL_HOURS:2}") long ttlHours) {
         return new JWTService(secret, Duration.ofHours(ttlHours));
+    }
+
+    /** Faturalama (FR-A6): Stripe istemcisi — STRIPE_API_KEY boş/"mock" ise mock mod (gerçek ödeme alınmaz). */
+    @Bean
+    public StripeClient stripeClient(@Value("${STRIPE_API_KEY:}") String apiKey,
+                                     @Value("${STRIPE_WEBHOOK_SECRET:}") String webhookSecret,
+                                     @Value("${STRIPE_PRICE_IDS:}") String priceIdsRaw) {
+        StripeClient client = new StripeClient(apiKey, webhookSecret);
+        Map<String, String> ids = parseStripePriceIds(priceIdsRaw);
+        if (!ids.isEmpty()) {
+            client.setPriceIds(ids);
+        }
+        return client;
+    }
+
+    /** Faturalama (FR-A6): e-Fatura sağlayıcısı — EFATURA_MODE "mock" (varsayılan) veya "gib". */
+    @Bean
+    public EFaturaProvider efaturaProvider(@Value("${EFATURA_MODE:mock}") String mode) {
+        return EFaturaProvider.create(mode);
+    }
+
+    /** STRIPE_PRICE_IDS env'ini ("tier=priceId,tier=priceId,...") map'e çevirir — Go {@code ParseStripePriceIDs} portu. */
+    private static Map<String, String> parseStripePriceIds(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return Map.of();
+        }
+        Map<String, String> out = new LinkedHashMap<>();
+        for (String pair : raw.split(",")) {
+            String[] kv = pair.split("=", 2);
+            if (kv.length != 2) {
+                continue;
+            }
+            String key = kv[0].trim();
+            if (!key.isEmpty()) {
+                out.put(key, kv[1].trim());
+            }
+        }
+        return out;
     }
 
     /** Spike'ta bellek içi blacklist; üretimde Redis uygulamasıyla değiştirilir. */
