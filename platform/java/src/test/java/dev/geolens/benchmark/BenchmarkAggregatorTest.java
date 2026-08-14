@@ -61,15 +61,25 @@ class BenchmarkAggregatorTest {
 
     @Test
     void aggregateInsertError() {
-        stubFetchBySql(countRow(10, 20), statsRow(54.5, 12.0, 95.0, 14.2, 20),
-                cols(52.0), percentilesRow(35.0, 68.0, 82.0), null);
         when(DSL.fetchOne(anyString(), any(Object[].class)))
                 .thenAnswer(inv -> {
                     String sql = inv.getArgument(0);
+                    if (sql.contains("COUNT(DISTINCT tenant_id)")) {
+                        return JooqTestData.record(countRow(10, 20));
+                    }
+                    if (sql.contains("AVG(sub.latest)")) {
+                        return JooqTestData.record(statsRow(54.5, 12.0, 95.0, 14.2, 20));
+                    }
+                    if (sql.contains("ROW_NUMBER()")) {
+                        return JooqTestData.record(cols(52.0));
+                    }
+                    if (sql.contains("PERCENTILE_CONT")) {
+                        return JooqTestData.record(percentilesRow(35.0, 68.0, 82.0));
+                    }
                     if (sql.contains("INSERT INTO benchmark.industry_stats")) {
                         throw new RuntimeException("insert error");
                     }
-                    return JooqTestData.record(countRow(10, 20));
+                    return null;
                 });
 
         BenchmarkAggregator a = new BenchmarkAggregator(DSL, null);
@@ -164,8 +174,8 @@ class BenchmarkAggregatorTest {
         return m;
     }
 
-    /** Tek değerli kayıt — Go MockRow{Values: []any{v}} karşılığı. */
+    /** RETURNING id — INSERT sonucu tek sütunlu kayıt (Go MockRow{Values: []any{"stats-001"}} karşılığı). */
     private static Record single(Object v) {
-        return JooqTestData.record(v);
+        return JooqTestData.record(Map.of("id", v));
     }
 }
