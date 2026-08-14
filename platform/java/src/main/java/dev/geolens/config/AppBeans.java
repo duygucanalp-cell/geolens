@@ -2,6 +2,7 @@ package dev.geolens.config;
 
 import dev.geolens.audit.AuditService;
 import dev.geolens.benchmark.BenchmarkAggregator;
+import dev.geolens.replay.ReplayEngine;
 import dev.geolens.benchmark.DpConfig;
 import dev.geolens.auth.JWTService;
 import dev.geolens.auth.TokenBlacklist;
@@ -225,5 +226,11 @@ public class AppBeans {
         cfg.minTenants = minTenants;
         cfg.epsilon = epsilon;
         return new BenchmarkAggregator(dsl.getIfAvailable(), cfg);
+    }
+
+    /** Replay (FR-D12): conversation snapshot motoru — DSLContext üzerinden çalışır. */
+    @Bean
+    public ReplayEngine replayEngine(DSLContext dsl) {
+        return new ReplayEngine(dsl);
     }
 }
