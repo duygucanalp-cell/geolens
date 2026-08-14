@@ -38,3 +38,9 @@ sentiment:
     serving-url: ${ML_SERVING_URL:}
     timeout-ms: ${ML_TIMEOUT:5000}
     breaker-cooldown-ms: ${ML_BREAKER_COOLDOWN:60000}
+
+measure:
+  ml:
+    # Prompt intent sınıflandırması (0421 A3-3). Boşsa varsayılan GAVF ağırlıkları kullanılır.
+    classify-url: ${ML_CLASSIFY_URL:}
+    timeout-ms: ${ML_TIMEOUT:5000}
