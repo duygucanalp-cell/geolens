@@ -68,7 +68,7 @@ class PanelControllerTest {
 
     @Test
     void listPanelsSuccess() throws Exception {
-        when(jdbc.queryForList(anyString(), (Object[]) any()))
+        when(jdbc.queryForList(anyString(), any(Object[].class)))
                 .thenReturn(java.util.List.of(panelRow("P01", "Aylık Panel")));
 
         mockMvc.perform(get("/v1/workspaces/WS01/panels")
