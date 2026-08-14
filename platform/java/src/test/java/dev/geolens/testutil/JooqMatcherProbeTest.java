@@ -2,7 +2,6 @@ package dev.geolens.testutil;
 
 import org.jooq.Condition;
 import org.jooq.DSLContext;
-import org.jooq.Field;
 import org.jooq.OrderField;
 import org.jooq.Table;
 import org.jooq.TableLike;
@@ -118,13 +117,9 @@ class JooqMatcherProbeTest {
         assertEquals(3L, r.intoMap().get("count"));
     }
 
-    @Test
-    void fetchValueWithFieldMatches() {
-        when(dsl.fetchValue(any(Field.class))).thenReturn("V01");
-
-        String v = dsl.fetchValue(ENTRIES.ID);
-        assertEquals("V01", v);
-    }
+    // NOT: fetchValue(String, Object...) overload'u jOOQ'da yoktur (ADR-014 not 5);
+    // fetchValue(Field) da DSLContext'te overload çakışması nedeniyle mock'lanamaz —
+    // ana kodda kullanılmaz; değer okuma fetchOne(...).get(0, Class) ile yapılır.
 
     @Test
     void joinChainMatches() {

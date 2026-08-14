@@ -4,6 +4,7 @@ import dev.geolens.testutil.JooqTestData;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.OrderField;
+import org.jooq.SelectFieldOrAsterisk;
 import org.jooq.Table;
 import org.jooq.TableLike;
 import org.junit.jupiter.api.Test;
@@ -18,6 +19,7 @@ import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -133,9 +135,13 @@ class UsageControllerTest {
 
     @Test
     void getUsageSummarySuccess() throws Exception {
-        when(dsl.select(any(Collection.class)).from(any(TableLike.class)).where(any(Condition.class)).fetchOne())
+        // agg: select list "total" içerir; endpoints: "hits" içerir — derin stub zinciri
+        // aynı select/from/where ön ekini paylaştığı için select listesiyle ayırt edilir.
+        when(dsl.select(selectContaining("total"))
+                .from(any(TableLike.class)).where(any(Condition.class)).fetchOne())
                 .thenReturn(JooqTestData.record(Map.of("total", 100L, "error_rate", 5.0, "avg_latency", 42.5)));
-        when(dsl.select(any(Collection.class)).from(any(TableLike.class)).where(any(Condition.class))
+        when(dsl.select(selectContaining("hits"))
+                .from(any(TableLike.class)).where(any(Condition.class))
                 .groupBy(any(org.jooq.GroupField.class)).orderBy(any(OrderField.class)).limit(anyInt()).fetch())
                 .thenReturn(JooqTestData.records(Map.of("endpoint", "/v1/a", "hits", 60L, "avg_latency", 30.0)));
 
@@ -151,9 +157,11 @@ class UsageControllerTest {
 
     @Test
     void getUsageSummaryPeriod30d() throws Exception {
-        when(dsl.select(any(Collection.class)).from(any(TableLike.class)).where(any(Condition.class)).fetchOne())
+        when(dsl.select(selectContaining("total"))
+                .from(any(TableLike.class)).where(any(Condition.class)).fetchOne())
                 .thenReturn(JooqTestData.record(Map.of("total", 0L, "error_rate", 0.0, "avg_latency", 0.0)));
-        when(dsl.select(any(Collection.class)).from(any(TableLike.class)).where(any(Condition.class))
+        when(dsl.select(selectContaining("hits"))
+                .from(any(TableLike.class)).where(any(Condition.class))
                 .groupBy(any(org.jooq.GroupField.class)).orderBy(any(OrderField.class)).limit(anyInt()).fetch())
                 .thenReturn(JooqTestData.records());
 
@@ -165,6 +173,12 @@ class UsageControllerTest {
     }
 
     // ---------- helpers ----------
+
+    /** Select listesini içeriğe göre eşleştirir — iki summary sorgusu aynı ön eki paylaşır. */
+    @SuppressWarnings("unchecked")
+    private static Collection<? extends SelectFieldOrAsterisk> selectContaining(String fragment) {
+        return argThat((Collection<? extends SelectFieldOrAsterisk> c) -> c != null && c.toString().contains(fragment));
+    }
 
     private static Map<String, Object> usageRow(String id, String ep, String method, int code, int latency) {
         Map<String, Object> m = new java.util.LinkedHashMap<>();
