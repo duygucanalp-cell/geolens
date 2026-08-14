@@ -1,6 +1,8 @@
 package dev.geolens.config;
 
 import dev.geolens.audit.AuditService;
+import dev.geolens.benchmark.BenchmarkAggregator;
+import dev.geolens.benchmark.DpConfig;
 import dev.geolens.auth.JWTService;
 import dev.geolens.auth.TokenBlacklist;
 import dev.geolens.auth.web.TransactionalMailer;
@@ -212,5 +214,16 @@ public class AppBeans {
     @Bean
     public SeoStateStore seoStateStore() {
         return new SeoStateStore();
+    }
+
+    /** Benchmark (FR-D5): sektör istatistiği toplayıcı — DP yapılandırması env'den (varsayılan NFR-13: ≥5 kiracı). */
+    @Bean
+    public BenchmarkAggregator benchmarkAggregator(ObjectProvider<DSLContext> dsl,
+                                                   @Value("${BENCHMARK_MIN_TENANTS:5}") int minTenants,
+                                                   @Value("${BENCHMARK_DP_EPSILON:1.0}") double epsilon) {
+        DpConfig cfg = new DpConfig();
+        cfg.minTenants = minTenants;
+        cfg.epsilon = epsilon;
+        return new BenchmarkAggregator(dsl.getIfAvailable(), cfg);
     }
 }
