@@ -1,6 +1,9 @@
 package dev.geolens.config;
 
 import dev.geolens.audit.AuditService;
+import dev.geolens.auth.JWTService;
+import dev.geolens.auth.TokenBlacklist;
+import dev.geolens.auth.web.TransactionalMailer;
 import dev.geolens.delivery.DeliveryService;
 import dev.geolens.delivery.EmailConfig;
 import dev.geolens.engine.Registry;
@@ -114,5 +117,43 @@ public class AppBeans {
                                            ObjectProvider<JdbcTemplate> jdbc,
                                            ObjectProvider<TransactionTemplate> tx) {
         return new DeliveryService(emailConfig, jdbc.getIfAvailable(), tx.getIfAvailable());
+    }
+
+    @Bean
+    public JWTService jwtService(@Value("${JWT_SECRET:dev-secret-change-me}") String secret,
+                                 @Value("${JWT_TOKEN_TTL_HOURS:2}") long ttlHours) {
+        return new JWTService(secret, Duration.ofHours(ttlHours));
+    }
+
+    /** Spike'ta bellek içi blacklist; üretimde Redis uygulamasıyla değiştirilir. */
+    @Bean
+    public TokenBlacklist tokenBlacklist() {
+        return new TokenBlacklist() {
+            private final java.util.Map<String, Long> store = new java.util.concurrent.ConcurrentHashMap<>();
+
+            @Override
+            public boolean exists(String jti) {
+                Long until = store.get(jti);
+                if (until == null) {
+                    return false;
+                }
+                if (System.currentTimeMillis() > until) {
+                    store.remove(jti);
+                    return false;
+                }
+                return true;
+            }
+
+            @Override
+            public void set(String jti, Duration ttl) {
+                store.put(jti, System.currentTimeMillis() + ttl.toMillis());
+            }
+        };
+    }
+
+    /** Davet vb. işlemsel e-postalar delivery servisi (SendGrid) üzerinden gider. */
+    @Bean
+    public TransactionalMailer transactionalMailer(DeliveryService delivery) {
+        return delivery::sendEmail;
     }
 }

@@ -1,0 +1,527 @@
+package dev.geolens.auth.web;
+
+import dev.geolens.auth.AuthException;
+import dev.geolens.auth.Claims;
+import dev.geolens.auth.JWTService;
+import dev.geolens.auth.TokenBlacklist;
+import dev.geolens.auth.TokenResult;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.dao.EmptyResultDataAccessException;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HexFormat;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * Kimlik doğrulama ve yetkilendirme REST controller'ı — Go {@code auth.handler} portu.
+ * <p>Route'lar (go cmd/api): POST /v1/auth/register, POST /v1/auth/login,
+ * POST /v1/auth/refresh, POST /v1/auth/logout, POST /v1/auth/accept-invitation,
+ * GET /v1/tenant, GET/POST /v1/tenant/members, PATCH /v1/tenant/members/{userId}/role,
+ * GET/POST /v1/tenant/invitations.
+ * <p>bcrypt hash'leme spring-security-crypto ile; blacklist opsiyonel (Go nil rdb karşılığı).
+ */
+@RestController
+public class AuthController {
+
+    private static final Set<String> VALID_ROLES = Set.of("admin", "editor", "viewer");
+    private static final BCryptPasswordEncoder ENCODER = new BCryptPasswordEncoder();
+    private static final SecureRandom RANDOM = new SecureRandom();
+
+    private final JWTService jwt;
+    private final JdbcTemplate jdbc;
+    private final TransactionTemplate tx;
+    private final TokenBlacklist blacklist;
+    private final TransactionalMailer mail;
+    private final String baseUrl;
+
+    public AuthController(JWTService jwt, JdbcTemplate jdbc, TransactionTemplate tx,
+                          ObjectProvider<TokenBlacklist> blacklist,
+                          ObjectProvider<TransactionalMailer> mail,
+                          @Value("${app.base-url:}") String baseUrl) {
+        this.jwt = jwt;
+        this.jdbc = jdbc;
+        this.tx = tx;
+        this.blacklist = blacklist.getIfAvailable();
+        this.mail = mail.getIfAvailable();
+        this.baseUrl = baseUrl;
+    }
+
+    @PostMapping("/v1/auth/register")
+    public ResponseEntity<?> register(@RequestBody RegisterRequest req) {
+        if (req == null || req.email() == null || req.email().isBlank()
+                || req.password() == null || req.password().isBlank()
+                || req.name() == null || req.name().isBlank()) {
+            return error(HttpStatus.BAD_REQUEST, "e-posta, şifre ve isim zorunludur");
+        }
+        if (req.password().length() < 8) {
+            return error(HttpStatus.BAD_REQUEST, "şifre en az 8 karakter olmalıdır");
+        }
+
+        String hashed = ENCODER.encode(req.password());
+
+        String[] ids = txExecute(() -> {
+            String tenantId = jdbc.queryForObject("""
+                    INSERT INTO identity.tenants (id, name, slug, tier)
+                    VALUES (gen_random_uuid()::text, ?, lower(regexp_replace(?, '[^a-z0-9]', '', 'g')), 'free')
+                    RETURNING id
+                    """, String.class, req.name(), req.name());
+            String userId = jdbc.queryForObject("""
+                    INSERT INTO identity.users (id, tenant_id, email, password_hash, role, full_name)
+                    VALUES (gen_random_uuid()::text, ?, ?, ?, 'admin', ?)
+                    RETURNING id
+                    """, String.class, tenantId, req.email(), hashed, req.name());
+            String workspaceId = jdbc.queryForObject("""
+                    INSERT INTO config.workspaces (id, tenant_id, name, slug)
+                    VALUES (gen_random_uuid()::text, ?, 'Varsayılan Çalışma Alanı', 'default')
+                    RETURNING id
+                    """, String.class, tenantId);
+            jdbc.update("""
+                    INSERT INTO config.memberships (id, workspace_id, user_id, tenant_id, role)
+                    VALUES (gen_random_uuid()::text, ?, ?, ?, 'admin')
+                    """, workspaceId, userId, tenantId);
+            return new String[]{userId, tenantId, workspaceId};
+        });
+
+        TokenResult token = jwt.generateToken(ids[0], ids[1], "admin");
+        return ResponseEntity.status(HttpStatus.CREATED).body(new AuthResponse(
+                token.token(), format(token.expiresAt()), ids[0], ids[1], ids[2], "admin"));
+    }
+
+    @PostMapping("/v1/auth/login")
+    public ResponseEntity<?> login(@RequestBody LoginRequest req) {
+        if (req == null || req.email() == null || req.email().isBlank()
+                || req.password() == null || req.password().isBlank()) {
+            return error(HttpStatus.BAD_REQUEST, "e-posta ve şifre zorunludur");
+        }
+
+        Map<String, Object> user;
+        try {
+            user = jdbc.queryForMap("""
+                    SELECT u.id, u.tenant_id, u.password_hash, u.role
+                    FROM identity.users u
+                    WHERE u.email = ? AND u.is_active = true
+                    """, req.email());
+        } catch (EmptyResultDataAccessException e) {
+            return error(HttpStatus.UNAUTHORIZED, "geçersiz e-posta veya şifre");
+        } catch (RuntimeException e) {
+            return error(HttpStatus.INTERNAL_SERVER_ERROR, "giriş başarısız");
+        }
+
+        String userId = String.valueOf(user.get("id"));
+        String tenantId = String.valueOf(user.get("tenant_id"));
+        String passwordHash = String.valueOf(user.get("password_hash"));
+        String role = String.valueOf(user.get("role"));
+
+        if (!ENCODER.matches(req.password(), passwordHash)) {
+            return error(HttpStatus.UNAUTHORIZED, "geçersiz e-posta veya şifre");
+        }
+
+        String workspaceId = firstWorkspace(userId, tenantId);
+        String rbacRole = resolveRBACRole(userId, tenantId, role);
+        TokenResult token = jwt.generateToken(userId, tenantId, rbacRole);
+        return ResponseEntity.ok(new AuthResponse(token.token(), format(token.expiresAt()),
+                userId, tenantId, workspaceId, rbacRole));
+    }
+
+    @PostMapping("/v1/auth/refresh")
+    public ResponseEntity<?> refresh(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+        String tokenStr = bearer(authHeader);
+        if (tokenStr.isEmpty()) {
+            return error(HttpStatus.UNAUTHORIZED, "kimlik doğrulama gerekli");
+        }
+        Claims claims;
+        try {
+            claims = jwt.validateToken(tokenStr);
+        } catch (AuthException e) {
+            return error(HttpStatus.UNAUTHORIZED, "oturum süresi dolmuş veya geçersiz token");
+        }
+
+        if (blacklist != null && claims.id() != null && !claims.id().isBlank()
+                && blacklist.exists("token:blacklist:" + claims.id())) {
+            return error(HttpStatus.UNAUTHORIZED, "token iptal edilmiş");
+        }
+
+        // Maksimum oturum ömrü: 7 günden eski token'lar yenilenemez (kayan oturum).
+        if (claims.issuedAt() != null && Instant.now().isAfter(claims.issuedAt().plusSeconds(7 * 24 * 3600))) {
+            return error(HttpStatus.UNAUTHORIZED, "oturum süresi sona erdi, tekrar giriş yapın");
+        }
+
+        // Rolü DB'den taze oku; kullanıcı deaktif/silinmişse yenileme reddedilir.
+        String role;
+        try {
+            role = jdbc.queryForObject("""
+                    SELECT role FROM identity.users WHERE id = ? AND tenant_id = ? AND is_active = true
+                    """, String.class, claims.userId(), claims.tenantId());
+        } catch (RuntimeException e) {
+            return error(HttpStatus.UNAUTHORIZED, "oturum sonlandırıldı, tekrar giriş yapın");
+        }
+
+        String rbacRole = resolveRBACRole(claims.userId(), claims.tenantId(), role);
+        TokenResult token = jwt.generateToken(claims.userId(), claims.tenantId(), rbacRole);
+        return ResponseEntity.ok(new AuthResponse(token.token(), format(token.expiresAt()),
+                claims.userId(), claims.tenantId(), "", rbacRole));
+    }
+
+    @PostMapping("/v1/auth/logout")
+    public ResponseEntity<?> logout(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+        String tokenStr = bearer(authHeader);
+        if (!tokenStr.isEmpty()) {
+            try {
+                jwt.blacklistToken(tokenStr, blacklist);
+            } catch (AuthException ignored) {
+                // blacklist ekleme hatası non-fatal (Go warn + devam)
+            }
+        }
+        return ResponseEntity.ok(Map.of("status", "logged_out"));
+    }
+
+    @GetMapping("/v1/tenant")
+    public ResponseEntity<?> getTenant(@RequestHeader(value = "X-Tenant-ID", required = false) String tenantId) {
+        if (tenantId == null || tenantId.isBlank()) {
+            return error(HttpStatus.UNAUTHORIZED, "kimlik doğrulama gerekli");
+        }
+        Map<String, Object> tenant;
+        try {
+            tenant = jdbc.queryForMap("""
+                    SELECT name, slug, tier, created_at FROM identity.tenants WHERE id = ?
+                    """, tenantId);
+        } catch (RuntimeException e) {
+            return error(HttpStatus.NOT_FOUND, "kiracı bulunamadı");
+        }
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("id", tenantId);
+        body.put("name", tenant.get("name"));
+        body.put("slug", tenant.get("slug"));
+        body.put("tier", tenant.get("tier"));
+        body.put("created_at", tenant.get("created_at") == null ? null : String.valueOf(tenant.get("created_at")));
+        return ResponseEntity.ok(body);
+    }
+
+    @GetMapping("/v1/tenant/members")
+    public ResponseEntity<?> listMembers(@RequestHeader("X-Tenant-ID") String tenantId) {
+        List<Map<String, Object>> rows;
+        try {
+            rows = jdbc.queryForList("""
+                    SELECT u.id, u.email, u.full_name, m.role AS workspace_role, m.workspace_id, u.created_at
+                    FROM identity.users u
+                    JOIN config.memberships m ON m.user_id = u.id AND m.tenant_id = u.tenant_id
+                    WHERE u.tenant_id = ? AND u.is_active = true
+                    ORDER BY u.created_at DESC
+                    """, tenantId);
+        } catch (RuntimeException e) {
+            return error(HttpStatus.INTERNAL_SERVER_ERROR, "üyeler listelenemedi");
+        }
+        List<Map<String, Object>> members = new ArrayList<>();
+        for (Map<String, Object> r : rows) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("user_id", r.get("id"));
+            m.put("email", r.get("email"));
+            m.put("full_name", r.get("full_name"));
+            m.put("workspace_role", r.get("workspace_role"));
+            m.put("workspace_id", r.get("workspace_id"));
+            m.put("created_at", r.get("created_at") == null ? null : String.valueOf(r.get("created_at")));
+            members.add(m);
+        }
+        return ResponseEntity.ok(Map.of("members", members));
+    }
+
+    @PatchMapping("/v1/tenant/members/{userId}/role")
+    public ResponseEntity<?> updateMemberRole(@RequestHeader("X-Tenant-ID") String tenantId,
+                                              @PathVariable String userId,
+                                              @RequestBody UpdateRoleRequest req) {
+        if (userId == null || userId.isBlank()) {
+            return error(HttpStatus.BAD_REQUEST, "kullanıcı ID gerekli");
+        }
+        if (req == null || req.role() == null || !VALID_ROLES.contains(req.role())) {
+            return error(HttpStatus.BAD_REQUEST, "geçersiz rol (admin, editor, viewer)");
+        }
+        int updated;
+        try {
+            updated = jdbc.update("""
+                    UPDATE config.memberships
+                    SET role = ?
+                    WHERE user_id = ? AND tenant_id = ?
+                    """, req.role(), userId, tenantId);
+        } catch (RuntimeException e) {
+            return error(HttpStatus.INTERNAL_SERVER_ERROR, "rol güncellenemedi");
+        }
+        if (updated == 0) {
+            return error(HttpStatus.NOT_FOUND, "kullanıcı bulunamadı");
+        }
+        return ResponseEntity.ok(Map.of("status", "updated", "role", req.role()));
+    }
+
+    @PostMapping("/v1/tenant/invitations")
+    public ResponseEntity<?> inviteMember(@RequestHeader("X-Tenant-ID") String tenantId,
+                                          @RequestHeader(value = "X-User-ID", required = false) String userId,
+                                          @RequestBody InviteRequest req) {
+        if (req == null || req.email() == null || req.email().isBlank()
+                || req.workspaceId() == null || req.workspaceId().isBlank()
+                || req.role() == null || req.role().isBlank()) {
+            return error(HttpStatus.BAD_REQUEST, "e-posta, çalışma alanı ve rol zorunludur");
+        }
+        if (!VALID_ROLES.contains(req.role())) {
+            return error(HttpStatus.BAD_REQUEST, "geçersiz rol (admin, editor, viewer)");
+        }
+
+        byte[] tokenBytes = new byte[32];
+        RANDOM.nextBytes(tokenBytes);
+        String token = HexFormat.of().formatHex(tokenBytes);
+
+        try {
+            jdbc.update("""
+                    INSERT INTO identity.invitations (id, tenant_id, workspace_id, invited_by, email, role, token, expires_at)
+                    VALUES (gen_random_uuid()::text, ?, ?, ?, ?, ?, ?, now() + interval '7 days')
+                    """, tenantId, req.workspaceId(), userId == null ? "" : userId,
+                    req.email(), req.role(), token);
+        } catch (RuntimeException e) {
+            return error(HttpStatus.CONFLICT, "bu e-posta zaten davet edilmiş");
+        }
+
+        boolean emailSent = false;
+        if (mail != null && baseUrl != null && !baseUrl.isBlank()) {
+            String acceptUrl = String.format("%s/#/invite?token=%s&email=%s",
+                    baseUrl.replaceAll("/+$", ""),
+                    urlEncode(token), urlEncode(req.email()));
+            String subject = "GeoLens Daveti — çalışma alanına katılın";
+            String body = "<h2>GeoLens'e davet edildiniz</h2>"
+                    + "<p><strong>" + escapeHtml(req.email()) + "</strong> e-posta adresi, bir GeoLens çalışma alanına davet edildi.</p>"
+                    + "<p>Daveti kabul etmek ve hesabınızı oluşturmak için aşağıdaki bağlantıyı kullanın:</p>"
+                    + "<p><a href=\"" + acceptUrl + "\">Daveti Kabul Et</a></p>"
+                    + "<p>Bağlantı <strong>7 gün</strong> geçerlidir. Bağlantı sorunluysa davet token'ınız:</p>"
+                    + "<p><code>" + escapeHtml(token) + "</code></p>";
+            try {
+                mail.sendEmail(req.email(), subject, body);
+                emailSent = true;
+            } catch (RuntimeException ignored) {
+                // gönderim hatası non-fatal (Go warn + devam)
+            }
+        }
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("status", "invited");
+        body.put("email", req.email());
+        body.put("token", token);
+        body.put("email_sent", emailSent);
+        return ResponseEntity.status(HttpStatus.CREATED).body(body);
+    }
+
+    @PostMapping("/v1/auth/accept-invitation")
+    public ResponseEntity<?> acceptInvitation(@RequestBody AcceptInvitationRequest req) {
+        if (req == null || req.token() == null || req.token().isBlank()
+                || req.email() == null || req.email().isBlank()
+                || req.password() == null || req.password().isBlank()
+                || req.name() == null || req.name().isBlank()) {
+            return error(HttpStatus.BAD_REQUEST, "token, e-posta, şifre ve isim zorunludur");
+        }
+
+        Map<String, Object> invitation;
+        try {
+            invitation = jdbc.queryForMap("""
+                    SELECT id, tenant_id, workspace_id, role, expires_at
+                    FROM identity.invitations
+                    WHERE token = ? AND accepted_at IS NULL
+                    """, req.token());
+        } catch (EmptyResultDataAccessException e) {
+            return error(HttpStatus.NOT_FOUND, "geçersiz veya süresi dolmuş davet");
+        } catch (RuntimeException e) {
+            return error(HttpStatus.NOT_FOUND, "geçersiz veya süresi dolmuş davet");
+        }
+
+        String invitationId = String.valueOf(invitation.get("id"));
+        String tenantId = String.valueOf(invitation.get("tenant_id"));
+        String workspaceId = String.valueOf(invitation.get("workspace_id"));
+        String role = String.valueOf(invitation.get("role"));
+
+        Instant expiresAt = invitation.get("expires_at") instanceof java.sql.Timestamp ts
+                ? ts.toInstant() : null;
+        if (expiresAt != null && Instant.now().isAfter(expiresAt)) {
+            return error(HttpStatus.GONE, "davetin süresi dolmuş");
+        }
+
+        String userId = findOrCreateUser(req.email(), req.password(), req.name(), tenantId);
+        if (userId == null) {
+            return error(HttpStatus.CONFLICT, "bu e-posta zaten kayıtlı");
+        }
+
+        try {
+            jdbc.update("""
+                    INSERT INTO config.memberships (id, workspace_id, user_id, tenant_id, role)
+                    VALUES (gen_random_uuid()::text, ?, ?, ?, ?)
+                    ON CONFLICT (workspace_id, user_id) DO UPDATE SET role = ?
+                    """, workspaceId, userId, tenantId, role, role);
+            jdbc.update("UPDATE identity.invitations SET accepted_at = now() WHERE id = ?", invitationId);
+        } catch (RuntimeException e) {
+            return error(HttpStatus.INTERNAL_SERVER_ERROR, "davet kabul edilemedi");
+        }
+
+        String rbacRole = resolveRBACRole(userId, tenantId, role);
+        TokenResult token = jwt.generateToken(userId, tenantId, rbacRole);
+        return ResponseEntity.ok(new AuthResponse(token.token(), format(token.expiresAt()),
+                userId, tenantId, workspaceId, rbacRole));
+    }
+
+    @GetMapping("/v1/tenant/invitations")
+    public ResponseEntity<?> listInvitations(@RequestHeader("X-Tenant-ID") String tenantId) {
+        List<Map<String, Object>> rows;
+        try {
+            rows = jdbc.queryForList("""
+                    SELECT id, email, role, workspace_id, created_at, expires_at, accepted_at IS NOT NULL AS accepted
+                    FROM identity.invitations
+                    WHERE tenant_id = ?
+                    ORDER BY created_at DESC
+                    LIMIT 50
+                    """, tenantId);
+        } catch (RuntimeException e) {
+            return error(HttpStatus.INTERNAL_SERVER_ERROR, "davetler listelenemedi");
+        }
+        List<Map<String, Object>> invitations = new ArrayList<>();
+        for (Map<String, Object> r : rows) {
+            Map<String, Object> inv = new LinkedHashMap<>();
+            inv.put("id", r.get("id"));
+            inv.put("email", r.get("email"));
+            inv.put("role", r.get("role"));
+            inv.put("workspace_id", r.get("workspace_id"));
+            inv.put("created_at", r.get("created_at") == null ? null : String.valueOf(r.get("created_at")));
+            inv.put("expires_at", r.get("expires_at") == null ? null : String.valueOf(r.get("expires_at")));
+            inv.put("accepted", r.get("accepted"));
+            invitations.add(inv);
+        }
+        return ResponseEntity.ok(Map.of("invitations", invitations));
+    }
+
+    /**
+     * Kullanıcının gerçek RBAC rolünü config.memberships üzerinden çözer — Go
+     * {@code resolveRBACRole} portu. identity.users.role 'member' olabilir (RBAC
+     * sözlüğüyle uyumsuz); birden çok üyelikte EN YÜKSEK yetki seçilir. Üyelik yoksa
+     * fallback normalizasyonu: bilinmeyen/değerler 'viewer'a eşlenir.
+     */
+    String resolveRBACRole(String userId, String tenantId, String fallbackRole) {
+        String role;
+        try {
+            role = jdbc.queryForObject("""
+                    SELECT m.role FROM config.memberships m
+                    WHERE m.user_id = ? AND m.tenant_id = ?
+                    ORDER BY CASE m.role WHEN 'admin' THEN 3 WHEN 'editor' THEN 2 ELSE 1 END DESC, m.created_at
+                    LIMIT 1
+                    """, String.class, userId, tenantId);
+        } catch (RuntimeException e) {
+            role = fallbackRole;
+        }
+        if (role == null || role.isBlank()) {
+            role = fallbackRole;
+        }
+        switch (role) {
+            case "admin":
+            case "editor":
+            case "viewer":
+                return role;
+            default:
+                return "viewer";
+        }
+    }
+
+    private String firstWorkspace(String userId, String tenantId) {
+        try {
+            return jdbc.queryForObject("""
+                    SELECT m.workspace_id FROM config.memberships m
+                    WHERE m.user_id = ? AND m.tenant_id = ?
+                    ORDER BY m.created_at LIMIT 1
+                    """, String.class, userId, tenantId);
+        } catch (RuntimeException e) {
+            return "";
+        }
+    }
+
+    private String findOrCreateUser(String email, String password, String name, String tenantId) {
+        String existing;
+        try {
+            existing = jdbc.queryForObject("""
+                    SELECT id FROM identity.users WHERE email = ? AND tenant_id = ?
+                    """, String.class, email, tenantId);
+        } catch (EmptyResultDataAccessException e) {
+            existing = null;
+        } catch (RuntimeException e) {
+            return null;
+        }
+        if (existing != null) {
+            return existing;
+        }
+        String hashed = ENCODER.encode(password);
+        try {
+            return jdbc.queryForObject("""
+                    INSERT INTO identity.users (id, tenant_id, email, password_hash, role, full_name)
+                    VALUES (gen_random_uuid()::text, ?, ?, ?, 'member', ?)
+                    RETURNING id
+                    """, String.class, tenantId, email, hashed, name);
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    private String[] txExecute(java.util.function.Supplier<String[]> action) {
+        if (tx == null) {
+            throw new AuthException("transaction mevcut değil");
+        }
+        try {
+            return tx.execute(status -> action.get());
+        } catch (RuntimeException e) {
+            throw e;
+        }
+    }
+
+    private static String bearer(String authHeader) {
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring("Bearer ".length());
+        }
+        return "";
+    }
+
+    private static String urlEncode(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
+    }
+
+    private static String escapeHtml(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                .replace("\"", "&quot;").replace("'", "&#39;");
+    }
+
+    private static String format(Instant instant) {
+        return DateTimeFormatter.ISO_INSTANT.format(instant);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiError> handleUnreadable(HttpMessageNotReadableException ex) {
+        return error(HttpStatus.BAD_REQUEST, "geçersiz istek");
+    }
+
+    private static ResponseEntity<ApiError> error(HttpStatus status, String message) {
+        return ResponseEntity.status(status).body(new ApiError(message));
+    }
+}
