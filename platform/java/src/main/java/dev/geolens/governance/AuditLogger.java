@@ -2,8 +2,7 @@ package dev.geolens.governance;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.geolens.util.Ulid;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.PreparedStatementCallback;
+import org.jooq.DSLContext;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.LinkedHashMap;
@@ -18,38 +17,33 @@ public final class AuditLogger {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    private final JdbcTemplate jdbc;
+    private final DSLContext dsl;
     private final TransactionTemplate tx;
 
-    public AuditLogger(JdbcTemplate jdbc, TransactionTemplate tx) {
-        this.jdbc = jdbc;
+    public AuditLogger(DSLContext dsl, TransactionTemplate tx) {
+        this.dsl = dsl;
         this.tx = tx;
     }
 
-    private static void setTenant(JdbcTemplate jdbc, String tenantId) {
-        jdbc.execute("SELECT set_config('app.tenant_id', ?, true)",
-                (PreparedStatementCallback<Void>) ps -> {
-                    ps.setString(1, tenantId);
-                    ps.execute();
-                    return null;
-                });
+    private static void setTenant(DSLContext dsl, String tenantId) {
+        dsl.fetch("SELECT set_config('app.tenant_id', ?, true)", tenantId);
     }
 
     private void runInTenant(String tenantId, Runnable work) {
         if (tx == null) {
-            setTenant(jdbc, tenantId);
+            setTenant(dsl, tenantId);
             work.run();
             return;
         }
         tx.executeWithoutResult(status -> {
-            setTenant(jdbc, tenantId);
+            setTenant(dsl, tenantId);
             work.run();
         });
     }
 
     /** Audit kaydını veritabanına yazar — Go {@code Record} portu. */
     public void record(AuditEntry entry) {
-        if (jdbc == null) {
+        if (dsl == null) {
             throw new GovernanceException("audit: veritabanı bağlantısı yok");
         }
 
@@ -63,7 +57,7 @@ public final class AuditLogger {
         }
 
         String meta = metaJson;
-        runInTenant(entry.tenantId(), () -> jdbc.update("""
+        runInTenant(entry.tenantId(), () -> dsl.execute("""
                 INSERT INTO governance.audit_log (id, tenant_id, user_id, event_type, resource_type, resource_id,
                     action, metadata, ip_address, user_agent, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?, ?, now())

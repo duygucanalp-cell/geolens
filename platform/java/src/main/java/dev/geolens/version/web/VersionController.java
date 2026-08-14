@@ -1,8 +1,9 @@
 package dev.geolens.version.web;
 
+import org.jooq.DSLContext;
+import org.jooq.Record;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,10 +31,10 @@ import java.util.UUID;
 @RestController
 public class VersionController {
 
-    private final JdbcTemplate jdbc;
+    private final DSLContext dsl;
 
-    public VersionController(JdbcTemplate jdbc) {
-        this.jdbc = jdbc;
+    public VersionController(DSLContext dsl) {
+        this.dsl = dsl;
     }
 
     @PostMapping("/v1/versions/entries")
@@ -48,7 +49,7 @@ public class VersionController {
         Instant now = Instant.now();
 
         try {
-            jdbc.update("""
+            dsl.execute("""
                     INSERT INTO version.entries (id, tenant_id, entity_type, entity_id, entity_name, old_version, new_version, change_notes, changed_by, created_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, entryId, tenantId, req.entityType(), req.entityId(),
@@ -91,7 +92,7 @@ public class VersionController {
 
         List<Map<String, Object>> rows;
         try {
-            rows = jdbc.queryForList("""
+            rows = list("""
                     SELECT id, entity_type, entity_id, entity_name, old_version, new_version, change_notes, changed_by, created_at
                     FROM version.entries WHERE tenant_id = ?
                         AND (? = '' OR entity_type = ?)
@@ -133,11 +134,14 @@ public class VersionController {
                                             @PathVariable String entryId) {
         Map<String, Object> row;
         try {
-            row = jdbc.queryForMap("""
+            row = map("""
                     SELECT id, entity_type, entity_id, entity_name, old_version, new_version, change_notes, changed_by, created_at
                     FROM version.entries WHERE id = ? AND tenant_id = ?
                     """, entryId, tenantId);
         } catch (RuntimeException e) {
+            return error(HttpStatus.NOT_FOUND, "versiyon kaydı bulunamadı");
+        }
+        if (row == null) {
             return error(HttpStatus.NOT_FOUND, "versiyon kaydı bulunamadı");
         }
 
@@ -159,6 +163,16 @@ public class VersionController {
         body.put("entry", entry);
         body.put("has_changes", !java.util.Objects.equals(oldV, newV));
         return ResponseEntity.ok(body);
+    }
+
+    /** ADR-014: plain SQL üzerinden jOOQ — satır erişimi Map ile korunur. */
+    private List<Map<String, Object>> list(String sql, Object... args) {
+        return dsl.fetch(sql, args).intoMaps();
+    }
+
+    private Map<String, Object> map(String sql, Object... args) {
+        Record r = dsl.fetchOne(sql, args);
+        return r == null ? null : r.intoMap();
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

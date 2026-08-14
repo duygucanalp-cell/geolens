@@ -1,8 +1,9 @@
 package dev.geolens.alert.web;
 
+import org.jooq.DSLContext;
+import org.jooq.Record;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,10 +32,10 @@ import java.util.Map;
 @RequestMapping("/v1/workspaces/{workspaceId}/alert-rules")
 public class AlertController {
 
-    private final JdbcTemplate jdbc;
+    private final DSLContext dsl;
 
-    public AlertController(JdbcTemplate jdbc) {
-        this.jdbc = jdbc;
+    public AlertController(DSLContext dsl) {
+        this.dsl = dsl;
     }
 
     @GetMapping
@@ -45,7 +46,7 @@ public class AlertController {
 
         List<Map<String, Object>> rows;
         try {
-            rows = jdbc.queryForList("""
+            rows = list("""
                     SELECT ar.id, ar.brand_id, ar.name, ar.metric, ar.condition,
                         ar.threshold, ar.channel, ar.channel_config, ar.enabled, ar.cooldown_min, ar.last_fired_at, ar.created_at, ar.updated_at
                     FROM governance.alert_rules ar
@@ -94,7 +95,7 @@ public class AlertController {
 
         Boolean brandExists;
         try {
-            brandExists = jdbc.queryForObject("""
+            brandExists = value("""
                     SELECT EXISTS(SELECT 1 FROM config.brands WHERE id = ? AND workspace_id = ? AND tenant_id = ?)
                     """, Boolean.class, req.brandId(), workspaceId, tenantId);
         } catch (RuntimeException e) {
@@ -106,7 +107,7 @@ public class AlertController {
 
         String ruleId;
         try {
-            ruleId = jdbc.queryForObject("""
+            ruleId = value("""
                     INSERT INTO governance.alert_rules
                         (id, tenant_id, brand_id, name, metric, condition, threshold, channel, channel_config, cooldown_min)
                     VALUES (gen_random_uuid()::text, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -133,7 +134,7 @@ public class AlertController {
         }
         int affected;
         try {
-            affected = jdbc.update("""
+            affected = dsl.execute("""
                     UPDATE governance.alert_rules
                     SET name           = COALESCE(?, name),
                         metric         = COALESCE(?, metric),
@@ -163,7 +164,7 @@ public class AlertController {
                                     @PathVariable String ruleId) {
         int affected;
         try {
-            affected = jdbc.update("""
+            affected = dsl.execute("""
                     DELETE FROM governance.alert_rules WHERE id = ? AND tenant_id = ?
                     """, ruleId, tenantId);
         } catch (RuntimeException e) {
@@ -173,6 +174,17 @@ public class AlertController {
             return error(HttpStatus.NOT_FOUND, "kural bulunamadı");
         }
         return ResponseEntity.ok(Map.of("status", "deleted"));
+    }
+
+    /** ADR-014: plain SQL üzerinden jOOQ — satır erişimi Map ile korunur. */
+    private List<Map<String, Object>> list(String sql, Object... args) {
+        return dsl.fetch(sql, args).intoMaps();
+    }
+
+    /** ADR-014: plain SQL tek değer — jOOQ dönüşümüyle (fetchValue raw Object döner). */
+    private <T> T value(String sql, Class<T> type, Object... args) {
+        Record r = dsl.fetchOne(sql, args);
+        return r == null ? null : r.get(0, type);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

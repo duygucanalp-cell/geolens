@@ -2,9 +2,10 @@ package dev.geolens.audit.web;
 
 import dev.geolens.audit.AuditResult;
 import dev.geolens.audit.AuditService;
+import org.jooq.DSLContext;
+import org.jooq.Record;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -32,11 +33,11 @@ import java.util.Map;
 public class AuditController {
 
     private final AuditService service;
-    private final JdbcTemplate jdbc;
+    private final DSLContext dsl;
 
-    public AuditController(AuditService service, JdbcTemplate jdbc) {
+    public AuditController(AuditService service, DSLContext dsl) {
         this.service = service;
-        this.jdbc = jdbc;
+        this.dsl = dsl;
     }
 
     @PostMapping("/v1/workspaces/{workspaceId}/audit")
@@ -51,7 +52,7 @@ public class AuditController {
         String brandName = req.brandName();
         if (brandName == null || brandName.isBlank()) {
             try {
-                Map<String, Object> row = jdbc.queryForMap("""
+                Map<String, Object> row = map("""
                         SELECT name FROM config.brands
                         WHERE id = ? AND workspace_id = ? AND tenant_id = ? AND is_active = true
                         """, req.brandId(), workspaceId, tenantId);
@@ -86,7 +87,7 @@ public class AuditController {
         }
         Map<String, Object> row;
         try {
-            row = jdbc.queryForMap("""
+            row = map("""
                     SELECT COALESCE(robots_txt::text, '{}') AS robots_txt,
                            COALESCE(bot_access::text, '{}') AS bot_access,
                            COALESCE(ssr::text, '{}') AS ssr,
@@ -154,7 +155,7 @@ public class AuditController {
         int limit = 100;
         List<Map<String, Object>> rows;
         try {
-            rows = jdbc.queryForList("""
+            rows = list("""
                     SELECT id, COALESCE(user_id, '') AS user_id, event_type, resource_type,
                            COALESCE(resource_id, '') AS resource_id, action,
                            COALESCE(metadata::text, '{}') AS metadata,
@@ -199,7 +200,7 @@ public class AuditController {
     public ResponseEntity<String> exportAuditTrail(@RequestHeader("X-Tenant-ID") String tenantId) {
         List<Map<String, Object>> rows;
         try {
-            rows = jdbc.queryForList("""
+            rows = list("""
                     SELECT COALESCE(user_id, 'system') AS user_id, event_type, resource_type,
                            COALESCE(resource_id, '') AS resource_id, action,
                            COALESCE(ip_address, '') AS ip_address, created_at
@@ -254,6 +255,16 @@ public class AuditController {
 
     private static String str(Object o) {
         return o == null ? "" : String.valueOf(o);
+    }
+
+    /** ADR-014: plain SQL üzerinden jOOQ — satır erişimi Map ile korunur. */
+    private List<Map<String, Object>> list(String sql, Object... args) {
+        return dsl.fetch(sql, args).intoMaps();
+    }
+
+    private Map<String, Object> map(String sql, Object... args) {
+        Record r = dsl.fetchOne(sql, args);
+        return r == null ? null : r.intoMap();
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

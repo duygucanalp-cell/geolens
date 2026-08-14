@@ -1,8 +1,9 @@
 package dev.geolens.config.web;
 
+import org.jooq.DSLContext;
+import org.jooq.Record;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -34,11 +35,11 @@ import java.util.Map;
 @RestController
 public class ConfigController {
 
-    private final JdbcTemplate jdbc;
+    private final DSLContext dsl;
     private final TransactionTemplate tx;
 
-    public ConfigController(JdbcTemplate jdbc, TransactionTemplate tx) {
-        this.jdbc = jdbc;
+    public ConfigController(DSLContext dsl, TransactionTemplate tx) {
+        this.dsl = dsl;
         this.tx = tx;
     }
 
@@ -78,7 +79,7 @@ public class ConfigController {
 
         int total;
         try {
-            Integer t = jdbc.queryForObject("""
+            Integer t = value("""
                     SELECT count(*)
                     FROM config.brands
                     WHERE workspace_id = ? AND tenant_id = ? AND is_active = true
@@ -92,7 +93,7 @@ public class ConfigController {
 
         List<Map<String, Object>> rows;
         try {
-            rows = jdbc.queryForList("""
+            rows = list("""
                     SELECT id, name, website_url
                     FROM config.brands
                     WHERE workspace_id = ? AND tenant_id = ? AND is_active = true
@@ -123,7 +124,7 @@ public class ConfigController {
                                         @RequestHeader("X-Tenant-ID") String tenantId) {
         List<Map<String, Object>> rows;
         try {
-            rows = jdbc.queryForList("""
+            rows = list("""
                     SELECT id, name, website_url
                     FROM config.brands
                     WHERE workspace_id = ? AND tenant_id = ? AND is_active = true
@@ -154,7 +155,7 @@ public class ConfigController {
                     if (compId == null || compId.isBlank()) {
                         continue;
                     }
-                    Boolean exists = jdbc.queryForObject("""
+                    Boolean exists = value("""
                             SELECT EXISTS(SELECT 1 FROM config.brands
                                 WHERE id = ? AND tenant_id = ? AND is_active = true)
                             """, Boolean.class, compId, tenantId);
@@ -164,7 +165,7 @@ public class ConfigController {
                 }
             }
 
-            String brandId = jdbc.queryForObject("""
+            String brandId = value("""
                     INSERT INTO config.brands (id, workspace_id, tenant_id, name, website_url)
                     VALUES (gen_random_uuid()::text, ?, ?, ?, ?)
                     RETURNING id
@@ -175,7 +176,7 @@ public class ConfigController {
                     if (compId == null || compId.isBlank() || compId.equals(brandId)) {
                         continue;
                     }
-                    jdbc.update("""
+                    dsl.execute("""
                             INSERT INTO config.brand_competitors (id, brand_id, competitor_id, tenant_id)
                             VALUES (gen_random_uuid()::text, ?, ?, ?)
                             ON CONFLICT (brand_id, competitor_id) DO NOTHING
@@ -206,7 +207,7 @@ public class ConfigController {
 
         int affected;
         try {
-            affected = jdbc.update("""
+            affected = dsl.execute("""
                     UPDATE config.brands SET
                         name = COALESCE(NULLIF(?, ''), name),
                         website_url = COALESCE(NULLIF(?, ''), website_url)
@@ -221,10 +222,13 @@ public class ConfigController {
 
         Map<String, Object> resp;
         try {
-            resp = jdbc.queryForMap("""
+            resp = map("""
                     SELECT id, name, website_url FROM config.brands
                     WHERE id = ? AND workspace_id = ? AND tenant_id = ?
                     """, brandId, workspaceId, tenantId);
+            if (resp == null) {
+                return error(HttpStatus.INTERNAL_SERVER_ERROR, "marka bilgisi okunamadı");
+            }
         } catch (RuntimeException e) {
             return error(HttpStatus.INTERNAL_SERVER_ERROR, "marka bilgisi okunamadı");
         }
@@ -240,7 +244,7 @@ public class ConfigController {
         }
         int affected;
         try {
-            affected = jdbc.update("""
+            affected = dsl.execute("""
                     UPDATE config.brands SET is_active = false
                     WHERE id = ? AND workspace_id = ? AND tenant_id = ? AND is_active = true
                     """, brandId, workspaceId, tenantId);
@@ -268,7 +272,7 @@ public class ConfigController {
         }
         int affected;
         try {
-            affected = jdbc.update("""
+            affected = dsl.execute("""
                     DELETE FROM config.brand_competitors
                     WHERE brand_id = ? AND competitor_id = ? AND tenant_id = ?
                     """, brandId, competitorId, tenantId);
@@ -294,7 +298,7 @@ public class ConfigController {
         }
         Boolean brandExists;
         try {
-            brandExists = jdbc.queryForObject("""
+            brandExists = value("""
                     SELECT EXISTS(SELECT 1 FROM config.brands
                         WHERE id = ? AND workspace_id = ? AND tenant_id = ?)
                     """, Boolean.class, brandId, workspaceId, tenantId);
@@ -307,7 +311,7 @@ public class ConfigController {
 
         List<Map<String, Object>> rows;
         try {
-            rows = jdbc.queryForList("""
+            rows = list("""
                     SELECT bc.competitor_id, b.name AS competitor_name, bc.created_at
                     FROM config.brand_competitors bc
                     JOIN config.brands b ON b.id = bc.competitor_id
@@ -342,7 +346,7 @@ public class ConfigController {
 
         Boolean brandExists;
         try {
-            brandExists = jdbc.queryForObject("""
+            brandExists = value("""
                     SELECT EXISTS(SELECT 1 FROM config.brands
                         WHERE id = ? AND workspace_id = ? AND tenant_id = ?)
                     """, Boolean.class, brandId, workspaceId, tenantId);
@@ -354,7 +358,7 @@ public class ConfigController {
         }
 
         txExecute(() -> {
-            jdbc.update("""
+            dsl.execute("""
                     DELETE FROM config.brand_competitors
                     WHERE brand_id = ? AND tenant_id = ?
                     """, brandId, tenantId);
@@ -363,14 +367,14 @@ public class ConfigController {
                 if (compId == null || compId.isBlank() || compId.equals(brandId)) {
                     continue;
                 }
-                Boolean exists = jdbc.queryForObject("""
+                Boolean exists = value("""
                         SELECT EXISTS(SELECT 1 FROM config.brands
                             WHERE id = ? AND tenant_id = ? AND is_active = true)
                         """, Boolean.class, compId, tenantId);
                 if (Boolean.FALSE.equals(exists)) {
                     throw new ConfigHttpException(HttpStatus.BAD_REQUEST, "rakip bulunamadı: " + compId);
                 }
-                jdbc.update("""
+                dsl.execute("""
                         INSERT INTO config.brand_competitors (id, brand_id, competitor_id, tenant_id)
                         VALUES (gen_random_uuid()::text, ?, ?, ?)
                         ON CONFLICT (brand_id, competitor_id) DO NOTHING
@@ -411,7 +415,7 @@ public class ConfigController {
     public ResponseEntity<?> listWorkspacePanorama(@RequestHeader("X-Tenant-ID") String tenantId) {
         List<Map<String, Object>> rows;
         try {
-            rows = jdbc.queryForList("""
+            rows = list("""
                     SELECT w.id, w.name,
                         COALESCE(s.score_value, 0) AS avg_score,
                         COALESCE(s.brand_count, 0) AS brand_count,
@@ -451,11 +455,27 @@ public class ConfigController {
 
     private int count(String sql, Object... args) {
         try {
-            Integer v = jdbc.queryForObject(sql, Integer.class, args);
+            Integer v = value(sql, Integer.class, args);
             return v == null ? 0 : v;
         } catch (RuntimeException e) {
             return 0;
         }
+    }
+
+    /** ADR-014: plain SQL üzerinden jOOQ — satır erişimi Map ile korunur. */
+    private List<Map<String, Object>> list(String sql, Object... args) {
+        return dsl.fetch(sql, args).intoMaps();
+    }
+
+    private Map<String, Object> map(String sql, Object... args) {
+        Record r = dsl.fetchOne(sql, args);
+        return r == null ? null : r.intoMap();
+    }
+
+    /** ADR-014: plain SQL tek değer — jOOQ dönüşümüyle (fetchValue raw Object döner). */
+    private <T> T value(String sql, Class<T> type, Object... args) {
+        Record r = dsl.fetchOne(sql, args);
+        return r == null ? null : r.get(0, type);
     }
 
     private static Map<String, Object> step(String key, String label, boolean done) {

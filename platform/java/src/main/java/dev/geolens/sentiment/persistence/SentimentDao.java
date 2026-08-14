@@ -11,7 +11,7 @@ import java.util.List;
  * Sentiment veri erişimi — Go {@code *db.Pool} sorgularının arayüzü.
  * RLS satır düzeyi güvenlik: tüm sorgular tenant_id + workspace_id ile sınırlanır.
  * NoopSentimentDao DB'siz çalıştırır (Go {@code pool == nil} karşılığı değil;
- * JdbcSentimentDao gerçek PostgreSQL).
+ * JooqSentimentDao gerçek PostgreSQL — ADR-014).
  */
 public interface SentimentDao {
 

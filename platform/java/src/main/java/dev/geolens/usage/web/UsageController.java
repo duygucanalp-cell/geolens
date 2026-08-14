@@ -1,8 +1,9 @@
 package dev.geolens.usage.web;
 
+import org.jooq.DSLContext;
+import org.jooq.Record;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,10 +30,10 @@ import java.util.UUID;
 @RestController
 public class UsageController {
 
-    private final JdbcTemplate jdbc;
+    private final DSLContext dsl;
 
-    public UsageController(JdbcTemplate jdbc) {
-        this.jdbc = jdbc;
+    public UsageController(DSLContext dsl) {
+        this.dsl = dsl;
     }
 
     @PostMapping("/v1/usage/metrics")
@@ -50,7 +51,7 @@ public class UsageController {
         Instant now = Instant.now();
 
         try {
-            jdbc.update("""
+            dsl.execute("""
                     INSERT INTO usage.metrics (id, tenant_id, endpoint, method, status_code, latency_ms, user_id, request_size, response_size, recorded_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, entryId, tenantId, req.endpoint(), method, statusCode,
@@ -84,7 +85,7 @@ public class UsageController {
 
         List<Map<String, Object>> rows;
         try {
-            rows = jdbc.queryForList("""
+            rows = list("""
                     SELECT id, endpoint, method, status_code, latency_ms, recorded_at
                     FROM usage.metrics WHERE tenant_id = ? ORDER BY recorded_at DESC LIMIT ?
                     """, tenantId, limit + 1);
@@ -138,7 +139,7 @@ public class UsageController {
         double totalErrors = 0;
         double avgLatency = 0;
         try {
-            Map<String, Object> agg = jdbc.queryForMap("""
+            Map<String, Object> agg = map("""
                     SELECT COUNT(*) AS total, COALESCE(AVG(CASE WHEN status_code >= 400 THEN 1.0 ELSE 0 END), 0) * 100 AS error_rate,
                            COALESCE(AVG(latency_ms), 0) AS avg_latency
                     FROM usage.metrics WHERE tenant_id = ? AND recorded_at > NOW() - ?::INTERVAL
@@ -152,7 +153,7 @@ public class UsageController {
 
         List<Map<String, Object>> topEndpoints = new ArrayList<>();
         try {
-            List<Map<String, Object>> rows = jdbc.queryForList("""
+            List<Map<String, Object>> rows = list("""
                     SELECT endpoint, COUNT(*) AS hits, COALESCE(AVG(latency_ms), 0) AS avg_latency
                     FROM usage.metrics WHERE tenant_id = ? AND recorded_at > NOW() - ?::INTERVAL
                     GROUP BY endpoint ORDER BY hits DESC LIMIT 10
@@ -174,6 +175,16 @@ public class UsageController {
         body.put("avg_latency_ms", avgLatency);
         body.put("top_endpoints", topEndpoints);
         return ResponseEntity.ok(body);
+    }
+
+    /** ADR-014: plain SQL üzerinden jOOQ — satır erişimi Map ile korunur. */
+    private List<Map<String, Object>> list(String sql, Object... args) {
+        return dsl.fetch(sql, args).intoMaps();
+    }
+
+    private Map<String, Object> map(String sql, Object... args) {
+        Record r = dsl.fetchOne(sql, args);
+        return r == null ? null : r.intoMap();
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

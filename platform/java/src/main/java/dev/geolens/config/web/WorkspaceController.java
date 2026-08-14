@@ -1,8 +1,9 @@
 package dev.geolens.config.web;
 
+import org.jooq.DSLContext;
+import org.jooq.Record;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,11 +29,11 @@ import java.util.Map;
 @RequestMapping("/v1/workspaces/{workspaceId}")
 public class WorkspaceController {
 
-    private final JdbcTemplate jdbc;
+    private final DSLContext dsl;
     private final TransactionTemplate tx;
 
-    public WorkspaceController(JdbcTemplate jdbc, TransactionTemplate tx) {
-        this.jdbc = jdbc;
+    public WorkspaceController(DSLContext dsl, TransactionTemplate tx) {
+        this.dsl = dsl;
         this.tx = tx;
     }
 
@@ -41,7 +42,7 @@ public class WorkspaceController {
                                               @RequestHeader("X-Tenant-ID") String tenantId) {
         String now = Instant.now().toString();
         try {
-            jdbc.update("""
+            dsl.execute("""
                     UPDATE config.workspaces SET archived_at = ?, updated_at = ?
                     WHERE id = ? AND tenant_id = ?
                     """, now, now, workspaceId, tenantId);
@@ -49,7 +50,7 @@ public class WorkspaceController {
             return error(HttpStatus.INTERNAL_SERVER_ERROR, "arşivleme başarısız");
         }
         try {
-            jdbc.update("""
+            dsl.execute("""
                     UPDATE config.brands SET archived_at = ?, is_active = false, updated_at = ?
                     WHERE workspace_id = ? AND tenant_id = ?
                     """, now, now, workspaceId, tenantId);
@@ -66,7 +67,7 @@ public class WorkspaceController {
     public ResponseEntity<?> unarchiveWorkspace(@PathVariable String workspaceId,
                                                 @RequestHeader("X-Tenant-ID") String tenantId) {
         try {
-            jdbc.update("""
+            dsl.execute("""
                     UPDATE config.workspaces SET archived_at = NULL, updated_at = now()
                     WHERE id = ? AND tenant_id = ?
                     """, workspaceId, tenantId);
@@ -85,7 +86,7 @@ public class WorkspaceController {
         }
         Boolean exists;
         try {
-            exists = jdbc.queryForObject("""
+            exists = value("""
                     SELECT EXISTS(SELECT 1 FROM identity.tenants WHERE id = ?)
                     """, Boolean.class, req.targetTenantId());
         } catch (RuntimeException e) {
@@ -97,11 +98,11 @@ public class WorkspaceController {
 
         try {
             tx.execute(status -> {
-                jdbc.update("""
+                dsl.execute("""
                         UPDATE config.workspaces SET tenant_id = ?, updated_at = now()
                         WHERE id = ? AND tenant_id = ?
                         """, req.targetTenantId(), workspaceId, tenantId);
-                jdbc.update("""
+                dsl.execute("""
                         UPDATE config.brands SET tenant_id = ?, updated_at = now()
                         WHERE workspace_id = ? AND tenant_id = ?
                         """, req.targetTenantId(), workspaceId, tenantId);
@@ -115,6 +116,12 @@ public class WorkspaceController {
         body.put("status", "transferred");
         body.put("target_tenant_id", req.targetTenantId());
         return ResponseEntity.ok(body);
+    }
+
+    /** ADR-014: plain SQL tek değer — jOOQ dönüşümüyle (fetchValue raw Object döner). */
+    private <T> T value(String sql, Class<T> type, Object... args) {
+        Record r = dsl.fetchOne(sql, args);
+        return r == null ? null : r.get(0, type);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

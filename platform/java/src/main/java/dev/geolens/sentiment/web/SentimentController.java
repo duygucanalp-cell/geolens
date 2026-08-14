@@ -4,10 +4,9 @@ import dev.geolens.sentiment.domain.HallucinationResult;
 import dev.geolens.sentiment.domain.SentimentResult;
 import dev.geolens.sentiment.engine.SentimentEngine;
 import dev.geolens.sentiment.persistence.SentimentDao;
+import org.jooq.DSLContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.PreparedStatementCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,23 +36,18 @@ public class SentimentController {
 
     private final SentimentEngine engine;
     private final SentimentDao dao;
-    private final JdbcTemplate jdbc;
+    private final DSLContext dsl;
     private final TransactionTemplate tx;
 
-    public SentimentController(SentimentEngine engine, SentimentDao dao, JdbcTemplate jdbc, TransactionTemplate tx) {
+    public SentimentController(SentimentEngine engine, SentimentDao dao, DSLContext dsl, TransactionTemplate tx) {
         this.engine = engine;
         this.dao = dao;
-        this.jdbc = jdbc;
+        this.dsl = dsl;
         this.tx = tx;
     }
 
-    private void setTenant(JdbcTemplate jdbc, String tenantId) {
-        jdbc.execute("SELECT set_config('app.tenant_id', ?, true)",
-                (PreparedStatementCallback<Void>) ps -> {
-                    ps.setString(1, tenantId);
-                    ps.execute();
-                    return null;
-                });
+    private void setTenant(String tenantId) {
+        dsl.fetch("SELECT set_config('app.tenant_id', ?, true)", tenantId);
     }
 
     @PostMapping("/analyze")
@@ -79,8 +73,8 @@ public class SentimentController {
         List<Map<String, Object>> rows;
         try {
             rows = tx.execute(status -> {
-                setTenant(jdbc, tenantId);
-                return jdbc.queryForList("""
+                setTenant(tenantId);
+                return dsl.fetch("""
                         SELECT ss.id, ss.brand_id, ss.engine_name, ss.overall_sentiment,
                                ss.positive_score, ss.neutral_score, ss.negative_score,
                                ss.mention_count, ss.analyzed_at
@@ -89,7 +83,7 @@ public class SentimentController {
                         WHERE ss.tenant_id = ? AND b.workspace_id = ? AND (? = '' OR ss.brand_id = ?)
                         ORDER BY ss.analyzed_at DESC
                         LIMIT 100
-                        """, tenantId, workspaceId, brand, brand);
+                        """, tenantId, workspaceId, brand, brand).intoMaps();
             });
         } catch (RuntimeException e) {
             return ResponseEntity.ok(List.of());
@@ -121,8 +115,8 @@ public class SentimentController {
         Map<String, Object> agg;
         try {
             agg = tx.execute(status -> {
-                setTenant(jdbc, tenantId);
-                return jdbc.queryForMap("""
+                setTenant(tenantId);
+                return dsl.fetchOne("""
                         SELECT COALESCE(AVG(overall_sentiment), 0) AS overall,
                                COALESCE(AVG(positive_score), 0)   AS positive,
                                COALESCE(AVG(neutral_score), 0)    AS neutral,
@@ -131,7 +125,7 @@ public class SentimentController {
                         FROM analysis.sentiment_scores ss
                         JOIN config.brands b ON b.id = ss.brand_id
                         WHERE ss.tenant_id = ? AND b.workspace_id = ? AND ss.brand_id = ?
-                        """, tenantId, workspaceId, brandId);
+                        """, tenantId, workspaceId, brandId).intoMap();
             });
         } catch (RuntimeException e) {
             return error(HttpStatus.INTERNAL_SERVER_ERROR, "sentiment özeti alınamadı");
@@ -175,8 +169,8 @@ public class SentimentController {
         List<Map<String, Object>> rows;
         try {
             rows = tx.execute(status -> {
-                setTenant(jdbc, tenantId);
-                return jdbc.queryForList("""
+                setTenant(tenantId);
+                return dsl.fetch("""
                         SELECT hf.id, hf.brand_id, hf.engine_name, hf.hallucination_type,
                                hf.severity, hf.description, hf.confidence, hf.verified, hf.created_at
                         FROM analysis.hallucination_flags hf
@@ -184,7 +178,7 @@ public class SentimentController {
                         WHERE hf.tenant_id = ? AND b.workspace_id = ? AND (? = '' OR hf.brand_id = ?)
                         ORDER BY hf.created_at DESC
                         LIMIT 100
-                        """, tenantId, workspaceId, brand, brand);
+                        """, tenantId, workspaceId, brand, brand).intoMaps();
             });
         } catch (RuntimeException e) {
             return ResponseEntity.ok(List.of());
@@ -217,8 +211,8 @@ public class SentimentController {
         AtomicReference<Integer> updated = new AtomicReference<>();
         try {
             tx.executeWithoutResult(status -> {
-                setTenant(jdbc, tenantId);
-                updated.set(jdbc.update("""
+                setTenant(tenantId);
+                updated.set(dsl.execute("""
                         UPDATE analysis.hallucination_flags SET verified = ? WHERE id = ? AND tenant_id = ?
                         """, req.verified(), flagId, tenantId));
             });

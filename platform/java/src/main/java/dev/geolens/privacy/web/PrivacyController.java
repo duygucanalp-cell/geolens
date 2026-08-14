@@ -1,11 +1,11 @@
 package dev.geolens.privacy.web;
 
-import org.springframework.dao.EmptyResultDataAccessException;
+import org.jooq.DSLContext;
+import org.jooq.Record;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -36,11 +36,11 @@ import java.util.Map;
 @RestController
 public class PrivacyController {
 
-    private final JdbcTemplate jdbc;
+    private final DSLContext dsl;
     private final TransactionTemplate tx;
 
-    public PrivacyController(JdbcTemplate jdbc, TransactionTemplate tx) {
-        this.jdbc = jdbc;
+    public PrivacyController(DSLContext dsl, TransactionTemplate tx) {
+        this.dsl = dsl;
         this.tx = tx;
     }
 
@@ -69,7 +69,7 @@ public class PrivacyController {
 
         // GDPR audit kaydı: veri dışa aktarımı loglanır (non-fatal)
         try {
-            jdbc.update("""
+            dsl.execute("""
                     INSERT INTO governance.audit_log (id, tenant_id, user_id, event_type, resource_type, resource_id, action, metadata)
                     VALUES (gen_random_uuid()::text, ?, ?, 'privacy.data_exported', 'tenant', ?, 'export',
                             jsonb_build_object('format', 'json'))
@@ -101,14 +101,14 @@ public class PrivacyController {
             String requestId;
             try {
                 requestId = txExecute(() -> {
-                    String id = jdbc.queryForObject("""
+                    String id = value("""
                             INSERT INTO privacy.deletion_requests (id, tenant_id, requested_by, status, reason, processed_at, processed_by)
                             VALUES (gen_random_uuid()::text, ?, ?, 'processing', ?, now(), ?)
                             RETURNING id
                             """, String.class, tenantId, uid, reason, uid);
-                    jdbc.update("SELECT privacy.anonymize_tenant(?)", tenantId);
+                    dsl.fetch("SELECT privacy.anonymize_tenant(?)", tenantId);
                     try {
-                        jdbc.update("""
+                        dsl.execute("""
                                 UPDATE privacy.deletion_requests
                                 SET status = 'completed', notes = 'KVKK kapsamında anonimleştirildi'
                                 WHERE id = ?
@@ -128,7 +128,7 @@ public class PrivacyController {
         // Editor/viewer: talep oluştur
         String requestId;
         try {
-            requestId = jdbc.queryForObject("""
+            requestId = value("""
                     INSERT INTO privacy.deletion_requests (id, tenant_id, requested_by, status, reason)
                     VALUES (gen_random_uuid()::text, ?, ?, 'pending', ?)
                     RETURNING id
@@ -139,7 +139,7 @@ public class PrivacyController {
 
         // Audit log (non-fatal)
         try {
-            jdbc.update("""
+            dsl.execute("""
                     INSERT INTO governance.audit_log (id, tenant_id, user_id, event_type, resource_type, resource_id, action, metadata)
                     VALUES (gen_random_uuid()::text, ?, ?, 'privacy.deletion_requested', 'tenant', ?, 'request',
                             jsonb_build_object('reason', ?, 'status', 'pending'))
@@ -162,7 +162,7 @@ public class PrivacyController {
 
         List<Map<String, Object>> rows;
         try {
-            rows = jdbc.queryForList("""
+            rows = list("""
                     SELECT id, requested_by, status, COALESCE(reason, '') AS reason, requested_at,
                            COALESCE(processed_at, '1970-01-01'::timestamptz) AS processed_at, COALESCE(notes, '') AS notes
                     FROM privacy.deletion_requests
@@ -209,20 +209,18 @@ public class PrivacyController {
             String requestId;
             try {
                 requestId = txExecute(() -> {
-                    String rid;
-                    try {
-                        rid = jdbc.queryForObject("""
-                                UPDATE privacy.deletion_requests
-                                SET status = 'processing', processed_at = now(), notes = COALESCE(?, notes)
-                                WHERE id = ? AND tenant_id = ? AND status = 'pending'
-                                RETURNING id
-                                """, String.class, notes, id, tenantId);
-                    } catch (EmptyResultDataAccessException e) {
+                    String rid = value("""
+                            UPDATE privacy.deletion_requests
+                            SET status = 'processing', processed_at = now(), notes = COALESCE(?, notes)
+                            WHERE id = ? AND tenant_id = ? AND status = 'pending'
+                            RETURNING id
+                            """, String.class, notes, id, tenantId);
+                    if (rid == null) {
                         throw new PrivacyHttpException(HttpStatus.NOT_FOUND, "talep bulunamadı veya zaten işlenmiş");
                     }
-                    jdbc.update("SELECT privacy.anonymize_tenant(?)", tenantId);
+                    dsl.fetch("SELECT privacy.anonymize_tenant(?)", tenantId);
                     try {
-                        jdbc.update("""
+                        dsl.execute("""
                                 UPDATE privacy.deletion_requests SET status = 'completed'
                                 WHERE id = ?
                                 """, rid);
@@ -242,7 +240,7 @@ public class PrivacyController {
 
         // Reject
         try {
-            jdbc.update("""
+            dsl.execute("""
                     UPDATE privacy.deletion_requests
                     SET status = 'rejected', processed_at = now(), notes = COALESCE(?, notes)
                     WHERE id = ? AND tenant_id = ?
@@ -258,7 +256,7 @@ public class PrivacyController {
             return "";
         }
         try {
-            String role = jdbc.queryForObject("""
+            String role = value("""
                     SELECT m.role FROM config.memberships m
                     WHERE m.user_id = ? AND m.tenant_id = ?
                     ORDER BY m.created_at LIMIT 1
@@ -271,7 +269,7 @@ public class PrivacyController {
 
     private void appendUsers(Map<String, Object> payload, String tenantId) {
         try {
-            List<Map<String, Object>> rows = jdbc.queryForList("""
+            List<Map<String, Object>> rows = list("""
                     SELECT u.id, u.email, u.full_name, u.created_at
                     FROM identity.users u
                     JOIN identity.user_tenants ut ON ut.user_id = u.id
@@ -295,7 +293,7 @@ public class PrivacyController {
 
     private void appendMemberships(Map<String, Object> payload, String tenantId) {
         try {
-            List<Map<String, Object>> rows = jdbc.queryForList("""
+            List<Map<String, Object>> rows = list("""
                     SELECT user_id, role, created_at FROM config.memberships
                     WHERE tenant_id = ? ORDER BY created_at
                     """, tenantId);
@@ -314,7 +312,7 @@ public class PrivacyController {
 
     private void appendBrands(Map<String, Object> payload, String tenantId) {
         try {
-            List<Map<String, Object>> rows = jdbc.queryForList("""
+            List<Map<String, Object>> rows = list("""
                     SELECT id, workspace_id, name, website_url, created_at
                     FROM config.brands WHERE tenant_id = ? AND is_active = true
                     ORDER BY created_at
@@ -336,7 +334,7 @@ public class PrivacyController {
 
     private void appendPromptSets(Map<String, Object> payload, String tenantId) {
         try {
-            List<Map<String, Object>> rows = jdbc.queryForList("""
+            List<Map<String, Object>> rows = list("""
                     SELECT id, name, category, created_at FROM config.prompt_sets
                     WHERE tenant_id = ? ORDER BY created_at
                     """, tenantId);
@@ -356,7 +354,7 @@ public class PrivacyController {
 
     private void appendMeasurementScores(Map<String, Object> payload, String tenantId) {
         try {
-            List<Map<String, Object>> rows = jdbc.queryForList("""
+            List<Map<String, Object>> rows = list("""
                     SELECT brand_id, workspace_id, value, engine_name, freshness_at
                     FROM measure.scores WHERE tenant_id = ?
                     ORDER BY freshness_at DESC LIMIT 1000
@@ -389,6 +387,17 @@ public class PrivacyController {
         } catch (RuntimeException e) {
             throw e;
         }
+    }
+
+    /** ADR-014: plain SQL üzerinden jOOQ — satır erişimi Map ile korunur. */
+    private List<Map<String, Object>> list(String sql, Object... args) {
+        return dsl.fetch(sql, args).intoMaps();
+    }
+
+    /** ADR-014: plain SQL tek değer — jOOQ dönüşümüyle (fetchValue raw Object döner). */
+    private <T> T value(String sql, Class<T> type, Object... args) {
+        Record r = dsl.fetchOne(sql, args);
+        return r == null ? null : r.get(0, type);
     }
 
     @ExceptionHandler(PrivacyHttpException.class)

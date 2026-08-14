@@ -43,7 +43,7 @@ public class JooqScoreDao implements ScoreDao {
     }
 
     private static void setTenant(DSLContext dsl, String tenantId) {
-        dsl.fetchValue("SELECT set_config('app.tenant_id', ?, true)", String.class, tenantId);
+        dsl.fetch("SELECT set_config('app.tenant_id', ?, true)", tenantId);
     }
 
     private <T> T inTenant(String tenantId, Supplier<T> work) {

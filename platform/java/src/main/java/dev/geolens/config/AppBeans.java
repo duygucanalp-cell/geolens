@@ -19,12 +19,12 @@ import dev.geolens.measure.persistence.NoopScoreDao;
 import dev.geolens.measure.persistence.ScoreDao;
 import dev.geolens.ml.HttpMlClient;
 import dev.geolens.ml.MlClient;
+import org.jooq.DSLContext;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Duration;
@@ -82,27 +82,27 @@ public class AppBeans {
     }
 
     @Bean
-    public UsageRecorder usageRecorder(ObjectProvider<JdbcTemplate> jdbc,
+    public UsageRecorder usageRecorder(ObjectProvider<DSLContext> dsl,
                                        ObjectProvider<TransactionTemplate> tx) {
-        return new UsageRecorder(jdbc.getIfAvailable(), tx.getIfAvailable());
+        return new UsageRecorder(dsl.getIfAvailable(), tx.getIfAvailable());
     }
 
     @Bean
-    public QuotaChecker quotaChecker(ObjectProvider<JdbcTemplate> jdbc,
+    public QuotaChecker quotaChecker(ObjectProvider<DSLContext> dsl,
                                      ObjectProvider<TransactionTemplate> tx) {
-        return new QuotaChecker(jdbc.getIfAvailable(), tx.getIfAvailable());
+        return new QuotaChecker(dsl.getIfAvailable(), tx.getIfAvailable());
     }
 
     @Bean
-    public AuditLogger auditLogger(ObjectProvider<JdbcTemplate> jdbc,
+    public AuditLogger auditLogger(ObjectProvider<DSLContext> dsl,
                                    ObjectProvider<TransactionTemplate> tx) {
-        return new AuditLogger(jdbc.getIfAvailable(), tx.getIfAvailable());
+        return new AuditLogger(dsl.getIfAvailable(), tx.getIfAvailable());
     }
 
     @Bean
-    public AuditService auditService(ObjectProvider<JdbcTemplate> jdbc,
+    public AuditService auditService(ObjectProvider<DSLContext> dsl,
                                      ObjectProvider<TransactionTemplate> tx) {
-        return new AuditService(jdbc.getIfAvailable(), tx.getIfAvailable());
+        return new AuditService(dsl.getIfAvailable(), tx.getIfAvailable());
     }
 
     @Bean
@@ -114,9 +114,9 @@ public class AppBeans {
 
     @Bean
     public DeliveryService deliveryService(EmailConfig emailConfig,
-                                           ObjectProvider<JdbcTemplate> jdbc,
+                                           ObjectProvider<DSLContext> dsl,
                                            ObjectProvider<TransactionTemplate> tx) {
-        return new DeliveryService(emailConfig, jdbc.getIfAvailable(), tx.getIfAvailable());
+        return new DeliveryService(emailConfig, dsl.getIfAvailable(), tx.getIfAvailable());
     }
 
     @Bean

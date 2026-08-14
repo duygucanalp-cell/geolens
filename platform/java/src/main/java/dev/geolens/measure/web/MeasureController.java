@@ -8,9 +8,10 @@ import dev.geolens.measure.MeasurementRequest;
 import dev.geolens.measure.MeasurementResult;
 import dev.geolens.measure.Score;
 import dev.geolens.util.Ulid;
+import org.jooq.DSLContext;
+import org.jooq.Record;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -44,14 +45,14 @@ public class MeasureController {
 
     private final MeasureService service;
     private final Registry engines;
-    private final JdbcTemplate jdbc;
+    private final DSLContext dsl;
     private final ExecutorService executor;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    public MeasureController(MeasureService service, Registry engines, JdbcTemplate jdbc) {
+    public MeasureController(MeasureService service, Registry engines, DSLContext dsl) {
         this.service = service;
         this.engines = engines;
-        this.jdbc = jdbc;
+        this.dsl = dsl;
         this.executor = Executors.newVirtualThreadPerTaskExecutor();
     }
 
@@ -70,7 +71,7 @@ public class MeasureController {
 
         Map<String, Object> brand;
         try {
-            brand = jdbc.queryForMap("""
+            brand = map("""
                     SELECT name, website_url FROM config.brands
                     WHERE id = ? AND workspace_id = ? AND tenant_id = ? AND is_active = true
                     """, req.brandId(), workspaceId, tenantId);
@@ -84,7 +85,7 @@ public class MeasureController {
         String panelId = req.panelId();
         if (panelId != null && !panelId.isBlank()) {
             try {
-                Map<String, Object> panel = jdbc.queryForMap("""
+                Map<String, Object> panel = map("""
                         SELECT COALESCE(ps.prompt_text, '') AS prompt_text FROM config.panels p
                         LEFT JOIN config.prompt_sets ps ON ps.id = p.prompt_set_id
                         WHERE p.id = ? AND p.workspace_id = ? AND p.tenant_id = ?
@@ -133,7 +134,7 @@ public class MeasureController {
                                                   @PathVariable String runId) {
         Map<String, Object> row;
         try {
-            row = jdbc.queryForMap("""
+            row = map("""
                     SELECT COUNT(*) FILTER (WHERE status = 'completed') AS completed,
                            COUNT(*) AS total
                     FROM measure.measurement_jobs
@@ -198,7 +199,7 @@ public class MeasureController {
         }
         String brandName;
         try {
-            Map<String, Object> row = jdbc.queryForMap("""
+            Map<String, Object> row = map("""
                     SELECT name FROM config.brands WHERE id = ? AND workspace_id = ? AND tenant_id = ?
                     """, brandId, workspaceId, tenantId);
             brandName = String.valueOf(row.get("name"));
@@ -229,14 +230,14 @@ public class MeasureController {
         List<Map<String, Object>> rows;
         try {
             if (jobId != null && !jobId.isBlank()) {
-                rows = jdbc.queryForList("""
+                rows = list("""
                         SELECT r.id, r.job_id, r.engine_name, r.content_text
                         FROM measure.raw_responses r
                         WHERE r.job_id = ? AND r.tenant_id = ?
                         ORDER BY r.created_at
                         """, jobId, tenantId);
             } else {
-                rows = jdbc.queryForList("""
+                rows = list("""
                         SELECT r.id, r.job_id, r.engine_name, r.content_text
                         FROM measure.raw_responses r
                         JOIN measure.measurement_jobs j ON j.id = r.job_id
@@ -284,7 +285,7 @@ public class MeasureController {
                                            @RequestParam(value = "brand_id", required = false) String brandId) {
         List<Map<String, Object>> rows;
         try {
-            rows = jdbc.queryForList("""
+            rows = list("""
                     WITH latest AS (
                         SELECT DISTINCT ON (b.id)
                             b.id AS brand_id,
@@ -330,7 +331,7 @@ public class MeasureController {
                                                  @RequestParam(value = "brand_id", required = false) String brandId) {
         List<Map<String, Object>> rows;
         try {
-            rows = jdbc.queryForList("""
+            rows = list("""
                     WITH latest AS (
                         SELECT DISTINCT ON (b.id)
                             b.id AS brand_id,
@@ -380,7 +381,7 @@ public class MeasureController {
     private List<Map<String, Object>> queryScores(String sql, Object... args) {
         List<Map<String, Object>> rows;
         try {
-            rows = jdbc.queryForList(sql, args);
+            rows = list(sql, args);
         } catch (RuntimeException e) {
             return List.of();
         }
@@ -419,7 +420,7 @@ public class MeasureController {
 
     private void enqueueOutbox(String tenantId, String idempotencyKey, MeasureJob job) {
         String payload = job.toJson();
-        jdbc.update("""
+        dsl.execute("""
                 INSERT INTO public.event_outbox (id, event_type, stream, payload, tenant_id, idempotency_key, created_at)
                 VALUES (?, 'measurement.requested', 'q:measure', ?::jsonb, ?, ?, now())
                 """, Ulid.generate(), payload, tenantId, idempotencyKey);
@@ -434,6 +435,16 @@ public class MeasureController {
         } catch (RuntimeException e) {
             // anlık ölçüm başarısız — asenkron pipeline işlemeye devam eder (Go ile aynı)
         }
+    }
+
+    /** ADR-014: plain SQL üzerinden jOOQ — satır erişimi Map ile korunur. */
+    private List<Map<String, Object>> list(String sql, Object... args) {
+        return dsl.fetch(sql, args).intoMaps();
+    }
+
+    private Map<String, Object> map(String sql, Object... args) {
+        Record r = dsl.fetchOne(sql, args);
+        return r == null ? null : r.intoMap();
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

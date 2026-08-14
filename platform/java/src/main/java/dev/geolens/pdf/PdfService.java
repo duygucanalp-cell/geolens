@@ -10,7 +10,8 @@ import com.lowagie.text.Phrase;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.jooq.DSLContext;
+import org.jooq.Record;
 
 import java.io.ByteArrayOutputStream;
 import java.time.Instant;
@@ -33,10 +34,10 @@ public class PdfService {
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private static final DateTimeFormatter FILE_DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    private final JdbcTemplate jdbc;
+    private final DSLContext dsl;
 
-    public PdfService(JdbcTemplate jdbc) {
-        this.jdbc = jdbc;
+    public PdfService(DSLContext dsl) {
+        this.dsl = dsl;
     }
 
     public ReportResult generate(ReportRequest req) {
@@ -135,7 +136,7 @@ public class PdfService {
         String fidelityLabel = "Kademe 2";
 
         try {
-            Map<String, Object> row = jdbc.queryForMap("""
+            Record rec = dsl.fetchOne("""
                     SELECT b.name,
                         COALESCE(s.value, 0) AS score,
                         COALESCE(s_prev.value, 0) AS prev_score,
@@ -153,10 +154,13 @@ public class PdfService {
                     ) s_prev ON true
                     WHERE b.id = ? AND b.workspace_id = ? AND b.tenant_id = ?
                     """, req.brandId(), req.workspaceId(), req.tenantId());
-            brandName = String.valueOf(row.get("name"));
-            score = ((Number) row.get("score")).doubleValue();
-            prevScore = ((Number) row.get("prev_score")).doubleValue();
-            fidelityLabel = String.valueOf(row.get("fidelity_label"));
+            if (rec != null) {
+                Map<String, Object> row = rec.intoMap();
+                brandName = String.valueOf(row.get("name"));
+                score = ((Number) row.get("score")).doubleValue();
+                prevScore = ((Number) row.get("prev_score")).doubleValue();
+                fidelityLabel = String.valueOf(row.get("fidelity_label"));
+            }
         } catch (RuntimeException e) {
             if (brandName == null || brandName.isBlank()) {
                 brandName = "Bilinmeyen Marka";
@@ -225,11 +229,12 @@ public class PdfService {
 
         double overallScore = 0;
         try {
-            Double score = jdbc.queryForObject("""
+            Record rec = dsl.fetchOne("""
                     SELECT overall_score FROM governance.audit_results
                     WHERE brand_id = ? AND tenant_id = ?
                     ORDER BY created_at DESC LIMIT 1
-                    """, Double.class, req.brandId(), req.tenantId());
+                    """, req.brandId(), req.tenantId());
+            Double score = rec == null ? null : rec.get(0, Double.class);
             overallScore = score == null ? 0 : score;
             rows = List.of(
                     new AuditRow("robots.txt", "Tamam", 0, ""),
@@ -293,9 +298,10 @@ public class PdfService {
     public byte[] getReportData(String reportId) {
         String paramsJson;
         try {
-            paramsJson = jdbc.queryForObject("""
+            Record rec = dsl.fetchOne("""
                     SELECT params::text FROM measure.reports WHERE id = ?
-                    """, String.class, reportId);
+                    """, reportId);
+            paramsJson = rec == null ? null : rec.get(0, String.class);
         } catch (RuntimeException e) {
             throw new PdfReportNotFoundException("rapor bulunamadı");
         }
@@ -326,7 +332,7 @@ public class PdfService {
     }
 
     private List<ScoreRow> loadWorkspaceScores(String workspaceId, String tenantId) {
-        List<Map<String, Object>> rows = jdbc.queryForList("""
+        List<Map<String, Object>> rows = dsl.fetch("""
                 SELECT b.name,
                     COALESCE(s.value, 0) AS score,
                     COALESCE(s_prev.value, 0) AS prev_score,
@@ -344,7 +350,7 @@ public class PdfService {
                 ) s_prev ON true
                 WHERE b.workspace_id = ? AND b.tenant_id = ? AND b.is_active = true
                 ORDER BY b.name
-                """, workspaceId, tenantId);
+                """, workspaceId, tenantId).intoMaps();
 
         List<ScoreRow> scores = new ArrayList<>();
         for (Map<String, Object> r : rows) {

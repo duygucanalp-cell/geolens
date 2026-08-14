@@ -5,11 +5,12 @@ import dev.geolens.auth.Claims;
 import dev.geolens.auth.JWTService;
 import dev.geolens.auth.TokenBlacklist;
 import dev.geolens.auth.TokenResult;
+import org.jooq.DSLContext;
+import org.jooq.Record;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -21,7 +22,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.dao.EmptyResultDataAccessException;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -51,18 +51,18 @@ public class AuthController {
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final JWTService jwt;
-    private final JdbcTemplate jdbc;
+    private final DSLContext dsl;
     private final TransactionTemplate tx;
     private final TokenBlacklist blacklist;
     private final TransactionalMailer mail;
     private final String baseUrl;
 
-    public AuthController(JWTService jwt, JdbcTemplate jdbc, TransactionTemplate tx,
+    public AuthController(JWTService jwt, DSLContext dsl, TransactionTemplate tx,
                           ObjectProvider<TokenBlacklist> blacklist,
                           ObjectProvider<TransactionalMailer> mail,
                           @Value("${app.base-url:}") String baseUrl) {
         this.jwt = jwt;
-        this.jdbc = jdbc;
+        this.dsl = dsl;
         this.tx = tx;
         this.blacklist = blacklist.getIfAvailable();
         this.mail = mail.getIfAvailable();
@@ -83,22 +83,22 @@ public class AuthController {
         String hashed = ENCODER.encode(req.password());
 
         String[] ids = txExecute(() -> {
-            String tenantId = jdbc.queryForObject("""
+            String tenantId = value("""
                     INSERT INTO identity.tenants (id, name, slug, tier)
                     VALUES (gen_random_uuid()::text, ?, lower(regexp_replace(?, '[^a-z0-9]', '', 'g')), 'free')
                     RETURNING id
                     """, String.class, req.name(), req.name());
-            String userId = jdbc.queryForObject("""
+            String userId = value("""
                     INSERT INTO identity.users (id, tenant_id, email, password_hash, role, full_name)
                     VALUES (gen_random_uuid()::text, ?, ?, ?, 'admin', ?)
                     RETURNING id
                     """, String.class, tenantId, req.email(), hashed, req.name());
-            String workspaceId = jdbc.queryForObject("""
+            String workspaceId = value("""
                     INSERT INTO config.workspaces (id, tenant_id, name, slug)
                     VALUES (gen_random_uuid()::text, ?, 'Varsayılan Çalışma Alanı', 'default')
                     RETURNING id
                     """, String.class, tenantId);
-            jdbc.update("""
+            dsl.execute("""
                     INSERT INTO config.memberships (id, workspace_id, user_id, tenant_id, role)
                     VALUES (gen_random_uuid()::text, ?, ?, ?, 'admin')
                     """, workspaceId, userId, tenantId);
@@ -119,13 +119,14 @@ public class AuthController {
 
         Map<String, Object> user;
         try {
-            user = jdbc.queryForMap("""
+            user = map("""
                     SELECT u.id, u.tenant_id, u.password_hash, u.role
                     FROM identity.users u
                     WHERE u.email = ? AND u.is_active = true
                     """, req.email());
-        } catch (EmptyResultDataAccessException e) {
-            return error(HttpStatus.UNAUTHORIZED, "geçersiz e-posta veya şifre");
+            if (user == null) {
+                return error(HttpStatus.UNAUTHORIZED, "geçersiz e-posta veya şifre");
+            }
         } catch (RuntimeException e) {
             return error(HttpStatus.INTERNAL_SERVER_ERROR, "giriş başarısız");
         }
@@ -172,9 +173,12 @@ public class AuthController {
         // Rolü DB'den taze oku; kullanıcı deaktif/silinmişse yenileme reddedilir.
         String role;
         try {
-            role = jdbc.queryForObject("""
+            role = value("""
                     SELECT role FROM identity.users WHERE id = ? AND tenant_id = ? AND is_active = true
                     """, String.class, claims.userId(), claims.tenantId());
+            if (role == null) {
+                return error(HttpStatus.UNAUTHORIZED, "oturum sonlandırıldı, tekrar giriş yapın");
+            }
         } catch (RuntimeException e) {
             return error(HttpStatus.UNAUTHORIZED, "oturum sonlandırıldı, tekrar giriş yapın");
         }
@@ -205,7 +209,7 @@ public class AuthController {
         }
         Map<String, Object> tenant;
         try {
-            tenant = jdbc.queryForMap("""
+            tenant = map("""
                     SELECT name, slug, tier, created_at FROM identity.tenants WHERE id = ?
                     """, tenantId);
         } catch (RuntimeException e) {
@@ -224,7 +228,7 @@ public class AuthController {
     public ResponseEntity<?> listMembers(@RequestHeader("X-Tenant-ID") String tenantId) {
         List<Map<String, Object>> rows;
         try {
-            rows = jdbc.queryForList("""
+            rows = list("""
                     SELECT u.id, u.email, u.full_name, m.role AS workspace_role, m.workspace_id, u.created_at
                     FROM identity.users u
                     JOIN config.memberships m ON m.user_id = u.id AND m.tenant_id = u.tenant_id
@@ -260,7 +264,7 @@ public class AuthController {
         }
         int updated;
         try {
-            updated = jdbc.update("""
+            updated = dsl.execute("""
                     UPDATE config.memberships
                     SET role = ?
                     WHERE user_id = ? AND tenant_id = ?
@@ -292,7 +296,7 @@ public class AuthController {
         String token = HexFormat.of().formatHex(tokenBytes);
 
         try {
-            jdbc.update("""
+            dsl.execute("""
                     INSERT INTO identity.invitations (id, tenant_id, workspace_id, invited_by, email, role, token, expires_at)
                     VALUES (gen_random_uuid()::text, ?, ?, ?, ?, ?, ?, now() + interval '7 days')
                     """, tenantId, req.workspaceId(), userId == null ? "" : userId,
@@ -340,13 +344,14 @@ public class AuthController {
 
         Map<String, Object> invitation;
         try {
-            invitation = jdbc.queryForMap("""
+            invitation = map("""
                     SELECT id, tenant_id, workspace_id, role, expires_at
                     FROM identity.invitations
                     WHERE token = ? AND accepted_at IS NULL
                     """, req.token());
-        } catch (EmptyResultDataAccessException e) {
-            return error(HttpStatus.NOT_FOUND, "geçersiz veya süresi dolmuş davet");
+            if (invitation == null) {
+                return error(HttpStatus.NOT_FOUND, "geçersiz veya süresi dolmuş davet");
+            }
         } catch (RuntimeException e) {
             return error(HttpStatus.NOT_FOUND, "geçersiz veya süresi dolmuş davet");
         }
@@ -368,12 +373,12 @@ public class AuthController {
         }
 
         try {
-            jdbc.update("""
+            dsl.execute("""
                     INSERT INTO config.memberships (id, workspace_id, user_id, tenant_id, role)
                     VALUES (gen_random_uuid()::text, ?, ?, ?, ?)
                     ON CONFLICT (workspace_id, user_id) DO UPDATE SET role = ?
                     """, workspaceId, userId, tenantId, role, role);
-            jdbc.update("UPDATE identity.invitations SET accepted_at = now() WHERE id = ?", invitationId);
+            dsl.execute("UPDATE identity.invitations SET accepted_at = now() WHERE id = ?", invitationId);
         } catch (RuntimeException e) {
             return error(HttpStatus.INTERNAL_SERVER_ERROR, "davet kabul edilemedi");
         }
@@ -388,7 +393,7 @@ public class AuthController {
     public ResponseEntity<?> listInvitations(@RequestHeader("X-Tenant-ID") String tenantId) {
         List<Map<String, Object>> rows;
         try {
-            rows = jdbc.queryForList("""
+            rows = list("""
                     SELECT id, email, role, workspace_id, created_at, expires_at, accepted_at IS NOT NULL AS accepted
                     FROM identity.invitations
                     WHERE tenant_id = ?
@@ -422,7 +427,7 @@ public class AuthController {
     String resolveRBACRole(String userId, String tenantId, String fallbackRole) {
         String role;
         try {
-            role = jdbc.queryForObject("""
+            role = value("""
                     SELECT m.role FROM config.memberships m
                     WHERE m.user_id = ? AND m.tenant_id = ?
                     ORDER BY CASE m.role WHEN 'admin' THEN 3 WHEN 'editor' THEN 2 ELSE 1 END DESC, m.created_at
@@ -446,11 +451,12 @@ public class AuthController {
 
     private String firstWorkspace(String userId, String tenantId) {
         try {
-            return jdbc.queryForObject("""
+            String w = value("""
                     SELECT m.workspace_id FROM config.memberships m
                     WHERE m.user_id = ? AND m.tenant_id = ?
                     ORDER BY m.created_at LIMIT 1
                     """, String.class, userId, tenantId);
+            return w == null ? "" : w;
         } catch (RuntimeException e) {
             return "";
         }
@@ -459,11 +465,9 @@ public class AuthController {
     private String findOrCreateUser(String email, String password, String name, String tenantId) {
         String existing;
         try {
-            existing = jdbc.queryForObject("""
+            existing = value("""
                     SELECT id FROM identity.users WHERE email = ? AND tenant_id = ?
                     """, String.class, email, tenantId);
-        } catch (EmptyResultDataAccessException e) {
-            existing = null;
         } catch (RuntimeException e) {
             return null;
         }
@@ -472,7 +476,7 @@ public class AuthController {
         }
         String hashed = ENCODER.encode(password);
         try {
-            return jdbc.queryForObject("""
+            return value("""
                     INSERT INTO identity.users (id, tenant_id, email, password_hash, role, full_name)
                     VALUES (gen_random_uuid()::text, ?, ?, ?, 'member', ?)
                     RETURNING id
@@ -514,6 +518,22 @@ public class AuthController {
 
     private static String format(Instant instant) {
         return DateTimeFormatter.ISO_INSTANT.format(instant);
+    }
+
+    /** ADR-014: plain SQL üzerinden jOOQ — satır erişimi Map ile korunur. */
+    private List<Map<String, Object>> list(String sql, Object... args) {
+        return dsl.fetch(sql, args).intoMaps();
+    }
+
+    private Map<String, Object> map(String sql, Object... args) {
+        Record r = dsl.fetchOne(sql, args);
+        return r == null ? null : r.intoMap();
+    }
+
+    /** ADR-014: plain SQL tek değer — jOOQ dönüşümüyle (fetchValue raw Object döner). */
+    private <T> T value(String sql, Class<T> type, Object... args) {
+        Record r = dsl.fetchOne(sql, args);
+        return r == null ? null : r.get(0, type);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

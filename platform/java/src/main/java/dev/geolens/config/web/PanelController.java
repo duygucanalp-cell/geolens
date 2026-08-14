@@ -1,8 +1,9 @@
 package dev.geolens.config.web;
 
+import org.jooq.DSLContext;
+import org.jooq.Record;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,10 +30,10 @@ import java.util.Map;
 @RequestMapping("/v1/workspaces/{workspaceId}")
 public class PanelController {
 
-    private final JdbcTemplate jdbc;
+    private final DSLContext dsl;
 
-    public PanelController(JdbcTemplate jdbc) {
-        this.jdbc = jdbc;
+    public PanelController(DSLContext dsl) {
+        this.dsl = dsl;
     }
 
     @GetMapping("/panels")
@@ -40,7 +41,7 @@ public class PanelController {
                                         @RequestHeader("X-Tenant-ID") String tenantId) {
         List<Map<String, Object>> rows;
         try {
-            rows = jdbc.queryForList("""
+            rows = list("""
                     SELECT p.id, p.name, COALESCE(p.description, '') AS description,
                            COALESCE(p.prompt_set_id, '') AS prompt_set_id,
                            COALESCE(p.schedule_cron, '') AS schedule_cron,
@@ -72,7 +73,7 @@ public class PanelController {
 
         String panelId;
         try {
-            panelId = jdbc.queryForObject("""
+            panelId = value("""
                     INSERT INTO config.panels (id, workspace_id, tenant_id, name, description, prompt_set_id, schedule_cron)
                     VALUES (gen_random_uuid()::text, ?, ?, ?, ?, ?, ?)
                     RETURNING id
@@ -84,7 +85,7 @@ public class PanelController {
         if (req.brandIds() != null) {
             for (String brandId : req.brandIds()) {
                 try {
-                    jdbc.update("""
+                    dsl.execute("""
                             INSERT INTO config.panel_brands (panel_id, brand_id, workspace_id, tenant_id)
                             VALUES (?, ?, ?, ?)
                             ON CONFLICT DO NOTHING
@@ -112,7 +113,7 @@ public class PanelController {
                                       @PathVariable String panelId) {
         Map<String, Object> row;
         try {
-            row = jdbc.queryForMap("""
+            row = map("""
                     SELECT id, name, COALESCE(description, '') AS description,
                            COALESCE(prompt_set_id, '') AS prompt_set_id,
                            COALESCE(schedule_cron, '') AS schedule_cron,
@@ -131,7 +132,7 @@ public class PanelController {
                                             @RequestHeader("X-Tenant-ID") String tenantId) {
         List<Map<String, Object>> rows;
         try {
-            rows = jdbc.queryForList("""
+            rows = list("""
                     SELECT id, name, COALESCE(description, '') AS description, prompt_text, is_active
                     FROM config.prompt_sets
                     WHERE workspace_id = ? AND tenant_id = ?
@@ -165,7 +166,7 @@ public class PanelController {
 
         String setId;
         try {
-            setId = jdbc.queryForObject("""
+            setId = value("""
                     INSERT INTO config.prompt_sets (id, workspace_id, tenant_id, name, description, prompt_text)
                     VALUES (gen_random_uuid()::text, ?, ?, ?, ?, ?)
                     RETURNING id
@@ -181,6 +182,22 @@ public class PanelController {
         body.put("prompt_text", req.promptText());
         body.put("is_active", true);
         return ResponseEntity.status(HttpStatus.CREATED).body(body);
+    }
+
+    /** ADR-014: plain SQL üzerinden jOOQ — satır erişimi Map ile korunur. */
+    private List<Map<String, Object>> list(String sql, Object... args) {
+        return dsl.fetch(sql, args).intoMaps();
+    }
+
+    private Map<String, Object> map(String sql, Object... args) {
+        Record r = dsl.fetchOne(sql, args);
+        return r == null ? null : r.intoMap();
+    }
+
+    /** ADR-014: plain SQL tek değer — jOOQ dönüşümüyle (fetchValue raw Object döner). */
+    private <T> T value(String sql, Class<T> type, Object... args) {
+        Record r = dsl.fetchOne(sql, args);
+        return r == null ? null : r.get(0, type);
     }
 
     private static Map<String, Object> panelMap(Map<String, Object> r) {

@@ -1,8 +1,7 @@
 package dev.geolens.governance;
 
-import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.PreparedStatementCallback;
+import org.jooq.DSLContext;
+import org.jooq.Record;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.sql.Timestamp;
@@ -29,38 +28,33 @@ public final class QuotaChecker {
             new BucketConfig("engine_calls_per_hour", 500),
             new BucketConfig("api_requests_per_hour", 1000));
 
-    private final JdbcTemplate jdbc;
+    private final DSLContext dsl;
     private final TransactionTemplate tx;
 
-    public QuotaChecker(JdbcTemplate jdbc, TransactionTemplate tx) {
-        this.jdbc = jdbc;
+    public QuotaChecker(DSLContext dsl, TransactionTemplate tx) {
+        this.dsl = dsl;
         this.tx = tx;
     }
 
-    private static void setTenant(JdbcTemplate jdbc, String tenantId) {
-        jdbc.execute("SELECT set_config('app.tenant_id', ?, true)",
-                (PreparedStatementCallback<Void>) ps -> {
-                    ps.setString(1, tenantId);
-                    ps.execute();
-                    return null;
-                });
+    private static void setTenant(DSLContext dsl, String tenantId) {
+        dsl.fetch("SELECT set_config('app.tenant_id', ?, true)", tenantId);
     }
 
     private void runInTenant(String tenantId, Runnable work) {
         if (tx == null) {
-            setTenant(jdbc, tenantId);
+            setTenant(dsl, tenantId);
             work.run();
             return;
         }
         tx.executeWithoutResult(status -> {
-            setTenant(jdbc, tenantId);
+            setTenant(dsl, tenantId);
             work.run();
         });
     }
 
     /** Kiracı için varsayılan kovaları yoksa oluşturur — Go {@code EnsureBuckets} portu. */
     public void ensureBuckets(String tenantId) {
-        if (jdbc == null) {
+        if (dsl == null) {
             return;
         }
 
@@ -68,7 +62,7 @@ public final class QuotaChecker {
         runInTenant(tenantId, () -> {
             for (BucketConfig bucket : DEFAULT_BUCKETS) {
                 String id = tenantId + "-" + bucket.bucketName();
-                jdbc.update("""
+                dsl.execute("""
                         INSERT INTO governance.rate_limit_buckets (id, tenant_id, bucket_name, max_tokens, window_start)
                         VALUES (?, ?, ?, ?, ?)
                         ON CONFLICT (tenant_id, bucket_name, window_start) DO NOTHING
@@ -82,23 +76,23 @@ public final class QuotaChecker {
      * Bucket yoksa veya sorgu hatası varsa varsayılan olarak izin verir (Go davranışı).
      */
     public boolean checkAndConsume(String tenantId, String bucketName) {
-        if (jdbc == null) {
+        if (dsl == null) {
             return true;
         }
 
-        Map<String, Object> row;
-        try {
-            row = jdbc.queryForMap("""
-                    SELECT tokens_used, max_tokens
-                    FROM governance.rate_limit_buckets
-                    WHERE tenant_id = ? AND bucket_name = ?
-                    ORDER BY window_start DESC
-                    LIMIT 1
-                    """, tenantId, bucketName);
-        } catch (EmptyResultDataAccessException e) {
+        // jOOQ fetchOne boş sonuçta null döner (EmptyResultDataAccessException fırlatmaz)
+        Record r = dsl.fetchOne("""
+                SELECT tokens_used, max_tokens
+                FROM governance.rate_limit_buckets
+                WHERE tenant_id = ? AND bucket_name = ?
+                ORDER BY window_start DESC
+                LIMIT 1
+                """, tenantId, bucketName);
+        if (r == null) {
             // Bucket yoksa varsayılan olarak izin ver
             return true;
         }
+        Map<String, Object> row = r.intoMap();
 
         long tokensUsed = ((Number) row.get("tokens_used")).longValue();
         long maxTokens = ((Number) row.get("max_tokens")).longValue();
@@ -107,7 +101,7 @@ public final class QuotaChecker {
         }
 
         // Token tüket (son pencereye)
-        runInTenant(tenantId, () -> jdbc.update("""
+        runInTenant(tenantId, () -> dsl.execute("""
                 UPDATE governance.rate_limit_buckets
                 SET tokens_used = tokens_used + 1, updated_at = now()
                 WHERE tenant_id = ? AND bucket_name = ?

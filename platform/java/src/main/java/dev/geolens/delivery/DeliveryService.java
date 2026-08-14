@@ -1,9 +1,8 @@
 package dev.geolens.delivery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.PreparedStatementCallback;
+import org.jooq.DSLContext;
+import org.jooq.Record;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.IOException;
@@ -34,38 +33,33 @@ public final class DeliveryService {
     private static final Duration HTTP_TIMEOUT = Duration.ofSeconds(10);
 
     private final EmailConfig config;
-    private final JdbcTemplate jdbc;
+    private final DSLContext dsl;
     private final TransactionTemplate tx;
     private final HttpClient webhookClient;
 
-    public DeliveryService(EmailConfig config, JdbcTemplate jdbc, TransactionTemplate tx) {
-        this(config, jdbc, tx, HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(2)).build());
+    public DeliveryService(EmailConfig config, DSLContext dsl, TransactionTemplate tx) {
+        this(config, dsl, tx, HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(2)).build());
     }
 
-    public DeliveryService(EmailConfig config, JdbcTemplate jdbc, TransactionTemplate tx, HttpClient webhookClient) {
+    public DeliveryService(EmailConfig config, DSLContext dsl, TransactionTemplate tx, HttpClient webhookClient) {
         this.config = config != null ? config : EmailConfig.mock();
-        this.jdbc = jdbc;
+        this.dsl = dsl;
         this.tx = tx;
         this.webhookClient = webhookClient;
     }
 
-    private static void setTenant(JdbcTemplate jdbc, String tenantId) {
-        jdbc.execute("SELECT set_config('app.tenant_id', ?, true)",
-                (PreparedStatementCallback<Void>) ps -> {
-                    ps.setString(1, tenantId);
-                    ps.execute();
-                    return null;
-                });
+    private static void setTenant(DSLContext dsl, String tenantId) {
+        dsl.fetch("SELECT set_config('app.tenant_id', ?, true)", tenantId);
     }
 
     private void runInTenant(String tenantId, Runnable work) {
         if (tx == null) {
-            setTenant(jdbc, tenantId);
+            setTenant(dsl, tenantId);
             work.run();
             return;
         }
         tx.executeWithoutResult(status -> {
-            setTenant(jdbc, tenantId);
+            setTenant(dsl, tenantId);
             work.run();
         });
     }
@@ -321,18 +315,18 @@ public final class DeliveryService {
      * Best-effort: tek hedef başarısız olursa diğerleri gönderilir; hedef yoksa sessizce döner.
      */
     public void sendGovernanceEvent(String tenantId, String eventType, Map<String, Object> payload) {
-        if (jdbc == null) {
+        if (dsl == null) {
             return;
         }
 
         List<String[]> targets = new ArrayList<>();
         if (tx != null) {
             targets = tx.execute(status -> {
-                setTenant(jdbc, tenantId);
+                setTenant(dsl, tenantId);
                 return queryWebhookTargets(tenantId);
             });
         } else {
-            setTenant(jdbc, tenantId);
+            setTenant(dsl, tenantId);
             targets = queryWebhookTargets(tenantId);
         }
 
@@ -348,34 +342,31 @@ public final class DeliveryService {
     }
 
     private List<String[]> queryWebhookTargets(String tenantId) {
-        return jdbc.query("""
+        return dsl.fetch("""
                 SELECT workspace_id, webhook_url, webhook_kind
                 FROM delivery.notification_settings
                 WHERE tenant_id = ? AND webhook_active = true AND webhook_url <> ''
-                """,
-                (rs, rowNum) -> new String[]{
-                        rs.getString("workspace_id"),
-                        rs.getString("webhook_kind"),
-                        rs.getString("webhook_url")},
-                tenantId);
+                """, tenantId)
+                .map(r -> new String[]{
+                        r.get("workspace_id", String.class),
+                        r.get("webhook_kind", String.class),
+                        r.get("webhook_url", String.class)});
     }
 
     // ---- Ayarlar ----
 
     /** Workspace bildirim ayarlarını döner; kayıt yoksa varsayılanlar — Go {@code GetSettings} portu. */
     public NotificationSettings getSettings(String workspaceId, String tenantId) {
-        if (jdbc == null) {
+        if (dsl == null) {
             return NotificationSettings.defaults(workspaceId);
         }
-        Map<String, Object> row;
-        try {
-            row = jdbc.queryForMap("""
-                    SELECT email_address, digest_enabled, digest_day, digest_time, digest_format,
-                           notify_on_drop, drop_threshold, webhook_url, webhook_kind, webhook_active
-                    FROM delivery.notification_settings
-                    WHERE workspace_id = ? AND tenant_id = ?
-                    """, workspaceId, tenantId);
-        } catch (EmptyResultDataAccessException e) {
+        Map<String, Object> row = map("""
+                SELECT email_address, digest_enabled, digest_day, digest_time, digest_format,
+                       notify_on_drop, drop_threshold, webhook_url, webhook_kind, webhook_active
+                FROM delivery.notification_settings
+                WHERE workspace_id = ? AND tenant_id = ?
+                """, workspaceId, tenantId);
+        if (row == null) {
             return NotificationSettings.defaults(workspaceId);
         }
         return new NotificationSettings(workspaceId,
@@ -394,10 +385,10 @@ public final class DeliveryService {
     /** Ayarları doğrular ve kaydeder — Go {@code UpdateSettings} portu. */
     public void updateSettings(NotificationSettings settings, String tenantId) {
         validateSettings(settings);
-        if (jdbc == null) {
+        if (dsl == null) {
             return;
         }
-        runInTenant(tenantId, () -> jdbc.update("""
+        runInTenant(tenantId, () -> dsl.execute("""
                 INSERT INTO delivery.notification_settings
                     (workspace_id, tenant_id, email_address, digest_enabled, digest_day,
                      digest_time, digest_format, notify_on_drop, drop_threshold,
@@ -489,7 +480,7 @@ public final class DeliveryService {
 
         List<DigestBrandScore> brands = new ArrayList<>();
         List<DigestRecommendation> recs = new ArrayList<>();
-        if (jdbc != null) {
+        if (dsl != null) {
             try {
                 brands = loadDigestScores(workspaceId, tenantId);
             } catch (Exception e) {
@@ -513,7 +504,7 @@ public final class DeliveryService {
     }
 
     private List<DigestBrandScore> loadDigestScores(String workspaceId, String tenantId) {
-        return jdbc.query("""
+        return dsl.fetch("""
                 SELECT DISTINCT ON (b.id)
                     b.id AS brand_id,
                     b.name AS brand_name,
@@ -523,30 +514,29 @@ public final class DeliveryService {
                 JOIN measure.scores s ON s.brand_id = b.id
                 WHERE b.workspace_id = ? AND b.tenant_id = ? AND b.is_active = true
                 ORDER BY b.id, s.freshness_at DESC
-                """,
-                (rs, rowNum) -> {
-                    double score = rs.getDouble("score");
-                    double prev = rs.getDouble("prev_score");
-                    boolean hasPrev = rs.getObject("prev_score") != null;
+                """, workspaceId, tenantId)
+                .map(r -> {
+                    double score = r.get("score", Double.class);
+                    Double prevObj = r.get("prev_score", Double.class);
+                    boolean hasPrev = prevObj != null;
+                    double prev = hasPrev ? prevObj : 0;
                     double change = hasPrev ? score - prev : 0;
-                    return new DigestBrandScore(rs.getString("brand_id"), rs.getString("brand_name"),
-                            score, hasPrev ? prev : 0, change);
-                },
-                workspaceId, tenantId);
+                    return new DigestBrandScore(r.get("brand_id", String.class), r.get("brand_name", String.class),
+                            score, prev, change);
+                });
     }
 
     private List<DigestRecommendation> loadDigestRecommendations(String workspaceId, String tenantId) {
-        return jdbc.query("""
+        return dsl.fetch("""
                 SELECT b.name, r.title, r.detail
                 FROM recommendation.results r
                 JOIN config.brands b ON b.id = r.brand_id
                 WHERE r.workspace_id = ? AND r.tenant_id = ?
                 ORDER BY r.created_at DESC
                 LIMIT 5
-                """,
-                (rs, rowNum) -> new DigestRecommendation(rs.getString("name"), rs.getString("title"),
-                        rs.getString("detail")),
-                workspaceId, tenantId);
+                """, workspaceId, tenantId)
+                .map(r -> new DigestRecommendation(r.get("name", String.class), r.get("title", String.class),
+                        r.get("detail", String.class)));
     }
 
     /** Haftalık özet için HTML içerik üretir — Go {@code buildDigestHTML} portu (pano derin bağlantılı). */
@@ -647,7 +637,7 @@ public final class DeliveryService {
 
     /** In-app bildirimi kalıcı tabloya yazar — Go {@code saveInAppNotification} portu. */
     Notification saveInAppNotification(Notification notif) {
-        if (jdbc == null) {
+        if (dsl == null) {
             throw new DeliveryException("delivery: veritabanı bağlantısı yok");
         }
 
@@ -662,7 +652,7 @@ public final class DeliveryService {
 
         String id = notif.id() == null || notif.id().isEmpty() ? dev.geolens.util.Ulid.generate() : notif.id();
         String data = dataJson;
-        runInTenant(notif.tenantId(), () -> jdbc.update("""
+        runInTenant(notif.tenantId(), () -> dsl.execute("""
                 INSERT INTO delivery.notifications (id, tenant_id, workspace_id, user_id, type, title, body, data, is_read, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?::jsonb, false, now())
                 """, id, notif.tenantId(), notif.workspaceId(), notif.userId(),
@@ -672,7 +662,7 @@ public final class DeliveryService {
 
     /** Workspace'in in-app bildirimlerini listeler — Go {@code ListInAppNotifications} portu. */
     public List<Notification> listInAppNotifications(String tenantId, String workspaceId, boolean unreadOnly, int limit) {
-        if (jdbc == null) {
+        if (dsl == null) {
             throw new DeliveryException("delivery: veritabanı bağlantısı yok");
         }
         if (limit <= 0 || limit > 100) {
@@ -684,11 +674,11 @@ public final class DeliveryService {
                 WHERE tenant_id = ? AND workspace_id = ?
                 """ + (unreadOnly ? " AND is_read = false" : "") + " ORDER BY created_at DESC LIMIT ?";
         int lim = limit;
-        return jdbc.query(query,
-                (rs, rowNum) -> {
+        return dsl.fetch(query, tenantId, workspaceId, lim)
+                .map(rs -> {
                     Map<String, Object> data = Map.of();
                     try {
-                        String raw = rs.getString("data");
+                        String raw = rs.get("data", String.class);
                         if (raw != null && !raw.equals("{}")) {
                             data = MAPPER.readValue(raw, new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {
                             });
@@ -697,32 +687,31 @@ public final class DeliveryService {
                         // bozuk data → boş harita
                     }
                     return new Notification(
-                            rs.getString("id"),
+                            rs.get("id", String.class),
                             tenantId,
-                            rs.getString("user_id"),
+                            rs.get("user_id", String.class),
                             workspaceId,
-                            rs.getString("type"),
+                            rs.get("type", String.class),
                             DeliveryConstants.CHANNEL_IN_APP,
-                            rs.getString("title"),
-                            rs.getString("body"),
+                            rs.get("title", String.class),
+                            rs.get("body", String.class),
                             "",
                             data,
                             DeliveryConstants.DELIVERY_SENT,
                             null,
-                            rs.getTimestamp("created_at").toInstant(),
-                            rs.getBoolean("is_read"),
+                            rs.get("created_at", java.sql.Timestamp.class).toInstant(),
+                            rs.get("is_read", Boolean.class),
                             "",
                             "");
-                },
-                tenantId, workspaceId, lim);
+                });
     }
 
     /** Tek bir in-app bildirimi okundu işaretler — Go {@code MarkInAppNotificationRead} portu. */
     public void markInAppNotificationRead(String tenantId, String notificationId) {
-        if (jdbc == null) {
+        if (dsl == null) {
             throw new DeliveryException("delivery: veritabanı bağlantısı yok");
         }
-        runInTenant(tenantId, () -> jdbc.update("""
+        runInTenant(tenantId, () -> dsl.execute("""
                 UPDATE delivery.notifications SET is_read = true
                 WHERE id = ? AND tenant_id = ?
                 """, notificationId, tenantId));
@@ -735,5 +724,11 @@ public final class DeliveryService {
         }
         sendEmail(notif.userId() + "@example.com", notif.title(), htmlContent);
         return notif.sent();
+    }
+
+    /** ADR-014: plain SQL üzerinden jOOQ — satır erişimi Map ile korunur. */
+    private Map<String, Object> map(String sql, Object... args) {
+        Record r = dsl.fetchOne(sql, args);
+        return r == null ? null : r.intoMap();
     }
 }

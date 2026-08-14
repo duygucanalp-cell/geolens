@@ -2,8 +2,7 @@ package dev.geolens.audit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.geolens.util.Ulid;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.PreparedStatementCallback;
+import org.jooq.DSLContext;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.IOException;
@@ -32,39 +31,34 @@ public final class AuditService {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    private final JdbcTemplate jdbc;
+    private final DSLContext dsl;
     private final TransactionTemplate tx;
     private final HttpClient httpClient;
 
-    public AuditService(JdbcTemplate jdbc, TransactionTemplate tx) {
-        this(jdbc, tx, HttpClient.newBuilder()
+    public AuditService(DSLContext dsl, TransactionTemplate tx) {
+        this(dsl, tx, HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(2))
                 .build());
     }
 
-    public AuditService(JdbcTemplate jdbc, TransactionTemplate tx, HttpClient httpClient) {
-        this.jdbc = jdbc;
+    public AuditService(DSLContext dsl, TransactionTemplate tx, HttpClient httpClient) {
+        this.dsl = dsl;
         this.tx = tx;
         this.httpClient = httpClient;
     }
 
-    private static void setTenant(JdbcTemplate jdbc, String tenantId) {
-        jdbc.execute("SELECT set_config('app.tenant_id', ?, true)",
-                (PreparedStatementCallback<Void>) ps -> {
-                    ps.setString(1, tenantId);
-                    ps.execute();
-                    return null;
-                });
+    private static void setTenant(DSLContext dsl, String tenantId) {
+        dsl.fetch("SELECT set_config('app.tenant_id', ?, true)", tenantId);
     }
 
     private void runInTenant(String tenantId, Runnable work) {
         if (tx == null) {
-            setTenant(jdbc, tenantId);
+            setTenant(dsl, tenantId);
             work.run();
             return;
         }
         tx.executeWithoutResult(status -> {
-            setTenant(jdbc, tenantId);
+            setTenant(dsl, tenantId);
             work.run();
         });
     }
@@ -126,7 +120,7 @@ public final class AuditService {
 
     /** Denetim sonucunu audit_results tablosuna yazar — Go {@code Save} portu. */
     public void save(AuditResult result) {
-        if (jdbc == null) {
+        if (dsl == null) {
             return;
         }
 
@@ -137,7 +131,7 @@ public final class AuditService {
         String issuesJson = toJson(result.issues());
         String resultJson = toJson(result);
 
-        runInTenant(result.tenantId(), () -> jdbc.update("""
+        runInTenant(result.tenantId(), () -> dsl.execute("""
                 INSERT INTO governance.audit_results
                     (id, brand_id, workspace_id, tenant_id, brand_name, website_url,
                      overall_score, robots_txt, bot_access, ssr, ssrf, issues, raw_result, created_at)

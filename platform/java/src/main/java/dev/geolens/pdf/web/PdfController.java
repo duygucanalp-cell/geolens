@@ -6,12 +6,12 @@ import dev.geolens.pdf.PdfService;
 import dev.geolens.pdf.ReportRequest;
 import dev.geolens.pdf.ReportResult;
 import dev.geolens.pdf.ReportType;
-import org.springframework.dao.EmptyResultDataAccessException;
+import org.jooq.DSLContext;
+import org.jooq.Record;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,11 +37,11 @@ import java.util.Map;
 public class PdfController {
 
     private final PdfService svc;
-    private final JdbcTemplate jdbc;
+    private final DSLContext dsl;
 
-    public PdfController(PdfService svc, JdbcTemplate jdbc) {
+    public PdfController(PdfService svc, DSLContext dsl) {
         this.svc = svc;
-        this.jdbc = jdbc;
+        this.dsl = dsl;
     }
 
     @PostMapping("/v1/workspaces/{workspaceId}/reports/digest")
@@ -104,7 +104,7 @@ public class PdfController {
 
         String reportId;
         try {
-            reportId = jdbc.queryForObject("""
+            reportId = value("""
                     INSERT INTO measure.reports (id, tenant_id, workspace_id, report_type, brand_id, status, params)
                     VALUES (gen_random_uuid()::text, ?, ?, ?, ?, 'pending', ?)
                     RETURNING id
@@ -127,12 +127,15 @@ public class PdfController {
                                              @PathVariable String reportId) {
         Map<String, Object> row;
         try {
-            row = jdbc.queryForMap("""
+            row = map("""
                     SELECT status, report_type, file_name, file_size, error_message, created_at, updated_at
                     FROM measure.reports
                     WHERE id = ? AND workspace_id = ? AND tenant_id = ?
                     """, reportId, workspaceId, tenantId);
         } catch (RuntimeException e) {
+            return error(HttpStatus.NOT_FOUND, "rapor bulunamadı");
+        }
+        if (row == null) {
             return error(HttpStatus.NOT_FOUND, "rapor bulunamadı");
         }
 
@@ -161,14 +164,15 @@ public class PdfController {
                                             @RequestParam(value = "s3_url", required = false) String s3Url) {
         Map<String, Object> row;
         try {
-            row = jdbc.queryForMap("""
+            row = map("""
                     SELECT status, report_type, file_name, params::text AS params
                     FROM measure.reports
                     WHERE id = ? AND workspace_id = ? AND tenant_id = ?
                     """, reportId, workspaceId, tenantId);
-        } catch (EmptyResultDataAccessException e) {
-            return error(HttpStatus.NOT_FOUND, "rapor bulunamadı");
         } catch (RuntimeException e) {
+            return error(HttpStatus.NOT_FOUND, "rapor bulunamadı");
+        }
+        if (row == null) {
             return error(HttpStatus.NOT_FOUND, "rapor bulunamadı");
         }
 
@@ -213,6 +217,18 @@ public class PdfController {
             return "";
         }
         return s.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
+    /** ADR-014: plain SQL üzerinden jOOQ — satır erişimi Map ile korunur. */
+    private Map<String, Object> map(String sql, Object... args) {
+        Record r = dsl.fetchOne(sql, args);
+        return r == null ? null : r.intoMap();
+    }
+
+    /** ADR-014: plain SQL tek değer — jOOQ dönüşümüyle (fetchValue raw Object döner). */
+    private <T> T value(String sql, Class<T> type, Object... args) {
+        Record r = dsl.fetchOne(sql, args);
+        return r == null ? null : r.get(0, type);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
