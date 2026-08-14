@@ -6,6 +6,7 @@ import dev.geolens.archive.ArchiveEngine;
 import dev.geolens.replay.ReplayEngine;
 import dev.geolens.registry.EntityIndexer;
 import dev.geolens.retention.RetentionWorker;
+import dev.geolens.technicalgeo.TechnicalGeoEngine;
 import dev.geolens.benchmark.DpConfig;
 import dev.geolens.auth.JWTService;
 import dev.geolens.auth.TokenBlacklist;
@@ -254,5 +255,11 @@ public class AppBeans {
     @ConditionalOnProperty(name = "retention.worker.enabled", havingValue = "true")
     public RetentionWorker retentionWorker(DSLContext dsl) {
         return new RetentionWorker(dsl);
+    }
+
+    /** Technical GEO (FR-B6/B7/E7): bot + schema analiz motoru — DSLContext üzerinden çalışır. */
+    @Bean
+    public TechnicalGeoEngine technicalGeoEngine(DSLContext dsl) {
+        return new TechnicalGeoEngine(dsl);
     }
 }
