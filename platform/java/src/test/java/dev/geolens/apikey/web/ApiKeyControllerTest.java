@@ -1,10 +1,11 @@
 package dev.geolens.apikey.web;
 
+import dev.geolens.testutil.JooqTestData;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.LinkedHashMap;
@@ -30,7 +31,7 @@ class ApiKeyControllerTest {
     private MockMvc mockMvc;
 
     @MockBean
-    private JdbcTemplate jdbc;
+    private DSLContext dsl;
 
     private static final String TENANT = "T01";
 
@@ -38,8 +39,8 @@ class ApiKeyControllerTest {
 
     @Test
     void listSuccess() throws Exception {
-        when(jdbc.queryForList(anyString(), any(Object[].class)))
-                .thenReturn(List.of(keyRow("K1", "prod-key", "gls_abc123", "viewer", true)));
+        when(dsl.fetch(anyString(), any(Object[].class)))
+                .thenReturn(JooqTestData.records(keyRow("K1", "prod-key", "gls_abc123", "viewer", true)));
 
         mockMvc.perform(get("/v1/api-keys").header("X-Tenant-ID", TENANT))
                 .andExpect(status().isOk())
@@ -52,7 +53,7 @@ class ApiKeyControllerTest {
 
     @Test
     void listQueryErrorReturnsEmpty() throws Exception {
-        when(jdbc.queryForList(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db error"));
+        when(dsl.fetch(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db error"));
 
         mockMvc.perform(get("/v1/api-keys").header("X-Tenant-ID", TENANT))
                 .andExpect(status().isOk())
@@ -93,9 +94,8 @@ class ApiKeyControllerTest {
 
     @Test
     void createSuccess() throws Exception {
-        when(jdbc.queryForObject(contains("INSERT INTO identity.api_keys"), eq(String.class),
-                any(), any(), any(), any(), any(), any()))
-                .thenReturn("new-key-id");
+        when(dsl.fetchOne(contains("INSERT INTO identity.api_keys"), any(Object[].class)))
+                .thenReturn(JooqTestData.record("new-key-id"));
 
         mockMvc.perform(post("/v1/api-keys")
                         .header("X-Tenant-ID", TENANT)
@@ -113,7 +113,7 @@ class ApiKeyControllerTest {
 
     @Test
     void deleteSuccess() throws Exception {
-        when(jdbc.update(anyString(), any(Object[].class))).thenReturn(1);
+        when(dsl.execute(anyString(), any(Object[].class))).thenReturn(1);
 
         mockMvc.perform(delete("/v1/api-keys/K1").header("X-Tenant-ID", TENANT))
                 .andExpect(status().isOk())
@@ -122,7 +122,7 @@ class ApiKeyControllerTest {
 
     @Test
     void deleteNotFoundReturns404() throws Exception {
-        when(jdbc.update(anyString(), any(Object[].class))).thenReturn(0);
+        when(dsl.execute(anyString(), any(Object[].class))).thenReturn(0);
 
         mockMvc.perform(delete("/v1/api-keys/none").header("X-Tenant-ID", TENANT))
                 .andExpect(status().isNotFound())

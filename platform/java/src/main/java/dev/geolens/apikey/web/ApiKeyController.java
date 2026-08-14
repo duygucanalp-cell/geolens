@@ -1,9 +1,10 @@
 package dev.geolens.apikey.web;
 
+import org.jooq.DSLContext;
+import org.jooq.Record;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -35,17 +36,17 @@ public class ApiKeyController {
     private static final BCryptPasswordEncoder ENCODER = new BCryptPasswordEncoder();
     private static final SecureRandom RANDOM = new SecureRandom();
 
-    private final JdbcTemplate jdbc;
+    private final DSLContext dsl;
 
-    public ApiKeyController(JdbcTemplate jdbc) {
-        this.jdbc = jdbc;
+    public ApiKeyController(DSLContext dsl) {
+        this.dsl = dsl;
     }
 
     @GetMapping
     public ResponseEntity<?> list(@RequestHeader("X-Tenant-ID") String tenantId) {
         List<Map<String, Object>> rows;
         try {
-            rows = jdbc.queryForList("""
+            rows = list("""
                     SELECT id, name, key_prefix, role, is_active, last_used_at, expires_at, created_at
                     FROM identity.api_keys
                     WHERE tenant_id = ?
@@ -94,7 +95,7 @@ public class ApiKeyController {
 
         String id;
         try {
-            id = jdbc.queryForObject("""
+            id = value("""
                     INSERT INTO identity.api_keys (id, tenant_id, name, key_hash, key_prefix, role, expires_at)
                     VALUES (gen_random_uuid()::text, ?, ?, ?, ?, ?, ?)
                     RETURNING id
@@ -117,7 +118,7 @@ public class ApiKeyController {
                                     @PathVariable String keyId) {
         int affected;
         try {
-            affected = jdbc.update("""
+            affected = dsl.execute("""
                     DELETE FROM identity.api_keys WHERE id = ? AND tenant_id = ?
                     """, keyId, tenantId);
         } catch (RuntimeException e) {
@@ -127,6 +128,17 @@ public class ApiKeyController {
             return error(HttpStatus.NOT_FOUND, "anahtar bulunamadı");
         }
         return ResponseEntity.ok(Map.of("status", "deleted"));
+    }
+
+    /** ADR-014: plain SQL üzerinden jOOQ — satır erişimi Map ile korunur. */
+    private List<Map<String, Object>> list(String sql, Object... args) {
+        return dsl.fetch(sql, args).intoMaps();
+    }
+
+    /** ADR-014: plain SQL tek değer — jOOQ dönüşümüyle (fetchValue raw Object döner). */
+    private <T> T value(String sql, Class<T> type, Object... args) {
+        Record r = dsl.fetchOne(sql, args);
+        return r == null ? null : r.get(0, type);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

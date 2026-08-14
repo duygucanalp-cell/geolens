@@ -1,10 +1,11 @@
 package dev.geolens.config.web;
 
+import dev.geolens.testutil.JooqTestData;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
@@ -31,7 +32,7 @@ class ConfigControllerTest {
     private MockMvc mockMvc;
 
     @MockBean
-    private JdbcTemplate jdbc;
+    private DSLContext dsl;
 
     @MockBean
     private TransactionTemplate tx;
@@ -50,10 +51,10 @@ class ConfigControllerTest {
 
     @Test
     void searchBrandsSuccess() throws Exception {
-        when(jdbc.queryForObject(contains("SELECT count(*)"), eq(Integer.class), any(), any(), any(), any(), any(), any()))
-                .thenReturn(2);
-        when(jdbc.queryForList(anyString(), any(Object[].class)))
-                .thenReturn(java.util.List.of(
+        when(dsl.fetchOne(contains("SELECT count(*)"), any(Object[].class)))
+                .thenReturn(JooqTestData.record(2));
+        when(dsl.fetch(anyString(), any(Object[].class)))
+                .thenReturn(JooqTestData.records(
                         row("B01", "Acme Corp", "https://acme.com"),
                         row("B02", "Acme Ltd", "https://acme-ltd.com")));
 
@@ -84,10 +85,10 @@ class ConfigControllerTest {
 
     @Test
     void searchBrandsEmptyResults() throws Exception {
-        when(jdbc.queryForObject(contains("SELECT count(*)"), eq(Integer.class), any(), any(), any(), any(), any(), any()))
-                .thenReturn(0);
-        when(jdbc.queryForList(anyString(), any(Object[].class)))
-                .thenReturn(java.util.List.of());
+        when(dsl.fetchOne(contains("SELECT count(*)"), any(Object[].class)))
+                .thenReturn(JooqTestData.record(0));
+        when(dsl.fetch(anyString(), any(Object[].class)))
+                .thenReturn(JooqTestData.records());
 
         mockMvc.perform(get("/v1/workspaces/WS01/brands/search")
                         .param("q", "nonexistent")
@@ -99,10 +100,10 @@ class ConfigControllerTest {
 
     @Test
     void searchBrandsWithExclude() throws Exception {
-        when(jdbc.queryForObject(contains("SELECT count(*)"), eq(Integer.class), any(), any(), any(), any(), any(), any()))
-                .thenReturn(1);
-        when(jdbc.queryForList(anyString(), any(Object[].class)))
-                .thenReturn(java.util.List.of(row("B02", "Acme Ltd", "https://acme-ltd.com")));
+        when(dsl.fetchOne(contains("SELECT count(*)"), any(Object[].class)))
+                .thenReturn(JooqTestData.record(1));
+        when(dsl.fetch(anyString(), any(Object[].class)))
+                .thenReturn(JooqTestData.records(row("B02", "Acme Ltd", "https://acme-ltd.com")));
 
         mockMvc.perform(get("/v1/workspaces/WS01/brands/search")
                         .param("q", "Acme")
@@ -115,10 +116,10 @@ class ConfigControllerTest {
 
     @Test
     void searchBrandsWithPagination() throws Exception {
-        when(jdbc.queryForObject(contains("SELECT count(*)"), eq(Integer.class), any(), any(), any(), any(), any(), any()))
-                .thenReturn(2);
-        when(jdbc.queryForList(anyString(), any(Object[].class)))
-                .thenReturn(java.util.List.of(row("B01", "Acme Corp", "https://acme.com")));
+        when(dsl.fetchOne(contains("SELECT count(*)"), any(Object[].class)))
+                .thenReturn(JooqTestData.record(2));
+        when(dsl.fetch(anyString(), any(Object[].class)))
+                .thenReturn(JooqTestData.records(row("B01", "Acme Corp", "https://acme.com")));
 
         mockMvc.perform(get("/v1/workspaces/WS01/brands/search")
                         .param("q", "Acme")
@@ -133,10 +134,10 @@ class ConfigControllerTest {
 
     @Test
     void searchBrandsWithLargeLimitCappedAt100() throws Exception {
-        when(jdbc.queryForObject(contains("SELECT count(*)"), eq(Integer.class), any(), any(), any(), any(), any(), any()))
-                .thenReturn(150);
-        when(jdbc.queryForList(anyString(), any(Object[].class)))
-                .thenReturn(java.util.List.of(row("B01", "Acme Corp", "https://acme.com")));
+        when(dsl.fetchOne(contains("SELECT count(*)"), any(Object[].class)))
+                .thenReturn(JooqTestData.record(150));
+        when(dsl.fetch(anyString(), any(Object[].class)))
+                .thenReturn(JooqTestData.records(row("B01", "Acme Corp", "https://acme.com")));
 
         mockMvc.perform(get("/v1/workspaces/WS01/brands/search")
                         .param("q", "Acme")
@@ -148,10 +149,10 @@ class ConfigControllerTest {
 
     @Test
     void searchBrandsWithInvalidOffsetDefaultsTo0() throws Exception {
-        when(jdbc.queryForObject(contains("SELECT count(*)"), eq(Integer.class), any(), any(), any(), any(), any(), any()))
-                .thenReturn(0);
-        when(jdbc.queryForList(anyString(), any(Object[].class)))
-                .thenReturn(java.util.List.of());
+        when(dsl.fetchOne(contains("SELECT count(*)"), any(Object[].class)))
+                .thenReturn(JooqTestData.record(0));
+        when(dsl.fetch(anyString(), any(Object[].class)))
+                .thenReturn(JooqTestData.records());
 
         mockMvc.perform(get("/v1/workspaces/WS01/brands/search")
                         .param("q", "Acme")
@@ -163,7 +164,7 @@ class ConfigControllerTest {
 
     @Test
     void searchBrandsCountErrorReturns500() throws Exception {
-        when(jdbc.queryForObject(contains("SELECT count(*)"), eq(Integer.class), any(), any(), any(), any(), any(), any()))
+        when(dsl.fetchOne(contains("SELECT count(*)"), any(Object[].class)))
                 .thenThrow(new RuntimeException("count error"));
 
         mockMvc.perform(get("/v1/workspaces/WS01/brands/search")
@@ -175,9 +176,9 @@ class ConfigControllerTest {
 
     @Test
     void searchBrandsDBErrorReturns500() throws Exception {
-        when(jdbc.queryForObject(contains("SELECT count(*)"), eq(Integer.class), any(), any(), any(), any(), any(), any()))
-                .thenReturn(0);
-        when(jdbc.queryForList(anyString(), any(Object[].class)))
+        when(dsl.fetchOne(contains("SELECT count(*)"), any(Object[].class)))
+                .thenReturn(JooqTestData.record(0));
+        when(dsl.fetch(anyString(), any(Object[].class)))
                 .thenThrow(new RuntimeException("db error"));
 
         mockMvc.perform(get("/v1/workspaces/WS01/brands/search")
@@ -223,8 +224,8 @@ class ConfigControllerTest {
     @Test
     void createBrandSuccess() throws Exception {
         runInTx();
-        when(jdbc.queryForObject(anyString(), eq(String.class), any(), any(), any(), any()))
-                .thenReturn("B-new");
+        when(dsl.fetchOne(anyString(), any(Object[].class)))
+                .thenReturn(JooqTestData.record("B-new"));
 
         mockMvc.perform(post("/v1/workspaces/WS01/brands")
                         .header("X-Tenant-ID", TENANT)
@@ -239,8 +240,8 @@ class ConfigControllerTest {
     @Test
     void createBrandCompetitorNotFoundReturns400() throws Exception {
         runInTx();
-        when(jdbc.queryForObject(contains("SELECT EXISTS"), eq(Boolean.class), any(), any()))
-                .thenReturn(false);
+        when(dsl.fetchOne(contains("SELECT EXISTS"), any(Object[].class)))
+                .thenReturn(JooqTestData.record(false));
 
         mockMvc.perform(post("/v1/workspaces/WS01/brands")
                         .header("X-Tenant-ID", TENANT)
@@ -254,9 +255,9 @@ class ConfigControllerTest {
 
     @Test
     void updateBrandSuccess() throws Exception {
-        when(jdbc.update(anyString(), any(Object[].class))).thenReturn(1);
-        when(jdbc.queryForMap(contains("SELECT id, name, website_url FROM config.brands"), any(), any(), any()))
-                .thenReturn(row("B01", "Yeni Marka", "https://yeni-site.com"));
+        when(dsl.execute(anyString(), any(Object[].class))).thenReturn(1);
+        when(dsl.fetchOne(contains("SELECT id, name, website_url FROM config.brands"), any(Object[].class)))
+                .thenReturn(JooqTestData.record(row("B01", "Yeni Marka", "https://yeni-site.com")));
 
         mockMvc.perform(put("/v1/workspaces/WS01/brands/B01")
                         .header("X-Tenant-ID", TENANT)
@@ -289,7 +290,7 @@ class ConfigControllerTest {
 
     @Test
     void updateBrandNotFoundReturns404() throws Exception {
-        when(jdbc.update(anyString(), any(Object[].class))).thenReturn(0);
+        when(dsl.execute(anyString(), any(Object[].class))).thenReturn(0);
 
         mockMvc.perform(put("/v1/workspaces/WS01/brands/nonexistent")
                         .header("X-Tenant-ID", TENANT)
@@ -301,7 +302,7 @@ class ConfigControllerTest {
 
     @Test
     void updateBrandDBErrorReturns500() throws Exception {
-        when(jdbc.update(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db error"));
+        when(dsl.execute(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db error"));
 
         mockMvc.perform(put("/v1/workspaces/WS01/brands/B01")
                         .header("X-Tenant-ID", TENANT)
@@ -314,7 +315,7 @@ class ConfigControllerTest {
 
     @Test
     void deleteBrandSuccess() throws Exception {
-        when(jdbc.update(anyString(), any(Object[].class))).thenReturn(1);
+        when(dsl.execute(anyString(), any(Object[].class))).thenReturn(1);
 
         mockMvc.perform(delete("/v1/workspaces/WS01/brands/B01")
                         .header("X-Tenant-ID", TENANT))
@@ -325,7 +326,7 @@ class ConfigControllerTest {
 
     @Test
     void deleteBrandNotFoundReturns404() throws Exception {
-        when(jdbc.update(anyString(), any(Object[].class))).thenReturn(0);
+        when(dsl.execute(anyString(), any(Object[].class))).thenReturn(0);
 
         mockMvc.perform(delete("/v1/workspaces/WS01/brands/B01")
                         .header("X-Tenant-ID", TENANT))
@@ -334,7 +335,7 @@ class ConfigControllerTest {
 
     @Test
     void deleteBrandDBErrorReturns500() throws Exception {
-        when(jdbc.update(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db error"));
+        when(dsl.execute(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db error"));
 
         mockMvc.perform(delete("/v1/workspaces/WS01/brands/B01")
                         .header("X-Tenant-ID", TENANT))
@@ -345,7 +346,7 @@ class ConfigControllerTest {
 
     @Test
     void deleteBrandCompetitorSuccess() throws Exception {
-        when(jdbc.update(anyString(), any(Object[].class))).thenReturn(1);
+        when(dsl.execute(anyString(), any(Object[].class))).thenReturn(1);
 
         mockMvc.perform(delete("/v1/workspaces/WS01/brands/B01/competitors/C01")
                         .header("X-Tenant-ID", TENANT))
@@ -356,7 +357,7 @@ class ConfigControllerTest {
 
     @Test
     void deleteBrandCompetitorNotFoundReturns404() throws Exception {
-        when(jdbc.update(anyString(), any(Object[].class))).thenReturn(0);
+        when(dsl.execute(anyString(), any(Object[].class))).thenReturn(0);
 
         mockMvc.perform(delete("/v1/workspaces/WS01/brands/B01/competitors/nonexistent")
                         .header("X-Tenant-ID", TENANT))
@@ -373,7 +374,7 @@ class ConfigControllerTest {
 
     @Test
     void deleteBrandCompetitorDBErrorReturns500() throws Exception {
-        when(jdbc.update(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db error"));
+        when(dsl.execute(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db error"));
 
         mockMvc.perform(delete("/v1/workspaces/WS01/brands/B01/competitors/C01")
                         .header("X-Tenant-ID", TENANT))
@@ -384,10 +385,10 @@ class ConfigControllerTest {
 
     @Test
     void listBrandCompetitorsSuccess() throws Exception {
-        when(jdbc.queryForObject(contains("SELECT EXISTS"), eq(Boolean.class), any(), any(), any()))
-                .thenReturn(true);
-        when(jdbc.queryForList(anyString(), any(Object[].class)))
-                .thenReturn(java.util.List.of(
+        when(dsl.fetchOne(contains("SELECT EXISTS"), any(Object[].class)))
+                .thenReturn(JooqTestData.record(true));
+        when(dsl.fetch(anyString(), any(Object[].class)))
+                .thenReturn(JooqTestData.records(
                         competitorRow("comp-1", "Rakip A"),
                         competitorRow("comp-2", "Rakip B")));
 
@@ -401,10 +402,10 @@ class ConfigControllerTest {
 
     @Test
     void listBrandCompetitorsEmpty() throws Exception {
-        when(jdbc.queryForObject(contains("SELECT EXISTS"), eq(Boolean.class), any(), any(), any()))
-                .thenReturn(true);
-        when(jdbc.queryForList(anyString(), any(Object[].class)))
-                .thenReturn(java.util.List.of());
+        when(dsl.fetchOne(contains("SELECT EXISTS"), any(Object[].class)))
+                .thenReturn(JooqTestData.record(true));
+        when(dsl.fetch(anyString(), any(Object[].class)))
+                .thenReturn(JooqTestData.records());
 
         mockMvc.perform(get("/v1/workspaces/WS01/brands/B01/competitors")
                         .header("X-Tenant-ID", TENANT))
@@ -414,8 +415,8 @@ class ConfigControllerTest {
 
     @Test
     void listBrandCompetitorsBrandNotFoundReturns404() throws Exception {
-        when(jdbc.queryForObject(contains("SELECT EXISTS"), eq(Boolean.class), any(), any(), any()))
-                .thenReturn(false);
+        when(dsl.fetchOne(contains("SELECT EXISTS"), any(Object[].class)))
+                .thenReturn(JooqTestData.record(false));
 
         mockMvc.perform(get("/v1/workspaces/WS01/brands/unknown/competitors")
                         .header("X-Tenant-ID", TENANT))
@@ -425,9 +426,9 @@ class ConfigControllerTest {
 
     @Test
     void listBrandCompetitorsQueryErrorReturns500() throws Exception {
-        when(jdbc.queryForObject(contains("SELECT EXISTS"), eq(Boolean.class), any(), any(), any()))
-                .thenReturn(true);
-        when(jdbc.queryForList(anyString(), any(Object[].class)))
+        when(dsl.fetchOne(contains("SELECT EXISTS"), any(Object[].class)))
+                .thenReturn(JooqTestData.record(true));
+        when(dsl.fetch(anyString(), any(Object[].class)))
                 .thenThrow(new RuntimeException("db error"));
 
         mockMvc.perform(get("/v1/workspaces/WS01/brands/B01/competitors")
@@ -440,8 +441,8 @@ class ConfigControllerTest {
     @Test
     void updateBrandCompetitorsSuccess() throws Exception {
         runInTx();
-        when(jdbc.queryForObject(contains("SELECT EXISTS"), eq(Boolean.class), any(), any(), any()))
-                .thenReturn(true, true);
+        when(dsl.fetchOne(contains("SELECT EXISTS"), any(Object[].class)))
+                .thenReturn(JooqTestData.record(true), JooqTestData.record(true));
 
         mockMvc.perform(put("/v1/workspaces/WS01/brands/B01/competitors")
                         .header("X-Tenant-ID", TENANT)
@@ -463,8 +464,8 @@ class ConfigControllerTest {
 
     @Test
     void updateBrandCompetitorsBrandNotFoundReturns404() throws Exception {
-        when(jdbc.queryForObject(contains("SELECT EXISTS"), eq(Boolean.class), any(), any(), any()))
-                .thenReturn(false);
+        when(dsl.fetchOne(contains("SELECT EXISTS"), any(Object[].class)))
+                .thenReturn(JooqTestData.record(false));
 
         mockMvc.perform(put("/v1/workspaces/WS01/brands/unknown/competitors")
                         .header("X-Tenant-ID", TENANT)
@@ -476,10 +477,10 @@ class ConfigControllerTest {
     @Test
     void updateBrandCompetitorsCompetitorNotFoundReturns400() throws Exception {
         runInTx();
-        when(jdbc.queryForObject(contains("SELECT EXISTS"), eq(Boolean.class), any(), any(), any()))
-                .thenReturn(true);
-        when(jdbc.queryForObject(contains("SELECT EXISTS"), eq(Boolean.class), any(), any()))
-                .thenReturn(false);
+        when(dsl.fetchOne(contains("workspace_id"), any(Object[].class)))
+                .thenReturn(JooqTestData.record(true));
+        when(dsl.fetchOne(contains("is_active"), any(Object[].class)))
+                .thenReturn(JooqTestData.record(false));
 
         mockMvc.perform(put("/v1/workspaces/WS01/brands/B01/competitors")
                         .header("X-Tenant-ID", TENANT)
@@ -493,8 +494,8 @@ class ConfigControllerTest {
 
     @Test
     void setupStatusAllDone() throws Exception {
-        when(jdbc.queryForObject(anyString(), eq(Integer.class), any(), any()))
-                .thenReturn(3);
+        when(dsl.fetchOne(anyString(), any(Object[].class)))
+                .thenReturn(JooqTestData.record(3));
 
         mockMvc.perform(get("/v1/workspaces/WS01/setup-status")
                         .header("X-Tenant-ID", TENANT))
@@ -505,8 +506,8 @@ class ConfigControllerTest {
 
     @Test
     void setupStatusNotComplete() throws Exception {
-        when(jdbc.queryForObject(anyString(), eq(Integer.class), any(), any()))
-                .thenReturn(0);
+        when(dsl.fetchOne(anyString(), any(Object[].class)))
+                .thenReturn(JooqTestData.record(0));
 
         mockMvc.perform(get("/v1/workspaces/WS01/setup-status")
                         .header("X-Tenant-ID", TENANT))
@@ -518,8 +519,8 @@ class ConfigControllerTest {
 
     @Test
     void panoramaSuccess() throws Exception {
-        when(jdbc.queryForList(anyString(), any(Object[].class)))
-                .thenReturn(java.util.List.of(panoramaRow("WS1", "Ajans A", 75.5, 3, 12, false)));
+        when(dsl.fetch(anyString(), any(Object[].class)))
+                .thenReturn(JooqTestData.records(panoramaRow("WS1", "Ajans A", 75.5, 3, 12, false)));
 
         mockMvc.perform(get("/v1/tenant/panorama")
                         .header("X-Tenant-ID", TENANT))
@@ -531,7 +532,7 @@ class ConfigControllerTest {
 
     @Test
     void panoramaQueryErrorReturnsEmpty() throws Exception {
-        when(jdbc.queryForList(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db error"));
+        when(dsl.fetch(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db error"));
 
         mockMvc.perform(get("/v1/tenant/panorama")
                         .header("X-Tenant-ID", TENANT))

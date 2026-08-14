@@ -2,11 +2,12 @@ package dev.geolens.auth.web;
 
 import dev.geolens.auth.JWTService;
 import dev.geolens.auth.TokenBlacklist;
+import dev.geolens.testutil.JooqTestData;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -28,7 +29,7 @@ class AuthControllerNoMailTest {
     private JWTService jwt;
 
     @MockBean
-    private JdbcTemplate jdbc;
+    private DSLContext dsl;
 
     @MockBean
     private TransactionTemplate tx;
@@ -40,7 +41,7 @@ class AuthControllerNoMailTest {
 
     @Test
     void inviteMemberSkipsEmailWhenNoMailer() throws Exception {
-        when(jdbc.update(anyString(), any(Object[].class))).thenReturn(1);
+        when(dsl.execute(anyString(), any(Object[].class))).thenReturn(1);
 
         mockMvc.perform(post("/v1/tenant/invitations")
                         .header("X-Tenant-ID", TENANT)

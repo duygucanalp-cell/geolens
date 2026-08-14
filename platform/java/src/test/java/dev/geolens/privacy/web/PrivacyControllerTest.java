@@ -1,10 +1,11 @@
 package dev.geolens.privacy.web;
 
+import dev.geolens.testutil.JooqTestData;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
@@ -29,7 +30,7 @@ class PrivacyControllerTest {
     private MockMvc mockMvc;
 
     @MockBean
-    private JdbcTemplate jdbc;
+    private DSLContext dsl;
 
     @MockBean
     private TransactionTemplate tx;
@@ -46,8 +47,8 @@ class PrivacyControllerTest {
     }
 
     private void stubRole(String role) {
-        when(jdbc.queryForObject(contains("config.memberships"), eq(String.class), any(), any()))
-                .thenReturn(role);
+        when(dsl.fetchOne(contains("config.memberships"), any(Object[].class)))
+                .thenReturn(JooqTestData.record(role));
     }
 
     // ---------- ExportData ----------
@@ -61,8 +62,8 @@ class PrivacyControllerTest {
 
     @Test
     void exportDataSuccess() throws Exception {
-        when(jdbc.queryForList(anyString(), any(Object[].class)))
-                .thenReturn(java.util.List.of(
+        when(dsl.fetch(anyString(), any(Object[].class)))
+                .thenReturn(JooqTestData.records(
                         java.util.Map.<String, Object>of("id", "U01", "email", "a@b.com", "full_name", "A", "created_at", "2026-08-14T00:00:00Z")));
 
         mockMvc.perform(get("/v1/account/data").header("X-Tenant-ID", TENANT))
@@ -79,7 +80,7 @@ class PrivacyControllerTest {
 
     @Test
     void exportDataQueryErrorStillReturnsPayload() throws Exception {
-        when(jdbc.queryForList(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db error"));
+        when(dsl.fetch(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db error"));
 
         mockMvc.perform(get("/v1/account/data").header("X-Tenant-ID", TENANT))
                 .andExpect(status().isOk())
@@ -112,8 +113,8 @@ class PrivacyControllerTest {
     @Test
     void requestDeletionEditorCreatesPending() throws Exception {
         stubRole("editor");
-        when(jdbc.queryForObject(contains("INSERT INTO privacy.deletion_requests"), eq(String.class), any(), any(), any()))
-                .thenReturn("R01");
+        when(dsl.fetchOne(contains("INSERT INTO privacy.deletion_requests"), any(Object[].class)))
+                .thenReturn(JooqTestData.record("R01"));
 
         mockMvc.perform(post("/v1/account/deletion")
                         .header("X-Tenant-ID", TENANT)
@@ -129,8 +130,8 @@ class PrivacyControllerTest {
     void requestDeletionAdminAnonymizesDirectly() throws Exception {
         runInTx();
         stubRole("admin");
-        when(jdbc.queryForObject(contains("INSERT INTO privacy.deletion_requests"), eq(String.class), any(), any(), any(), any()))
-                .thenReturn("R01");
+        when(dsl.fetchOne(contains("INSERT INTO privacy.deletion_requests"), any(Object[].class)))
+                .thenReturn(JooqTestData.record("R01"));
 
         mockMvc.perform(post("/v1/privacy/delete")
                         .header("X-Tenant-ID", TENANT)
@@ -168,8 +169,8 @@ class PrivacyControllerTest {
     @Test
     void listDeletionRequestsAdminSuccess() throws Exception {
         stubRole("admin");
-        when(jdbc.queryForList(anyString(), any(Object[].class)))
-                .thenReturn(java.util.List.of(
+        when(dsl.fetch(anyString(), any(Object[].class)))
+                .thenReturn(JooqTestData.records(
                         java.util.Map.<String, Object>of(
                                 "id", "R01", "requested_by", "U01", "status", "pending",
                                 "reason", "test", "requested_at", "2026-08-14T00:00:00Z",
@@ -214,8 +215,8 @@ class PrivacyControllerTest {
     void processDeletionRequestApproveSuccess() throws Exception {
         runInTx();
         stubRole("admin");
-        when(jdbc.queryForObject(contains("UPDATE privacy.deletion_requests"), eq(String.class), any(), any(), any()))
-                .thenReturn("R01");
+        when(dsl.fetchOne(contains("UPDATE privacy.deletion_requests"), any(Object[].class)))
+                .thenReturn(JooqTestData.record("R01"));
 
         mockMvc.perform(post("/v1/deletion-requests/R01/process")
                         .header("X-Tenant-ID", TENANT)
@@ -230,8 +231,8 @@ class PrivacyControllerTest {
     void processDeletionRequestApproveNotFoundReturns404() throws Exception {
         runInTx();
         stubRole("admin");
-        when(jdbc.queryForObject(contains("UPDATE privacy.deletion_requests"), eq(String.class), any(), any(), any()))
-                .thenThrow(new org.springframework.dao.EmptyResultDataAccessException(1));
+        when(dsl.fetchOne(contains("UPDATE privacy.deletion_requests"), any(Object[].class)))
+                .thenReturn(null);
 
         mockMvc.perform(post("/v1/deletion-requests/R01/process")
                         .header("X-Tenant-ID", TENANT)

@@ -1,10 +1,11 @@
 package dev.geolens.version.web;
 
+import dev.geolens.testutil.JooqTestData;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -24,7 +25,7 @@ class VersionControllerTest {
     private MockMvc mockMvc;
 
     @MockBean
-    private JdbcTemplate jdbc;
+    private DSLContext dsl;
 
     private static final String TENANT = "T01";
 
@@ -65,7 +66,7 @@ class VersionControllerTest {
 
     @Test
     void recordVersionDBErrorReturns500() throws Exception {
-        when(jdbc.update(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db error"));
+        when(dsl.execute(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db error"));
 
         mockMvc.perform(post("/v1/versions/entries")
                         .header("X-Tenant-ID", TENANT)
@@ -79,8 +80,8 @@ class VersionControllerTest {
 
     @Test
     void listVersionsSuccess() throws Exception {
-        when(jdbc.queryForList(anyString(), any(Object[].class)))
-                .thenReturn(java.util.List.of(versionRow("V01", "engine", "E01", "1.0", "1.1")));
+        when(dsl.fetch(anyString(), any(Object[].class)))
+                .thenReturn(JooqTestData.records(versionRow("V01", "engine", "E01", "1.0", "1.1")));
 
         mockMvc.perform(get("/v1/versions/entries")
                         .header("X-Tenant-ID", TENANT))
@@ -93,7 +94,7 @@ class VersionControllerTest {
 
     @Test
     void listVersionsQueryErrorReturnsEmpty() throws Exception {
-        when(jdbc.queryForList(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db error"));
+        when(dsl.fetch(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db error"));
 
         mockMvc.perform(get("/v1/versions/entries")
                         .header("X-Tenant-ID", TENANT))
@@ -106,7 +107,7 @@ class VersionControllerTest {
 
     @Test
     void getVersionDiffNotFoundReturns404() throws Exception {
-        when(jdbc.queryForMap(contains("FROM version.entries"), any(Object[].class)))
+        when(dsl.fetchOne(contains("FROM version.entries"), any(Object[].class)))
                 .thenThrow(new RuntimeException("not found"));
 
         mockMvc.perform(get("/v1/versions/entries/none")
@@ -117,8 +118,8 @@ class VersionControllerTest {
 
     @Test
     void getVersionDiffSuccess() throws Exception {
-        when(jdbc.queryForMap(contains("FROM version.entries"), any(Object[].class)))
-                .thenReturn(versionRow("V01", "engine", "E01", "1.0", "1.1"));
+        when(dsl.fetchOne(contains("FROM version.entries"), any(Object[].class)))
+                .thenReturn(JooqTestData.record(versionRow("V01", "engine", "E01", "1.0", "1.1")));
 
         mockMvc.perform(get("/v1/versions/entries/V01")
                         .header("X-Tenant-ID", TENANT))
@@ -130,8 +131,8 @@ class VersionControllerTest {
 
     @Test
     void getVersionDiffNoChange() throws Exception {
-        when(jdbc.queryForMap(contains("FROM version.entries"), any(Object[].class)))
-                .thenReturn(versionRow("V02", "engine", "E01", "1.1", "1.1"));
+        when(dsl.fetchOne(contains("FROM version.entries"), any(Object[].class)))
+                .thenReturn(JooqTestData.record(versionRow("V02", "engine", "E01", "1.1", "1.1")));
 
         mockMvc.perform(get("/v1/versions/entries/V02")
                         .header("X-Tenant-ID", TENANT))

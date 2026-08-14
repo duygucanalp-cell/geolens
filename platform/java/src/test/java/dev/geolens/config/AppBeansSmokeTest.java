@@ -7,12 +7,12 @@ import dev.geolens.governance.AuditLogger;
 import dev.geolens.governance.QuotaChecker;
 import dev.geolens.governance.UsageRecorder;
 import dev.geolens.measure.MeasureService;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 
 /**
- * AppBeans kablolaması DB'siz doğrular: JdbcTemplate/TransactionTemplate mock'lanır,
+ * AppBeans kablolaması DB'siz doğrular: DSLContext/TransactionTemplate mock'lanır,
  * bileşen taraması yoktur — böylece @Repository/@Service bağımlılıkları yüklenmez.
  */
 @ExtendWith(SpringExtension.class)
@@ -32,8 +32,8 @@ class AppBeansSmokeTest {
     @Configuration
     static class TestSupport {
         @Bean
-        JdbcTemplate jdbcTemplate() {
-            return mock(JdbcTemplate.class);
+        DSLContext dslContext() {
+            return mock(DSLContext.class);
         }
 
         @Bean

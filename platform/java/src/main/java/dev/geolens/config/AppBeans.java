@@ -31,7 +31,7 @@ import java.time.Duration;
 
 /**
  * Yeni taşınan bağlamların (engine/measure/governance/audit/delivery) Spring kablolaması.
- * JdbcTemplate/TransactionTemplate yoksa Noop/null fallback kurulur — DB'siz spike
+ * DSLContext/TransactionTemplate yoksa Noop/null fallback kurulur — DB'siz spike
  * çalışır, DB varken @Repository DAO'lar (JooqScoreDao vb.) otomatik devreye girer.
  */
 @Configuration

@@ -1,12 +1,12 @@
 package dev.geolens.audit.web;
 
 import dev.geolens.audit.AuditService;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.dao.DataAccessException;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -28,7 +28,7 @@ class AuditControllerTest {
     private AuditService service;
 
     @MockBean
-    private JdbcTemplate jdbc;
+    private DSLContext dsl;
 
     private static final String TENANT = "T01";
     private static final String WS = "WS01";
@@ -83,7 +83,7 @@ class AuditControllerTest {
 
     @Test
     void findingsReturnEmptyCatalogWhenNoDb() throws Exception {
-        when(jdbc.queryForMap(anyString(), any(Object[].class)))
+        when(dsl.fetchOne(anyString(), any(Object[].class)))
                 .thenThrow(new DataAccessException("yok") {
                 });
 

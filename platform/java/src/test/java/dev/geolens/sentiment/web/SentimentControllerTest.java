@@ -4,11 +4,12 @@ import dev.geolens.sentiment.domain.HallucinationResult;
 import dev.geolens.sentiment.domain.SentimentResult;
 import dev.geolens.sentiment.engine.SentimentEngine;
 import dev.geolens.sentiment.persistence.SentimentDao;
+import dev.geolens.testutil.JooqTestData;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
@@ -43,7 +44,7 @@ class SentimentControllerTest {
     private SentimentDao dao;
 
     @MockBean
-    private JdbcTemplate jdbc;
+    private DSLContext dsl;
 
     @MockBean
     private TransactionTemplate tx;
@@ -203,7 +204,7 @@ class SentimentControllerTest {
 
     @Test
     void verifyHallucinationReturnsVerified() throws Exception {
-        when(jdbc.update(any(String.class), any(), eq("H1"), eq(TENANT))).thenReturn(1);
+        when(dsl.execute(any(String.class), any(), eq("H1"), eq(TENANT))).thenReturn(1);
         doAnswer(inv -> {
             @SuppressWarnings("unchecked")
             Consumer<TransactionStatus> cb = inv.getArgument(0);
@@ -227,7 +228,7 @@ class SentimentControllerTest {
             cb.accept(null);
             return null;
         }).when(tx).executeWithoutResult(anyConsumer());
-        when(jdbc.update(any(String.class), any(), eq("YOK"), eq(TENANT))).thenReturn(0);
+        when(dsl.execute(any(String.class), any(), eq("YOK"), eq(TENANT))).thenReturn(0);
 
         mockMvc.perform(post("/v1/workspaces/{ws}/sentiment/hallucination/YOK/verify", WS)
                         .header("X-Tenant-ID", TENANT)

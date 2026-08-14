@@ -1,10 +1,11 @@
 package dev.geolens.usage.web;
 
+import dev.geolens.testutil.JooqTestData;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -24,7 +25,7 @@ class UsageControllerTest {
     private MockMvc mockMvc;
 
     @MockBean
-    private JdbcTemplate jdbc;
+    private DSLContext dsl;
 
     private static final String TENANT = "T01";
 
@@ -65,7 +66,7 @@ class UsageControllerTest {
 
     @Test
     void recordUsageDBErrorReturns500() throws Exception {
-        when(jdbc.update(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db error"));
+        when(dsl.execute(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db error"));
 
         mockMvc.perform(post("/v1/usage/metrics")
                         .header("X-Tenant-ID", TENANT)
@@ -79,8 +80,8 @@ class UsageControllerTest {
 
     @Test
     void listUsageSuccess() throws Exception {
-        when(jdbc.queryForList(anyString(), any(Object[].class)))
-                .thenReturn(java.util.List.of(usageRow("M01", "/v1/measurements", "POST", 201, 120)));
+        when(dsl.fetch(anyString(), any(Object[].class)))
+                .thenReturn(JooqTestData.records(usageRow("M01", "/v1/measurements", "POST", 201, 120)));
 
         mockMvc.perform(get("/v1/usage/metrics")
                         .header("X-Tenant-ID", TENANT))
@@ -92,7 +93,7 @@ class UsageControllerTest {
 
     @Test
     void listUsageQueryErrorReturnsEmpty() throws Exception {
-        when(jdbc.queryForList(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db error"));
+        when(dsl.fetch(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db error"));
 
         mockMvc.perform(get("/v1/usage/metrics")
                         .header("X-Tenant-ID", TENANT))
@@ -103,8 +104,8 @@ class UsageControllerTest {
 
     @Test
     void listUsageWithLimit() throws Exception {
-        when(jdbc.queryForList(anyString(), any(Object[].class)))
-                .thenReturn(java.util.List.of(usageRow("M01", "/v1/a", "GET", 200, 10)));
+        when(dsl.fetch(anyString(), any(Object[].class)))
+                .thenReturn(JooqTestData.records(usageRow("M01", "/v1/a", "GET", 200, 10)));
 
         mockMvc.perform(get("/v1/usage/metrics")
                         .header("X-Tenant-ID", TENANT)
@@ -117,10 +118,10 @@ class UsageControllerTest {
 
     @Test
     void getUsageSummarySuccess() throws Exception {
-        when(jdbc.queryForMap(contains("FROM usage.metrics"), any(Object[].class)))
-                .thenReturn(java.util.Map.of("total", 100L, "error_rate", 5.0, "avg_latency", 42.5));
-        when(jdbc.queryForList(anyString(), any(Object[].class)))
-                .thenReturn(java.util.List.of(java.util.Map.<String, Object>of(
+        when(dsl.fetchOne(contains("FROM usage.metrics"), any(Object[].class)))
+                .thenReturn(JooqTestData.record(java.util.Map.of("total", 100L, "error_rate", 5.0, "avg_latency", 42.5)));
+        when(dsl.fetch(anyString(), any(Object[].class)))
+                .thenReturn(JooqTestData.records(java.util.Map.<String, Object>of(
                         "endpoint", "/v1/a", "hits", 60L, "avg_latency", 30.0)));
 
         mockMvc.perform(get("/v1/usage/summary")
@@ -135,10 +136,10 @@ class UsageControllerTest {
 
     @Test
     void getUsageSummaryPeriod30d() throws Exception {
-        when(jdbc.queryForMap(contains("FROM usage.metrics"), any(Object[].class)))
-                .thenReturn(java.util.Map.of("total", 0L, "error_rate", 0.0, "avg_latency", 0.0));
-        when(jdbc.queryForList(anyString(), any(Object[].class)))
-                .thenReturn(java.util.List.of());
+        when(dsl.fetchOne(contains("FROM usage.metrics"), any(Object[].class)))
+                .thenReturn(JooqTestData.record(java.util.Map.of("total", 0L, "error_rate", 0.0, "avg_latency", 0.0)));
+        when(dsl.fetch(anyString(), any(Object[].class)))
+                .thenReturn(JooqTestData.records());
 
         mockMvc.perform(get("/v1/usage/summary")
                         .header("X-Tenant-ID", TENANT)

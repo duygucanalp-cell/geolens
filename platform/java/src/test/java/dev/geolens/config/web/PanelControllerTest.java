@@ -1,10 +1,11 @@
 package dev.geolens.config.web;
 
+import dev.geolens.testutil.JooqTestData;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.LinkedHashMap;
@@ -24,7 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class PanelControllerTest {
 
     @MockBean
-    private JdbcTemplate jdbc;
+    private DSLContext dsl;
 
     @org.springframework.beans.factory.annotation.Autowired
     private MockMvc mockMvc;
@@ -53,8 +54,8 @@ class PanelControllerTest {
 
     @Test
     void createPanelSuccess() throws Exception {
-        when(jdbc.queryForObject(anyString(), eq(String.class), any(), any(), any(), any(), any(), any()))
-                .thenReturn("P-new");
+        when(dsl.fetchOne(anyString(), any(Object[].class)))
+                .thenReturn(JooqTestData.record("P-new"));
 
         mockMvc.perform(post("/v1/workspaces/WS01/panels")
                         .header("X-Tenant-ID", TENANT)
@@ -68,8 +69,8 @@ class PanelControllerTest {
 
     @Test
     void listPanelsSuccess() throws Exception {
-        when(jdbc.queryForList(anyString(), any(Object[].class)))
-                .thenReturn(java.util.List.of(panelRow("P01", "Aylık Panel")));
+        when(dsl.fetch(anyString(), any(Object[].class)))
+                .thenReturn(JooqTestData.records(panelRow("P01", "Aylık Panel")));
 
         mockMvc.perform(get("/v1/workspaces/WS01/panels")
                         .header("X-Tenant-ID", TENANT))
@@ -80,7 +81,7 @@ class PanelControllerTest {
 
     @Test
     void getPanelNotFoundReturns404() throws Exception {
-        when(jdbc.queryForMap(anyString(), any(), any(), any()))
+        when(dsl.fetchOne(anyString(), any(Object[].class)))
                 .thenThrow(new RuntimeException("no row"));
 
         mockMvc.perform(get("/v1/workspaces/WS01/panels/unknown")
@@ -123,8 +124,8 @@ class PanelControllerTest {
 
     @Test
     void createPromptSetSuccess() throws Exception {
-        when(jdbc.queryForObject(anyString(), eq(String.class), any(), any(), any(), any(), any()))
-                .thenReturn("PS-new");
+        when(dsl.fetchOne(anyString(), any(Object[].class)))
+                .thenReturn(JooqTestData.record("PS-new"));
 
         mockMvc.perform(post("/v1/workspaces/WS01/prompt-sets")
                         .header("X-Tenant-ID", TENANT)

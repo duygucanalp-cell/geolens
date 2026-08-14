@@ -1,10 +1,11 @@
 package dev.geolens.alert.web;
 
+import dev.geolens.testutil.JooqTestData;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -27,7 +28,7 @@ class AlertControllerTest {
     private MockMvc mockMvc;
 
     @MockBean
-    private JdbcTemplate jdbc;
+    private DSLContext dsl;
 
     private static final String TENANT = "T01";
 
@@ -35,8 +36,8 @@ class AlertControllerTest {
 
     @Test
     void listSuccess() throws Exception {
-        when(jdbc.queryForList(anyString(), any(Object[].class)))
-                .thenReturn(java.util.List.of(ruleRow("R01", "B01", "Düşük Skor")));
+        when(dsl.fetch(anyString(), any(Object[].class)))
+                .thenReturn(JooqTestData.records(ruleRow("R01", "B01", "Düşük Skor")));
 
         mockMvc.perform(get("/v1/workspaces/WS01/alert-rules")
                         .header("X-Tenant-ID", TENANT))
@@ -47,7 +48,7 @@ class AlertControllerTest {
 
     @Test
     void listQueryErrorReturnsEmpty() throws Exception {
-        when(jdbc.queryForList(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db error"));
+        when(dsl.fetch(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db error"));
 
         mockMvc.perform(get("/v1/workspaces/WS01/alert-rules")
                         .header("X-Tenant-ID", TENANT))
@@ -79,8 +80,8 @@ class AlertControllerTest {
 
     @Test
     void createBrandNotFoundReturns404() throws Exception {
-        when(jdbc.queryForObject(contains("SELECT EXISTS"), eq(Boolean.class), any(), any(), any()))
-                .thenReturn(false);
+        when(dsl.fetchOne(contains("SELECT EXISTS"), any(Object[].class)))
+                .thenReturn(JooqTestData.record(false));
 
         mockMvc.perform(post("/v1/workspaces/WS01/alert-rules")
                         .header("X-Tenant-ID", TENANT)
@@ -92,10 +93,10 @@ class AlertControllerTest {
 
     @Test
     void createSuccess() throws Exception {
-        when(jdbc.queryForObject(contains("SELECT EXISTS"), eq(Boolean.class), any(), any(), any()))
-                .thenReturn(true);
-        when(jdbc.queryForObject(contains("INSERT INTO governance.alert_rules"), eq(String.class), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenReturn("R-new");
+        when(dsl.fetchOne(contains("SELECT EXISTS"), any(Object[].class)))
+                .thenReturn(JooqTestData.record(true));
+        when(dsl.fetchOne(contains("INSERT INTO governance.alert_rules"), any(Object[].class)))
+                .thenReturn(JooqTestData.record("R-new"));
 
         mockMvc.perform(post("/v1/workspaces/WS01/alert-rules")
                         .header("X-Tenant-ID", TENANT)
@@ -119,7 +120,7 @@ class AlertControllerTest {
 
     @Test
     void updateSuccess() throws Exception {
-        when(jdbc.update(anyString(), any(Object[].class))).thenReturn(1);
+        when(dsl.execute(anyString(), any(Object[].class))).thenReturn(1);
 
         mockMvc.perform(put("/v1/workspaces/WS01/alert-rules/R01")
                         .header("X-Tenant-ID", TENANT)
@@ -131,7 +132,7 @@ class AlertControllerTest {
 
     @Test
     void updateNotFoundReturns404() throws Exception {
-        when(jdbc.update(anyString(), any(Object[].class))).thenReturn(0);
+        when(dsl.execute(anyString(), any(Object[].class))).thenReturn(0);
 
         mockMvc.perform(put("/v1/workspaces/WS01/alert-rules/none")
                         .header("X-Tenant-ID", TENANT)
@@ -145,7 +146,7 @@ class AlertControllerTest {
 
     @Test
     void deleteSuccess() throws Exception {
-        when(jdbc.update(anyString(), any(Object[].class))).thenReturn(1);
+        when(dsl.execute(anyString(), any(Object[].class))).thenReturn(1);
 
         mockMvc.perform(delete("/v1/workspaces/WS01/alert-rules/R01")
                         .header("X-Tenant-ID", TENANT))
@@ -155,7 +156,7 @@ class AlertControllerTest {
 
     @Test
     void deleteNotFoundReturns404() throws Exception {
-        when(jdbc.update(anyString(), any(Object[].class))).thenReturn(0);
+        when(dsl.execute(anyString(), any(Object[].class))).thenReturn(0);
 
         mockMvc.perform(delete("/v1/workspaces/WS01/alert-rules/none")
                         .header("X-Tenant-ID", TENANT))

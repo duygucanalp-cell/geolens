@@ -1,10 +1,11 @@
 package dev.geolens.publicapi.web;
 
+import dev.geolens.testutil.JooqTestData;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.nio.charset.StandardCharsets;
@@ -31,7 +32,7 @@ class PublicControllerTest {
     private MockMvc mockMvc;
 
     @MockBean
-    private JdbcTemplate jdbc;
+    private DSLContext dsl;
 
     private static final String TENANT = "T01";
 
@@ -39,7 +40,7 @@ class PublicControllerTest {
 
     @Test
     void getScoreNotFoundReturns404() throws Exception {
-        when(jdbc.queryForMap(anyString(), any(Object[].class)))
+        when(dsl.fetchOne(anyString(), any(Object[].class)))
                 .thenThrow(new org.springframework.dao.EmptyResultDataAccessException(1));
 
         mockMvc.perform(get("/public/v1/scores/none").header("X-Tenant-ID", TENANT))
@@ -49,8 +50,8 @@ class PublicControllerTest {
 
     @Test
     void getScoreSuccess() throws Exception {
-        when(jdbc.queryForMap(contains("LEFT JOIN measure.scores"), any(Object[].class)))
-                .thenReturn(row("Acme", 82.5, "yüksek", "2026-08-14T00:00:00Z"));
+        when(dsl.fetchOne(contains("LEFT JOIN measure.scores"), any(Object[].class)))
+                .thenReturn(JooqTestData.record(row("Acme", 82.5, "yüksek", "2026-08-14T00:00:00Z")));
 
         mockMvc.perform(get("/public/v1/scores/B01").header("X-Tenant-ID", TENANT))
                 .andExpect(status().isOk())
@@ -65,8 +66,8 @@ class PublicControllerTest {
 
     @Test
     void listScoresSuccess() throws Exception {
-        when(jdbc.queryForList(contains("LEFT JOIN LATERAL"), any(Object[].class)))
-                .thenReturn(List.of(
+        when(dsl.fetch(contains("LEFT JOIN LATERAL"), any(Object[].class)))
+                .thenReturn(JooqTestData.records(
                         scoreRow("B01", "Acme", 82.5, "yüksek", "2026-08-14T00:00:00Z"),
                         scoreRow("B02", "Beta", 55.0, "orta", "2026-08-13T00:00:00Z")));
 
@@ -81,7 +82,7 @@ class PublicControllerTest {
 
     @Test
     void listScoresQueryErrorReturnsEmpty() throws Exception {
-        when(jdbc.queryForList(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db"));
+        when(dsl.fetch(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db"));
 
         mockMvc.perform(get("/public/v1/scores").header("X-Tenant-ID", TENANT))
                 .andExpect(status().isOk())
@@ -92,8 +93,8 @@ class PublicControllerTest {
 
     @Test
     void listBrandsSuccess() throws Exception {
-        when(jdbc.queryForList(contains("FROM config.brands"), any(Object[].class)))
-                .thenReturn(List.of(
+        when(dsl.fetch(contains("FROM config.brands"), any(Object[].class)))
+                .thenReturn(JooqTestData.records(
                         brandRow("B01", "Acme", "https://acme.com"),
                         brandRow("B02", "Beta", "")));
 
@@ -107,7 +108,7 @@ class PublicControllerTest {
 
     @Test
     void getBrandNotFoundReturns404() throws Exception {
-        when(jdbc.queryForMap(contains("COALESCE(website_url, '')"), any(Object[].class)))
+        when(dsl.fetchOne(contains("COALESCE(website_url, '')"), any(Object[].class)))
                 .thenThrow(new org.springframework.dao.EmptyResultDataAccessException(1));
 
         mockMvc.perform(get("/public/v1/brands/none").header("X-Tenant-ID", TENANT))
@@ -119,8 +120,8 @@ class PublicControllerTest {
 
     @Test
     void listCitationsSuccess() throws Exception {
-        when(jdbc.queryForList(contains("measure.citations"), any(Object[].class)))
-                .thenReturn(List.of(
+        when(dsl.fetch(contains("measure.citations"), any(Object[].class)))
+                .thenReturn(JooqTestData.records(
                         citationRow("C1", "B01", "https://x.com/a", "Başlık", "özet", 1, "google", "2026-08-14T00:00:00Z")));
 
         mockMvc.perform(get("/public/v1/citations").header("X-Tenant-ID", TENANT)
@@ -137,8 +138,8 @@ class PublicControllerTest {
 
     @Test
     void listReportsSuccess() throws Exception {
-        when(jdbc.queryForList(contains("FROM measure.reports"), any(Object[].class)))
-                .thenReturn(List.of(
+        when(dsl.fetch(contains("FROM measure.reports"), any(Object[].class)))
+                .thenReturn(JooqTestData.records(
                         reportRow("R1", "score_card", "score-card-Acme.pdf", 1, "2026-08-14T00:00:00Z"),
                         reportRow("R2", "digest", "weekly-digest.pdf", 2, "2026-08-14T00:00:00Z")));
 
@@ -152,7 +153,7 @@ class PublicControllerTest {
 
     @Test
     void listReportsQueryErrorReturnsEmpty() throws Exception {
-        when(jdbc.queryForList(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db"));
+        when(dsl.fetch(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db"));
 
         mockMvc.perform(get("/public/v1/reports").header("X-Tenant-ID", TENANT))
                 .andExpect(status().isOk())
@@ -163,7 +164,7 @@ class PublicControllerTest {
 
     @Test
     void downloadReportNotFoundReturns404() throws Exception {
-        when(jdbc.queryForMap(contains("status = 'ready'"), any(Object[].class)))
+        when(dsl.fetchOne(contains("status = 'ready'"), any(Object[].class)))
                 .thenThrow(new org.springframework.dao.EmptyResultDataAccessException(1));
 
         mockMvc.perform(get("/public/v1/reports/NOPE/download").header("X-Tenant-ID", TENANT))
@@ -180,7 +181,7 @@ class PublicControllerTest {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("file_name", "score-card-Acme.pdf");
         m.put("params", paramsJson);
-        when(jdbc.queryForMap(contains("status = 'ready'"), any(Object[].class))).thenReturn(m);
+        when(dsl.fetchOne(contains("status = 'ready'"), any(Object[].class))).thenReturn(JooqTestData.record(m));
 
         mockMvc.perform(get("/public/v1/reports/R1/download").header("X-Tenant-ID", TENANT))
                 .andExpect(status().isOk())
@@ -194,7 +195,7 @@ class PublicControllerTest {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("file_name", "r.pdf");
         m.put("params", "{\"s3_url\":\"https://s3.example.com/report.pdf\"}");
-        when(jdbc.queryForMap(contains("status = 'ready'"), any(Object[].class))).thenReturn(m);
+        when(dsl.fetchOne(contains("status = 'ready'"), any(Object[].class))).thenReturn(JooqTestData.record(m));
 
         mockMvc.perform(get("/public/v1/reports/R1/download").header("X-Tenant-ID", TENANT))
                 .andExpect(status().isFound())
@@ -206,7 +207,7 @@ class PublicControllerTest {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("file_name", "r.pdf");
         m.put("params", "{\"file_data\":\"\"}");
-        when(jdbc.queryForMap(contains("status = 'ready'"), any(Object[].class))).thenReturn(m);
+        when(dsl.fetchOne(contains("status = 'ready'"), any(Object[].class))).thenReturn(JooqTestData.record(m));
 
         mockMvc.perform(get("/public/v1/reports/R1/download").header("X-Tenant-ID", TENANT))
                 .andExpect(status().isNotFound())
@@ -224,8 +225,8 @@ class PublicControllerTest {
 
     @Test
     void listTrendsSuccess() throws Exception {
-        when(jdbc.queryForList(contains("FROM measure.scores s"), any(Object[].class)))
-                .thenReturn(List.of(
+        when(dsl.fetch(contains("FROM measure.scores s"), any(Object[].class)))
+                .thenReturn(JooqTestData.records(
                         trendRow(70.0, "orta", "2026-08-10T00:00:00Z"),
                         trendRow(82.5, "yüksek", "2026-08-14T00:00:00Z")));
 

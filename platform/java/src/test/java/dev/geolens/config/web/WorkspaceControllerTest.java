@@ -1,10 +1,11 @@
 package dev.geolens.config.web;
 
+import dev.geolens.testutil.JooqTestData;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
@@ -27,7 +28,7 @@ class WorkspaceControllerTest {
     private MockMvc mockMvc;
 
     @MockBean
-    private JdbcTemplate jdbc;
+    private DSLContext dsl;
 
     @MockBean
     private TransactionTemplate tx;
@@ -36,7 +37,7 @@ class WorkspaceControllerTest {
 
     @Test
     void archiveWorkspaceSuccess() throws Exception {
-        when(jdbc.update(anyString(), any(Object[].class))).thenReturn(1);
+        when(dsl.execute(anyString(), any(Object[].class))).thenReturn(1);
 
         mockMvc.perform(post("/v1/workspaces/WS01/archive")
                         .header("X-Tenant-ID", TENANT))
@@ -47,7 +48,7 @@ class WorkspaceControllerTest {
 
     @Test
     void archiveWorkspaceDBErrorReturns500() throws Exception {
-        when(jdbc.update(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db error"));
+        when(dsl.execute(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db error"));
 
         mockMvc.perform(post("/v1/workspaces/WS01/archive")
                         .header("X-Tenant-ID", TENANT))
@@ -57,7 +58,7 @@ class WorkspaceControllerTest {
 
     @Test
     void unarchiveWorkspaceSuccess() throws Exception {
-        when(jdbc.update(anyString(), any(Object[].class))).thenReturn(1);
+        when(dsl.execute(anyString(), any(Object[].class))).thenReturn(1);
 
         mockMvc.perform(post("/v1/workspaces/WS01/unarchive")
                         .header("X-Tenant-ID", TENANT))
@@ -67,7 +68,7 @@ class WorkspaceControllerTest {
 
     @Test
     void unarchiveWorkspaceDBErrorReturns500() throws Exception {
-        when(jdbc.update(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db error"));
+        when(dsl.execute(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db error"));
 
         mockMvc.perform(post("/v1/workspaces/WS01/unarchive")
                         .header("X-Tenant-ID", TENANT))
@@ -77,8 +78,8 @@ class WorkspaceControllerTest {
 
     @Test
     void transferWorkspaceSuccess() throws Exception {
-        when(jdbc.queryForObject(anyString(), eq(Boolean.class), any()))
-                .thenReturn(true);
+        when(dsl.fetchOne(anyString(), any(Object[].class)))
+                .thenReturn(JooqTestData.record(true));
         when(tx.execute(any(TransactionCallback.class))).thenAnswer(inv -> {
             @SuppressWarnings("unchecked")
             TransactionCallback<Object> cb = inv.getArgument(0);
@@ -106,8 +107,8 @@ class WorkspaceControllerTest {
 
     @Test
     void transferWorkspaceTargetNotFoundReturns404() throws Exception {
-        when(jdbc.queryForObject(anyString(), eq(Boolean.class), any()))
-                .thenReturn(false);
+        when(dsl.fetchOne(anyString(), any(Object[].class)))
+                .thenReturn(JooqTestData.record(false));
 
         mockMvc.perform(post("/v1/workspaces/WS01/transfer")
                         .header("X-Tenant-ID", TENANT)
@@ -119,8 +120,8 @@ class WorkspaceControllerTest {
 
     @Test
     void transferWorkspaceDBErrorReturns500() throws Exception {
-        when(jdbc.queryForObject(anyString(), eq(Boolean.class), any()))
-                .thenReturn(true);
+        when(dsl.fetchOne(anyString(), any(Object[].class)))
+                .thenReturn(JooqTestData.record(true));
         when(tx.execute(any(TransactionCallback.class)))
                 .thenThrow(new RuntimeException("tx error"));
 

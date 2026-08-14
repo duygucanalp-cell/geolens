@@ -2,12 +2,13 @@ package dev.geolens.measure.web;
 
 import dev.geolens.engine.Registry;
 import dev.geolens.measure.MeasureService;
+import dev.geolens.testutil.JooqTestData;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.dao.DataAccessException;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
@@ -35,7 +36,7 @@ class MeasureControllerTest {
     private Registry registry;
 
     @MockBean
-    private JdbcTemplate jdbc;
+    private DSLContext dsl;
 
     private static final String TENANT = "T01";
     private static final String WS = "WS01";
@@ -72,9 +73,9 @@ class MeasureControllerTest {
     @Test
     void triggerQueuedReturns202() throws Exception {
         when(registry.list()).thenReturn(List.of("chatgpt", "gemini"));
-        when(jdbc.queryForMap(anyString(), any(Object[].class)))
-                .thenReturn(Map.of("name", "Acme", "website_url", "https://acme.com"));
-        when(jdbc.update(anyString(), any(Object[].class))).thenReturn(1);
+        when(dsl.fetchOne(anyString(), any(Object[].class)))
+                .thenReturn(JooqTestData.record(Map.of("name", "Acme", "website_url", "https://acme.com")));
+        when(dsl.execute(anyString(), any(Object[].class))).thenReturn(1);
 
         mockMvc.perform(post("/v1/workspaces/{ws}/measurements", WS)
                         .header("X-Tenant-ID", TENANT)
@@ -89,7 +90,7 @@ class MeasureControllerTest {
     @Test
     void triggerUnknownBrandReturns404() throws Exception {
         when(registry.list()).thenReturn(List.of("chatgpt"));
-        when(jdbc.queryForMap(anyString(), any(Object[].class)))
+        when(dsl.fetchOne(anyString(), any(Object[].class)))
                 .thenThrow(new DataAccessException("yok") {
                 });
 
@@ -115,7 +116,7 @@ class MeasureControllerTest {
 
     @Test
     void listScoresReturnsEmptyWhenNoDb() throws Exception {
-        when(jdbc.queryForList(anyString(), any(Object[].class)))
+        when(dsl.fetch(anyString(), any(Object[].class)))
                 .thenThrow(new DataAccessException("schema yok") {
                 });
 

@@ -3,11 +3,12 @@ package dev.geolens.pdf.web;
 import dev.geolens.pdf.PdfService;
 import dev.geolens.pdf.ReportResult;
 import dev.geolens.pdf.ReportType;
+import dev.geolens.testutil.JooqTestData;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.nio.charset.StandardCharsets;
@@ -38,7 +39,7 @@ class PdfControllerTest {
     private PdfService svc;
 
     @MockBean
-    private JdbcTemplate jdbc;
+    private DSLContext dsl;
 
     private static final String TENANT = "T01";
 
@@ -160,8 +161,8 @@ class PdfControllerTest {
 
     @Test
     void requestReportSuccess() throws Exception {
-        when(jdbc.queryForObject(contains("INSERT INTO measure.reports"), eq(String.class), any(), any(), any(), any(), any()))
-                .thenReturn("R-new");
+        when(dsl.fetchOne(contains("INSERT INTO measure.reports"), any(Object[].class)))
+                .thenReturn(JooqTestData.record("R-new"));
 
         mockMvc.perform(post("/v1/workspaces/WS01/reports")
                         .header("X-Tenant-ID", TENANT)
@@ -176,8 +177,8 @@ class PdfControllerTest {
 
     @Test
     void getReportStatusSuccess() throws Exception {
-        when(jdbc.queryForMap(contains("FROM measure.reports"), any(Object[].class)))
-                .thenReturn(statusRow("ready", "digest", "weekly.pdf", 100L, null));
+        when(dsl.fetchOne(contains("FROM measure.reports"), any(Object[].class)))
+                .thenReturn(JooqTestData.record(statusRow("ready", "digest", "weekly.pdf", 100L, null)));
 
         mockMvc.perform(get("/v1/workspaces/WS01/reports/R01/status")
                         .header("X-Tenant-ID", TENANT))
@@ -190,7 +191,7 @@ class PdfControllerTest {
 
     @Test
     void getReportStatusNotFoundReturns404() throws Exception {
-        when(jdbc.queryForMap(contains("FROM measure.reports"), any(Object[].class)))
+        when(dsl.fetchOne(contains("FROM measure.reports"), any(Object[].class)))
                 .thenThrow(new RuntimeException("not found"));
 
         mockMvc.perform(get("/v1/workspaces/WS01/reports/none/status")
@@ -203,8 +204,8 @@ class PdfControllerTest {
 
     @Test
     void downloadReportNotReadyReturns409() throws Exception {
-        when(jdbc.queryForMap(contains("FROM measure.reports"), any(Object[].class)))
-                .thenReturn(statusRow("pending", "digest", null, null, null));
+        when(dsl.fetchOne(contains("FROM measure.reports"), any(Object[].class)))
+                .thenReturn(JooqTestData.record(statusRow("pending", "digest", null, null, null)));
 
         mockMvc.perform(get("/v1/workspaces/WS01/reports/R01/download")
                         .header("X-Tenant-ID", TENANT))
@@ -214,7 +215,7 @@ class PdfControllerTest {
 
     @Test
     void downloadReportNotFoundReturns404() throws Exception {
-        when(jdbc.queryForMap(contains("FROM measure.reports"), any(Object[].class)))
+        when(dsl.fetchOne(contains("FROM measure.reports"), any(Object[].class)))
                 .thenThrow(new RuntimeException("not found"));
 
         mockMvc.perform(get("/v1/workspaces/WS01/reports/none/download")
@@ -224,8 +225,8 @@ class PdfControllerTest {
 
     @Test
     void downloadReportS3Redirect() throws Exception {
-        when(jdbc.queryForMap(contains("FROM measure.reports"), any(Object[].class)))
-                .thenReturn(statusRow("ready", "digest", "weekly.pdf", 100L, null));
+        when(dsl.fetchOne(contains("FROM measure.reports"), any(Object[].class)))
+                .thenReturn(JooqTestData.record(statusRow("ready", "digest", "weekly.pdf", 100L, null)));
         when(svc.getReportData("R01")).thenThrow(new RuntimeException("should not reach"));
 
         mockMvc.perform(get("/v1/workspaces/WS01/reports/R01/download")
@@ -237,8 +238,8 @@ class PdfControllerTest {
 
     @Test
     void downloadReportReadySuccess() throws Exception {
-        when(jdbc.queryForMap(contains("FROM measure.reports"), any(Object[].class)))
-                .thenReturn(statusRow("ready", "digest", "weekly.pdf", 100L, null));
+        when(dsl.fetchOne(contains("FROM measure.reports"), any(Object[].class)))
+                .thenReturn(JooqTestData.record(statusRow("ready", "digest", "weekly.pdf", 100L, null)));
         when(svc.getReportData("R01")).thenReturn("%PDF-1.4 ready".getBytes(StandardCharsets.UTF_8));
 
         mockMvc.perform(get("/v1/workspaces/WS01/reports/R01/download")

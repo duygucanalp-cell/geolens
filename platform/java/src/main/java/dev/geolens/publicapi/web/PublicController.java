@@ -2,12 +2,13 @@ package dev.geolens.publicapi.web;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.jooq.DSLContext;
+import org.jooq.Record;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,10 +35,10 @@ public class PublicController {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    private final JdbcTemplate jdbc;
+    private final DSLContext dsl;
 
-    public PublicController(JdbcTemplate jdbc) {
-        this.jdbc = jdbc;
+    public PublicController(DSLContext dsl) {
+        this.dsl = dsl;
     }
 
     @GetMapping("/public/v1/scores/{brandID}")
@@ -49,7 +50,7 @@ public class PublicController {
 
         Map<String, Object> row;
         try {
-            row = jdbc.queryForMap("""
+            row = map("""
                     SELECT b.name AS brand_name, COALESCE(s.value, 0) AS score,
                            COALESCE(s.fidelity_label, 'yok') AS fidelity, s.freshness_at
                     FROM config.brands b
@@ -58,6 +59,9 @@ public class PublicController {
                     ORDER BY s.freshness_at DESC LIMIT 1
                     """, brandID, tenantId);
         } catch (RuntimeException e) {
+            return error(HttpStatus.NOT_FOUND, "marka bulunamadı");
+        }
+        if (row == null) {
             return error(HttpStatus.NOT_FOUND, "marka bulunamadı");
         }
 
@@ -74,7 +78,7 @@ public class PublicController {
     public ResponseEntity<?> listScores(@RequestHeader("X-Tenant-ID") String tenantId) {
         List<Map<String, Object>> rows;
         try {
-            rows = jdbc.queryForList("""
+            rows = list("""
                     SELECT b.id AS brand_id, b.name AS brand_name,
                            COALESCE(s.value, 0) AS score, COALESCE(s.fidelity_label, 'yok') AS fidelity,
                            s.freshness_at
@@ -111,7 +115,7 @@ public class PublicController {
     public ResponseEntity<?> listBrands(@RequestHeader("X-Tenant-ID") String tenantId) {
         List<Map<String, Object>> rows;
         try {
-            rows = jdbc.queryForList("""
+            rows = list("""
                     SELECT id, name, COALESCE(website_url, '') AS website_url
                     FROM config.brands
                     WHERE tenant_id = ? AND is_active = true
@@ -137,12 +141,15 @@ public class PublicController {
                                       @RequestHeader("X-Tenant-ID") String tenantId) {
         Map<String, Object> row;
         try {
-            row = jdbc.queryForMap("""
+            row = map("""
                     SELECT name, COALESCE(website_url, '') AS website_url
                     FROM config.brands
                     WHERE id = ? AND tenant_id = ? AND is_active = true
                     """, brandID, tenantId);
         } catch (RuntimeException e) {
+            return error(HttpStatus.NOT_FOUND, "marka bulunamadı");
+        }
+        if (row == null) {
             return error(HttpStatus.NOT_FOUND, "marka bulunamadı");
         }
 
@@ -159,7 +166,7 @@ public class PublicController {
         String b = brandId == null ? "" : brandId;
         List<Map<String, Object>> rows;
         try {
-            rows = jdbc.queryForList("""
+            rows = list("""
                     SELECT c.id, c.brand_id, c.url, c.title, c.snippet, c.position, c.engine, c.measured_at
                     FROM measure.citations c
                     JOIN config.brands b ON b.id = c.brand_id
@@ -196,7 +203,7 @@ public class PublicController {
         String b = brandId == null ? "" : brandId;
         List<Map<String, Object>> rows;
         try {
-            rows = jdbc.queryForList("""
+            rows = list("""
                     SELECT r.id, r.report_type, COALESCE(r.file_name, '') AS file_name,
                            COALESCE(CASE WHEN r.params->>'page_count' ~ '^[0-9]+$' THEN (r.params->>'page_count')::int ELSE 0 END, 0) AS page_count,
                            r.created_at
@@ -229,12 +236,15 @@ public class PublicController {
                                             @RequestHeader("X-Tenant-ID") String tenantId) {
         Map<String, Object> row;
         try {
-            row = jdbc.queryForMap("""
+            row = map("""
                     SELECT COALESCE(file_name, '') AS file_name, params::text AS params
                     FROM measure.reports
                     WHERE id = ? AND tenant_id = ? AND status = 'ready'
                     """, reportID, tenantId);
         } catch (RuntimeException e) {
+            return error(HttpStatus.NOT_FOUND, "rapor bulunamadı");
+        }
+        if (row == null) {
             return error(HttpStatus.NOT_FOUND, "rapor bulunamadı");
         }
 
@@ -291,7 +301,7 @@ public class PublicController {
 
         List<Map<String, Object>> rows;
         try {
-            rows = jdbc.queryForList("""
+            rows = list("""
                     SELECT s.value, s.fidelity_label, s.freshness_at
                     FROM measure.scores s
                     WHERE s.brand_id = ? AND s.tenant_id = ?
@@ -311,6 +321,16 @@ public class PublicController {
             trends.add(item);
         }
         return ResponseEntity.ok(Map.of("trends", trends));
+    }
+
+    /** ADR-014: plain SQL üzerinden jOOQ — satır erişimi Map ile korunur. */
+    private List<Map<String, Object>> list(String sql, Object... args) {
+        return dsl.fetch(sql, args).intoMaps();
+    }
+
+    private Map<String, Object> map(String sql, Object... args) {
+        Record r = dsl.fetchOne(sql, args);
+        return r == null ? null : r.intoMap();
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
