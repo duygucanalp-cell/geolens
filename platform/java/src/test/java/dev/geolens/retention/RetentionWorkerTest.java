@@ -23,7 +23,7 @@ class RetentionWorkerTest {
         DSLContext dsl = mock(DSLContext.class, Answers.RETURNS_DEEP_STUBS);
         RetentionWorker worker = new RetentionWorker(dsl);
 
-        when(dsl.fetch(anyString(), any(Object[].class)))
+        when(dsl.fetch(anyString()))
                 .thenReturn(JooqTestData.records(List.of(
                         policyRow("measurement", 365, "delete"),
                         policyRow("alert", 90, "anonymize"),
@@ -40,7 +40,7 @@ class RetentionWorkerTest {
         DSLContext dsl = mock(DSLContext.class, Answers.RETURNS_DEEP_STUBS);
         RetentionWorker worker = new RetentionWorker(dsl);
 
-        when(dsl.fetch(anyString(), any(Object[].class)))
+        when(dsl.fetch(anyString()))
                 .thenThrow(new RuntimeException("db error"));
 
         worker.processExpired(); // hata fırlatılmamalı
@@ -51,7 +51,7 @@ class RetentionWorkerTest {
         DSLContext dsl = mock(DSLContext.class, Answers.RETURNS_DEEP_STUBS);
         RetentionWorker worker = new RetentionWorker(dsl);
 
-        when(dsl.fetch(anyString(), any(Object[].class)))
+        when(dsl.fetch(anyString()))
                 .thenReturn(JooqTestData.records(List.of(policyRow("unknown_type", 30, "delete"))));
 
         worker.processExpired(); // bilinmeyen tür yok sayılır — execute çağrılmaz
