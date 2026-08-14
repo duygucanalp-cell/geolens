@@ -14,7 +14,7 @@ import dev.geolens.governance.AuditLogger;
 import dev.geolens.governance.QuotaChecker;
 import dev.geolens.governance.UsageRecorder;
 import dev.geolens.measure.MeasureService;
-import dev.geolens.measure.persistence.JdbcScoreDao;
+import dev.geolens.measure.persistence.JooqScoreDao;
 import dev.geolens.measure.persistence.NoopScoreDao;
 import dev.geolens.measure.persistence.ScoreDao;
 import dev.geolens.ml.HttpMlClient;
@@ -32,7 +32,7 @@ import java.time.Duration;
 /**
  * Yeni taşınan bağlamların (engine/measure/governance/audit/delivery) Spring kablolaması.
  * JdbcTemplate/TransactionTemplate yoksa Noop/null fallback kurulur — DB'siz spike
- * çalışır, DB varken @Repository DAO'lar (JdbcScoreDao vb.) otomatik devreye girer.
+ * çalışır, DB varken @Repository DAO'lar (JooqScoreDao vb.) otomatik devreye girer.
  */
 @Configuration
 public class AppBeans {
@@ -71,7 +71,7 @@ public class AppBeans {
 
     @Bean
     public MeasureService measureService(Registry engines, Config cfg,
-                                         ObjectProvider<JdbcScoreDao> jdbcDao,
+                                         ObjectProvider<JooqScoreDao> jdbcDao,
                                          ObjectProvider<MlClient> ml) {
         ScoreDao dao = jdbcDao.getIfAvailable();
         if (dao == null) {

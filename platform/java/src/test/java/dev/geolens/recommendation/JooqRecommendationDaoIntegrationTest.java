@@ -8,9 +8,11 @@ import dev.geolens.recommendation.domain.Recommendation;
 import dev.geolens.recommendation.domain.ScoreSnapshot;
 import dev.geolens.recommendation.domain.Severity;
 import dev.geolens.recommendation.persistence.AppliedRecommendation;
-import dev.geolens.recommendation.persistence.JdbcRecommendationDao;
+import dev.geolens.recommendation.persistence.JooqRecommendationDao;
 import dev.geolens.recommendation.persistence.RecommendationNotFoundException;
 import dev.geolens.recommendation.persistence.ScoreAt;
+import org.jooq.SQLDialect;
+import org.jooq.impl.DSL;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -36,13 +38,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * JDBC DAO entegrasyon testi — Docker gerekir.
+ * JOOQ DAO entegrasyon testi — Docker gerekir.
  * <p>Çalıştırma: {@code mvnw test "-Dsurefire.groups=integration"} (Go'daki {@code -tags=integration} karşılığı).
  * <p>Her test öncesi tablolar truncate edilip yeniden seed edilir; testler izole çalışır.
  */
 @Tag("integration")
 @Testcontainers
-class JdbcRecommendationDaoIntegrationTest {
+class JooqRecommendationDaoIntegrationTest {
 
     @Container
     static final PostgreSQLContainer<?> PG = new PostgreSQLContainer<>("postgres:16-alpine")
@@ -52,7 +54,7 @@ class JdbcRecommendationDaoIntegrationTest {
             .withInitScript("schema/recommendation_integration.sql");
 
     private DriverManagerDataSource ds;
-    private JdbcRecommendationDao dao;
+    private JooqRecommendationDao dao;
     private JdbcTemplate jdbc;
     private TransactionTemplate tx;
 
@@ -64,7 +66,8 @@ class JdbcRecommendationDaoIntegrationTest {
         ds = new DriverManagerDataSource(PG.getJdbcUrl(), PG.getUsername(), PG.getPassword());
         jdbc = new JdbcTemplate(ds);
         tx = new TransactionTemplate(new DataSourceTransactionManager(ds));
-        dao = new JdbcRecommendationDao(jdbc, new TransactionTemplate(new DataSourceTransactionManager(ds)));
+        dao = new JooqRecommendationDao(DSL.using(ds, SQLDialect.POSTGRES),
+                new TransactionTemplate(new DataSourceTransactionManager(ds)));
 
         // RLS'li tablolar dahil her şeyi sıfırla; üst tablolar (RLS'siz) düz eklenir
         tx.executeWithoutResult(status -> {

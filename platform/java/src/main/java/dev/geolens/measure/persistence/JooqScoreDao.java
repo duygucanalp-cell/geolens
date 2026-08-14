@@ -8,10 +8,8 @@ import dev.geolens.measure.Score;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.JSON;
-import org.jooq.JSONB;
 import org.jooq.Record;
 import org.jooq.impl.DSL;
-import org.jooq.impl.SQLDataType;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -67,12 +65,12 @@ public class JooqScoreDao implements ScoreDao {
         if (tenantId == null) {
             return;
         }
+        // created_at DB default'undan gelir (now()); component_values JSONB → ::jsonb cast
         runInTenant(tenantId, () -> dsl.insertInto(CALCULATION_RUNS)
                 .columns(CALCULATION_RUNS.ID, CALCULATION_RUNS.PANEL_ID, CALCULATION_RUNS.TENANT_ID,
-                        CALCULATION_RUNS.ALGORITHM_VERSION, CALCULATION_RUNS.COMPONENT_VALUES,
-                        CALCULATION_RUNS.CREATED_AT)
-                .values(run.id(), run.panelId(), tenantId, run.algorithmVersion(),
-                        jsonb(run.scoreComponents()), DSL.currentTimestamp())
+                        CALCULATION_RUNS.ALGORITHM_VERSION, CALCULATION_RUNS.COMPONENT_VALUES)
+                .values(DSL.val(run.id()), DSL.val(run.panelId()), DSL.val(tenantId),
+                        DSL.val(run.algorithmVersion()), jsonb(run.scoreComponents()))
                 .execute());
     }
 
@@ -81,15 +79,18 @@ public class JooqScoreDao implements ScoreDao {
         if (score.tenantId() == null) {
             return;
         }
+        // created_at DB default'undan gelir (now()); engine_breakdown JSONB → ::jsonb cast
         runInTenant(score.tenantId(), () -> dsl.insertInto(SCORES)
                 .columns(SCORES.ID, SCORES.PANEL_ID, SCORES.BRAND_ID, SCORES.WORKSPACE_ID, SCORES.TENANT_ID,
                         SCORES.VALUE, SCORES.CI_LOW, SCORES.CI_HIGH, SCORES.FIDELITY_LABEL,
                         SCORES.ENGINE_BREAKDOWN, SCORES.PANEL_VERSION, SCORES.CALCULATION_RUN_ID,
-                        SCORES.FRESHNESS_AT, SCORES.CREATED_AT)
-                .values(score.id(), score.panelId(), score.brandId(), score.workspaceId(), score.tenantId(),
-                        score.value(), score.ciLow(), score.ciHigh(), score.fidelityLabel(),
-                        jsonb(score.engineBreakdown()), score.panelVersion(), score.calculationRunId(),
-                        toOffsetDateTime(score.freshnessAt()), DSL.currentTimestamp())
+                        SCORES.FRESHNESS_AT)
+                .values(DSL.val(score.id()), DSL.val(score.panelId()), DSL.val(score.brandId()),
+                        DSL.val(score.workspaceId()), DSL.val(score.tenantId()),
+                        DSL.val(score.value()), DSL.val(score.ciLow()), DSL.val(score.ciHigh()),
+                        DSL.val(score.fidelityLabel()),
+                        jsonb(score.engineBreakdown()), DSL.val(score.panelVersion()),
+                        DSL.val(score.calculationRunId()), DSL.val(toOffsetDateTime(score.freshnessAt())))
                 .execute());
     }
 
@@ -135,9 +136,11 @@ public class JooqScoreDao implements ScoreDao {
                 toInstant(row.get(SCORES.CREATED_AT)));
     }
 
-    private static Field<JSONB> jsonb(Map<String, Double> map) {
+    /** JSONB kolon değeri: jOOQ kolonu JSON tipinde ürettiğinden (H2'de jsonb yok)
+     *  PostgreSQL'de birebir eski SQL gibi {@code ?::jsonb} cast'i uygulanır. */
+    private static Field<JSON> jsonb(Map<String, Double> map) {
         String raw = json(map);
-        return DSL.cast(DSL.val(JSON.valueOf(raw)), SQLDataType.JSONB);
+        return DSL.field("{0}::jsonb", JSON.class, DSL.val(JSON.valueOf(raw)));
     }
 
     private static String jsonData(JSON json) {

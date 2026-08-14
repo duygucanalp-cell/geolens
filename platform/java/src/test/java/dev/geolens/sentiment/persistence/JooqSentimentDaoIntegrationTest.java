@@ -3,6 +3,8 @@ package dev.geolens.sentiment.persistence;
 import dev.geolens.sentiment.domain.CheckTarget;
 import dev.geolens.sentiment.domain.RawResponse;
 import dev.geolens.sentiment.domain.SentimentResult;
+import org.jooq.SQLDialect;
+import org.jooq.impl.DSL;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -25,13 +27,13 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * JDBC DAO entegrasyon testi — Docker gerekir.
+ * JOOQ DAO entegrasyon testi — Docker gerekir.
  * <p>Çalıştırma: {@code mvnw test "-Dsurefire.groups=integration"} (Go'daki {@code -tags=integration} karşılığı).
  * <p>RLS davranışını doğrular: tenant bağlamı dışındaki sorgular satır döndürmez.
  */
 @Tag("integration")
 @Testcontainers
-class JdbcSentimentDaoIntegrationTest {
+class JooqSentimentDaoIntegrationTest {
 
     @Container
     static final PostgreSQLContainer<?> PG = new PostgreSQLContainer<>("postgres:16-alpine")
@@ -42,7 +44,7 @@ class JdbcSentimentDaoIntegrationTest {
 
     private JdbcTemplate jdbc;
     private TransactionTemplate tx;
-    private JdbcSentimentDao dao;
+    private JooqSentimentDao dao;
 
     @BeforeEach
     void setUp() {
@@ -52,7 +54,8 @@ class JdbcSentimentDaoIntegrationTest {
         DriverManagerDataSource ds = new DriverManagerDataSource(PG.getJdbcUrl(), PG.getUsername(), PG.getPassword());
         jdbc = new JdbcTemplate(ds);
         tx = new TransactionTemplate(new DataSourceTransactionManager(ds));
-        dao = new JdbcSentimentDao(jdbc, tx);
+        dao = new JooqSentimentDao(DSL.using(ds, SQLDialect.POSTGRES),
+                new TransactionTemplate(new DataSourceTransactionManager(ds)));
 
         tx.executeWithoutResult(status -> {
             jdbc.update("TRUNCATE analysis.hallucination_flags, analysis.sentiment_scores, measure.raw_responses, config.brands, config.workspaces, identity.tenants CASCADE");
