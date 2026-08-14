@@ -22,6 +22,9 @@ public class Config {
     /** SAMPLE_COUNT: motor başına örnekleme sayısı (varsayılan 3). */
     public int sampleCount;
 
+    /** STRIPE_PRICE_IDS — "tier=priceId,tier=priceId,..." (varsayılan boş → Stripe default map). */
+    public String stripePriceIdsRaw;
+
     public Config() {
         this.scoreAlgorithmVersion = "2.0.0";
         this.sampleCount = 3;
@@ -74,6 +77,34 @@ public class Config {
             return null;
         }
         return new ScoreWeightsV2(vals[0], vals[1], vals[2], vals[3], vals[4], vals[5], vals[6]);
+    }
+
+    /**
+     * STRIPE_PRICE_IDS env'ini ("tier=priceId,tier=priceId,...") Stripe fiyat haritasına
+     * çözer — Go {@code config.Config.ParseStripePriceIDs} portu. Boş veya geçersiz girdide
+     * {@code null} döner (Stripe default map kullanılır).
+     */
+    public Map<String, String> parseStripePriceIds() {
+        if (stripePriceIdsRaw == null || stripePriceIdsRaw.isBlank()) {
+            return null;
+        }
+        Map<String, String> out = new HashMap<>();
+        for (String pair : stripePriceIdsRaw.split(",")) {
+            String[] kv = pair.split("=", 2);
+            if (kv.length != 2) {
+                continue;
+            }
+            String key = kv[0].trim();
+            if (!key.isEmpty()) {
+                out.put(key, kv[1].trim());
+            }
+        }
+        return out.isEmpty() ? null : out;
+    }
+
+    /** INTENT_WEIGHT_SCALE env'ini intent→7 bileşenli çarpan haritasına çözer (0421 A3-3). */
+    public Map<String, double[]> parseIntentWeightScale() {
+        return parseIntentWeightScaleRaw(intentWeightScaleRaw);
     }
 
     /**
