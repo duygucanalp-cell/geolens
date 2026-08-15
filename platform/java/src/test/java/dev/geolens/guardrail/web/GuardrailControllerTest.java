@@ -1,22 +1,20 @@
 package dev.geolens.guardrail.web;
 
-import dev.geolens.testutil.JooqTestData;
-import org.jooq.DSLContext;
+import dev.geolens.guardrail.Rule;
+import dev.geolens.guardrail.service.GuardrailEvaluateResult;
+import dev.geolens.guardrail.service.GuardrailService;
+import dev.geolens.guardrail.service.GuardrailServiceException;
 import org.junit.jupiter.api.Test;
-import org.mockito.Answers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -32,8 +30,8 @@ class GuardrailControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean(answer = Answers.RETURNS_DEEP_STUBS)
-    private DSLContext dsl;
+    @MockBean
+    private GuardrailService guardrailService;
 
     private static final String TENANT = "T01";
 
@@ -41,8 +39,7 @@ class GuardrailControllerTest {
 
     @Test
     void listRulesQueryErrorReturnsEmpty() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenThrow(new RuntimeException("db error"));
+        when(guardrailService.listRules(anyString())).thenReturn(List.of());
 
         mockMvc.perform(get("/v1/guardrails/rules")
                         .header("X-Tenant-ID", TENANT))
@@ -52,9 +49,10 @@ class GuardrailControllerTest {
 
     @Test
     void listRulesSuccess() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(List.of(ruleRow("rule-1", "SQL Injection", "prompt_injection"),
-                        ruleRow("rule-2", "Email Leak", "pii_leakage"))));
+        when(guardrailService.listRules(anyString()))
+                .thenReturn(List.of(
+                        rule("rule-1", "SQL Injection", "prompt_injection"),
+                        rule("rule-2", "Email Leak", "pii_leakage")));
 
         mockMvc.perform(get("/v1/guardrails/rules")
                         .header("X-Tenant-ID", TENANT))
@@ -79,8 +77,8 @@ class GuardrailControllerTest {
 
     @Test
     void createRuleSuccess() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(ruleMap("rule-3", "Test Rule", "custom")));
+        when(guardrailService.createRule(anyString(), any()))
+                .thenReturn(rule("rule-3", "Test Rule", "custom"));
 
         mockMvc.perform(post("/v1/guardrails/rules")
                         .header("X-Tenant-ID", TENANT)
@@ -139,8 +137,8 @@ class GuardrailControllerTest {
 
     @Test
     void evaluateQueryErrorReturns500() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenThrow(new RuntimeException("db error"));
+        when(guardrailService.evaluate(anyString(), any()))
+                .thenThrow(new GuardrailServiceException("kural sorgu hatası"));
 
         mockMvc.perform(post("/v1/guardrails/evaluate")
                         .header("X-Tenant-ID", TENANT)
@@ -152,9 +150,9 @@ class GuardrailControllerTest {
 
     @Test
     void evaluateAllowedWhenNoMatch() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(List.of(
-                        guardRow("rule-1", "SQL Injection", "/ignore previous instructions/", "block", "critical"))));
+        when(guardrailService.evaluate(anyString(), any()))
+                .thenReturn(new GuardrailEvaluateResult(List.of(resultRow("rule-1", "SQL Injection",
+                        "prompt_injection", false, "none")), false));
 
         mockMvc.perform(post("/v1/guardrails/evaluate")
                         .header("X-Tenant-ID", TENANT)
@@ -171,9 +169,9 @@ class GuardrailControllerTest {
 
     @Test
     void evaluateBlockedWhenPatternMatches() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(List.of(
-                        guardRow("rule-1", "SQL Injection", "/ignore previous instructions/", "block", "critical"))));
+        when(guardrailService.evaluate(anyString(), any()))
+                .thenReturn(new GuardrailEvaluateResult(List.of(resultRow("rule-1", "SQL Injection",
+                        "prompt_injection", true, "block")), true));
 
         mockMvc.perform(post("/v1/guardrails/evaluate")
                         .header("X-Tenant-ID", TENANT)
@@ -188,9 +186,9 @@ class GuardrailControllerTest {
 
     @Test
     void evaluateFlagDoesNotBlock() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(List.of(
-                        guardRow("rule-1", "Toxic Content", "/\\bhate\\b/i", "flag", "medium"))));
+        when(guardrailService.evaluate(anyString(), any()))
+                .thenReturn(new GuardrailEvaluateResult(List.of(resultRow("rule-1", "Toxic Content",
+                        "toxic_output", true, "flag")), false));
 
         mockMvc.perform(post("/v1/guardrails/evaluate")
                         .header("X-Tenant-ID", TENANT)
@@ -210,42 +208,22 @@ class GuardrailControllerTest {
                         .header("X-Tenant-ID", TENANT))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("varsayılan kurallar oluşturuldu"));
-
-        // Go TestSeedDefaults: 8 insert beklenir
-        verify(dsl, times(8)).execute(anyString(), any(Object[].class));
     }
 
     // ---------- yardımcılar ----------
 
-    private static Map<String, Object> ruleRow(String id, String name, String category) {
-        Map<String, Object> m = ruleMap(id, name, category);
-        m.put("tenant_id", TENANT);
-        return m;
+    private static Rule rule(String id, String name, String category) {
+        return new Rule(id, TENANT, name, category, "/pattern/", "block", "high", true,
+                "2026-08-15T10:00:00Z", "2026-08-15T10:00:00Z");
     }
 
-    private static Map<String, Object> ruleMap(String id, String name, String category) {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("id", id);
-        m.put("tenant_id", TENANT);
-        m.put("name", name);
-        m.put("category", category);
-        m.put("pattern", "/pattern/");
-        m.put("action", "block");
-        m.put("severity", "high");
-        m.put("enabled", true);
-        m.put("created_at", "2026-08-15T10:00:00Z");
-        m.put("updated_at", "2026-08-15T10:00:00Z");
-        return m;
-    }
-
-    private static Map<String, Object> guardRow(String id, String name, String pattern, String action, String severity) {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("id", id);
-        m.put("name", name);
-        m.put("category", "prompt_injection");
-        m.put("pattern", pattern);
-        m.put("action", action);
-        m.put("severity", severity);
-        return m;
+    private static Map<String, Object> resultRow(String id, String name, String category,
+                                                 boolean matched, String actionTaken) {
+        return Map.of(
+                "rule_id", id,
+                "rule_name", name,
+                "category", category,
+                "matched", matched,
+                "action_taken", actionTaken);
     }
 }

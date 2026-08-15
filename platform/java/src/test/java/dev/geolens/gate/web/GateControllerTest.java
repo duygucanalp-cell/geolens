@@ -1,23 +1,23 @@
 package dev.geolens.gate.web;
 
+import dev.geolens.gate.CheckResult;
 import dev.geolens.gate.GateText;
-import dev.geolens.testutil.JooqTestData;
-import org.jooq.DSLContext;
-import org.jooq.Record;
+import dev.geolens.gate.service.GateCheckResult;
+import dev.geolens.gate.service.GateHistoryResult;
+import dev.geolens.gate.service.GateService;
 import org.junit.jupiter.api.Test;
-import org.mockito.Answers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.LinkedHashMap;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -31,8 +31,8 @@ class GateControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean(answer = Answers.RETURNS_DEEP_STUBS)
-    private DSLContext dsl;
+    @MockBean
+    private GateService gateService;
 
     private static final String TENANT = "T01";
 
@@ -50,7 +50,10 @@ class GateControllerTest {
 
     @Test
     void checkNoEntityIdReturns200() throws Exception {
-        // registry sorgusu boş → blocked (Go TestCheck_NoEntityID parity)
+        when(gateService.check(eq(TENANT), any()))
+                .thenReturn(new GateCheckResult("ch-1", "", "blocked", 1,
+                        List.of(new CheckResult("Bias Test", true, "")), Instant.parse("2026-08-14T10:00:00Z")));
+
         mockMvc.perform(post("/v1/gate/check")
                         .header("X-Tenant-ID", TENANT)
                         .contentType("application/json")
@@ -61,15 +64,16 @@ class GateControllerTest {
 
     @Test
     void checkAllChecksPassed() throws Exception {
-        // Sıralı fetchOne: registry, risk count, doc url, pack count, controls, guardrail count
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(
-                        JooqTestData.record(registryRow("ent-001", "model", "production")),
-                        JooqTestData.record(3),
-                        JooqTestData.record("https://docs.example.com"),
-                        JooqTestData.record(2),
-                        JooqTestData.record(controlsRow(10, 8)),
-                        JooqTestData.record(3));
+        List<CheckResult> checks = List.of(
+                new CheckResult("Registry Entry", true, "AI Registry'de kayıtlı (model, production)"),
+                new CheckResult("Risk Assessment", true, "Risk değerlendirmesi mevcut (3 adet)"),
+                new CheckResult("Policy Compliance", true, "2 pack aktif, %80 geçti"),
+                new CheckResult("Documentation", true, "Teknik dokümantasyon mevcut"),
+                new CheckResult("Guardrails", true, "3 guardrail aktif"),
+                new CheckResult("Bias Test", true, "Bias testi gerekli değil (varsayılan)"));
+        when(gateService.check(eq(TENANT), any()))
+                .thenReturn(new GateCheckResult("ch-1", "ent-001", "approved", 6, checks,
+                        Instant.parse("2026-08-14T10:00:00Z")));
 
         mockMvc.perform(post("/v1/gate/check")
                         .header("X-Tenant-ID", TENANT)
@@ -85,9 +89,9 @@ class GateControllerTest {
 
     @Test
     void checkAllChecksFailed() throws Exception {
-        // registry sorgusu boş → tüm check'ler başarısız, bias hariç
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(null, null, null, null, null, null);
+        when(gateService.check(eq(TENANT), any()))
+                .thenReturn(new GateCheckResult("ch-1", "nonexistent", "blocked", 1,
+                        List.of(new CheckResult("Bias Test", true, "")), Instant.parse("2026-08-14T10:00:00Z")));
 
         mockMvc.perform(post("/v1/gate/check")
                         .header("X-Tenant-ID", TENANT)
@@ -99,15 +103,16 @@ class GateControllerTest {
 
     @Test
     void checkPartialPass() throws Exception {
-        // registry var; risk 0; doc boş; 1 pack + 4 kontrol (3 passed); guardrail 0
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(
-                        JooqTestData.record(registryRow("ent-001", "model", "staging")),
-                        JooqTestData.record(0),
-                        JooqTestData.record(""),
-                        JooqTestData.record(1),
-                        JooqTestData.record(controlsRow(4, 3)),
-                        JooqTestData.record(0));
+        List<CheckResult> checks = List.of(
+                new CheckResult("Registry Entry", true, "AI Registry'de kayıtlı (model, staging)"),
+                new CheckResult("Risk Assessment", false, "Risk değerlendirmesi yapılmamış"),
+                new CheckResult("Policy Compliance", true, "1 pack aktif, %75 geçti"),
+                new CheckResult("Documentation", false, "Teknik dokümantasyon kontrol edilmedi"),
+                new CheckResult("Guardrails", false, "Guardrail kuralı kontrol edilmedi"),
+                new CheckResult("Bias Test", true, "Bias testi gerekli değil (varsayılan)"));
+        when(gateService.check(eq(TENANT), any()))
+                .thenReturn(new GateCheckResult("ch-1", "ent-001", "flagged", 3, checks,
+                        Instant.parse("2026-08-14T10:00:00Z")));
 
         mockMvc.perform(post("/v1/gate/check")
                         .header("X-Tenant-ID", TENANT)
@@ -122,10 +127,12 @@ class GateControllerTest {
 
     @Test
     void historySuccess() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(List.of(
-                        historyRow("ch-001", "approved", 6, 6),
-                        historyRow("ch-002", "flagged", 4, 6))));
+        when(gateService.history(eq(TENANT), eq("ent-001")))
+                .thenReturn(new GateHistoryResult("ent-001", TENANT,
+                        List.of(
+                                historyRow("ch-001", "approved", 6, 6),
+                                historyRow("ch-002", "flagged", 4, 6)),
+                        false));
 
         mockMvc.perform(get("/v1/gate/history/ent-001")
                         .header("X-Tenant-ID", TENANT))
@@ -138,8 +145,8 @@ class GateControllerTest {
 
     @Test
     void historyEmpty() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(List.of()));
+        when(gateService.history(eq(TENANT), eq("ent-001")))
+                .thenReturn(new GateHistoryResult("ent-001", TENANT, List.of(), false));
 
         mockMvc.perform(get("/v1/gate/history/ent-001")
                         .header("X-Tenant-ID", TENANT))
@@ -150,8 +157,8 @@ class GateControllerTest {
 
     @Test
     void historyQueryErrorReturnsGraceful() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenThrow(new RuntimeException("db error"));
+        when(gateService.history(eq(TENANT), eq("ent-001")))
+                .thenReturn(GateHistoryResult.empty());
 
         mockMvc.perform(get("/v1/gate/history/ent-001")
                         .header("X-Tenant-ID", TENANT))
@@ -174,32 +181,16 @@ class GateControllerTest {
 
     // ---------- yardımcılar ----------
 
-    private static Map<String, Object> registryRow(String id, String type, String lifecycle) {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("id", id);
-        m.put("entity_type", type);
-        m.put("lifecycle_state", lifecycle);
-        return m;
-    }
-
-    private static Map<String, Object> controlsRow(int total, int passed) {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("total", total);
-        m.put("passed", passed);
-        return m;
-    }
-
     private static Map<String, Object> historyRow(String id, String decision, int passed, int total) {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("id", id);
-        m.put("entity_id", "ent-001");
-        m.put("entity_type", "model");
-        m.put("target_env", "production");
-        m.put("version", "1.0.0");
-        m.put("decision", decision);
-        m.put("passed_checks", passed);
-        m.put("total_checks", total);
-        m.put("created_at", java.sql.Timestamp.from(java.time.Instant.parse("2026-08-14T10:00:00Z")));
-        return m;
+        return Map.of(
+                "id", id,
+                "entity_id", "ent-001",
+                "entity_type", "model",
+                "target_env", "production",
+                "version", "1.0.0",
+                "decision", decision,
+                "passed_checks", passed,
+                "total_checks", total,
+                "checked_at", "2026-08-14T10:00:00Z");
     }
 }

@@ -1,17 +1,16 @@
-package dev.geolens.explain.web;
+﻿package dev.geolens.explain.web;
 
-import dev.geolens.testutil.JooqTestData;
-import org.jooq.DSLContext;
-import org.jooq.Record;
+import dev.geolens.explain.service.ExplainHistoryResult;
+import dev.geolens.explain.service.ExplainResult;
+import dev.geolens.explain.service.ExplainService;
+import dev.geolens.explain.service.ExplainServiceException;
 import org.junit.jupiter.api.Test;
-import org.mockito.Answers;
-import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -23,15 +22,15 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** Go explain/handler_test.go parity testleri — Explainability REST. */
+/** Go explain/handler_test.go parity testleri â€” Explainability REST. */
 @WebMvcTest(ExplainController.class)
 class ExplainControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean(answer = Answers.RETURNS_DEEP_STUBS)
-    private DSLContext dsl;
+    @MockBean
+    private ExplainService explainService;
 
     private static final String TENANT = "T01";
 
@@ -39,36 +38,34 @@ class ExplainControllerTest {
 
     @Test
     void explainNotFound() throws Exception {
-        // Go MockRow{Err} → QueryRow hatası → 404
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenThrow(new RuntimeException("not found"));
+        when(explainService.explain(anyString(), anyString()))
+                .thenThrow(new ExplainServiceException(HttpStatus.NOT_FOUND, "varlÄ±k bulunamadÄ±"));
 
         mockMvc.perform(post("/v1/explain/ent-001")
                         .header("X-Tenant-ID", TENANT))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error").value("varlık bulunamadı"));
+                .andExpect(jsonPath("$.error").value("varlÄ±k bulunamadÄ±"));
     }
 
     @Test
     void explainNullEntityReturns404() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class))).thenReturn(null);
+        when(explainService.explain(anyString(), anyString()))
+                .thenThrow(new ExplainServiceException(HttpStatus.NOT_FOUND, "varlÄ±k bulunamadÄ±"));
 
         mockMvc.perform(post("/v1/explain/ent-001")
                         .header("X-Tenant-ID", TENANT))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error").value("varlık bulunamadı"));
+                .andExpect(jsonPath("$.error").value("varlÄ±k bulunamadÄ±"));
     }
 
     @Test
     void explainSuccess() throws Exception {
-        // Go MockPool: 2 args → entity row, diğer (1 arg) → hata → varsayılan skor 70.0
-        when(dsl.fetchOne(anyString(), any(Object[].class))).thenAnswer((Answer<Record>) inv -> {
-            // entity sorgusu: sql + entityId + tenantId = 3 arg; shap sorgusu: sql + entityId = 2 arg
-            if (inv.getArguments().length == 3) {
-                return JooqTestData.record(entityRow("Test Entity", "model", "openai", "high", 0.75));
-            }
-            throw new RuntimeException("no scores");
-        });
+        when(explainService.explain(anyString(), anyString()))
+                .thenReturn(new ExplainResult("a-1", "ent-001", "Test Entity", "model", "high",
+                        50.0, 50.0 + 75.0 * 0.15 + 75.0 * 0.85 * 0.10 - 5.8 + 2.1 - 1.5,
+                        Map.of("citation_accuracy", 0.30),
+                        shapValues(),
+                        "Model skoru 57,7, en bÃ¼yÃ¼k katkÄ± citation_accuracy'den (30,0%)"));
 
         mockMvc.perform(post("/v1/explain/ent-001")
                         .header("X-Tenant-ID", TENANT))
@@ -80,42 +77,34 @@ class ExplainControllerTest {
                 .andExpect(jsonPath("$.base_value").value(50.0))
                 .andExpect(jsonPath("$.feature_importance.citation_accuracy").value(0.30))
                 .andExpect(jsonPath("$.shap_values.length()").value(5))
-                // high risk → citation_accuracy shap -5.8
                 .andExpect(jsonPath("$.shap_values[2].shap").value(-5.8));
     }
 
     @Test
     void explainLowRiskUsesDefaultShap() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class))).thenAnswer((Answer<Record>) inv -> {
-            // entity sorgusu: sql + entityId + tenantId = 3 arg; shap sorgusu: sql + entityId = 2 arg
-            if (inv.getArguments().length == 3) {
-                return JooqTestData.record(entityRow("Low Entity", "model", "azure", "low", 0.5));
-            }
-            throw new RuntimeException("no scores");
-        });
+        when(explainService.explain(anyString(), anyString()))
+                .thenReturn(new ExplainResult("a-2", "ent-002", "Low Entity", "model", "low",
+                        50.0, 50.0, Map.of("citation_accuracy", 0.20),
+                        shapValues(),
+                        ""));
 
         mockMvc.perform(post("/v1/explain/ent-002")
                         .header("X-Tenant-ID", TENANT))
                 .andExpect(status().isOk())
-                // low risk → citation_accuracy shap -3.2
                 .andExpect(jsonPath("$.shap_values[2].shap").value(-3.2))
                 .andExpect(jsonPath("$.feature_importance.citation_accuracy").value(0.20));
     }
 
     @Test
     void explainUsesAvgScoreWhenAvailable() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class))).thenAnswer((Answer<Record>) inv -> {
-            // entity sorgusu: sql + entityId + tenantId = 3 arg; shap sorgusu: sql + entityId = 2 arg
-            if (inv.getArguments().length == 3) {
-                return JooqTestData.record(entityRow("Scored", "model", "openai", "low", 0.8));
-            }
-            return JooqTestData.record(Map.of("value", 75.0));
-        });
+        when(explainService.explain(anyString(), anyString()))
+                .thenReturn(new ExplainResult("a-3", "ent-003", "Scored", "model", "low",
+                        50.0, 50.0, Map.of(), shapValues(),
+                        ""));
 
         mockMvc.perform(post("/v1/explain/ent-003")
                         .header("X-Tenant-ID", TENANT))
                 .andExpect(status().isOk())
-                // ai_visibility_score shap = 75.0 * 0.15
                 .andExpect(jsonPath("$.shap_values[0].value").value(75.0))
                 .andExpect(jsonPath("$.shap_values[0].shap").value(75.0 * 0.15));
     }
@@ -124,8 +113,8 @@ class ExplainControllerTest {
 
     @Test
     void listAnalysesSuccess() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(List.of(analysisRow("a-1", "ent-001"))));
+        when(explainService.listAnalyses(any(), any(), any()))
+                .thenReturn(new ExplainHistoryResult(List.of(analysisRow("a-1", "ent-001")), false));
 
         mockMvc.perform(get("/v1/explain/results")
                         .header("X-Tenant-ID", TENANT))
@@ -139,20 +128,19 @@ class ExplainControllerTest {
 
     @Test
     void listAnalysesQueryErrorReturns500() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenThrow(new RuntimeException("db error"));
+        when(explainService.listAnalyses(any(), any(), any()))
+                .thenThrow(new ExplainServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "analiz geÃ§miÅŸi alÄ±namadÄ±"));
 
         mockMvc.perform(get("/v1/explain/results")
                         .header("X-Tenant-ID", TENANT))
                 .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.error").value("analiz geçmişi alınamadı"));
+                .andExpect(jsonPath("$.error").value("analiz geÃ§miÅŸi alÄ±namadÄ±"));
     }
 
     @Test
     void listAnalysesHasMoreWhenOverLimit() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(List.of(
-                        analysisRow("a-1", "ent-001"), analysisRow("a-2", "ent-001"))));
+        when(explainService.listAnalyses(any(), any(), any()))
+                .thenReturn(new ExplainHistoryResult(List.of(analysisRow("a-1", "ent-001")), true));
 
         mockMvc.perform(get("/v1/explain/results")
                         .header("X-Tenant-ID", TENANT)
@@ -164,8 +152,8 @@ class ExplainControllerTest {
 
     @Test
     void listAnalysesInvalidLimitDefaultsTo20() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(List.of()));
+        when(explainService.listAnalyses(any(), any(), any()))
+                .thenReturn(new ExplainHistoryResult(List.of(), false));
 
         mockMvc.perform(get("/v1/explain/results")
                         .header("X-Tenant-ID", TENANT)
@@ -175,30 +163,28 @@ class ExplainControllerTest {
                 .andExpect(jsonPath("$.has_more").value(false));
     }
 
-    // ---------- yardımcılar ----------
+    // ---------- yardÄ±mcÄ±lar ----------
 
-    private static Map<String, Object> entityRow(String name, String entityType, String provider,
-                                                 String riskClass, double confidence) {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("name", name);
-        m.put("entity_type", entityType);
-        m.put("provider", provider);
-        m.put("risk_class", riskClass);
-        m.put("confidence", confidence);
-        return m;
+    private static List<Map<String, Object>> shapValues() {
+        return List.of(
+                Map.of("feature", "ai_visibility_score", "value", 75.0, "shap", 75.0 * 0.15, "impact", "positive"),
+                Map.of("feature", "response_quality", "value", 75.0 * 0.85, "shap", 75.0 * 0.85 * 0.10, "impact", "positive"),
+                Map.of("feature", "citation_accuracy", "value", 65.0, "shap", -3.2, "impact", "negative"),
+                Map.of("feature", "brand_consistency", "value", 70.0, "shap", 2.1, "impact", "positive"),
+                Map.of("feature", "sentiment_score", "value", 55.0, "shap", -1.5, "impact", "negative"));
     }
 
     private static Map<String, Object> analysisRow(String id, String entityId) {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("id", id);
-        m.put("entity_id", entityId);
-        m.put("method", "SHAP");
-        m.put("base_value", 50.0);
-        m.put("prediction", 65.4);
-        m.put("feature_importance", "{\"f1\":0.5}");
-        m.put("shap_values", "[{\"feature\":\"f1\",\"shap\":15.4}]");
-        m.put("interpretation", "High score due to visibility");
-        m.put("created_at", "2026-08-15T10:00:00Z");
-        return m;
+        return Map.of(
+                "id", id,
+                "entity_id", entityId,
+                "method", "SHAP",
+                "base_value", 50.0,
+                "prediction", 65.4,
+                "feature_importance", Map.of("f1", 0.5),
+                "shap_values", List.of(Map.of("feature", "f1", "shap", 15.4)),
+                "interpretation", "High score due to visibility",
+                "created_at", "2026-08-15T10:00:00Z");
     }
 }
+
