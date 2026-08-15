@@ -3,7 +3,9 @@ package dev.geolens.contentgeo.web;
 import dev.geolens.contentgeo.ContentGeoEngine;
 import dev.geolens.contentgeo.ContentGapResult;
 import dev.geolens.contentgeo.ContentHubScore;
+import dev.geolens.contentgeo.service.ContentgeoService;
 import dev.geolens.testutil.JooqTestData;
+import org.springframework.context.annotation.Import;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
@@ -28,6 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /** Go contentgeo.handler davranış parity testleri — Content GEO REST (FR-E5/E6). */
 @WebMvcTest(ContentgeoController.class)
+@Import(ContentgeoService.class)
 class ContentgeoControllerTest {
 
     @Autowired

@@ -2,7 +2,9 @@ package dev.geolens.archive.web;
 
 import dev.geolens.archive.ArchiveEngine;
 import dev.geolens.archive.Entry;
+import dev.geolens.archive.service.ArchiveService;
 import dev.geolens.testutil.JooqTestData;
+import org.springframework.context.annotation.Import;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
@@ -25,6 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /** Go archive.handler davranış parity testleri — Response Archive REST (FR-D13). */
 @WebMvcTest(ArchiveController.class)
+@Import(ArchiveService.class)
 class ArchiveControllerTest {
 
     @Autowired

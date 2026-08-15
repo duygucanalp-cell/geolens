@@ -3,7 +3,9 @@ package dev.geolens.replay.web;
 import dev.geolens.replay.DiffResult;
 import dev.geolens.replay.ReplayEngine;
 import dev.geolens.replay.Snapshot;
+import dev.geolens.replay.service.ReplayService;
 import dev.geolens.testutil.JooqTestData;
+import org.springframework.context.annotation.Import;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
@@ -27,6 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /** Go replay.handler davranış parity testleri — Conversation Replay REST (FR-D12). */
 @WebMvcTest(ReplayController.class)
+@Import(ReplayService.class)
 class ReplayControllerTest {
 
     @Autowired

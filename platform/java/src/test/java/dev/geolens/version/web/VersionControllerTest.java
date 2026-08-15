@@ -1,7 +1,9 @@
 package dev.geolens.version.web;
 
 import dev.geolens.testutil.JooqTestData;
+import dev.geolens.version.service.VersionService;
 import org.jooq.Condition;
+import org.springframework.context.annotation.Import;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.OrderField;
@@ -26,6 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /** Go version/handler_test.go parity testleri — versiyon takibi. */
 @WebMvcTest(VersionController.class)
+@Import(VersionService.class)
 class VersionControllerTest {
 
     @Autowired

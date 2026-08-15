@@ -1,7 +1,9 @@
 package dev.geolens.bias.web;
 
+import dev.geolens.bias.service.BiasService;
 import dev.geolens.testutil.JooqTestData;
 import org.jooq.DSLContext;
+import org.springframework.context.annotation.Import;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /** Go bias/handler_test.go parity testleri — bias/fairness REST. */
 @WebMvcTest(BiasController.class)
+@Import(BiasService.class)
 class BiasControllerTest {
 
     @Autowired

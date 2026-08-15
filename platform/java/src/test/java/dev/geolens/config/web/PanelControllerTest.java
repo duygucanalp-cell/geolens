@@ -1,7 +1,9 @@
 package dev.geolens.config.web;
 
+import dev.geolens.config.service.PanelService;
 import dev.geolens.testutil.JooqTestData;
 import org.jooq.DSLContext;
+import org.springframework.context.annotation.Import;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -22,6 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /** Go config/{handler_test,panel.go} parity testleri — panel + prompt seti yönetimi. */
 @WebMvcTest(PanelController.class)
+@Import(PanelService.class)
 class PanelControllerTest {
 
     @MockBean

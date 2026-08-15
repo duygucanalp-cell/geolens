@@ -3,7 +3,9 @@ package dev.geolens.competitive.web;
 import dev.geolens.competitive.CompetitiveEngine;
 import dev.geolens.competitive.GapDetail;
 import dev.geolens.competitive.GapSnapshot;
+import dev.geolens.competitive.service.CompetitiveService;
 import dev.geolens.testutil.JooqTestData;
+import org.springframework.context.annotation.Import;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
@@ -28,6 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /** Go competitive.handler davranış parity testleri — Competitive Gap REST (FR-D11). */
 @WebMvcTest(CompetitiveController.class)
+@Import(CompetitiveService.class)
 class CompetitiveControllerTest {
 
     @Autowired

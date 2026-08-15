@@ -1,7 +1,9 @@
 package dev.geolens.usage.web;
 
 import dev.geolens.testutil.JooqTestData;
+import dev.geolens.usage.service.UsageService;
 import org.jooq.Condition;
+import org.springframework.context.annotation.Import;
 import org.jooq.DSLContext;
 import org.jooq.OrderField;
 import org.jooq.SelectFieldOrAsterisk;
@@ -28,6 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /** Go usage/handler_test.go parity testleri — kullanım analitiği (ADR-014 v4.0 typed DSL). */
 @WebMvcTest(UsageController.class)
+@Import(UsageService.class)
 class UsageControllerTest {
 
     @Autowired

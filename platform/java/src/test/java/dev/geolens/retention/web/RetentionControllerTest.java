@@ -1,7 +1,9 @@
 package dev.geolens.retention.web;
 
+import dev.geolens.retention.service.RetentionService;
 import dev.geolens.testutil.JooqTestData;
 import org.jooq.DSLContext;
+import org.springframework.context.annotation.Import;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /** Go retention.handler davranış parity testleri — Veri Saklama REST (K3). */
 @WebMvcTest(RetentionController.class)
+@Import(RetentionService.class)
 class RetentionControllerTest {
 
     @Autowired

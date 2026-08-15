@@ -1,7 +1,9 @@
 package dev.geolens.apikey.web;
 
+import dev.geolens.apikey.service.ApiKeyService;
 import dev.geolens.testutil.JooqTestData;
 import org.jooq.DSLContext;
+import org.springframework.context.annotation.Import;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -25,6 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /** Go apikey/handler_test.go parity testleri — API anahtarları. */
 @WebMvcTest(ApiKeyController.class)
+@Import(ApiKeyService.class)
 class ApiKeyControllerTest {
 
     @Autowired

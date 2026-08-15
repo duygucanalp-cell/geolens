@@ -1,7 +1,9 @@
 package dev.geolens.config.web;
 
+import dev.geolens.config.service.WorkspaceService;
 import dev.geolens.testutil.JooqTestData;
 import org.jooq.DSLContext;
+import org.springframework.context.annotation.Import;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -22,6 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /** Go config/workspace_handler.go parity testleri — arşivle/geri al/devret. */
 @WebMvcTest(WorkspaceController.class)
+@Import(WorkspaceService.class)
 class WorkspaceControllerTest {
 
     @Autowired

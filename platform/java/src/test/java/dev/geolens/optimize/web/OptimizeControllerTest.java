@@ -1,7 +1,9 @@
 package dev.geolens.optimize.web;
 
+import dev.geolens.optimize.service.OptimizeService;
 import dev.geolens.testutil.JooqTestData;
 import org.jooq.DSLContext;
+import org.springframework.context.annotation.Import;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /** Go optimize/handler_test.go parity testleri — Optimization Recommendations REST. */
 @WebMvcTest(OptimizeController.class)
+@Import(OptimizeService.class)
 class OptimizeControllerTest {
 
     @Autowired

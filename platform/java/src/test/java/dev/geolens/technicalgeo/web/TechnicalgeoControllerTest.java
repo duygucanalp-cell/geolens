@@ -4,7 +4,9 @@ import dev.geolens.technicalgeo.BotAnalysisResult;
 import dev.geolens.technicalgeo.SchemaAnalysisResult;
 import dev.geolens.technicalgeo.TechnicalGeoEngine;
 import dev.geolens.technicalgeo.TechnicalGeoScore;
+import dev.geolens.technicalgeo.service.TechnicalgeoService;
 import dev.geolens.testutil.JooqTestData;
+import org.springframework.context.annotation.Import;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
@@ -27,6 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /** Go technicalgeo.handler davranış parity testleri — Technical GEO REST. */
 @WebMvcTest(TechnicalgeoController.class)
+@Import(TechnicalgeoService.class)
 class TechnicalgeoControllerTest {
 
     @Autowired
