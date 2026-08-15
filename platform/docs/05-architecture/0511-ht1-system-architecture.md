@@ -4,11 +4,11 @@
 |---|---|
 | Doküman ID | 0511 (Faz 3 Açılışı — 0301 referansı) |
 | Proje | GeoLens Platform |
-| Versiyon | 1.1 |
+| Versiyon | 1.2 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 04 Ağustos 2026 |
-| İlişkili | 0501, 0502, 0503, 0506, 0205, 0206, 0301, 0302, 0304, 0305, 0307, 0308, 0309, 0416, 0417, 0418, 0419 |
+| İlişkili | 0501, 0502, 0503, 0506, 0205, 0206, 0301, 0302, 0304, 0305, 0307, 0308, 0309, 0416, 0417, 0418, 0419, ADR-014 |
 
 ---
 
@@ -50,23 +50,23 @@ HT1, 0502 §2'deki 6 bounded context'i (BC1–BC6) genişletir ve 4 yeni bağlam
 
 | BC # | Bağlam | Sorumluluk | Ana Paketler |
 |:----:|--------|------------|--------------|
-| **BC7** | Archive | Response archive yönetimi, S3 versiyonlu saklama, toplu dışa aktarım, retention policy | `internal/archive/` |
-| **BC8** | Replay | Conversation replay capture, side-by-side karşılaştırma, conversation diff | `internal/replay/` |
-| **BC9** | SEO | Search Console + GA4 OAuth2 akışı, periyodik veri senkronizasyonu, SEO veri depolama | `internal/seo/` |
-| **BC10** | Audit | Denetim izi kaydı, export, sorgulama, zincir doğrulama | `internal/audit/` (genişletme) |
+| **BC7** | Archive | Response archive yönetimi, S3 versiyonlu saklama, toplu dışa aktarım, retention policy | `dev.geolens.archive` |
+| **BC8** | Replay | Conversation replay capture, side-by-side karşılaştırma, conversation diff | `dev.geolens.replay` |
+| **BC9** | SEO | Search Console + GA4 OAuth2 akışı, periyodik veri senkronizasyonu, SEO veri depolama | `dev.geolens.seo` |
+| **BC10** | Audit | Denetim izi kaydı, export, sorgulama, zincir doğrulama | `dev.geolens.audit` (genişletme) |
 
 ### 3.3 Alt Modüller (Mevcut Bağlam İçi)
 
 | Ana BC | Alt Modül | Paket | Sorumluluk |
 |:------:|-----------|-------|------------|
-| BC3 | Sentiment | `internal/sentiment/` | TF-IDF + sözlük tabanlı duygu analizi, transformer model hazırlığı |
-| BC3 | Hallucination | `internal/sentiment/` (alt) | Doğruluk kontrolü, tutarsızlık skoru, kaynak çapraz doğrulama |
-| BC3 | Competitive | `internal/competitive/` | Visibility/Citation/Content/Topic/Prompt gap analizi (0419) |
-| BC4 | ContentGEO | `internal/contentgeo/` | Content gap tespiti, topic cluster önerileri, entity geliştirme (0418) |
-| BC4 | TechnicalGEO | `internal/technicalgeo/` | LLM bot izleme, schema.org analizi, entity optimizasyonu (0417) |
-| BC2 | SSO | `internal/sso/` | SAML ACS, SP metadata, IdP config yönetimi |
-| BC9 | SC Sync | `internal/seo/` (alt) | Google Search Console API veri çekme, işleme, depolama |
-| BC9 | GA4 Sync | `internal/seo/` (alt) | Google Analytics Data API veri çekme, işleme, depolama |
+| BC3 | Sentiment | `dev.geolens.sentiment` | TF-IDF + sözlük tabanlı duygu analizi, transformer model hazırlığı |
+| BC3 | Hallucination | `dev.geolens.sentiment` (alt) | Doğruluk kontrolü, tutarsızlık skoru, kaynak çapraz doğrulama |
+| BC3 | Competitive | `dev.geolens.competitive` | Visibility/Citation/Content/Topic/Prompt gap analizi (0419) |
+| BC4 | ContentGEO | `dev.geolens.contentgeo` | Content gap tespiti, topic cluster önerileri, entity geliştirme (0418) |
+| BC4 | TechnicalGEO | `dev.geolens.technicalgeo` | LLM bot izleme, schema.org analizi, entity optimizasyonu (0417) |
+| BC2 | SSO | `dev.geolens.sso` | SAML ACS, SP metadata, IdP config yönetimi |
+| BC9 | SC Sync | `dev.geolens.seo` (alt) | Google Search Console API veri çekme, işleme, depolama |
+| BC9 | GA4 Sync | `dev.geolens.seo` (alt) | Google Analytics Data API veri çekme, işleme, depolama |
 
 ---
 
@@ -78,29 +78,29 @@ HT1'de MVP'deki 3 çekirdek motora (ChatGPT, Gemini, Perplexity) ek olarak 5 yen
 
 | Motor | Paket | Kademe | Tip | Bağımlılık |
 |-------|-------|:------:|-----|------------|
-| Claude | `engine/claude/adapter.go` | 2 (official_proxy) | Anthropic Messages API + web arama | API anahtarı |
-| Grok | `engine/grok/adapter.go` | 2 (official_proxy) | xAI API + web arama | API anahtarı |
-| Copilot | `engine/copilot/adapter.go` | 3 (directional) | Web tabanlı gözlem (Bing search) | Proxy erişim |
-| Mistral | `engine/mistral/adapter.go` | 2 (official_proxy) | Mistral AI API + Le Chat | API anahtarı, GDPR-safe prompt |
-| Google AI Overview | `engine/gemini/adapter.go` (aiOverviewAdapter) | 3 (directional) | Gemini proxy + AI Overview özel prompt | Gemini adapter üzerinden |
+| Claude | `dev.geolens.engine.claude.ClaudeAdapter` | 2 (official_proxy) | Anthropic Messages API + web arama | API anahtarı |
+| Grok | `dev.geolens.engine.grok.GrokAdapter` | 2 (official_proxy) | xAI API + web arama | API anahtarı |
+| Copilot | `dev.geolens.engine.copilot.CopilotAdapter` | 3 (directional) | Web tabanlı gözlem (Bing search) | Proxy erişim |
+| Mistral | `dev.geolens.engine.mistral.MistralAdapter` | 2 (official_proxy) | Mistral AI API + Le Chat | API anahtarı, GDPR-safe prompt |
+| Google AI Overview | `dev.geolens.engine.gemini.GeminiAdapter` (AI Mode/Overview varyantları) | 3 (directional) | Gemini proxy + AI Overview özel prompt | Gemini adapter üzerinden |
 
-```go
-// Tüm bağdaştırıcılar engine.Adapter arayüzünü uygular:
-type Adapter interface {
-    Name() string
-    Tier() Tier
-    Execute(ctx context.Context, prompt string) (*RawResponse, error)
+```java
+// Tüm bağdaştırıcılar engine.Adapter arayüzünü uygular (dev.geolens.engine):
+public interface Adapter {
+    String name();
+    Tier tier();
+    RawResponse execute(String prompt) throws EngineException;
 }
 
-// Kademeler
-const (
-    TierDirect      Tier = 1 // Doğrudan API yanıtı
-    TierOfficialProxy Tier = 2 // Resmî arama/grounding API
-    TierDirectional Tier = 3 // Dolaylı sinyal çıkarımı
-)
+// Kademeler (dev.geolens.engine.Tier)
+public enum Tier {
+    DIRECT(1),          // Doğrudan API yanıtı
+    OFFICIAL_PROXY(2),  // Resmî arama/grounding API
+    DIRECTIONAL(3);     // Dolaylı sinyal çıkarımı
+}
 ```
 
-**Kayıt defteri:** Tüm bağdaştırıcılar `engine/registry.go`'daki `Registry` yapısına derleme zamanında kaydedilir. `Get(name)` ve `List()` metodlarıyla erişilir.
+**Kayıt defteri:** Tüm bağdaştırıcılar `dev.geolens.engine.Registry` yapısına Spring bean olarak (`AppBeans`) kaydedilir. `get(name)` ve `list()` metodlarıyla erişilir.
 
 ### 4.2 Duygu Analizi Pipeline (FR-D7)
 
@@ -199,19 +199,20 @@ capture():
 | **Toplu dışa aktarım** | Seçili dönem yanıtlarını JSON/CSV export |
 | **Archive search** | İçerik bazlı arama (tarih, motor, prompt, marka filtresi) |
 
-```go
-type ArchiveEntry struct {
-    ID        string    `json:"id"`
-    TenantID  string    `json:"tenant_id"`
-    JobID     string    `json:"measurement_job_id"`
-    Engine    string    `json:"engine"`
-    Prompt    string    `json:"prompt"`
-    Response  string    `json:"response"`       // Ham AI yanıtı
-    Citations []string  `json:"citations"`
-    Tier      int       `json:"tier"`
-    CreatedAt time.Time `json:"created_at"`
-    S3Key     string    `json:"s3_key"`
-    Version   int       `json:"version"`       // S3 versiyon ID
+```java
+// dev.geolens.archive — Java record (Jackson snake_case ile serileşir)
+public record ArchiveEntry(
+        String id,
+        String tenantId,
+        String jobId,          // measurement_job_id
+        String engine,
+        String prompt,
+        String response,       // Ham AI yanıtı
+        List<String> citations,
+        Tier tier,
+        Instant createdAt,
+        String s3Key,
+        int version) {        // S3 versiyon ID
 }
 ```
 
@@ -271,15 +272,16 @@ GA4 Worker (6 saatte bir):
   4. data.ga4_data tablosuna yazma
 ```
 
-```go
-type SEOConnection struct {
-    ID          string    `json:"id"`
-    TenantID    string    `json:"tenant_id"`
-    Platform    string    `json:"platform"`     // "search_console" | "ga4"
-    Email       string    `json:"email"`
-    PropertyID  string    `json:"property_id"`  // SC site URL veya GA4 property ID
-    TokenExpiry time.Time `json:"token_expiry"`
-    ConnectedAt time.Time `json:"connected_at"`
+```java
+// dev.geolens.seo — Java record
+public record SeoConnection(
+        String id,
+        String tenantId,
+        String platform,      // "search_console" | "ga4"
+        String email,
+        String propertyId,    // SC site URL veya GA4 property ID
+        OffsetDateTime tokenExpiry,
+        OffsetDateTime connectedAt) {
 }
 ```
 
@@ -330,7 +332,7 @@ REST API — salt okunur, API anahtarı ile kimlik doğrulama.
 | `/public/v1/workspaces/{ws}/sentiment` | GET | Duygu analizi sonuçları |
 | `/public/v1/workspaces/{ws}/audit` | GET | Site denetim bulguları |
 
-API anahtarı yönetimi için `internal/apikey/` paketi: `POST /v1/workspaces/{ws}/api-keys` ile anahtar oluşturma, `DELETE` ile iptal.
+API anahtarı yönetimi için `dev.geolens.apikey` paketi: `POST /v1/workspaces/{ws}/api-keys` ile anahtar oluşturma, `DELETE` ile iptal.
 
 ### 4.12 SSO/SAML (FR-A4)
 
@@ -350,11 +352,11 @@ SAML Flow:
   5. Kullanıcı panoya yönlendirilir
 ```
 
-Kütüphane: `github.com/crewjam/saml`
+Uygulama: `dev.geolens.sso` (SamlSupport — SP metadata, ACS doğrulama).
 
 ### 4.13 Öneri-Etki Takibi (FR-E4)
 
-Öneri-etki takibi, uygulanan bir önerinin sonraki ölçümlerde görünürlük skoruna etkisini işaretli karşılaştırmayla izler. Detaylı mimari ve algoritma için bkz. `internal/recommendation/` ve 0309 (Scoring Engine).
+Öneri-etki takibi, uygulanan bir önerinin sonraki ölçümlerde görünürlük skoruna etkisini işaretli karşılaştırmayla izler. Detaylı mimari ve algoritma için bkz. `dev.geolens.recommendation` ve 0309 (Scoring Engine).
 
 ```
 Öneri işaretlendi (uygulandı) → sonraki ölçümde:
@@ -374,15 +376,16 @@ Kütüphane: `github.com/crewjam/saml`
 | **Alert History** | Tüm tetiklenen uyarıların kronolojik kaydı |
 | **Alert Dashboard** | Aktif uyarılar tek ekranda |
 
-```go
-type AlertRule struct {
-    ID          string   `json:"id"`
-    Name        string   `json:"name"`
-    Condition   string   `json:"condition"`   // "visibility_drop > 20 AND engine = 'chatgpt'"
-    Channel     string   `json:"channel"`      // "slack" | "email" | "webhook"
-    Target      string   `json:"target"`       // Slack kanalı, e-posta, webhook URL
-    Enabled     bool     `json:"enabled"`
-    CooldownMin int      `json:"cooldown_min"` // Tekrarlama önleme süresi
+```java
+// dev.geolens.alert — Java record
+public record AlertRule(
+        String id,
+        String name,
+        String condition,     // "visibility_drop > 20 AND engine = 'chatgpt'"
+        String channel,       // "slack" | "email" | "webhook"
+        String target,        // Slack kanalı, e-posta, webhook URL
+        boolean enabled,
+        int cooldownMin) {    // Tekrarlama önleme süresi
 }
 ```
 
@@ -429,11 +432,12 @@ audit_trail:
 | **report** | q:report | PDF rapor üretimi, white-label | ✅ Mevcuttu (MVP) |
 | **notify** | q:notify | Uyarı iletimi, e-posta özeti | ✅ Mevcuttu (MVP) |
 
-> **Kod gerçeği (v1.1):** Worker tek bir ikilidir (`cmd/worker`); ayrı `--profile` bayrağı yoktur. Tüm akışlar (q:measure + 6 analiz akışı) aynı worker içinde, aynı consumer group adıyla (`cfg.ConsumerGroup`) işlenir. SEO senkronu (Search Console/GA4) Redis Stream **kullanmaz**; worker içindeki ticker/zamanlayıcı ile çalışır. Stream sabitleri `platform/queue/outbox.go` (0307 §2.1) kaynak alınır.
+> **Kod gerçeği (v1.2):** Java geçişi sonrası worker tek Spring profilidir (`worker`); ayrı `--profile` yoktur. Tüm akışlar (q:measure + q:governance) aynı süreçte virtual thread tüketicileriyle işlenir; consumer group adı `queue.consumer-group` (varsayılan `cg:measure`). SEO senkronu (Search Console/GA4) Redis Stream **kullanmaz**; zamanlayıcı tabanlıdır. Stream sabitleri `dev.geolens.queue.QueueProperties` (0307 §2.1) kaynak alınır.
 
 **Worker başlangıcı:**
 ```bash
-./cmd/worker --consumer-group measure-workers   # tek işlem, tüm akışlar
+# java/Dockerfile target: worker (SPRING_PROFILES_ACTIVE=worker)
+java -jar geolens-*.jar --spring.profiles.active=worker
 ```
 
 ### 5.1 Sentiment Worker İş Akışı
@@ -450,7 +454,7 @@ q:sentiment → XREADGROUP → load_measurement_results →
 
 ### 5.2 SEO Veri Senkronu
 
-SEO senkronu Redis Stream kullanmaz; `cmd/worker` içinde ticker/zamanlayıcı tabanlıdır:
+SEO senkronu Redis Stream kullanmaz; worker profili içinde zamanlayıcı tabanlıdır:
 
 ```
 SC Senkronu (ticker):
@@ -657,24 +661,24 @@ Kullanıcı → "SSO ile Giriş" butonu
 ### 9.2 Paket Bağımlılık Grafiği (HT1 Yeni Paketler)
 
 ```
-engine/claude ──────┐
-engine/grok ────────┤
-engine/copilot ─────┤──→ engine/registry ──→ internal/measure
-engine/mistral ─────┤
-engine/gemini ──────┘
-                   
-internal/sentiment ──────→ internal/measure (raw response tüketir)
-internal/competitive ────→ internal/measure (score + snapshot okur)
-internal/replay ─────────→ internal/measure (job sonucu dinler)
-internal/archive ────────→ S3 + PostgreSQL
+dev.geolens.engine.claude ───┐
+dev.geolens.engine.grok ─────┤
+dev.geolens.engine.copilot ──┤──→ engine.Registry ──→ dev.geolens.measure
+Dev.geolens.engine.mistral ──┤
+dev.geolens.engine.gemini ───┘
+                          
+dev.geolens.sentiment ──────→ dev.geolens.measure (raw response tüketir)
+dev.geolens.competitive ────→ dev.geolens.measure (score + snapshot okur)
+dev.geolens.replay ─────────→ dev.geolens.measure (job sonucu dinler)
+dev.geolens.archive ────────→ S3 + PostgreSQL
 
-internal/technicalgeo ───→ harici HTTP (site tara)
-internal/contentgeo ─────→ internal/measure (citation okur)
-internal/seo ────────────→ Google API (OAuth2 + data fetch)
+dev.geolens.technicalgeo ───→ harici HTTP (site tara)
+dev.geolens.contentgeo ─────→ dev.geolens.measure (citation okur)
+dev.geolens.seo ────────────→ Google API (OAuth2 + data fetch)
 
-internal/sso ────────────→ crewjam/saml + harici IdP
-internal/audit ──────────→ governance (denetim izi)
-internal/apikey ─────────→ identity + auth (API key doğrulama)
+dev.geolens.sso ────────────→ SamlSupport + harici IdP
+dev.geolens.audit ──────────→ dev.geolens.audit (denetim izi)
+dev.geolens.apikey ─────────→ dev.geolens.auth (API key doğrulama)
 ```
 
 ---
@@ -690,25 +694,17 @@ internal/apikey ─────────→ identity + auth (API key doğrula
 | **Worker** | `geolens-worker` | 2+ replika | PostgreSQL, Redis, S3, Engines API |
 | **Frontend** | `geolens-web` | 1+ replika | API |
 
-> **Kod gerçeği (v1.1):** Worker tek bir konteynerdir; q:measure + 6 analiz akışını + SEO ticker'ı aynı süreçte işler. Ayrı profile konteynerleri yoktur.
+> **Kod gerçeği (v1.2):** Java'da worker tek konteynerdir (`java/Dockerfile` target: worker); q:measure + q:governance akışlarını aynı süreçte işler. Ayrı profile konteynerleri yoktur.
 
 ### 10.2 Redis Stream Yapılandırması
 
 | Stream | Consumer Group | Worker Profili |
 |:------:|:--------------:|:--------------:|
-| `q:measure` | `measure-workers` | worker (ana döngü) |
-| `q:audit` | `measure-workers` | worker |
-| `q:sentiment` | `measure-workers` | worker (analiz) |
-| `q:replay` | `measure-workers` | worker (analiz) |
-| `q:archive` | `measure-workers` | worker (analiz) |
-| `q:gap` | `measure-workers` | worker (analiz) |
-| `q:technical-geo` | `measure-workers` | worker (analiz) |
-| `q:content-geo` | `measure-workers` | worker (analiz) |
-| `q:report` | `measure-workers` | worker |
-| `q:notify` | `measure-workers` | worker |
-| `q:dead` | — | DLQ (manuel) |
+| `q:measure` | `cg:measure` | worker profili (ana tüketici) |
+| `q:governance` | `cg:measure` | worker profili (webhook iletimi + ACK) |
+| `q:dead` | — | DLQ (Redis stream, manuel) |
 
-> **Not (v1.1):** Kodda tüm akışlar aynı consumer group adını paylaşır (`cfg.ConsumerGroup`); per-stream ayrı grup/worker tasarımı uygulanmamıştır. q:seo-sc / q:seo-ga4 yoktur.
+> **Not (v1.2):** Java'da tüm akışlar aynı consumer group adını paylaşır (`queue.consumer-group`, varsayılan `cg:measure`); per-stream ayrı grup/worker tasarımı uygulanmamıştır. q:seo-sc / q:seo-ga4 yoktur.
 
 ---
 
@@ -766,43 +762,43 @@ internal/apikey ─────────→ identity + auth (API key doğrula
 
 | Bileşen | FR | Ana Dosyalar |
 |:---------|:--:|:-------------|
-| Claude adapter | FR-B6 | `engine/claude/adapter.go` |
-| Grok adapter | FR-B6 | `engine/grok/adapter.go` |
-| Copilot adapter | FR-B6 | `engine/copilot/adapter.go` |
-| Mistral adapter | FR-B6 | `engine/mistral/adapter.go` |
-| Google AI Overview | FR-B6 | `engine/gemini/adapter.go` (aiOverviewAdapter) |
-| Sentiment analysis | FR-D7 | `internal/sentiment/handler.go`, `engine.go` |
-| Hallucination detection | FR-D8 | `internal/sentiment/handler.go`, `engine.go` |
-| Competitive gap | FR-D11 | `internal/competitive/handler.go`, `engine.go` |
-| Conversation replay | FR-D12 | `internal/replay/handler.go`, `engine.go` |
-| Response archive | FR-D13 | `internal/archive/handler.go`, `engine.go` |
-| LLM bot monitoring | FR-B6 | `internal/technicalgeo/handler.go`, `engine.go` |
-| Schema correlation | FR-B7 | `internal/technicalgeo/handler.go`, `engine.go` |
-| SEO integrations | FR-B8 | `internal/seo/handler.go`, `engine.go` |
-| Content gap | FR-E5 | `internal/contentgeo/handler.go`, `engine.go` |
-| GEO content recommendations | FR-E6 | `internal/contentgeo/handler.go`, `engine.go` |
-| Technical GEO | FR-E7 | `internal/technicalgeo/handler.go`, `engine.go` |
-| Site audit | FR-B4 | `internal/audit/handler.go`, `engine.go` |
-| Public API | FR-F6 | `internal/public/handler.go` |
-| SSO/SAML | FR-A4 | `internal/sso/handler.go`, `saml.go` |
-| Audit trail | FR-H2 | `internal/audit/handler.go` |
-| Alert rules | FR-F12 | `internal/alert/handler.go`, `internal/delivery` |
+| Claude adapter | FR-B6 | `dev.geolens.engine.claude.ClaudeAdapter` |
+| Grok adapter | FR-B6 | `dev.geolens.engine.grok.GrokAdapter` |
+| Copilot adapter | FR-B6 | `dev.geolens.engine.copilot.CopilotAdapter` |
+| Mistral adapter | FR-B6 | `dev.geolens.engine.mistral.MistralAdapter` |
+| Google AI Overview | FR-B6 | `dev.geolens.engine.gemini.GeminiAdapter` (AI Mode/Overview varyantları) |
+| Sentiment analysis | FR-D7 | `dev.geolens.sentiment.web`, `dev.geolens.sentiment.engine.SentimentEngine` |
+| Hallucination detection | FR-D8 | `dev.geolens.sentiment.web`, `dev.geolens.sentiment.engine.SentimentEngine` |
+| Competitive gap | FR-D11 | `dev.geolens.competitive.web`, `dev.geolens.competitive.CompetitiveEngine` |
+| Conversation replay | FR-D12 | `dev.geolens.replay.web` |
+| Response archive | FR-D13 | `dev.geolens.archive.web` |
+| LLM bot monitoring | FR-B6 | `dev.geolens.technicalgeo.web` |
+| Schema correlation | FR-B7 | `dev.geolens.technicalgeo.web` |
+| SEO integrations | FR-B8 | `dev.geolens.seo.web` |
+| Content gap | FR-E5 | `dev.geolens.contentgeo.web` |
+| GEO content recommendations | FR-E6 | `dev.geolens.contentgeo.web` |
+| Technical GEO | FR-E7 | `dev.geolens.technicalgeo.web` |
+| Site audit | FR-B4 | `dev.geolens.audit.web` |
+| Public API | FR-F6 | `dev.geolens.publicapi.web.PublicController` |
+| SSO/SAML | FR-A4 | `dev.geolens.sso.web.SsoController`, `dev.geolens.sso.SamlSupport` |
+| Audit trail | FR-H2 | `dev.geolens.audit.web` |
+| Alert rules | FR-F12 | `dev.geolens.alert.web.AlertController`, `dev.geolens.delivery` |
 | Executive dashboard | FR-F8 | `web/src/components/Dashboard/` |
 | Operational dashboard | FR-F9 | `web/src/components/Dashboard/` |
 | SEODataPanel | FR-B8 | `web/src/components/SEODataPanel.tsx` |
 | SiteAuditPanel | FR-B4 | `web/src/components/SiteAuditPanel.tsx` |
-| Brand management | FR-B1 | `internal/config/handler.go`, `web/src/components/BrandManagement.tsx` |
-| Competitor CRUD | FR-B1 | `internal/config/handler.go`, `web/src/components/BrandManagement.tsx` |
-| Recommendation impact | FR-E4 | `internal/recommendation/handler.go` |
-| Multi-workspace panorama | FR-D6 | `internal/measure/handler.go` |
-| Workspace archive/transfer | FR-G3 | `internal/archive/handler.go` |
+| Brand management | FR-B1 | `dev.geolens.config.web.ConfigController`, `web/src/components/BrandManagement.tsx` |
+| Competitor CRUD | FR-B1 | `dev.geolens.config.web.ConfigController`, `web/src/components/BrandManagement.tsx` |
+| Recommendation impact | FR-E4 | `dev.geolens.recommendation.web.RecommendationController` |
+| Multi-workspace panorama | FR-D6 | `dev.geolens.config.web.ConfigController` (listWorkspacePanorama) |
+| Workspace archive/transfer | FR-G3 | `dev.geolens.archive.web.ArchiveController` |
 
 ---
 
 ## 14. GeoLens İçin Çıkarımlar
 
 1. **HT1 mimarisi 4 yeni bounded context ve 8 yeni alt modül eklemiştir.** Bu genişleme, 0502'deki bağımlılık kurallarına (D1–D7) ek olarak P6–P10 ilkelerini getirmiştir.
-2. **Worker tek süreçtir; stream seti genişlemiştir.** q:measure + 6 analiz akışı (sentiment, replay, archive, gap, technical-geo, content-geo) + report/notify/audit aynı worker içinde işlenir; SEO senkronu ticker tabanlıdır. Per-stream ayrı worker profili tasarımı uygulanmamıştır (0307 §2.1).
+2. **Worker tek süreçtir; stream seti genişlemiştir.** Java geçişi sonrası q:measure + q:governance aynı worker profili içinde işlenir; SEO senkronu zamanlayıcı tabanlıdır. Per-stream ayrı worker profili tasarımı uygulanmamıştır (0307 §2.1).
 3. **API yüzeyi 25+ yeni uçla genişlemiştir.** Public API (salt okunur) ayrı bir routing katmanında sunulur. İç API'de tüm yeni uçlar mevcut middleware zincirinden (auth → tenant → RBAC → entitlement) geçer.
 4. **Veritabanı şema sayısı artmıştır.** HT1 eklemeleri `analysis`, `seo`, `technical`, `content`, `competitive`, `replay`, `archive` şemalarını getirmiştir; Faz 4'te `registry`, `guardrail`, `policy`, `bias`, `gate`, `explain`, `agent`, `redteam`, `prompt`, `benchmark`, `cost`, `usage`, `optimize`, `version`, `incident`, `drift`, `billing` ile 30+ şemaya ulaşmıştır (0305 §9.12). RLS, tenant izole tablolarda uygulanır; BC11/BC12 şemaları handler WHERE kullanır (0310 v1.1).
 5. **Gözlemlenebilirlik 15+ yeni metrik ve 7+ yeni alarmla genişlemiştir.** Her worker profili kendi metriklerini Prometheus'a yazar.
@@ -838,3 +834,4 @@ internal/apikey ─────────→ identity + auth (API key doğrula
 |----------|-------|------------|
 | 1.0 | 28.07.2026 | İlk yayın: HT1 Sistem Mimarisi dokümanı. Faz 3 açılışı. 10 tasarım ilkesi (P1–P10), 4 yeni bounded context (BC7–BC10), 8 alt modül, 8 worker profili, 25+ yeni API ucu, 15+ yeni metrik, 7+ yeni alarm. Tüm HT1 bileşenlerinin mimari kararları, veri akışları ve bağımlılıkları tanımlanmıştır. |
 | 1.1 | 04.08.2026 | **Kod gerçeği senkronu:** Worker profili tasarımı gerçek uygulamayla hizalandı — tek `cmd/worker` süreci, ayrı `--profile` yok, tüm akışlar aynı consumer group'u paylaşır. §5 tablosu gerçek analiz akışlarıyla (replay, archive, technical-geo, content-geo) güncellendi; q:seo-sc/q:seo-ga4 kaldırıldı (SEO senkronu ticker tabanlı, 0304 §7.5). §8.1/§8.2/§10.1/§10.2 ve §14 notları güncellendi. Şema adları düzeltildi (`technical`, `content`; `technicalgeo`/`contentgeo` yok) ve Faz 4 şema genişlemesi not edildi. 0307 §2.1, 0304, 0310 ile hizalı. |
+| 1.2 | 15.08.2026 | **Java geçişi:** Paket/yol referansları `dev.geolens.*` ile güncellendi; Adapter arayüzü, ArchiveEntry/SEOConnection/AlertRule örnekleri Java karşılıklarına çevrildi; worker bölümü tek Spring worker profiline (q:measure + q:governance) indirgendi; SSO kütüphane referansı `dev.geolens.sso.SamlSupport` ile değiştirildi. ADR-014 ilişkili listesine eklendi. |

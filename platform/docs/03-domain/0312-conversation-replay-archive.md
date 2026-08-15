@@ -4,11 +4,11 @@
 |---|---|
 | Doküman ID | 0312 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.1 |
+| Versiyon | 1.2 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 04 Ağustos 2026 |
-| İlişkili | 0302, 0304, 0307, 0308, 0309, 0501, 0506, 0601, 0605, 0204, 0205, 0207, internal/replay, internal/archive, **docs/AI_Visibility_Generative_Search_Intelligence_Platform.md** |
+| İlişkili | 0302, 0304, 0307, 0308, 0309, 0501, 0506, 0601, 0605, 0204, 0205, 0207, dev.geolens.replay, dev.geolens.archive, **docs/AI_Visibility_Generative_Search_Intelligence_Platform.md** |
 
 ---
 
@@ -88,9 +88,9 @@ Aynı prompt setinin farklı zamanlardaki yanıtlarını karşılaştırarak AI 
 
 | Bileşen | Sorumluluk | Teknoloji |
 |---------|-----------|-----------|
-| **Snapshot Service** | Conversation Replay kaydı oluşturma, okuma, silme | `internal/replay/` |
-| **Archive Service** | Response Archive yönetimi, arama, karşılaştırma | `internal/archive/` |
-| **Diff Engine** | İki yanıt sürümü arasındaki farkı hesaplama | `internal/archive/diff.go` |
+| **Snapshot Service** | Conversation Replay kaydı oluşturma, okuma, silme | `dev.geolens.replay` |
+| **Archive Service** | Response Archive yönetimi, arama, karşılaştırma | `dev.geolens.archive` |
+| **Diff Engine** | İki yanıt sürümü arasındaki farkı hesaplama | `dev.geolens.replay` (Diff) |
 | **Replay Storage** | Snapshot'ların S3'te saklanması | S3 + PostgreSQL meta |
 | **Archive Index** | Arşiv verilerinin aranabilir indeksi | Elasticsearch (HT1+) / PostgreSQL (MVP) |
 
@@ -318,7 +318,7 @@ GET    /v1/archive/changelog               — AI cevap değişim günlüğü (z
 Tüm olaylar, 0304'te tanımlanan **transactional outbox pattern** ile taşınır:
 
 1. Olay üretimi → `public.event_outbox` tablosuna yazılır (aynı PG işleminde)
-2. Outbox dağıtıcısı (platform/queue) → pending kayıtları okur (SKIP LOCKED)
+2. Outbox dağıtıcısı (dev.geolens.queue.OutboxDispatcher) → pending kayıtları okur (SKIP LOCKED)
 3. Redis Streams kuyruğuna yazar (`q:replay`, `q:archive`)
 4. Tüketici (worker) kuyruktan okur ve işler
 5. `dispatched` işaretlenir
@@ -461,7 +461,7 @@ CREATE TABLE archive.response_entries (
 -- RLS: tenant_isolation (tenant_id) + indexler (brand_id/engine/version, tenant_id)
 ```
 
-> **Tasarım-uygulama farkı:** Bu dokümanın §4.1/§4.2 veri modelindeki `replay_id` (→ `id`), `response_snapshot_s3_key` (→ `s3_ref`), `prompt_set_id` (→ `brand_id`), `citations`, `fidelity_label`, `sentiment_score`, `diff_summary`, `has_content_change/has_citation_change`, `previous_version_id` alanları ilk migration'da yer almaz. Diff (`internal/replay.DiffResult`: has_changed + changes) iki snapshot okunarak talep üzerine hesaplanır. `018_archive.sql` (workspace/brand `archived_at`) bu özellikle ilgisizdir; `037_sentiment_hallucination.sql` sentiment/hallüsinasyon şemasıdır.
+> **Tasarım-uygulama farkı:** Bu dokümanın §4.1/§4.2 veri modelindeki `replay_id` (→ `id`), `response_snapshot_s3_key` (→ `s3_ref`), `prompt_set_id` (→ `brand_id`), `citations`, `fidelity_label`, `sentiment_score`, `diff_summary`, `has_content_change/has_citation_change`, `previous_version_id` alanları ilk migration'da yer almaz. Diff (`dev.geolens.replay` DiffResult: has_changed + changes) iki snapshot okunarak talep üzerine hesaplanır. `018_archive.sql` (workspace/brand `archived_at`) bu özellikle ilgisizdir; `037_sentiment_hallucination.sql` sentiment/hallüsinasyon şemasıdır.
 
 ### 11.2 Worker Profili Genişletmesi
 
@@ -481,7 +481,7 @@ Güncellenmiş Ölçüm Hattı:
 
 1.  Tetikleme           — scheduler
 2.  İş üretimi          — scheduler
-3.  Outbox dağıtımı     — platform/queue
+3.  Outbox dağıtımı     — dev.geolens.queue.OutboxDispatcher
 4.  Kuyruktan okuma     — worker
 5.  Motor çağrısı       — engines
 6.  Ham yanıt saklama   — measure (S3 + meta)
@@ -542,3 +542,4 @@ Güncellenmiş Ölçüm Hattı:
 |----------|-------|------------|
 | 1.0 | 27.07.2026 | İlk yayın: Conversation Replay (FR-D12) ve Response Archive (FR-D13) mimari tasarımı. Kavramlar, veri modeli, API tasarımı, domain events, alerting entegrasyonu, migration planı, güvenlik ve KVKK/GDPR uyumu. Turkcell RFP gereksinimlerini karşılar. |
 | 1.1 | 04.08.2026 | **Kod gerçeği senkronu:** §7.1 olay taşıma şeması `governance.event_outbox` → `public.event_outbox` düzeltildi. §11.1 migration planı shipped `038_conversation_replay.sql` ile yenilendi (replay+archive şemaları; sadeleştirilmiş kolon seti). Tasarım-uygulama farkı notu eklendi: §4.1/§4.2'deki detaylı kolonların ilk migration'da olmadığı, diff'in talep üzerine `internal/replay.DiffResult` ile hesaplandığı belirtildi. `018_archive.sql`'in ilgisiz olduğu netleştirildi. |
+| 1.2 | 15.08.2026 | **Java geçişi:** Outbox dağıtıcı referansları `dev.geolens.queue.OutboxDispatcher` ile güncellendi. |

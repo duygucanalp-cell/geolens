@@ -4,11 +4,11 @@
 |---|---|
 | Doküman ID | 0506 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
-| İlişkili | 0501, 0503, 0307, 0308, 0309 |
+| İlişkili | 0501, 0503, 0307, 0308, 0309, ADR-014 |
 
 ---
 
@@ -20,11 +20,12 @@ Bu doküman GeoLens worker süreçlerinin tasarımını tanımlar: profil yapıs
 
 ## 2. Worker Profilleri
 
+Java geçişi sonrası worker tek Spring profilidir (`worker`); ayrı report/notify profili yoktur. Ölçüm + analiz akışları aynı süreçte, virtual thread tüketicileriyle işlenir.
+
 | Profil | Kuyruk | Sorumluluk |
 |:------:|--------|------------|
-| **measure** | q:measure, q:audit | Motor çağrıları, ham yanıt saklama, skor hesaplama |
-| **report** | q:report | PDF rapor üretimi, white-label şablon uygulama |
-| **notify** | q:notify | Uyarı iletimi, e-posta özeti, bildirim dağıtımı |
+| **worker** (tek profil) | q:measure | Motor çağrıları, ham yanıt saklama, skor hesaplama, tavsiye, sentiment/hallüsinasyon/gap analizi, kritik bildirim |
+| **worker** (tek profil) | q:governance | Faz 4 olayları: guardrail/gate/incident/drift/redteam webhook iletimi + ACK |
 
 ---
 
@@ -43,11 +44,13 @@ kuyrukta → çalışıyor → tamamlandı
 
 | Parametre | Açıklama | Varsayılan |
 |-----------|----------|:----------:|
-| --profile | Worker profili | measure |
-| --concurrency | Eşzamanlı iş sayısı | 4 |
-| --batch-size | Toplu okuma boyutu | 10 |
-| --queue-poll-interval | Kuyruk yoklama aralığı | 1s |
-| --shutdown-timeout | Zarif kapanış süresi | 30s |
+| SPRING_PROFILES_ACTIVE | Profil seçimi (worker) | worker |
+| queue.consumer-group | Redis Stream consumer group adı | cg:measure |
+| queue.consumer-name | Tüketici adı (her instance farklı) | örnek adı |
+| queue.read-block-ms | XREADGROUP BLOCK süresi | 5000 |
+| queue.workers-enabled | Tüketicileri aç/kapat | true |
+
+Tüketiciler virtual thread'lerde çalışır (measure + governance); ana iş parçacığı `CountDownLatch` ile açık tutulur.
 
 ---
 
@@ -64,8 +67,8 @@ kuyrukta → çalışıyor → tamamlandı
 ## 6. Zarif Kapanış
 
 ```
-SIGTERM → Yeni iş almayı durdur → Mevcut işleri bitir (timeout)
-        → Onaylanamayanlar → XAUTOCLAIM ile devir
+SIGTERM/SHUTDOWN → @PreDestroy → latch serbest → tüketici döngüleri durur
+                → İşlenmemiş mesajlar → XAUTOCLAIM ile devir
 ```
 
 ---
@@ -83,3 +86,4 @@ SIGTERM → Yeni iş almayı durdur → Mevcut işleri bitir (timeout)
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: worker profilleri, iş yaşam döngüsü, yeniden deneme, zarif kapanış. |
+| 1.1 | 15.08.2026 | **Java geçişi:** Worker profilleri tek Spring `worker` profiline indirgendi (q:measure + q:governance); başlangıç parametreleri Spring property/env adlarıyla güncellendi; zarif kapanış `@PreDestroy` + latch olarak yeniden ifade edildi. ADR-014 ilişkili listesine eklendi. |

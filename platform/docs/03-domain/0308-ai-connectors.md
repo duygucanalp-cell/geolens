@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0308 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.3 |
+| Versiyon | 1.4 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 04 Ağustos 2026 |
@@ -101,7 +101,7 @@ Tüm adapter'lar, API anahtarı boş veya `"mock"` olduğunda gerçekçi sahte y
 | **Hata yönetimi** | HTTP 429 → rate limit; 4xx/5xx → engine hatası |
 | **Mock modu** | Gerçekçi marka yanıtı + 3 örnek citation |
 | **Timeout** | 90 sn |
-| **Detay** | `engine/perplexity/adapter.go` |
+| **Detay** | `dev.geolens.engine.perplexity.PerplexityAdapter` |
 
 ### 3.3 ChatGPT (MVP — Kademe 2)
 
@@ -112,7 +112,7 @@ Tüm adapter'lar, API anahtarı boş veya `"mock"` olduğunda gerçekçi sahte y
 | **Hata yönetimi** | HTTP 429 → rate limit + Retry-After; timeout → ErrEngineTimeout |
 | **Mock modu** | Gerçekçi marka yanıtı + 3 örnek citation |
 | **Timeout** | 90 sn |
-| **Detay** | `engine/chatgpt/adapter.go` |
+| **Detay** | `dev.geolens.engine.chatgpt.ChatGptAdapter` |
 
 ### 3.4 Gemini (MVP — Kademe 1)
 
@@ -124,7 +124,7 @@ Tüm adapter'lar, API anahtarı boş veya `"mock"` olduğunda gerçekçi sahte y
 | **Mock modu** | Gerçekçi marka yanıtı + 3 örnek grounding attribution |
 | **Timeout** | 60 sn |
 | **Not** | Hem standart Gemini (Kademe 1) hem de Google AI Overview (Kademe 3) aynı adapter'da |
-| **Detay** | `engine/gemini/adapter.go` |
+| **Detay** | `dev.geolens.engine.gemini.GeminiAdapter` |
 
 ### 3.5 Google AI Overview (HT1 — Kademe 3)
 
@@ -135,7 +135,7 @@ Tüm adapter'lar, API anahtarı boş veya `"mock"` olduğunda gerçekçi sahte y
 | **Fidelity** | `"Kademe 3 · google_ai_overview · gemini-3.5-pro (official_proxy/directional)"` |
 | **Kademe gerekçesi** | Google AI Overview'un programatik erişimi yoktur; Gemini grounding vekili ile proxy'lenir |
 | **Kullanım** | `adapter.WithAIOverview(tenantID, workspaceID).Execute(ctx, prompt)` |
-| **Detay** | `engine/gemini/adapter.go` — `WithAIOverview()` ve `aiOverviewAdapter` struct |
+| **Detay** | `dev.geolens.engine.gemini.GeminiAdapter` — `withAIOverview()` ve AI Overview varyantı |
 
 ### 3.6 Claude (HT1 — Kademe 2)
 
@@ -149,7 +149,7 @@ Tüm adapter'lar, API anahtarı boş veya `"mock"` olduğunda gerçekçi sahte y
 | **Mock modu** | 3 citation içeren gerçekçi marka yanıtı |
 | **Timeout** | 90 sn |
 | **S3 kaydı** | Her başarılı yanıt sonrası S3'e kayıt (storage varsa) |
-| **Detay** | `engine/claude/adapter.go` |
+| **Detay** | `dev.geolens.engine.claude.ClaudeAdapter` |
 
 ### 3.7 Grok (HT1 — Kademe 2)
 
@@ -163,7 +163,7 @@ Tüm adapter'lar, API anahtarı boş veya `"mock"` olduğunda gerçekçi sahte y
 | **Mock modu** | 3 citation içeren gerçekçi marka yanıtı |
 | **Timeout** | 90 sn |
 | **S3 kaydı** | Her başarılı yanıt sonrası S3'e kayıt (storage varsa) |
-| **Detay** | `engine/grok/adapter.go` |
+| **Detay** | `dev.geolens.engine.grok.GrokAdapter` |
 
 ### 3.8 Copilot (HT1 — Kademe 3)
 
@@ -178,7 +178,7 @@ Tüm adapter'lar, API anahtarı boş veya `"mock"` olduğunda gerçekçi sahte y
 | **Mock modu** | 2 citation içeren gerçekçi marka yanıtı |
 | **Timeout** | 120 sn (Bing araması nedeniyle daha uzun) |
 | **S3 kaydı** | Her başarılı yanıt sonrası S3'e kayıt (storage varsa) |
-| **Detay** | `engine/copilot/adapter.go` |
+| **Detay** | `dev.geolens.engine.copilot.CopilotAdapter` |
 
 ### 3.9 Mistral (HT1 — Kademe 2)
 
@@ -194,7 +194,7 @@ Tüm adapter'lar, API anahtarı boş veya `"mock"` olduğunda gerçekçi sahte y
 | **Timeout** | 60 sn |
 | **Stratejik önem** | AB pazarı + KVKK/GDPR uyumu; Le Chat yüzeyi opsiyonel |
 | **S3 kaydı** | Her başarılı yanıt sonrası S3'e kayıt (storage varsa) |
-| **Detay** | `engine/mistral/adapter.go` |
+| **Detay** | `dev.geolens.engine.mistral.MistralAdapter` |
 
 ### 3.10 Google AI Mode (Faz 4 — Kademe 3)
 
@@ -207,7 +207,7 @@ Tüm adapter'lar, API anahtarı boş veya `"mock"` olduğunda gerçekçi sahte y
 | **Kullanım** | `adapter.WithAIMode(tenantID, workspaceID).Execute(ctx, prompt)` |
 | **WithContext davranışı** | `WithContext()` override edilir; aksi halde embedded `Adapter` yöntemi wrapper'ı düşürüp Kademe 1 gemini'ye geri döner |
 | **Risk** | Maliyet/kararlılık değerlendirmesi 0207 §5.2.3 kriterleriyle yürütülür |
-| **Detay** | `engine/gemini/adapter.go` — `WithAIMode()` ve `aiModeAdapter` struct |
+| **Detay** | `dev.geolens.engine.gemini.GeminiAdapter` — `withAIMode()` ve AI Mode varyantı |
 
 ---
 
@@ -234,11 +234,11 @@ Tüm adapter'lar, API anahtarı boş veya `"mock"` olduğunda gerçekçi sahte y
 
 ## 5. Yeni Motor Ekleme Süreci
 
-1. `engine/{name}/adapter.go` — Adapter implementasyonu (arayüz: `Name()`, `Tier()`, `Execute()`, `WithContext()`)
-2. `engine/{name}/adapter_test.go` — Birim testleri (mock mod, parse, hata senaryoları)
-3. `engine/registry.go` — Kayıt defterine ekleme (derleme zamanı)
-4. `cmd/api/main.go`, `cmd/worker/main.go` — API ve worker başlangıcında registry'e kayıt
-5. `internal/config/config.go` — API anahtarı env değişkeni ekleme
+1. `dev.geolens.engine.{name}.{Name}Adapter` — Adapter implementasyonu (arayüz: `name()`, `tier()`, `execute()`, `withContext()`)
+2. `src/test/java/dev/geolens/engine/{name}/{Name}AdapterTest.java` — Birim testleri (mock mod, parse, hata senaryoları)
+3. `dev.geolens.engine.Registry` — Kayıt defterine ekleme (register())
+4. `dev.geolens.config.AppBeans` — Spring bean kurulumunda registry'ye kayıt
+5. `dev.geolens.config` — API anahtarı env değişkeni ekleme
 6. `docs/04-ai-framework/0402-prompt-taxonomy.md` — Prompt taxonomy'e motor ekleme (pilot)
 7. Paket hakları (Entitlement) tanımı — Hangi paketlerin hangi motorlara erişebileceği
 8. K1 maliyet profili girişi (iç maliyet takibi)
@@ -295,3 +295,4 @@ Mock modunda `(mock)` ibaresi eklenir. Bu, geliştirme/demo ortamında üretilen
 | 1.1 | 27.07.2026 | Turkcell RFP kapsamında yeni motorlar eklendi: Google AI Overview (Tier 3), Google AI Mode (Tier 3), Mistral (Tier 2). Motor tablosu güncellendi. |
 | 1.2 | 28.07.2026 | **HT1 motor genişletmesi:** 5 yeni adapter eklendi (Claude, Grok, Copilot, Mistral, Google AI Overview). Toplam 8 AI yüzeyi. Her adapter için detaylı özellik tabloları (API, model, timeout, alıntı mekanizması, hata yönetimi, mock modu). WithContext deseni, RawSaver entegrasyonu ve mock modu dokümante edildi. Hata sınıfları genişletildi (ErrAuthFailed 403, ErrMockMode, ErrEmptyResponse). Yeniden deneme politikası eklendi. Motor ekleme süreci 4'ten 8 adıma çıkarıldı. HT2 planı (Google AI Mode, sertleştirme, Mistral bölgesel) eklendi. Fidelity etiket formatı standardize edildi. |
 | 1.3 | 04.08.2026 | **Faz 4 motor senkronu:** Google AI Mode (`google_ai_mode`) HT2 planından (§6.1) üretime taşındı — `WithAIMode()` + `aiModeAdapter` `engine/gemini/adapter.go` içinde implemente edildi (Kademe 3, `official_proxy/directional` etiketi, `WithContext` override'ı wrapper'ı korur). §3.1 motor tablosuna Google AI Mode satırı eklendi; yeni §3.10 detay bölümü yazıldı. Motor sayısı 0207 §4/0210/0301 ile hizalandı: 7 adaptör paketi + AI Mode = 8 motor (Google AI Overview gemini yüzeyi olarak 9. fidelity etiketi). §7 örnekleri genişletildi. |
+| 1.4 | 15.08.2026 | **Java geçişi:** Motor kayıt adımları `dev.geolens.config.AppBeans` / `dev.geolens.config` ile güncellendi. |

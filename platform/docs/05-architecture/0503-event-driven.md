@@ -4,11 +4,11 @@
 |---|---|
 | Doküman ID | 0503 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.1 |
+| Versiyon | 1.3 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
-| İlişkili | 0501, 0304, 0307, ADR-005 |
+| İlişkili | 0501, 0304, 0307, ADR-005, ADR-014 |
 
 ---
 
@@ -48,7 +48,7 @@ Tüm olay üretimi transactional outbox deseniyle yapılır:
 | q:content-geo | cg:analysis | content.gap, content.hub |
 | q:dead | — | Zehirli mesajlar (DLQ) |
 
-> **Faz 4/HT1 kapsamı:** Analiz akışları (q:sentiment, q:replay, q:archive, q:gap, q:technical-geo, q:content-geo) 0307 §2.1 ve `platform/queue/outbox.go` sabitleriyle birebir eşleşir. SEO senkronu (Search Console/GA4) Redis Stream **kullanmaz**; worker içinde ticker/zamanlayıcı tabanlıdır.
+> **Faz 4/HT1 kapsamı:** Analiz akışları 0307 §2.1 ve Java tarafında `dev.geolens.queue.QueueProperties` sabitleriyle birebir eşleşir. SEO senkronu (Search Console/GA4) Redis Stream **kullanmaz**; worker içinde zamanlayıcı tabanlıdır. Java geçişi sonrası akışlar tek worker profilinde q:measure + q:governance tüketicileriyle işlenir.
 
 ---
 
@@ -67,10 +67,9 @@ Tüm olay üretimi transactional outbox deseniyle yapılır:
 ## 5. Olay Akış Şeması
 
 ```
-scheduler → q:measure → worker:measure → ScoreCalculated → outbox
-                                                                ↓
-                                                q:notify → worker:notify → Alert
-                                                q:report → worker:report → PDF
+scheduler profili → q:measure → worker profili → ScoreCalculated → outbox
+                                                          ↓
+                                                  q:governance → worker → webhook/Alert
 ```
 
 ---
@@ -100,3 +99,4 @@ scheduler → q:measure → worker:measure → ScoreCalculated → outbox
 | 1.0 | 22.07.2026 | İlk yayın: outbox pattern, kuyruk yapısı, tüketim garantileri, olay akışı. |
 | 1.1 | 23.07.2026 | Devralınan AVIP Kararları eklendi: D-74 (Redis Streams/ADR-005), D-75 (DLQ oynatma), D-73 (kilit kaybı). |
 | 1.2 | 04.08.2026 | **Stream senkronu:** §3 kuyruk yapısı kod gerçeğiyle güncellendi (`platform/queue/outbox.go`) — 6 analiz akışı eklendi (q:sentiment, q:replay, q:archive, q:gap, q:technical-geo, q:content-geo). SEO senkronunun stream kullanmadığı not edildi. 0307 §2.1 ile hizalı. |
+| 1.3 | 15.08.2026 | **Java geçişi:** Kuyruk sabitleri `dev.geolens.queue.QueueProperties` ile güncellendi; olay akış şeması Java profillerine (scheduler → q:measure → worker; q:governance → webhook) çevrildi. ADR-014 ilişkili listesine eklendi. |

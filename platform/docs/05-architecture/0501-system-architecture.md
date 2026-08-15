@@ -4,11 +4,11 @@
 |---|---|
 | Doküman ID | 0501 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
-| İlişkili | 0302, 0305, 0502-0510, 0204, ADR-001-005 |
+| İlişkili | 0302, 0305, 0502-0510, 0204, ADR-001-005, ADR-014 |
 
 ---
 
@@ -23,7 +23,7 @@ Bu doküman GeoLens Platform'un sistem mimarisini konteyner düzeyinde sabitler:
 | # | İlke | Açıklama |
 |:-:|------|----------|
 | P1 | Tek dağıtım, tek kod tabanı | Modüler monolit; işçiler aynı koddan ayrı süreç |
-| P2 | Bağlam sınırları paket düzeyinde | Go internal dizinleri derleyici tarafından zorlanır |
+| P2 | Bağlam sınırları paket düzeyinde | Java paketleri (`dev.geolens.*`) modül sınırlarıyla zorlanır |
 | P3 | Kiracı bağlamı her katta | Veri katmanından kuyruğa kadar kiracı bağlamı taşınır |
 | P4 | Deterministik hesap | Aynı girdilerle aynı sonuç; versiyonlanmış algoritmalar |
 | P5 | Değişime dayanıklılık | Bağdaştırıcı ekleme/kaldırma kayıt defteri düzeyinde |
@@ -34,9 +34,9 @@ Bu doküman GeoLens Platform'un sistem mimarisini konteyner düzeyinde sabitler:
 
 | Süreç | Sorumluluk | Ana Bileşenler |
 |-------|-----------|----------------|
-| **cmd/api** | HTTP API sunucusu; auth, RBAC, kiracı bağlamı | platform/httpmw, tüm bağlam api.go yüzeyleri |
-| **cmd/scheduler** | Zamanlayıcı; izleme planları, idempotent iş üretimi | platform/queue, internal/config |
-| **cmd/worker** | İşçi süreçleri (measure/report/notify profilleri) | internal/measure, internal/delivery, internal/insight |
+| **api profili** (Spring Boot) | HTTP API sunucusu; JWT auth, RBAC, kiracı bağlamı | dev.geolens.security (AuthFilter), tüm controller yüzeyleri |
+| **scheduler profili** | Zamanlayıcı; outbox dağıtıcı, panel cron taraması, haftalık digest | dev.geolens.scheduler, dev.geolens.queue |
+| **worker profili** | Redis Stream tüketicileri (q:measure → ölçüm/skor/analiz, q:governance → webhook) | dev.geolens.worker, dev.geolens.measure |
 
 ### Altyapı Bileşenleri
 
@@ -54,7 +54,7 @@ Bu doküman GeoLens Platform'un sistem mimarisini konteyner düzeyinde sabitler:
 |:----:|---------|----------|
 | 1. Tetikleme | scheduler | İzleme planı penceresi açılır |
 | 2. İş üretimi | scheduler | measurement_jobs + outbox (aynı PG işlemi) |
-| 3. Outbox dağıtımı | platform/queue | SKIP LOCKED → Redis Streams |
+| 3. Outbox dağıtımı | dev.geolens.queue (OutboxDispatcher) | SKIP LOCKED → Redis Streams |
 | 4. Kuyruktan okuma | worker | XREADGROUP + kiracı bağlam doğrulama |
 | 5. Motor çağrısı | engines | Bağdaştırıcı Execute() |
 | 6. Ham yanıt saklama | measure | S3 + meta veri |
@@ -83,3 +83,4 @@ Sabit sıra (değiştirilemez): Panik kurtarma → Request ID → Kimlik doğrul
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: 5 tasarım ilkesi, 3 konteyner, 9 adımlı ölçüm hattı, middleware zinciri. |
+| 1.1 | 15.08.2026 | **Java geçişi:** Go → Java. Konteyner görünümü Spring profillerine (api/worker/scheduler) çevrildi; bileşenler `dev.geolens.*` paketleriyle güncellendi; P2 paket sınırı Java modülleri olarak tanımlandı. ADR-014 (Java veri erişim katmanı) ilişkili listesine eklendi. |

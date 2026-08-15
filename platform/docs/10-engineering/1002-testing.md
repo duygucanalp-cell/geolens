@@ -4,7 +4,7 @@
 |---|---|---|
 | Doküman ID | 1002 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.2 |
+| Versiyon | 1.3 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
@@ -32,7 +32,7 @@ Bu doküman GeoLens Platform test stratejisini tanımlar. Test piramidi yaklaş�
 
 | Katman | Oran | Araç | Süre |
 |:------:|:----:|:----:|:----:|
-| **Birim** | %70 | go test, Vitest | <1 dk |
+| **Birim** | %70 | mvn test, Vitest | <1 dk |
 | **Entegrasyon** | %20 | testcontainers | <10 dk |
 | **E2E** | %10 | Playwright | <15 dk |
 
@@ -128,3 +128,4 @@ Bu doküman GeoLens Platform test stratejisini tanımlar. Test piramidi yaklaş�
 | 1.0 | 22.07.2026 | İlk yayın: test piramidi, birim/entegrasyon/E2E test kuralları, test verisi yönetimi, kalite metrikleri. |
 | 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-20 (coverage eşikleri), D-21 (fixture), D-22 (yük testi), D-23 (mutasyon). Devralınan Kararlar eklendi. |
 | 1.2 | 22.07.2026 | D-20 hizalaması: §7 kapsam hedefi >%80 → ≥%70 kritik / ≥%50 genel olarak düzeltildi. |
+| 1.3 | 15.08.2026 | **Java geçişi:** Birim test aracı `go test` → `mvn test` olarak güncellendi. |

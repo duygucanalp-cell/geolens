@@ -4,17 +4,17 @@
 |---|---|
 | Doküman ID | 0502 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
-| İlişkili | 0501, 0302, 0305, 0204 |
+| İlişkili | 0501, 0302, 0305, 0204, ADR-014 |
 
 ---
 
 ## 1. Amaç
 
-Bu doküman GeoLens'in servis mimarisini tanımlar. Modüler monolit (ADR-003) yaklaşımıyla, her bağlamın ayrı bir Go paketi olarak organize edildiği yapıyı detaylandırır.
+Bu doküman GeoLens'in servis mimarisini tanımlar. Modüler monolit (ADR-003) yaklaşımıyla, her bağlamın ayrı bir Java paketi (`dev.geolens.*`) olarak organize edildiği yapıyı detaylandırır.
 
 ---
 
@@ -22,16 +22,16 @@ Bu doküman GeoLens'in servis mimarisini tanımlar. Modüler monolit (ADR-003) y
 
 | Yol | Amaç |
 |-----|------|
-| cmd/api, cmd/scheduler, cmd/worker | Üç giriş noktası; aynı modülden derlenen ayrı süreçler |
-| internal/identity | BC1 · Kimlik ve Kiracılık |
-| internal/config | BC2 · Yapılandırma |
-| internal/measure (+ calc) | BC3 · Ölçüm ve Hesap |
-| internal/insight | BC4 · İçgörü |
-| internal/delivery | BC5 · Bildirim ve Raporlama |
-| internal/governance | BC6 · Denetim ve Kota |
-| internal/engines | Motor bağdaştırıcıları (kayıt defteri) |
-| internal/platform | Çapraz kesen paketler: db, queue, storage, telemetry, httpmw |
-| internal/app | Kablolama: bağımlılık kurulumu, süreç yaşam döngüsü |
+| api / worker / scheduler (Spring profilleri) | Üç süreç; tek jar'dan profil ile seçilir (java/Dockerfile target) |
+| dev.geolens.auth | BC1 · Kimlik ve Kiracılık (JWT, JWTService) |
+| dev.geolens.config | BC2 · Yapılandırma |
+| dev.geolens.measure | BC3 · Ölçüm ve Hesap |
+| dev.geolens.recommendation | BC4 · İçgörü (öneriler) |
+| dev.geolens.delivery | BC5 · Bildirim ve Raporlama |
+| dev.geolens.audit, dev.geolens.usage, dev.geolens.billing | BC6 · Denetim ve Kota |
+| dev.geolens.engine | Motor bağdaştırıcıları (Registry) |
+| dev.geolens.queue, dev.geolens.ml, dev.geolens.security | Çapraz kesen paketler: queue, ml serving, auth filter |
+| dev.geolens.config (AppBeans) | Kablolama: Spring bean kurulumu, profil yaşam döngüsü |
 | web/ | React + TypeScript SPA (ayrı derleme) |
 
 ---
@@ -40,19 +40,19 @@ Bu doküman GeoLens'in servis mimarisini tanımlar. Modüler monolit (ADR-003) y
 
 | # | Kural |
 |:-:|-------|
-| D1 | cmd/* yalnız internal/app'i çağırır |
+| D1 | Profil giriş noktaları yalnız Spring kablolamasını (AppBeans) kullanır |
 | D2 | Bağlam paketleri birbirini yalnız dışa açık arayüzden kullanır |
 | D3 | Yön bağlam → platform'dur; platform hiçbir bağlamı import etmez |
-| D4 | Bağdaştırıcı arayüzü measure tanımlar, internal/engines uygular |
+| D4 | Bağdaştırıcı arayüzü (engine.Adapter) dev.geolens.engine'de tanımlanır, adaptörler uygular |
 | D5 | Governance yalnız çağrılan taraftır (fan-in) |
 | D6 | Delivery, measure/insight'ı olay üzerinden tüketir |
-| D7 | Döngüsel import yasaktır; lint CI kapısı |
+| D7 | Döngüsel bağımlılık yasaktır; derleme CI kapısı |
 
 ---
 
 ## 4. Servis Dışa Açık Yüzeyleri
 
-Her bağlam paketi api.go dosyasında dışa açık arayüzlerini tanımlar:
+Her bağlam paketi dışa açık servis arayüzlerini (Spring servis/controller yüzeyleri) tanımlar:
 
 | Bağlam | Arayüzler |
 |--------|-----------|
@@ -77,3 +77,4 @@ Her bağlam paketi api.go dosyasında dışa açık arayüzlerini tanımlar:
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: depo iskeleti, 7 bağımlılık kuralı, servis yüzeyleri. |
+| 1.1 | 15.08.2026 | **Java geçişi:** Depo iskeleti `dev.geolens.*` paketleri ve Spring profilleriyle güncellendi; bağımlılık kuralları D1/D4/D7 Java karşılıklarıyla yeniden ifade edildi. ADR-014 ilişkili listesine eklendi. |

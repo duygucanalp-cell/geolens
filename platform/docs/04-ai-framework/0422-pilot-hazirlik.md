@@ -4,7 +4,7 @@
 |------|-------|
 | Doküman ID | 0422 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Draft |
 | Sahip | U2 AI Studio · Product |
 | Tarih | 12 Ağustos 2026 |
@@ -90,9 +90,9 @@ Servisler:
 
 ```bash
 make dev               # altyapı (postgres, redis, minio, ml-serving)
-go run ./cmd/api       # API :8080
-go run ./cmd/worker    # worker (ölçüm + skor + ML analizler)
-go run ./cmd/scheduler # scheduler :8082/metrics
+cd java && ./mvnw spring-boot:run -Dspring-boot.run.profiles=api       # API :8080
+cd java && ./mvnw spring-boot:run -Dspring-boot.run.profiles=worker    # worker (ölçüm + skor + ML analizler)
+cd java && ./mvnw spring-boot:run -Dspring-boot.run.profiles=scheduler # scheduler (outbox dağıtıcı + panel tarama)
 ```
 
 Gözlem:
@@ -126,3 +126,4 @@ sunulur.
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 12.08.2026 | İlk yayın: pilot kalibrasyon parametreleri (env'den yapılandırılabilir), kurulum ve çıktı raporu şablonu. |
+| 1.1 | 15.08.2026 | **Java geçişi:** Kurulum komutları `cd java && ./mvnw spring-boot:run -Dspring-boot.run.profiles=...` ile güncellendi. |

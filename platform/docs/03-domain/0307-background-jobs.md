@@ -4,11 +4,11 @@
 |---|---|
 | Doküman ID | 0307 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.1 |
+| Versiyon | 1.2 |
 | Durum | Review |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 04 Ağustos 2026 |
-| İlişkili | ADR-002, ADR-004, 0503, 0304, 0206, platform/queue |
+| İlişkili | ADR-002, ADR-004, 0503, 0304, 0206, dev.geolens.queue |
 
 ---
 
@@ -30,14 +30,14 @@ Scheduler → PostgreSQL Outbox → Redis Streams → Worker → Engine
 |---------|-----------|----------|
 | Kaynak | Scheduler (cron) + API handler'ları | Job'ları transaction içinde outbox'a yazar |
 | Outbox | `public.event_outbox` | Transactional outbox tablosu (ölçüm + analiz olayları) |
-| Dağıtıcı | `platform/queue` Dispatcher | Polling ile pending outbox'ı Redis Streams'e XADD'ler |
+| Dağıtıcı | `dev.geolens.queue.OutboxDispatcher` | Polling ile pending outbox'ı Redis Streams'e XADD'ler |
 | Kuyruk | Redis Streams (11 akış, bkz. §2.1) | XREADGROUP ile okuma |
-| Tüketici | Worker (`cmd/worker`) | `q:measure`'i ana tüketici olarak okur; analiz akışlarını aynı grup üzerinden işler |
+| Tüketici | Worker (Spring `worker` profili) | `q:measure`'i ana tüketici olarak okur; q:governance akışını aynı grup üzerinden işler |
 | DLQ | Redis Streams (`q:dead`) | Max deneme sonrası başarısız işlerin toplandığı akış |
 
 ### 2.1 Redis Streams Listesi
 
-Stream sabitleri `platform/queue/outbox.go` içinde tanımlıdır (kaynak doğruluk noktası):
+Stream sabitleri `dev.geolens.queue.QueueProperties` içinde tanımlıdır (kaynak doğruluk noktası):
 
 | Stream | Amaç | Tüketici |
 |--------|------|:--------:|
@@ -53,7 +53,7 @@ Stream sabitleri `platform/queue/outbox.go` içinde tanımlıdır (kaynak doğru
 | `q:content-geo` | Content GEO analizi (hub-score/topic) | Worker (analiz) |
 | `q:dead` | DLQ — başarısız işler | Manuel/operatör |
 
-> SEO senkronu ve benchmark toplayıcı Redis Stream **kullanmaz**; ticker/zamanlayıcı tabanlıdır (`cmd/worker/main.go`).
+> SEO senkronu ve benchmark toplayıcı Redis Stream **kullanmaz**; zamanlayıcı tabanlıdır (`dev.geolens.worker.BackgroundRunner`).
 
 ---
 
@@ -87,3 +87,4 @@ Stream sabitleri `platform/queue/outbox.go` içinde tanımlıdır (kaynak doğru
 |----------|-------|------------|
 | 1.0 | 25.07.2026 | İlk yayın: kuyruk mimarisi, worker tasarımı, hata yönetimi |
 | 1.1 | 04.08.2026 | **Stream senkronu:** kuyruk mimarisi kod gerçeğiyle güncellendi (platform/queue/outbox.go). Tek `q:measure` yerine 11 Redis Stream tanımlandı; §2.1 stream tablosu eklendi (analiz akışları: sentiment, replay, archive, gap, technical-geo, content-geo). SEO/benchmark'ın stream kullanmadığı (ticker tabanlı) not edildi. Worker ölçekleme ve DLQ hataları senkronize edildi. 0304 §7.5 ile hizalı. |
+| 1.2 | 15.08.2026 | **Java geçişi:** Tüketici satırı Spring `worker` profiline; SEO/benchmark zamanlayıcı referansı `dev.geolens.worker.BackgroundRunner` ile güncellendi. |

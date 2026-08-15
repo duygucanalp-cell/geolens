@@ -4,7 +4,7 @@
 |---|---|
 | Doküman ID | 0304 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.4 |
+| Versiyon | 1.5 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 10 Ağustos 2026 |
@@ -36,8 +36,8 @@ GeoLens'te alan olayları **outbox pattern** ile taşınır:
 |---------|----------|
 | EventOutbox tablosu | PostgreSQL (0303 §5 transaction kapsamı) |
 | Kuyruk | Redis Streams + tüketici grupları |
-| Dağıtıcı | platform/queue (periyodik polling) |
-| Tüketici | cmd/worker (profil: measure/report/notify) |
+| Dağıtıcı | dev.geolens.queue.OutboxDispatcher (periyodik polling) |
+| Tüketici | worker profili (Spring — q:measure + q:governance tüketicileri) |
 
 ---
 
@@ -291,7 +291,7 @@ Tüm olaylar aşağıdaki ortak alanları taşır. HT1'de eklenen olaylar da ayn
 2. **Ölçüm hattı olayları** HT1'de 4 paralel kola ayrılmıştır: insight, archive, replay, analysis. MeasurementJobCompleted artık tek bir tüketici değil, 4 farklı worker profiline yönlendirme yapar.
 3. **Outbox pattern** tüm olay üretiminde zorunludur. Bu, olay kaybını önler ve transaction bütünlüğünü korur.
 4. **Correlation_id** tüm olay zinciri boyunca taşınır. HT1'de measurement_job_id → snapshot_id/archive_entry_id/gap_snapshot_id zincirleri eklenmiştir.
-5. **0307 (Background Jobs)** bu olayların kuyruk yapılandırmasını (Streams, tüketici grupları, DLQ) tanımlar. Kod gerçeğinde (platform/queue/outbox.go) 12 Redis Stream sabiti vardır: q:measure, q:audit, q:report, q:notify, q:dead (DLQ) + 6 analiz akışı (q:sentiment, q:replay, q:archive, q:gap, q:technical-geo, q:content-geo) + q:governance (Faz 4 yönetişim olayları, O-6). SEO senkronu stream kullanmaz; zamanlayıcı/ticker tabanlıdır (q:seo-sc/q:seo-ga4 yoktur).
+5. **0307 (Background Jobs)** bu olayların kuyruk yapılandırmasını (Streams, tüketici grupları, DLQ) tanımlar. Kod gerçeğinde (dev.geolens.queue.QueueProperties) 12 Redis Stream sabiti vardır: q:measure, q:audit, q:report, q:notify, q:dead (DLQ) + 6 analiz akışı (q:sentiment, q:replay, q:archive, q:gap, q:technical-geo, q:content-geo) + q:governance (Faz 4 yönetişim olayları, O-6). SEO senkronu stream kullanmaz; zamanlayıcı/ticker tabanlıdır (q:seo-sc/q:seo-ga4 yoktur).
 6. **SEO olayları** diğerlerinden farklı olarak periyodik zamanlayıcı ile tetiklenir (ölçüm olayıyla değil). SEOSyncCompleted/SEOSyncFailed worker profili bazlı metriklerle izlenir.
 7. **GapThresholdExceeded** ve **HallucinationDetected** olayları, doğrudan alert sistemini (BC5) tetikleyerek uyarı üretir — ölçüm sonrası ikincil analizlerden kaynaklanan otomatik uyarı modelinin ilk örnekleridir.
 8. **Faz 4 ve HT2 genişletmesi (v1.3):** 38'den 59 alan olayına genişleme — 21 yeni olay (BC11: 9 yönetişim, BC12: 7 operasyon, BC13: 5 fatura). Yeni olaylar 0302 v1.3'teki BC11-BC13 varlıklarının durum geçişlerinden türetilmiştir.
@@ -308,7 +308,7 @@ Tüm olaylar aşağıdaki ortak alanları taşır. HT1'de eklenen olaylar da ayn
 | O-3 | Benchmark olayları (HT2) şimdiden tanımlanmalı mı? | ⏳ Hayır; HT2'de eklenir. |
 | O-4 | HT1 ölçüm sonrası 4 paralel kol (insight, archive, replay, analysis) — başarısızlık durumunda diğer kolları beklemeli mi? | ⏳ Mevcut tasarım: tamamen bağımsız (bir kol başarısız olursa diğerleri etkilenmez). |
 | O-5 | SEO worker'larının (seo-sc, seo-ga4) olayları outbox üzerinden mi yoksa doğrudan Redis Streams'e mi yazılmalı? | ⏳ Mevcut karar: doğrudan Redis Streams (periyodik worker, transaction gerekmez). |
-| O-6 | Faz 4 olayları (GuardrailViolation, GateCheckDecision, IncidentOpened, DriftAlertTriggered, RedTeamRunCompleted) outbox üzerinden mi taşınmalı, yoksa doğrudan DB yazımı yeterli mi? | ✅ **KAPANDI** (10.08.2026): Beş olay da outbox üzerinden taşınıyor — `queue.EnqueueEvent` helper'ı (platform/queue/event.go) ve `q:governance` stream'i eklendi; handler'lar olayları `public.event_outbox`'a yazar, Dispatcher Redis Stream'e iletir. DB tablo yazımı korunur (olay taşıması ek dayanıklılık katmanıdır). |
+| O-6 | Faz 4 olayları (GuardrailViolation, GateCheckDecision, IncidentOpened, DriftAlertTriggered, RedTeamRunCompleted) outbox üzerinden mi taşınmalı, yoksa doğrudan DB yazımı yeterli mi? | ✅ **KAPANDI** (10.08.2026): Beş olay da outbox üzerinden taşınıyor — Java'da `OutboxWriter.enqueue` (dev.geolens.queue) ve `q:governance` stream'i; handler'lar olayları `public.event_outbox`'a yazar, OutboxDispatcher Redis Stream'e iletir. DB tablo yazımı korunur (olay taşıması ek dayanıklılık katmanıdır). |
 
 ### Devralınan AVIP Kararları
 
@@ -336,3 +336,4 @@ Tüm olaylar aşağıdaki ortak alanları taşır. HT1'de eklenen olaylar da ayn
 | 1.2 | 28.07.2026 | **HT1 domain events genişletmesi:** 17 yeni olay eklendi (BC7: 4 arşiv; BC8: 2 replay; BC9: 5 SEO; BC10: 6 analiz). Toplam olay sayısı 21'den 38'e çıktı. Ölçüm hattı olay zinciri 4 paralel kolla güncellendi. Çıkarımlar güncellendi. Açık sorulara O-4 (paralel kol bağımsızlığı) ve O-5 (SEO olay mekanizması) eklendi. |
 | 1.3 | 04.08.2026 | **Faz 4 ve HT2 domain events genişletmesi:** 21 yeni olay eklendi (BC11: 9 yönetişim; BC12: 7 operasyon; BC13: 5 fatura). Toplam olay sayısı 38'den 59'a çıktı. §4 olay fırtınasına 4.4 AI yönetişim ve 4.5 fatura/GİB akışları eklendi. §7 çıkarımlar güncellendi. §8 açık sorulara O-6 (Faz 4 olay taşıması) eklendi. 0302 v1.3, 0209 (Faz 4) ve 0210 (rakip kapanışı) ile senkron. |
 | 1.4 | 10.08.2026 | O-6 kapatıldı: Faz 4 olayları (GuardrailViolation, GateCheckDecision, IncidentOpened, DriftAlertTriggered, RedTeamRunCompleted) outbox üzerinden taşınıyor (queue.EnqueueEvent + q:governance). §8 açık sorular güncellendi. |
+| 1.5 | 15.08.2026 | **Java geçişi:** Tüketici satırı Spring `worker` profiline (q:measure + q:governance tüketicileri) güncellendi. |

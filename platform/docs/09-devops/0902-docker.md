@@ -4,11 +4,11 @@
 |---|---|---|
 | Doküman ID | 0902 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.1 |
+| Versiyon | 1.2 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
-| İlişkili | 0510, 0900–0905, 0402 |
+| İlişkili | 0510, 0900–0905, 0402, ADR-014 |
 
 ---
 
@@ -20,24 +20,33 @@ Bu doküman GeoLens Platform Docker konteyner yapılandırmasını tanımlar: Do
 
 ## 2. Dockerfile Yapısı (Backend)
 
-```dockerfile
-# Build stage
-FROM golang:1.22-alpine AS builder
-WORKDIR /app
-COPY go.mod go.sum ./
-RUN go mod download
-COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o /app/api ./cmd/api
-RUN CGO_ENABLED=0 GOOS=linux go build -o /app/scheduler ./cmd/scheduler
-RUN CGO_ENABLED=0 GOOS=linux go build -o /app/worker ./cmd/worker
+Java backend tek jar üretir; profiller `java/Dockerfile` multi-stage target'larıyla seçilir (api/worker/scheduler). SOPS+Age secrets çözümü `docker/entrypoint.sh` ile runtime'da yapılır.
 
-# Runtime stage
-FROM alpine:3.19
-RUN apk --no-cache add ca-certificates tzdata
-COPY --from=builder /app/api /app/scheduler /app/worker /usr/local/bin/
+```dockerfile
+# java/Dockerfile (context: platform/)
+# Stage 1: Maven build (jOOQ codegen + Spring Boot repackage)
+FROM maven:3.9-eclipse-temurin-25 AS builder
+WORKDIR /build
+COPY java/pom.xml ./pom.xml
+RUN mvn -q -B dependency:go-offline
+COPY java/src ./src
+RUN mvn -q -B package -DskipTests
+
+# Stage 2: Runtime (secrets entrypoint dahil)
+FROM eclipse-temurin:25-jre AS runtime
+WORKDIR /app
+COPY --from=builder /build/target/geolens-*.jar /app/app.jar
+COPY docker/entrypoint.sh /usr/local/bin/geolens-entrypoint
+
+# Stage 3-5: api / worker / scheduler (SPRING_PROFILES_ACTIVE env'i ile)
+FROM runtime AS api
+ENV SPRING_PROFILES_ACTIVE=api
 EXPOSE 8080
-CMD ["api"]
+ENTRYPOINT ["geolens-entrypoint"]
+CMD ["java", "-jar", "/app/app.jar"]
 ```
+
+> Build komutu: `docker build -f java/Dockerfile --target api .` (worker/scheduler için `--target worker|scheduler`).
 
 ---
 
@@ -96,15 +105,18 @@ services:
   api:
     build:
       context: .
-      dockerfile: Dockerfile
-      target: runtime
-    command: api
+      dockerfile: java/Dockerfile
+      target: api
     ports:
       - "8080:8080"
     depends_on: [postgres, redis, minio]
     environment:
-      DB_URL: postgres://geolens:devpassword@postgres:5432/geolens
-      REDIS_URL: redis://redis:6379
+      SPRING_PROFILES_ACTIVE: api
+      DATABASE_URL: jdbc:postgresql://postgres:5432/geolens
+      DATABASE_USER: geolens
+      DATABASE_PASSWORD: devpassword
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
       S3_ENDPOINT: http://minio:9000
 
 volumes:
@@ -117,10 +129,10 @@ volumes:
 
 | Avantaj | Açıklama |
 |---------|----------|
-| **Küçük imaj** | Alpine tabanlı, ~20MB (Go) / ~50MB (Nginx) |
-| **Güvenlik** | Derleme araçları runtime imajında yok |
-| **Hızlı derleme** | Modül önbelleği ile katmanlı |
-| **Tek Dockerfile** | Tüm Go süreçleri aynı Dockerfile'dan |
+| **Tek imaj** | eclipse-temurin:25-jre, tüm profiller tek jar + tek Dockerfile |
+| **Güvenlik** | Derleme araçları runtime imajında yok; secrets entrypoint ile çözülür |
+| **Hızlı derleme** | Maven bağımlılık önbelleği (go-offline) ile katmanlı |
+| **Profil seçimi** | api/worker/scheduler target'larıyla ayrı konteynerler |
 
 ---
 
@@ -145,3 +157,4 @@ volumes:
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: Dockerfile yapısı (backend/frontend), Docker Compose dev ortamı, çok aşamalı derleme. |
 | 1.1 | 22.07.2026 | AVIP kapalı kararları taşındı: D-85 (VM stratejisi), D-19 (RTO/RPO), D-16 (SendGrid). Devralınan Kararlar eklendi. |
+| 1.2 | 15.08.2026 | **Java geçişi:** Backend Dockerfile `java/Dockerfile` (eclipse-temurin:25, api/worker/scheduler target) ile güncellendi; compose örneği Spring env'leriyle yenilendi; çok aşamalı derleme tablosu Java'ya göre yeniden ifade edildi. ADR-014 ilişkili listesine eklendi. |

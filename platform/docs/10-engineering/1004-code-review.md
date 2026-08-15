@@ -4,7 +4,7 @@
 |---|---|---|
 | Doküman ID | 1004 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
@@ -85,9 +85,9 @@ Her bağlamın birincil sahibi, değişiklikler için otomatik reviewer olarak a
 
 | Bağlam | Sahip |
 |--------|-------|
-| internal/identity, internal/governance, platform/* | Backend #1 |
-| internal/config, internal/insight, internal/delivery | Backend #2 |
-| internal/measure, internal/engines | Siz (TL+CEO) |
+| dev.geolens.auth, dev.geolens.audit, dev.geolens.usage, dev.geolens.billing, dev.geolens.queue, dev.geolens.security | Backend #1 |
+| dev.geolens.config, dev.geolens.recommendation, dev.geolens.delivery | Backend #2 |
+| dev.geolens.measure, dev.geolens.engine | Siz (TL+CEO) |
 
 ---
 
@@ -103,3 +103,4 @@ Her bağlamın birincil sahibi, değişiklikler için otomatik reviewer olarak a
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: review zorunluluğu, kontrol listesi, süreç, review türleri, CODEOWNERS. |
+| 1.1 | 15.08.2026 | **Java geçişi:** CODEOWNERS tablosundaki paket adları `dev.geolens.measure`, `dev.geolens.engine` ile güncellendi. |

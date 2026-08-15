@@ -4,11 +4,11 @@
 |---|---|
 | Doküman ID | 0509 |
 | Proje | GeoLens Platform |
-| Versiyon | 1.0 |
+| Versiyon | 1.1 |
 | Durum | Approved |
 | Sahip | U2 AI Studio · Engineering |
 | Tarih | 22 Temmuz 2026 |
-| İlişkili | 0501, 0506, 0503, 0206 |
+| İlişkili | 0501, 0506, 0503, 0206, ADR-014 |
 
 ---
 
@@ -22,9 +22,9 @@ Bu doküman GeoLens Platform'un ölçeklenebilirlik stratejisini tanımlar: yata
 
 | Bileşen | Strateji | MVP Ölçeği | HT1+ Ölçeği |
 |---------|:--------:|:----------:|:-----------:|
-| cmd/api | Yatay (load balancer) | 1-2 replika | 3-5 replika |
-| cmd/worker | Yatay (her profil) | 1-2 replika/profil | 3-5 replika/profil |
-| cmd/scheduler | Tek örnek (Redis kilidi) | 1 | 1 |
+| api profili | Yatay (load balancer) | 1-2 replika | 3-5 replika |
+| worker profili | Yatay | 1-2 replika | 3-5 replika |
+| scheduler profili | Tek örnek (Redis kilidi / tek dispatcher) | 1 | 1 |
 | PostgreSQL | Dikey → Salt okunur replika | 1 node | 1 primary + 1-2 replica |
 | Redis | Dikey → Cluster | 1 node | 3 node Cluster |
 | S3 | Doğal ölçeklenebilir | — | — |
@@ -61,18 +61,13 @@ Bu doküman GeoLens Platform'un ölçeklenebilirlik stratejisini tanımlar: yata
 
 ```mermaid
 graph LR
-    LB[Load Balancer] --> API1[cmd/api #1]
-    LB --> API2[cmd/api #2]
+    LB[Load Balancer] --> API1[api profili #1]
+    LB --> API2[api profili #2]
     
     subgraph "Ölçüm Hattı"
-        S[cmd/scheduler] --> QM[q:measure]
-        QM --> W1[worker:measure #1]
-        QM --> W2[worker:measure #2]
-    end
-    
-    subgraph "Rapor Hattı"
-        QR[q:report] --> W3[worker:report #1]
-        QR --> W4[worker:report #2]
+        S[scheduler profili] --> QM[q:measure]
+        QM --> W1[worker profili #1]
+        QM --> W2[worker profili #2]
     end
 ```
 
@@ -91,3 +86,4 @@ graph LR
 | Versiyon | Tarih | Değişiklik |
 |----------|-------|------------|
 | 1.0 | 22.07.2026 | İlk yayın: ölçekleme stratejisi, darboğaz analizi, kapasite hedefleri. |
+| 1.1 | 15.08.2026 | **Java geçişi:** Ölçekleme tabloları ve şema Spring profillerine (api/worker/scheduler) çevrildi; ayrı report/notify worker profilleri kaldırıldı (tek worker profili). ADR-014 ilişkili listesine eklendi. |
