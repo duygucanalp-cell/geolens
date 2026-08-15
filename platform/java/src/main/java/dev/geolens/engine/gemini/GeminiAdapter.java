@@ -73,7 +73,7 @@ public final class GeminiAdapter implements Adapter {
                     List.of(new Tool(new GoogleSearch())),
                     new GenerationConfig(0));
             String body = mapper.writeValueAsString(req);
-            EngineHttp.Result res = http.post(API_URL + "?key=" + apiKey, null, body);
+            EngineHttp.Result res = http.post(API_URL + "?key=" + apiKey, (String) null, body);
             if (res.status() != 200) {
                 throw new EngineException("gemini api hatası (HTTP " + res.status() + "): " + res.body());
             }

@@ -1,20 +1,21 @@
 package dev.geolens.drift.web;
 
-import dev.geolens.testutil.JooqTestData;
-import org.jooq.DSLContext;
+import dev.geolens.drift.Observation;
+import dev.geolens.drift.service.DriftService;
+import dev.geolens.drift.service.DriftServiceException;
 import org.junit.jupiter.api.Test;
-import org.mockito.Answers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -29,8 +30,8 @@ class DriftControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean(answer = Answers.RETURNS_DEEP_STUBS)
-    private DSLContext dsl;
+    @MockBean
+    private DriftService driftService;
 
     private static final String TENANT = "T01";
 
@@ -58,8 +59,9 @@ class DriftControllerTest {
 
     @Test
     void recordSuccess() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(observationRow("obs-1")));
+        when(driftService.record(anyString(), anyString(), anyString(), anyString(), anyDouble(), anyString()))
+                .thenReturn(new Observation("obs-1", "t-1", "ent-1", "Marka A", "visibility_score",
+                        72.5, "2026-08-01T00:00:00Z", "2026-08-01T00:00:00Z"));
 
         mockMvc.perform(post("/v1/drift/record")
                         .header("X-Tenant-ID", TENANT)
@@ -85,9 +87,10 @@ class DriftControllerTest {
 
     @Test
     void listObservationsSuccess() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(List.of(
-                        observationRow("obs-1"), observationRow("obs-2"))));
+        when(driftService.listObservations(anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(Map.of(
+                        "observations", List.of(obs("obs-1"), obs("obs-2")),
+                        "total", 2));
 
         mockMvc.perform(get("/v1/drift/observations")
                         .header("X-Tenant-ID", TENANT)
@@ -102,8 +105,8 @@ class DriftControllerTest {
 
     @Test
     void listEntitiesSuccess() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(List.of(entityRow())));
+        when(driftService.listEntities(anyString()))
+                .thenReturn(Map.of("entities", List.of(entityRow())));
 
         mockMvc.perform(get("/v1/drift/entities")
                         .header("X-Tenant-ID", TENANT))
@@ -117,8 +120,8 @@ class DriftControllerTest {
 
     @Test
     void analyzeQueryErrorReturns500() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenThrow(new RuntimeException("db error"));
+        when(driftService.analyze(anyString(), anyString(), anyString(), anyString()))
+                .thenThrow(new DriftServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "gözlem sorgu hatası"));
 
         mockMvc.perform(get("/v1/drift/analysis")
                         .header("X-Tenant-ID", TENANT)
@@ -130,9 +133,8 @@ class DriftControllerTest {
 
     @Test
     void analyzeInsufficientData() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(List.of(
-                        valueRow(10), valueRow(11), valueRow(12))));
+        when(driftService.analyze(anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(insufficientResult());
 
         mockMvc.perform(get("/v1/drift/analysis")
                         .header("X-Tenant-ID", TENANT)
@@ -145,13 +147,8 @@ class DriftControllerTest {
 
     @Test
     void analyzeWithDriftCreatesAlert() throws Exception {
-        // 6x10 + 6x50 → referans ortalama 10, güncel ortalama 46 → kritik sapma
-        List<Map<String, Object>> rows = new ArrayList<>();
-        for (int i = 0; i < 12; i++) {
-            rows.add(valueRow(i < 6 ? 10 : 50));
-        }
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(rows));
+        when(driftService.analyze(anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(criticalResult());
 
         mockMvc.perform(get("/v1/drift/analysis")
                         .header("X-Tenant-ID", TENANT)
@@ -174,8 +171,10 @@ class DriftControllerTest {
 
     @Test
     void listAlertsSuccess() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(List.of(alertRow())));
+        when(driftService.listAlerts(anyString()))
+                .thenReturn(Map.of(
+                        "alerts", List.of(alertRow()),
+                        "total", 1));
 
         mockMvc.perform(get("/v1/drift/alerts")
                         .header("X-Tenant-ID", TENANT))
@@ -188,13 +187,7 @@ class DriftControllerTest {
 
     // ---------- yardımcılar ----------
 
-    private static Map<String, Object> valueRow(double v) {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("value", v);
-        return m;
-    }
-
-    private static Map<String, Object> observationRow(String id) {
+    private static Map<String, Object> obs(String id) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", id);
         m.put("tenant_id", "t-1");
@@ -232,6 +225,32 @@ class DriftControllerTest {
         m.put("delta", 20.0);
         m.put("detail", "sapma");
         m.put("created_at", "now");
+        return m;
+    }
+
+    private static Map<String, Object> insufficientResult() {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("entity_id", "e");
+        m.put("metric", "m");
+        m.put("drift_score", 0);
+        m.put("severity", "insufficient_data");
+        m.put("reference_mean", 0);
+        m.put("current_mean", 0);
+        m.put("delta", 0);
+        m.put("detail", "drift analizi için en az 4 gözlem gerekir");
+        return m;
+    }
+
+    private static Map<String, Object> criticalResult() {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("entity_id", "e");
+        m.put("metric", "m");
+        m.put("drift_score", 72.0);
+        m.put("severity", "critical");
+        m.put("reference_mean", 10.0);
+        m.put("current_mean", 46.0);
+        m.put("delta", 36.0);
+        m.put("detail", "referans ve güncel pencereler arasındaki normalleştirilmiş ortalama sapması");
         return m;
     }
 }

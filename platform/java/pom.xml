@@ -68,6 +68,13 @@
       <version>1.85</version>
     </dependency>
 
+    <!-- storage: MinIO/S3 istemcisi (Go github.com/minio/minio-go/v7 karşılığı) -->
+    <dependency>
+      <groupId>io.minio</groupId>
+      <artifactId>minio</artifactId>
+      <version>8.5.17</version>
+    </dependency>
+
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>

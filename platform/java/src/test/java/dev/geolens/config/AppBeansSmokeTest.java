@@ -65,7 +65,7 @@ class AppBeansSmokeTest {
 
     @Test
     void allBeansAreWired() {
-        assertEquals(3, registry.count(), "chatgpt/gemini/perplexity kayıtlı olmalı");
+        assertEquals(9, registry.count(), "7 adaptör + 2 Gemini yüzeyi (Go cmd/api birebir) kayıtlı olmalı");
         assertNotNull(measureService);
         assertNotNull(auditService);
         assertNotNull(deliveryService);

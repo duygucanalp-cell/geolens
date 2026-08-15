@@ -19,10 +19,16 @@ import dev.geolens.billing.EFaturaProvider;
 import dev.geolens.billing.StripeClient;
 import dev.geolens.delivery.DeliveryService;
 import dev.geolens.delivery.EmailConfig;
+import dev.geolens.engine.RawSaver;
 import dev.geolens.engine.Registry;
 import dev.geolens.engine.chatgpt.ChatGptAdapter;
+import dev.geolens.engine.claude.ClaudeAdapter;
+import dev.geolens.engine.copilot.CopilotAdapter;
 import dev.geolens.engine.gemini.GeminiAdapter;
+import dev.geolens.engine.grok.GrokAdapter;
+import dev.geolens.engine.mistral.MistralAdapter;
 import dev.geolens.engine.perplexity.PerplexityAdapter;
+import dev.geolens.storage.S3RawSaver;
 import dev.geolens.governance.AuditLogger;
 import dev.geolens.governance.QuotaChecker;
 import dev.geolens.governance.UsageRecorder;
@@ -67,15 +73,42 @@ public class AppBeans {
         return cfg;
     }
 
+    /** Motor kayıt defteri — Go cmd/api 9 motoru birebir (7 adaptör + 2 Gemini yüzeyi).
+     * S3 storage yapılandırılmışsa ham yanıtlar MinIO'ya kaydedilir (RawSaver). */
     @Bean
     public Registry engineRegistry(@Value("${OPENAI_API_KEY:}") String openAiKey,
                                    @Value("${GEMINI_API_KEY:}") String geminiKey,
-                                   @Value("${PERPLEXITY_API_KEY:}") String perplexityKey) {
+                                   @Value("${PERPLEXITY_API_KEY:}") String perplexityKey,
+                                   @Value("${CLAUDE_API_KEY:}") String claudeKey,
+                                   @Value("${GROK_API_KEY:}") String grokKey,
+                                   @Value("${COPILOT_API_KEY:}") String copilotKey,
+                                   @Value("${MISTRAL_API_KEY:}") String mistralKey,
+                                   ObjectProvider<RawSaver> storage) {
+        RawSaver saver = storage.getIfAvailable();
         Registry registry = new Registry();
-        registry.register(new ChatGptAdapter(openAiKey, null));
-        registry.register(new GeminiAdapter(geminiKey, null));
-        registry.register(new PerplexityAdapter(perplexityKey, null));
+        GeminiAdapter gemini = new GeminiAdapter(geminiKey, saver);
+        registry.register(new PerplexityAdapter(perplexityKey, saver));
+        registry.register(new ChatGptAdapter(openAiKey, saver));
+        registry.register(gemini);
+        // Google AI Overview + AI Mode (Kademe 3 — directional) — FR-B6 HT2 genişletmesi
+        registry.register(gemini.withAIOverview("", ""));
+        registry.register(gemini.withAIMode("", ""));
+        registry.register(new ClaudeAdapter(claudeKey, saver));
+        registry.register(new GrokAdapter(grokKey, saver));
+        registry.register(new CopilotAdapter(copilotKey, saver));
+        registry.register(new MistralAdapter(mistralKey, saver));
         return registry;
+    }
+
+    /** Ham motor yanıtları için S3/MinIO deposu — S3_ENDPOINT setse kurulur (Go storage.NewClient karşılığı). */
+    @Bean
+    @ConditionalOnProperty(name = "S3_ENDPOINT", matchIfMissing = false)
+    public S3RawSaver s3RawSaver(@Value("${S3_ENDPOINT}") String endpoint,
+                                 @Value("${S3_ACCESS_KEY:minioadmin}") String accessKey,
+                                 @Value("${S3_SECRET_KEY:minioadmin}") String secretKey,
+                                 @Value("${S3_BUCKET:geolens}") String bucket,
+                                 @Value("${S3_REGION:us-east-1}") String region) {
+        return new S3RawSaver(endpoint, accessKey, secretKey, bucket, region);
     }
 
     /** ML_CLASSIFY_URL set edilmişse prompt sınıflandırma istemcisi kurulur (0421 A3-3); boşsa yok. */

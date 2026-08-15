@@ -1,18 +1,19 @@
 package dev.geolens.compliance.web;
 
-import dev.geolens.testutil.JooqTestData;
-import org.jooq.DSLContext;
+import dev.geolens.compliance.Control;
+import dev.geolens.compliance.service.ComplianceService;
 import org.junit.jupiter.api.Test;
-import org.mockito.Answers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -25,8 +26,8 @@ class ComplianceControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean(answer = Answers.RETURNS_DEEP_STUBS)
-    private DSLContext dsl;
+    @MockBean
+    private ComplianceService complianceService;
 
     private static final String TENANT = "T01";
 
@@ -34,9 +35,7 @@ class ComplianceControllerTest {
 
     @Test
     void soc2ReadinessAllFailed() throws Exception {
-        // Tüm COUNT sorguları 0 → CC1-CC5 failed, CC6 passed (sabit)
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(Map.of("count", 0)));
+        when(complianceService.soc2Readiness(TENANT)).thenReturn(soc2Result(controls(false, false, false, false, false), 1, 5, 16.666666666666664));
 
         mockMvc.perform(get("/v1/compliance/soc2")
                         .header("X-Tenant-ID", TENANT))
@@ -46,15 +45,13 @@ class ComplianceControllerTest {
                 .andExpect(jsonPath("$.summary.total").value(6))
                 .andExpect(jsonPath("$.summary.passed").value(1))
                 .andExpect(jsonPath("$.summary.failed").value(5))
-                // 1/6 * 100 ≈ 16.67
                 .andExpect(jsonPath("$.readiness_pct").value(16.666666666666664))
                 .andExpect(jsonPath("$.recommendations.length()").value(5));
     }
 
     @Test
     void soc2ReadinessAllPassed() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(Map.of("count", 3)));
+        when(complianceService.soc2Readiness(TENANT)).thenReturn(soc2Result(controls(true, true, true, true, true), 6, 0, 100.0));
 
         mockMvc.perform(get("/v1/compliance/soc2")
                         .header("X-Tenant-ID", TENANT))
@@ -70,8 +67,11 @@ class ComplianceControllerTest {
 
     @Test
     void complianceReport() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(Map.of("count", 0)));
+        Map<String, Object> report = new LinkedHashMap<>();
+        report.put("soc_2_tip_1", controls(true, true, true, true, true));
+        report.put("gdpr_kvkk", gdpr());
+        report.put("iso_27001", iso());
+        when(complianceService.complianceReport(TENANT)).thenReturn(report);
 
         mockMvc.perform(get("/v1/compliance/report")
                         .header("X-Tenant-ID", TENANT))
@@ -87,6 +87,8 @@ class ComplianceControllerTest {
 
     @Test
     void listEvidence() throws Exception {
+        when(complianceService.listEvidence()).thenReturn(evidenceResult());
+
         mockMvc.perform(get("/v1/compliance/evidence")
                         .header("X-Tenant-ID", TENANT))
                 .andExpect(status().isOk())
@@ -100,8 +102,7 @@ class ComplianceControllerTest {
 
     @Test
     void downloadEvidence() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(Map.of("count", 0)));
+        when(complianceService.buildEvidencePack(TENANT)).thenReturn(pack(controls(true, true, true, true, true)));
 
         mockMvc.perform(get("/v1/compliance/evidence/download")
                         .header("X-Tenant-ID", TENANT))
@@ -112,5 +113,74 @@ class ComplianceControllerTest {
                 .andExpect(jsonPath("$.controls.length()").value(6))
                 .andExpect(jsonPath("$.evidence.length()").value(4))
                 .andExpect(jsonPath("$.date").isNotEmpty());
+    }
+
+    // ---------- yardımcılar ----------
+
+    private static List<Control> controls(boolean c1, boolean c2, boolean c3, boolean c4, boolean c5) {
+        String passedEvidence = "Bu tenant için kullanıcı-tenant kayıtları mevcut";
+        return List.of(
+                new Control("CC1", "Control Environment", "Kiracı ve kullanıcı yönetimi", "d", ctlStatus(c1), passedEvidence),
+                new Control("CC2", "Communication", "Bildirim ve uyarı", "d", ctlStatus(c2), "x"),
+                new Control("CC3", "Risk Assessment", "Ölçüm ve risk", "d", ctlStatus(c3), "x"),
+                new Control("CC4", "Monitoring", "Denetim günlüğü", "d", ctlStatus(c4), "x"),
+                new Control("CC5", "Control Activities", "RBAC", "d", ctlStatus(c5), "x"),
+                new Control("CC6", "Logical and Physical Security", "Veri şifreleme", "d", "passed", "x"));
+    }
+
+    private static String ctlStatus(boolean b) {
+        return b ? "passed" : "failed";
+    }
+
+    private static Map<String, Object> soc2Result(List<Control> controls, int passed, int failed, double readiness) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("framework", "SOC 2 Tip 1");
+        m.put("readiness_pct", readiness);
+        m.put("controls", controls);
+        m.put("summary", Map.of("total", 6, "passed", passed, "failed", failed));
+        m.put("recommendations", passed == 6
+                ? List.of("Tüm kontroller başarılı — SOC 2 Tip 1 için hazırsınız")
+                : List.of("r1", "r2", "r3", "r4", "r5"));
+        return m;
+    }
+
+    private static Map<String, Object> gdpr() {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("framework", "GDPR / KVKK");
+        m.put("status", "passed");
+        m.put("controls_checked", List.of("a", "b", "c", "d"));
+        return m;
+    }
+
+    private static Map<String, Object> iso() {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("framework", "ISO 27001");
+        m.put("status", "passed");
+        m.put("controls_checked", List.of("a", "b", "c", "d", "e"));
+        return m;
+    }
+
+    private static Map<String, Object> evidenceResult() {
+        List<Map<String, Object>> evidence = new java.util.ArrayList<>();
+        String[] controls = {"CC1", "CC2", "CC3", "CC4", "CC5", "CC6", "GDPR", "ISO-A.12.4", "CC4", "CC6"};
+        for (int i = 0; i < 10; i++) {
+            evidence.add(Map.of("id", "E00" + (i + 1), "control", controls[i], "title", "t", "source", "s"));
+        }
+        return Map.of("evidence", evidence, "total", 10);
+    }
+
+    private static Map<String, Object> pack(List<Control> controls) {
+        Map<String, Object> p = new LinkedHashMap<>();
+        p.put("framework", "SOC 2 Tip 1");
+        p.put("organization", "GeoLens Platform");
+        p.put("date", OffsetDateTime.now().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        p.put("tenant_id", TENANT);
+        p.put("controls", controls);
+        p.put("evidence", List.of(
+                Map.of("id", "E001", "title", "Tenant kayıtları", "location", "identity.user_tenants"),
+                Map.of("id", "E005", "title", "Kullanıcı rolleri", "location", "identity.user_tenants"),
+                Map.of("id", "E004", "title", "Audit günlüğü", "location", "identity.audit_logs"),
+                Map.of("id", "E006", "title", "Şifreleme", "location", "STORAGE_MASTER_KEY")));
+        return p;
     }
 }

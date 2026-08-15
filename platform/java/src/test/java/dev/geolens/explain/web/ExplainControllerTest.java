@@ -1,4 +1,4 @@
-﻿package dev.geolens.explain.web;
+package dev.geolens.explain.web;
 
 import dev.geolens.explain.service.ExplainHistoryResult;
 import dev.geolens.explain.service.ExplainResult;
@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** Go explain/handler_test.go parity testleri â€” Explainability REST. */
+/** Go explain/handler_test.go parity testleri - Explainability REST. */
 @WebMvcTest(ExplainController.class)
 class ExplainControllerTest {
 
@@ -39,33 +39,33 @@ class ExplainControllerTest {
     @Test
     void explainNotFound() throws Exception {
         when(explainService.explain(anyString(), anyString()))
-                .thenThrow(new ExplainServiceException(HttpStatus.NOT_FOUND, "varlÄ±k bulunamadÄ±"));
+                .thenThrow(new ExplainServiceException(HttpStatus.NOT_FOUND, "varlık bulunamadı"));
 
         mockMvc.perform(post("/v1/explain/ent-001")
                         .header("X-Tenant-ID", TENANT))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error").value("varlÄ±k bulunamadÄ±"));
+                .andExpect(jsonPath("$.error").value("varlık bulunamadı"));
     }
 
     @Test
     void explainNullEntityReturns404() throws Exception {
         when(explainService.explain(anyString(), anyString()))
-                .thenThrow(new ExplainServiceException(HttpStatus.NOT_FOUND, "varlÄ±k bulunamadÄ±"));
+                .thenThrow(new ExplainServiceException(HttpStatus.NOT_FOUND, "varlık bulunamadı"));
 
         mockMvc.perform(post("/v1/explain/ent-001")
                         .header("X-Tenant-ID", TENANT))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error").value("varlÄ±k bulunamadÄ±"));
+                .andExpect(jsonPath("$.error").value("varlık bulunamadı"));
     }
 
     @Test
     void explainSuccess() throws Exception {
         when(explainService.explain(anyString(), anyString()))
                 .thenReturn(new ExplainResult("a-1", "ent-001", "Test Entity", "model", "high",
-                        50.0, 50.0 + 75.0 * 0.15 + 75.0 * 0.85 * 0.10 - 5.8 + 2.1 - 1.5,
+                        50.0, 57.7,
                         Map.of("citation_accuracy", 0.30),
-                        shapValues(),
-                        "Model skoru 57,7, en bÃ¼yÃ¼k katkÄ± citation_accuracy'den (30,0%)"));
+                        highRiskShapValues(),
+                        "Model skoru 57,7, en büyük katkı citation_accuracy'den (30,0%)"));
 
         mockMvc.perform(post("/v1/explain/ent-001")
                         .header("X-Tenant-ID", TENANT))
@@ -129,12 +129,12 @@ class ExplainControllerTest {
     @Test
     void listAnalysesQueryErrorReturns500() throws Exception {
         when(explainService.listAnalyses(any(), any(), any()))
-                .thenThrow(new ExplainServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "analiz geÃ§miÅŸi alÄ±namadÄ±"));
+                .thenThrow(new ExplainServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "analiz geçmişi alınamadı"));
 
         mockMvc.perform(get("/v1/explain/results")
                         .header("X-Tenant-ID", TENANT))
                 .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.error").value("analiz geÃ§miÅŸi alÄ±namadÄ±"));
+                .andExpect(jsonPath("$.error").value("analiz geçmişi alınamadı"));
     }
 
     @Test
@@ -163,13 +163,22 @@ class ExplainControllerTest {
                 .andExpect(jsonPath("$.has_more").value(false));
     }
 
-    // ---------- yardÄ±mcÄ±lar ----------
+    // ---------- yardımcılar ----------
 
     private static List<Map<String, Object>> shapValues() {
         return List.of(
                 Map.of("feature", "ai_visibility_score", "value", 75.0, "shap", 75.0 * 0.15, "impact", "positive"),
                 Map.of("feature", "response_quality", "value", 75.0 * 0.85, "shap", 75.0 * 0.85 * 0.10, "impact", "positive"),
                 Map.of("feature", "citation_accuracy", "value", 65.0, "shap", -3.2, "impact", "negative"),
+                Map.of("feature", "brand_consistency", "value", 70.0, "shap", 2.1, "impact", "positive"),
+                Map.of("feature", "sentiment_score", "value", 55.0, "shap", -1.5, "impact", "negative"));
+    }
+
+    private static List<Map<String, Object>> highRiskShapValues() {
+        return List.of(
+                Map.of("feature", "ai_visibility_score", "value", 75.0, "shap", 75.0 * 0.15, "impact", "positive"),
+                Map.of("feature", "response_quality", "value", 75.0 * 0.85, "shap", 75.0 * 0.85 * 0.10, "impact", "positive"),
+                Map.of("feature", "citation_accuracy", "value", 65.0, "shap", -5.8, "impact", "negative"),
                 Map.of("feature", "brand_consistency", "value", 70.0, "shap", 2.1, "impact", "positive"),
                 Map.of("feature", "sentiment_score", "value", 55.0, "shap", -1.5, "impact", "negative"));
     }
@@ -187,4 +196,3 @@ class ExplainControllerTest {
                 "created_at", "2026-08-15T10:00:00Z");
     }
 }
-

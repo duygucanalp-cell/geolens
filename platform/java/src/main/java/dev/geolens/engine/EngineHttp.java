@@ -5,6 +5,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /** Adaptörlerin ortak HTTP çağrı altyapısı — Go {@code http.Client} + {@code io.ReadAll} portu. */
 public final class EngineHttp {
@@ -21,13 +23,22 @@ public final class EngineHttp {
 
     /** JSON POST yapar. {@code authBearer} boşsa Authorization başlığı eklenmez (Gemini URL'de anahtar taşır). */
     public Result post(String url, String authBearer, String jsonBody) throws EngineException {
+        Map<String, String> headers = new LinkedHashMap<>();
+        if (authBearer != null && !authBearer.isEmpty()) {
+            headers.put("Authorization", "Bearer " + authBearer);
+        }
+        return post(url, headers, jsonBody);
+    }
+
+    /** JSON POST yapar — başlıklar harita olarak verilir (Claude {@code x-api-key} vb.). */
+    public Result post(String url, Map<String, String> headers, String jsonBody) throws EngineException {
         HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(url))
                 .timeout(Duration.ofSeconds(60))
                 .header("Content-Type", "application/json")
                 .header("Accept", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(jsonBody));
-        if (authBearer != null && !authBearer.isEmpty()) {
-            builder.header("Authorization", "Bearer " + authBearer);
+        if (headers != null) {
+            headers.forEach(builder::header);
         }
         long start = System.nanoTime();
         try {
