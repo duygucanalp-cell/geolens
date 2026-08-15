@@ -39,7 +39,7 @@ class WorkspaceControllerTest {
     void archiveWorkspaceSuccess() throws Exception {
         when(dsl.execute(anyString(), any(Object[].class))).thenReturn(1);
 
-        mockMvc.perform(post("/v1/workspaces/WS01/archive")
+        mockMvc.perform(post("/v1/workspaces/WS01/archive/")
                         .header("X-Tenant-ID", TENANT))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("archived"))
@@ -50,7 +50,7 @@ class WorkspaceControllerTest {
     void archiveWorkspaceDBErrorReturns500() throws Exception {
         when(dsl.execute(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db error"));
 
-        mockMvc.perform(post("/v1/workspaces/WS01/archive")
+        mockMvc.perform(post("/v1/workspaces/WS01/archive/")
                         .header("X-Tenant-ID", TENANT))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.error").value("arşivleme başarısız"));

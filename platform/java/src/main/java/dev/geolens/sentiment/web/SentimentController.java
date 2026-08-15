@@ -66,7 +66,7 @@ SentimentController {
         }
     }
 
-    @GetMapping
+    @GetMapping("/")
     public ResponseEntity<List<Map<String, Object>>> list(@PathVariable String workspaceId,
                                                           @RequestHeader("X-Tenant-ID") String tenantId,
                                                           @RequestParam(value = "brand_id", required = false) String brandId) {

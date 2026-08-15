@@ -37,7 +37,10 @@ public class WorkspaceController {
         this.tx = tx;
     }
 
-    @PostMapping("/archive")
+    /** Go'da workspace arşivleme POST /v1/workspaces/{ws}/archive (chi katı trailing slash).
+     * Spring'de /archive (no-slash) Response Archive modülüne (ArchiveController) ait olduğundan
+     * workspace arşivleme /archive/ olarak eşlenir (WebConfig: opsiyonel trailing slash kapalı). */
+    @PostMapping("/archive/")
     public ResponseEntity<?> archiveWorkspace(@PathVariable String workspaceId,
                                               @RequestHeader("X-Tenant-ID") String tenantId) {
         String now = Instant.now().toString();

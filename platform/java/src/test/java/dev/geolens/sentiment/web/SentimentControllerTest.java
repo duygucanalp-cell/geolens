@@ -110,7 +110,7 @@ class SentimentControllerTest {
                         "overall_sentiment", 0.8, "positive_score", 0.7, "neutral_score", 0.2,
                         "negative_score", 0.1, "mention_count", 3, "analyzed_at", "2026-08-13T10:00:00Z")));
 
-        mockMvc.perform(get("/v1/workspaces/{ws}/sentiment", WS)
+        mockMvc.perform(get("/v1/workspaces/{ws}/sentiment/", WS)
                         .header("X-Tenant-ID", TENANT)
                         .queryParam("brand_id", "B01"))
                 .andExpect(status().isOk())
@@ -123,7 +123,7 @@ class SentimentControllerTest {
         when(tx.execute(any(TransactionCallback.class)))
                 .thenThrow(new RuntimeException("db down"));
 
-        mockMvc.perform(get("/v1/workspaces/{ws}/sentiment", WS).header("X-Tenant-ID", TENANT))
+        mockMvc.perform(get("/v1/workspaces/{ws}/sentiment/", WS).header("X-Tenant-ID", TENANT))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isEmpty());
     }

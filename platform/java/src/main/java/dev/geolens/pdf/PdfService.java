@@ -12,6 +12,7 @@ import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
 import org.jooq.DSLContext;
 import org.jooq.Record;
+import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
 import java.time.Instant;
@@ -29,6 +30,7 @@ import java.util.UUID;
  * raporu üretir. Skorlar {@code measure.scores}, denetim {@code governance.audit_results}
  * tablosundan çekilir; sorgu hatasında Go ile aynı mock/tamamlanamadı verisi kullanılır.
  */
+@Service
 public class PdfService {
 
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd.MM.yyyy");
