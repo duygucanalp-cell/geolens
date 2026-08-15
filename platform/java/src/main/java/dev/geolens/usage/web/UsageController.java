@@ -1,5 +1,7 @@
 package dev.geolens.usage.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.usage.service.UsageService;
 import dev.geolens.common.ServiceException;
 import org.springframework.http.HttpStatus;

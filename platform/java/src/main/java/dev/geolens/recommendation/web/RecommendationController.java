@@ -1,5 +1,7 @@
 package dev.geolens.recommendation.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.recommendation.domain.Recommendation;
 import dev.geolens.recommendation.domain.Rule;
 import dev.geolens.recommendation.persistence.AppliedRecommendation;

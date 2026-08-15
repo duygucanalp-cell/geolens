@@ -1,5 +1,7 @@
 package dev.geolens.sentiment.web;
 
+import dev.geolens.common.ApiError;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
