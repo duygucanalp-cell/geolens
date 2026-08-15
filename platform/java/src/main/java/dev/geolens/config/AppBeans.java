@@ -7,6 +7,8 @@ import dev.geolens.contentgeo.ContentGeoEngine;
 import dev.geolens.archive.ArchiveEngine;
 import dev.geolens.replay.ReplayEngine;
 import dev.geolens.registry.EntityIndexer;
+import dev.geolens.registry.EsEntityIndexer;
+import dev.geolens.search.SearchClient;
 import dev.geolens.retention.RetentionWorker;
 import dev.geolens.technicalgeo.TechnicalGeoEngine;
 import dev.geolens.benchmark.DpConfig;
@@ -240,10 +242,15 @@ public class AppBeans {
         return new ReplayEngine(dsl);
     }
 
-    /** Registry (R1): varlık indeksleyici — spike'ta noop (Go noopIndexer; üretimde Elasticsearch). */
+    /** Registry (R1): varlık indeksleyici — ELASTICSEARCH_URL setse gerçek ES client,
+     * boşsa noop (Go WithIndexer karşılığı: client nil → noopIndexer). */
     @Bean
-    public EntityIndexer entityIndexer() {
-        return EntityIndexer.noop();
+    public EntityIndexer entityIndexer(@Value("${ELASTICSEARCH_URL:}") String esUrl,
+                                       @Value("${ELASTICSEARCH_API_KEY:}") String esApiKey) {
+        if (esUrl == null || esUrl.isBlank()) {
+            return EntityIndexer.noop();
+        }
+        return new EsEntityIndexer(new SearchClient(esUrl, esApiKey));
     }
 
     /** Archive (FR-D13): yanıt arşivleme motoru — DSLContext üzerinden çalışır. */
