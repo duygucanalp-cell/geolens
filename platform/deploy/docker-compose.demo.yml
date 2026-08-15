@@ -75,27 +75,38 @@ services:
       retries: 3
     restart: unless-stopped
 
+  # === Java uygulaması (Spring Boot — api/worker/scheduler profilleri, tek jar) ===
   api:
     build:
       context: ..
-      dockerfile: Dockerfile
+      dockerfile: java/Dockerfile
       target: api
     ports:
       - "8080:8080"
     environment:
-      # ========== Dev default'lar ==========
-      ENVIRONMENT: development
+      SPRING_PROFILES_ACTIVE: api
+      PORT: 8080
+      DATABASE_URL: jdbc:postgresql://postgres:5432/geolens
+      DATABASE_USER: geolens
+      DATABASE_PASSWORD: geolens
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
       S3_ENDPOINT: http://minio:9000
-      S3_BUCKET: geolens-snapshots
+      S3_BUCKET: geolens
       S3_REGION: us-east-1
-      DATABASE_URL: postgres://geolens:geolens@postgres:5432/geolens?sslmode=disable
-      REDIS_URL: redis://redis:6379/0
       S3_ACCESS_KEY: minioadmin
       S3_SECRET_KEY: minioadmin
       JWT_SECRET: demo-secret-change-in-production
+      # ML serving (0421 A0-3) — serving yoksa kural tabanlı fallback (M-4)
+      ML_SERVING_URL: http://ml-serving:8900
+      ML_TIMEOUT: 5s
       PERPLEXITY_API_KEY: ${PERPLEXITY_API_KEY:-}
       CHATGPT_API_KEY: ${CHATGPT_API_KEY:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY:-}
+      GROK_API_KEY: ${GROK_API_KEY:-}
+      COPILOT_API_KEY: ${COPILOT_API_KEY:-}
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY:-}
       SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
       SENDGRID_FROM_EMAIL: geolens@example.com
       SENDGRID_FROM_NAME: GeoLens
@@ -117,23 +128,17 @@ services:
   scheduler:
     build:
       context: ..
-      dockerfile: Dockerfile
+      dockerfile: java/Dockerfile
       target: scheduler
-    ports:
-      # Scheduler metrics — kendi prosesindeki metrikler (scrape için)
-      - "8082:8082"
     environment:
-      ENVIRONMENT: development
-      SCHEDULER_METRICS_PORT: 8082
-      S3_ENDPOINT: http://minio:9000
-      S3_BUCKET: geolens-snapshots
-      S3_REGION: us-east-1
-      DATABASE_URL: postgres://geolens:geolens@postgres:5432/geolens?sslmode=disable
-      REDIS_URL: redis://redis:6379/0
-      S3_ACCESS_KEY: minioadmin
-      S3_SECRET_KEY: minioadmin
-      JWT_SECRET: demo-secret-change-in-production
-      PERPLEXITY_API_KEY: ${PERPLEXITY_API_KEY:-}
+      SPRING_PROFILES_ACTIVE: scheduler
+      DATABASE_URL: jdbc:postgresql://postgres:5432/geolens
+      DATABASE_USER: geolens
+      DATABASE_PASSWORD: geolens
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CONSUMER_GROUP: cg:measure
+      # ========== SOPS+Age ==========
       AGE_KEY: ${AGE_KEY:-}
     volumes:
       - ../docker/.env.secrets.enc:/etc/geolens/secrets/.env.secrets.enc:ro
@@ -142,39 +147,43 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      minio:
         condition: service_healthy
 
   worker:
     build:
       context: ..
-      dockerfile: Dockerfile
+      dockerfile: java/Dockerfile
       target: worker
-    ports:
-      # Worker metrics — kendi prosesindeki metrikler (ML breaker dahil)
-      - "8081:8081"
     environment:
-      ENVIRONMENT: development
-      WORKER_METRICS_PORT: 8081
-      # ML serving — breaker metrikleri (MLServingUnavailable alert kaynağı)
-      ML_SERVING_URL: http://ml-serving:8900
-      ML_TIMEOUT: 5s
-      # NFR-13 sektör benchmark eşiği — pilot senaryosu: 2 tenant ile demo
-      # (0422 §3; üretimde ≥5 kalmalıdır)
-      BENCHMARK_MIN_TENANTS: 2
+      SPRING_PROFILES_ACTIVE: worker
+      DATABASE_URL: jdbc:postgresql://postgres:5432/geolens
+      DATABASE_USER: geolens
+      DATABASE_PASSWORD: geolens
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CONSUMER_GROUP: cg:measure
       S3_ENDPOINT: http://minio:9000
-      S3_BUCKET: geolens-snapshots
+      S3_BUCKET: geolens
       S3_REGION: us-east-1
-      DATABASE_URL: postgres://geolens:geolens@postgres:5432/geolens?sslmode=disable
-      REDIS_URL: redis://redis:6379/0
       S3_ACCESS_KEY: minioadmin
       S3_SECRET_KEY: minioadmin
       JWT_SECRET: demo-secret-change-in-production
+      # ML serving — serving yoksa kural tabanlı fallback (M-4)
+      ML_SERVING_URL: http://ml-serving:8900
+      ML_TIMEOUT: 5s
       PERPLEXITY_API_KEY: ${PERPLEXITY_API_KEY:-}
       CHATGPT_API_KEY: ${CHATGPT_API_KEY:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY:-}
+      GROK_API_KEY: ${GROK_API_KEY:-}
+      COPILOT_API_KEY: ${COPILOT_API_KEY:-}
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY:-}
       SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
       SENDGRID_FROM_EMAIL: geolens@example.com
       SENDGRID_FROM_NAME: GeoLens
+      # ========== SOPS+Age ==========
       AGE_KEY: ${AGE_KEY:-}
     volumes:
       - ../docker/.env.secrets.enc:/etc/geolens/secrets/.env.secrets.enc:ro
@@ -183,6 +192,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      minio:
         condition: service_healthy
       ml-serving:
         condition: service_started

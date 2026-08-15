@@ -67,6 +67,19 @@ class AuthControllerTest {
     }
 
     @Test
+    void registerSlugConflictReturns409() throws Exception {
+        // Go handler parity: tenant slug çakışması 409 "bu isimle kayıt yapılamaz"
+        when(authService.register(any()))
+                .thenThrow(new ServiceException(HttpStatus.CONFLICT, "bu isimle kayıt yapılamaz"));
+
+        mockMvc.perform(post("/v1/auth/register")
+                        .contentType("application/json")
+                        .content("{\"email\":\"x@y.com\",\"password\":\"12345678\",\"name\":\"Demo\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("bu isimle kayıt yapılamaz"));
+    }
+
+    @Test
     void loginInvalidJSONReturns400() throws Exception {
         mockMvc.perform(post("/v1/auth/login")
                         .contentType("application/json")

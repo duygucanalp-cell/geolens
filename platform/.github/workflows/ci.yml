@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 env:
-  GO_VERSION: "1.26"
+  JAVA_VERSION: "25"
 
 jobs:
   lint:
@@ -15,27 +15,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-java@v4
         with:
-          go-version: ${{ env.GO_VERSION }}
-      - uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
-          working-directory: platform
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+      - name: Compile (derleme kontrolü)
+        working-directory: java
+        run: ./mvnw -B -q compile
 
   security:
     name: Security Scan
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-      - name: gosec
-        uses: securego/gosec@master
-        with:
-          working-directory: platform
-          args: -no-fail ./...
       - name: Trivy vulnerability scan
         uses: aquasecurity/trivy-action@master
         with:
@@ -49,56 +42,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-java@v4
         with:
-          go-version: ${{ env.GO_VERSION }}
-      - name: Run tests (short)
-        working-directory: platform
-        run: go test ./... -v -count=1 -short
-
-  race-test:
-    name: Race Tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-      - name: Run tests with race detector (short)
-        working-directory: platform
-        env:
-          # -race, CGO gerektirir (gcc) — ubuntu-latest'te hazır gelir;
-          # yerel Windows ortamında gcc olmadığından CI'da koşulur.
-          CGO_ENABLED: "1"
-        run: go test ./... -v -count=1 -short -race
-
-  integration-test:
-    name: Integration Tests
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: geolens
-          POSTGRES_PASSWORD: geolens
-          POSTGRES_DB: geolens
-        ports:
-          - 5432:5432
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-      - name: Run integration tests
-        working-directory: platform
-        env:
-          DATABASE_URL: postgres://geolens:geolens@localhost:5432/geolens?sslmode=disable
-          REDIS_URL: redis://localhost:6379/0
-        run: go test ./... -v -count=1 -tags=integration
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+      - name: Run tests
+        working-directory: java
+        run: ./mvnw -B test
 
   secrets-validate:
     name: Secrets Validate
@@ -107,9 +58,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check age key setup
         run: |
-          if [ -f platform/docker/.env.secrets.enc ]; then
+          if [ -f docker/.env.secrets.enc ]; then
             echo "Secrets file exists, checking age config..."
-            if [ -f platform/.sops.yaml ]; then
+            if [ -f .sops.yaml ]; then
               echo ".sops.yaml found"
             fi
             echo "NOTE: Full decryption requires AGE_KEY secret — set in GitHub repo Settings > Secrets"
@@ -122,7 +73,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: platform/ml
+        working-directory: ml
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -148,15 +99,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-java@v4
         with:
-          go-version: ${{ env.GO_VERSION }}
-      - name: Build API
-        working-directory: platform
-        run: go build ./cmd/api
-      - name: Build Scheduler
-        working-directory: platform
-        run: go build ./cmd/scheduler
-      - name: Build Worker
-        working-directory: platform
-        run: go build ./cmd/worker
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+      - name: Build jar (api/worker/scheduler profilleri tek jar)
+        working-directory: java
+        run: ./mvnw -B -q package -DskipTests

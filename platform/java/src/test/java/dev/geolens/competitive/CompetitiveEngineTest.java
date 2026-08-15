@@ -45,7 +45,8 @@ class CompetitiveEngineTest {
                         JooqTestData.record(Map.of("value", 80.0)), // topic brand
                         JooqTestData.record(Map.of("value", 60.0)), // topic comp
                         JooqTestData.record(Map.of("value", 8)),    // prompt brand jobs
-                        JooqTestData.record(Map.of("value", 2)));   // prompt comp jobs
+                        JooqTestData.record(Map.of("value", 2)),    // prompt comp jobs
+                        JooqTestData.record(Map.of("gap_id", "gs-1"))); // snapshot upsert RETURNING
 
         List<GapSnapshot> snapshots = engine.analyzeAllGaps("b-1", "ws-1", "T01");
 
@@ -86,8 +87,8 @@ class CompetitiveEngineTest {
         // Skor: 60*.30 + 60*.25 + 57.5*.20 + 60*.15 + 80*.10 = 18+15+11.5+9+8 = 61.5
         assertEquals(61.5, s.competitiveScore(), 1e-9);
 
-        // 1 snapshot insert + 5 öneri insert
-        verify(dsl, times(6)).execute(anyString(), any(Object[].class));
+        // Snapshot upsert fetchOne (RETURNING) + 5 öneri insert
+        verify(dsl, times(5)).execute(anyString(), any(Object[].class));
     }
 
     @Test

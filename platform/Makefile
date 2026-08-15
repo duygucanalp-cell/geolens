@@ -9,14 +9,23 @@ help: ## Show available commands
 
 ## === Development ===
 
-dev: ## Start dev environment (Docker + hot-reload)
+dev: ## Start dev environment (Docker + infrastructure)
 	docker compose up -d
 	@echo "PostgreSQL: localhost:5432"
 	@echo "Redis:      localhost:6379"
 	@echo "MinIO:      localhost:9000 (console: 9001)"
 	@echo ""
-	@echo "Run 'go run ./cmd/api' to start API server"
+	@echo "Run 'make api' to start the Java API (profil: api)"
 	@echo "Run 'make ml-serve' to start ML serving (Python gerekli)"
+
+api: ## Run Java API on :8080 (profil: api)
+	cd java && ./mvnw spring-boot:run -Dspring-boot.run.profiles=api
+
+worker: ## Run Java worker (profil: worker)
+	cd java && ./mvnw spring-boot:run -Dspring-boot.run.profiles=worker
+
+scheduler: ## Run Java scheduler (profil: scheduler)
+	cd java && ./mvnw spring-boot:run -Dspring-boot.run.profiles=scheduler
 
 db-up: ## Start database services only
 	docker compose up -d postgres redis minio
@@ -25,27 +34,20 @@ db-down: ## Stop database services
 	docker compose down
 
 migrate-up: ## Run database migrations
-	@echo "Migrations are auto-executed from ./migrations/ via docker-compose"
-	@echo "For manual: cat migrations/*.sql | docker compose exec -T postgres psql -U geolens"
+	@echo "Migrations Flyway ile yönetilir — her Java başlangıcında (api/worker/scheduler) otomatik uygulanır"
+	@echo "Migration kaynağı: java/src/main/resources/db/migration/"
 
-migrate-down: ## Rollback (placeholder — add golang-migrate or similar later)
+migrate-down: ## Rollback (placeholder — Flyway undo henüz yok)
 	@echo "Rollback not yet implemented"
 
 ## === Build ===
 
-build: ## Build all binaries
-	go build -o bin/$(APP_NAME)-api ./cmd/api
-	go build -o bin/$(APP_NAME)-scheduler ./cmd/scheduler
-	go build -o bin/$(APP_NAME)-worker ./cmd/worker
+build: ## Build Spring Boot jar (api/worker/scheduler profilleri tek jar)
+	cd java && ./mvnw -q package -DskipTests
+	@echo "Jar: java/target/$(APP_NAME)-0.1.0-SNAPSHOT.jar"
 
-build-api: ## Build API only
-	go build -o bin/$(APP_NAME)-api ./cmd/api
-
-build-scheduler: ## Build scheduler only
-	go build -o bin/$(APP_NAME)-scheduler ./cmd/scheduler
-
-build-worker: ## Build worker only
-	go build -o bin/$(APP_NAME)-worker ./cmd/worker
+build-api: ## Build API jar only (paketleme tüm profilleri içerir)
+	cd java && ./mvnw -q package -DskipTests
 
 ml-serve: ## Start ML serving API (Aşama 0 — Python gerekli; modeller ./ml/models'dan yüklenir)
 	cd ml && MODELS="sentiment=models/sentiment/sentiment.onnx,prompt_intent=models/prompt_classifier/prompt_intent.onnx,prompt_topic=models/prompt_classifier/prompt_topic.onnx,prompt_persona=models/prompt_classifier/prompt_persona.onnx,prompt_funnel=models/prompt_classifier/prompt_funnel.onnx" python -m uvicorn geolens.serving.app:app --port 8900
@@ -56,30 +58,26 @@ ml-test: ## Run ML tests (Python gerekli)
 ## === Test ===
 
 test: ## Run all tests
-	go test ./... -v -count=1
+	cd java && ./mvnw test
 
-test-race: ## Run tests with race detection
-	go test ./... -race -count=1
-
-test-integration: ## Run integration tests (requires docker)
-	go test ./... -tags=integration -v -count=1
+test-integration: ## Run integration tests (docker tabanlı senaryolar için ayrı Testcontainers seti gerekir)
+	@echo "Java testleri mock tabanlıdır (docker gerektirmez). Testcontainers entegrasyonu henüz eklenmedi."
 
 coverage: ## Run tests with coverage
-	go test ./... -coverprofile=coverage.out
-	go tool cover -html=coverage.out -o coverage.html
+	cd java && ./mvnw test
 
 ## === Lint ===
 
-lint: ## Run golangci-lint
-	golangci-lint run ./... --timeout=5m
+lint: ## Compile check (derleme kontrolü)
+	cd java && ./mvnw -q compile
 
-lint-fix: ## Run golangci-lint with auto-fix
-	golangci-lint run ./... --fix --timeout=5m
+lint-fix: ## Compile check (fix adımı yok — kod biçimi IDE/düzeltme ile)
+	cd java && ./mvnw -q compile
 
 ## === Clean ===
 
 clean: ## Clean build artifacts
-	rm -rf bin/ coverage.out coverage.html
+	cd java && ./mvnw clean
 
 ## === Secrets Management (SOPS+Age) ===
 
@@ -130,11 +128,3 @@ endif
 show-key: ## Show age public key
 	@echo "Age Public Key:"
 	@grep "public key" $(AGE_KEY_FILE) 2>/dev/null || cat $(AGE_KEY_FILE) | grep -v "^#" | head -1
-
-## === Tools ===
-
-tools: ## Install required tools
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-	go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
-
-# sqlc: deferred to Dilim 2 — codebase uses raw pgx

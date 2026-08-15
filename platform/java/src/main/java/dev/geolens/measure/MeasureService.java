@@ -12,7 +12,6 @@ import dev.geolens.measure.persistence.NoopScoreDao;
 import dev.geolens.measure.persistence.ScoreDao;
 import dev.geolens.ml.MlClient;
 import dev.geolens.ml.PromptClassification;
-import dev.geolens.ml.ServingException;
 import dev.geolens.sentiment.ml.CircuitBreaker;
 import dev.geolens.util.Ulid;
 
@@ -296,7 +295,9 @@ public final class MeasureService {
                 }
                 try {
                     labels = ml.classifyPrompt(prompt);
-                } catch (ServingException e) {
+                } catch (RuntimeException e) {
+                    // M-4: serving'deki HER hata (ServingException, boş URL'den IllegalArgumentException
+                    // vb.) varsayılan ağırlıklara düşürür — skor akışı serving'e bağımlı olmaz.
                     breaker.fail();
                     return IntentWeightsResult.none();
                 }

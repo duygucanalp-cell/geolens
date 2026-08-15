@@ -69,16 +69,27 @@ public class AuthService {
         String hashed = ENCODER.encode(req.password());
 
         String[] ids = txExecute(() -> {
-            String tenantId = value("""
-                    INSERT INTO identity.tenants (id, name, slug, tier)
-                    VALUES (gen_random_uuid()::text, ?, lower(regexp_replace(?, '[^a-z0-9]', '', 'g')), 'free')
-                    RETURNING id
-                    """, String.class, req.name(), req.name());
-            String userId = value("""
-                    INSERT INTO identity.users (id, tenant_id, email, password_hash, role, full_name)
-                    VALUES (gen_random_uuid()::text, ?, ?, ?, 'admin', ?)
-                    RETURNING id
-                    """, String.class, tenantId, req.email(), hashed, req.name());
+            // Go handler parity: tenant slug çakışması 409, e-posta çakışması 409 döner
+            String tenantId;
+            try {
+                tenantId = value("""
+                        INSERT INTO identity.tenants (id, name, slug, tier)
+                        VALUES (gen_random_uuid()::text, ?, lower(regexp_replace(?, '[^a-z0-9]', '', 'g')), 'free')
+                        RETURNING id
+                        """, String.class, req.name(), req.name());
+            } catch (RuntimeException e) {
+                throw new ServiceException(HttpStatus.CONFLICT, "bu isimle kayıt yapılamaz");
+            }
+            String userId;
+            try {
+                userId = value("""
+                        INSERT INTO identity.users (id, tenant_id, email, password_hash, role, full_name)
+                        VALUES (gen_random_uuid()::text, ?, ?, ?, 'admin', ?)
+                        RETURNING id
+                        """, String.class, tenantId, req.email(), hashed, req.name());
+            } catch (RuntimeException e) {
+                throw new ServiceException(HttpStatus.CONFLICT, "bu e-posta zaten kayıtlı");
+            }
             String workspaceId = value("""
                     INSERT INTO config.workspaces (id, tenant_id, name, slug)
                     VALUES (gen_random_uuid()::text, ?, 'Varsayılan Çalışma Alanı', 'default')

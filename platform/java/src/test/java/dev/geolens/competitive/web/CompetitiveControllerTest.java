@@ -217,7 +217,7 @@ class CompetitiveControllerTest {
 
     private static Map<String, Object> overviewRow() {
         Map<String, Object> m = new LinkedHashMap<>();
-        m.put("id", "gs-1");
+        m.put("gap_id", "gs-1");
         m.put("competitor_id", "c-1");
         m.put("competitor_name", "Rakip A");
         m.put("visibility_gap", 20.0);
@@ -235,7 +235,7 @@ class CompetitiveControllerTest {
 
     private static Map<String, Object> recRow() {
         Map<String, Object> m = new LinkedHashMap<>();
-        m.put("id", "r-1");
+        m.put("recommendation_id", "r-1");
         m.put("gap_type", "visibility");
         m.put("priority", "medium");
         m.put("description", "Görünürlük farkı kapatmak için zayıf motorlarda strateji revizyonu yapılmalı");

@@ -33,8 +33,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/v1/workspaces/{workspaceId}")
-public class
-SentimentController {
+public class SentimentController {
 
     private final SentimentService service;
 

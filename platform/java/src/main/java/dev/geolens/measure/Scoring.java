@@ -247,8 +247,11 @@ public final class Scoring {
         Tier lowestTier = Tier.DIRECTIONAL;
         String lowestLabel = responses.get(0).fidelityLabel();
         for (RawResponse r : responses) {
-            if (r.tier().code() < lowestTier.code()) {
-                lowestTier = r.tier();
+            // Worker yeniden kurulan yanıtlarda tier null olabilir — Go sıfır değeri (0) gibi davran:
+            // 0 < her tier, yani ilk yanıtın etiketi kazanır (Go aggregateFidelity birebir).
+            int code = r.tier() == null ? 0 : r.tier().code();
+            if (code < lowestTier.code()) {
+                lowestTier = r.tier() == null ? Tier.DIRECTIONAL : r.tier();
                 lowestLabel = r.fidelityLabel();
             }
         }

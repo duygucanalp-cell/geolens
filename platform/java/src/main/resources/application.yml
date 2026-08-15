@@ -23,12 +23,15 @@ spring:
     locations: classpath:db/migration
     # DDL değişikliklerinde mevcut ortamı zorla bozmamak için validate yumuşak tutulur.
     validate-migration-naming: true
+    # Go stack'inden devralınan mevcut DB'ler (initdb ile 52 migration uygulanmış, history yok)
+    # için baseline: Flyway 52'ye kadar uygulanmış sayar, V53+ akar. Boş DB'de etkisizdir.
+    baseline-on-migrate: true
+    baseline-version: 52
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
-      # REDIS_URL (redis://host:port/db) formatı desteklenir — compose/kubernetes geçişi için
-      url: ${REDIS_URL:}
+      # Not: redis:// URL desteklenmez — host/port env'leri kullanılır (compose: REDIS_HOST/REDIS_PORT).
 
 server:
   port: ${PORT:8081}

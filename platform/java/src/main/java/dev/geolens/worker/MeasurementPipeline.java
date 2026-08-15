@@ -240,7 +240,7 @@ public class MeasurementPipeline {
         try {
             score = measureEngine.calculateScore(panelId, results, ComponentWeights.EMPTY);
         } catch (RuntimeException e) {
-            log.warn("compute: skor hesaplama hatası", "error", e.getMessage());
+            log.warn("compute: skor hesaplama hatası: {}", e.getMessage(), e);
             return;
         }
         log.info("compute: skor hesaplandı", "value", score.value());

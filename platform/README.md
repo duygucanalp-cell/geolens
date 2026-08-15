@@ -22,33 +22,38 @@ GeoLens Platform, kurumların AI yanıt motorlarında (ChatGPT, Gemini, Perplexi
 ## Mimari Bakış
 
 ```
-cmd/api          → REST API + HTTP middleware
-cmd/scheduler    → Zamanlanmış iş yönetimi
-cmd/worker       → Arka plan işlemci (measure/report/notify)
-web/             → React SPA
+java/ (Spring Boot monolit)
+├── api profil (varsayılan)  → REST API + JWT auth (chi → Spring MVC portu)
+├── worker profil            → Redis Stream tüketicileri (q:measure, q:governance)
+└── scheduler profil         → Outbox dispatcher + panel cron taraması + haftalık digest
+web/                         → React SPA (Vite, /v1 → :8080 proxy)
+ml/                          → Python ONNX serving (:8900)
 
-PostgreSQL 16    → Birincil veritabanı + RLS multi-tenancy
+PostgreSQL 16    → Birincil veritabanı + RLS multi-tenancy (şema: Flyway)
 Redis 7+         → Kuyruk (Redis Streams) + önbellek
-S3-compatible    → Ham yanıt arşivi + rapor dosyaları
+S3-compatible    → Ham yanıt arşivi + rapor dosyaları (MinIO)
 ```
 
-Detaylı mimari: [0501 - System Architecture](docs/05-architecture/0501-system-architecture.md)
+Detaylı mimari: [0501 - System Architecture](docs/05-architecture/0501-system-architecture.md) ve [java/README.md](java/README.md)
 
 ---
 
 ## Geliştirme Ortamı
 
-Gereksinimler: Go 1.22+, Node.js 20+, Docker
+Gereksinimler: Java 25+, Node.js 20+, Docker
 
 ```bash
-# Geliştirme ortamını başlat
-docker compose -f deploy/docker-compose.dev.yml up -d
+# Altyapıyı başlat (PostgreSQL + Redis + MinIO + ML serving + web)
+docker compose up -d
 
-# API'yi çalıştır
-go run ./cmd/api
+# API'yi çalıştır (profil: api)
+cd java && ./mvnw spring-boot:run -Dspring-boot.run.profiles=api
 
-# Worker'ı çalıştır
-go run ./cmd/worker
+# Worker'ı çalıştır (profil: worker)
+cd java && ./mvnw spring-boot:run -Dspring-boot.run.profiles=worker
+
+# Scheduler'ı çalıştır (profil: scheduler)
+cd java && ./mvnw spring-boot:run -Dspring-boot.run.profiles=scheduler
 ```
 
 Detaylı kurulum: [0510 - Deployment](docs/05-architecture/0510-deployment.md)
@@ -59,17 +64,12 @@ Detaylı kurulum: [0510 - Deployment](docs/05-architecture/0510-deployment.md)
 
 ```
 platform/
-├── cmd/              # Uygulama giriş noktaları
-├── internal/         # Uygulama kodu
-│   ├── platform/     # Altyapı katmanı
-│   ├── identity/     # Kimlik ve erişim
-│   ├── measure/      # Ölçüm motoru
-│   ├── config/       # Yapılandırma
-│   ├── insight/      # Analiz
-│   └── governance/   # Denetim ve yönetim
-├── web/              # React SPA
-├── docs/             # Dokümantasyon
-└── deploy/           # Dağıtım yapılandırması
+├── java/              # Spring Boot monolit (api/worker/scheduler profilleri)
+│   └── src/main/resources/db/migration/  # Flyway şema migration'ları
+├── web/               # React SPA
+├── ml/                # Python ONNX serving + eğitim
+├── docs/              # Dokümantasyon
+└── deploy/            # Dağıtım yapılandırması
 ```
 
 ---

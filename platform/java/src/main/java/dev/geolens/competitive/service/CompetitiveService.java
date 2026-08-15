@@ -49,7 +49,7 @@ public class CompetitiveService {
         List<Map<String, Object>> rows;
         try {
             rows = dsl.fetch("""
-                    SELECT gs.id, gs.competitor_id, b2.name AS competitor_name,
+                    SELECT gs.gap_id, gs.competitor_id, b2.name AS competitor_name,
                            gs.visibility_gap, gs.citation_gap, gs.content_gap, gs.topic_gap, gs.prompt_gap,
                            gs.competitive_score, gs.period_start, gs.period_end, gs.created_at
                     FROM competitive.gap_snapshots gs
@@ -66,7 +66,7 @@ public class CompetitiveService {
         List<Map<String, Object>> results = new ArrayList<>();
         for (Map<String, Object> r : rows) {
             Map<String, Object> item = new LinkedHashMap<>();
-            item.put("id", str(r.get("id")));
+            item.put("id", str(r.get("gap_id")));
             item.put("competitor_id", str(r.get("competitor_id")));
             item.put("competitor_name", str(r.get("competitor_name")));
             putGap(item, "visibility_gap", r.get("visibility_gap"));
@@ -95,9 +95,9 @@ public class CompetitiveService {
         List<Map<String, Object>> rows;
         try {
             rows = dsl.fetch("""
-                    SELECT gr.id, gr.gap_type, gr.priority, gr.description, gr.impact, gr.kanit_derecesi
+                    SELECT gr.recommendation_id, gr.gap_type, gr.priority, gr.description, gr.impact, gr.kanit_derecesi
                     FROM competitive.gap_recommendations gr
-                    JOIN competitive.gap_snapshots gs ON gs.id = gr.gap_id
+                    JOIN competitive.gap_snapshots gs ON gs.gap_id = gr.gap_id
                     JOIN config.brands b ON b.id = gs.brand_id
                     WHERE gr.tenant_id = ? AND b.workspace_id = ?
                         AND (? = '' OR gs.brand_id = ?)
@@ -116,7 +116,7 @@ public class CompetitiveService {
         List<Map<String, Object>> recs = new ArrayList<>();
         for (Map<String, Object> r : rows) {
             Map<String, Object> item = new LinkedHashMap<>();
-            item.put("id", str(r.get("id")));
+            item.put("id", str(r.get("recommendation_id")));
             item.put("gap_type", str(r.get("gap_type")));
             item.put("priority", str(r.get("priority")));
             item.put("description", str(r.get("description")));

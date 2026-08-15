@@ -210,13 +210,16 @@ public class CompetitiveEngine {
             breakdownJson = "{}";
         }
 
+        String actualGapId = s.id();
         try {
-            dsl.execute("""
+            // Upsert'ten GERÇEK gap_id'yi döndürür: ON CONFLICT DO UPDATE mevcut satırı
+            // güncellediğinde gap_id değişmez — öneriler eski id'ye bağlanmalı (FK bütünlüğü).
+            Record r = dsl.fetchOne("""
                     INSERT INTO competitive.gap_snapshots
-                        (id, brand_id, competitor_id, period_start, period_end,
+                        (gap_id, brand_id, competitor_id, period_start, period_end,
                          visibility_gap, citation_gap, content_gap, topic_gap, prompt_gap,
                          competitive_score, breakdown, tenant_id, workspace_id, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?, ?, now())
+                    VALUES (?, ?, ?, ?::date, ?::date, ?, ?, ?, ?, ?, ?, ?::jsonb, ?, ?, now())
                     ON CONFLICT (brand_id, competitor_id, period_start, period_end) DO UPDATE
                     SET visibility_gap = EXCLUDED.visibility_gap,
                         citation_gap = EXCLUDED.citation_gap,
@@ -226,19 +229,23 @@ public class CompetitiveEngine {
                         competitive_score = EXCLUDED.competitive_score,
                         breakdown = EXCLUDED.breakdown,
                         created_at = now()
+                    RETURNING gap_id
                     """, s.id(), s.brandId(), s.competitorId(), s.periodStart(), s.periodEnd(),
                     nullableGap(s.visibilityGap()), nullableGap(s.citationGap()), nullableGap(s.contentGap()),
                     nullableGap(s.topicGap()), nullableGap(s.promptGap()), s.competitiveScore(),
                     breakdownJson, tenantId, workspaceId);
+            if (r != null) {
+                actualGapId = String.valueOf(r.get(0));
+            }
         } catch (RuntimeException e) {
             LOG.warn("gap snapshot kaydetme hatası", e);
         }
 
-        saveRecommendations(s, tenantId);
+        saveRecommendations(actualGapId, tenantId);
     }
 
     /** Sabit gap bazlı önerileri kaydeder — Go {@code saveRecommendations}. */
-    private void saveRecommendations(GapSnapshot s, String tenantId) {
+    private void saveRecommendations(String gapId, String tenantId) {
         String[][] recs = {
                 {"visibility", "medium", "Görünürlük farkı kapatmak için zayıf motorlarda strateji revizyonu yapılmalı",
                         "Visibility gap puanında +5-15 iyileşme", "korelasyonel"},
@@ -256,9 +263,9 @@ public class CompetitiveEngine {
             try {
                 dsl.execute("""
                         INSERT INTO competitive.gap_recommendations
-                            (id, gap_id, gap_type, priority, description, impact, kanit_derecesi, related_fr, tenant_id, created_at)
+                            (recommendation_id, gap_id, gap_type, priority, description, impact, kanit_derecesi, related_fr, tenant_id, created_at)
                         VALUES (?, ?, ?, ?, ?, ?, ?, 'FR-D11', ?, now())
-                        """, Ulid.generate(), s.id(), r[0], r[1], r[2], r[3], r[4], tenantId);
+                        """, Ulid.generate(), gapId, r[0], r[1], r[2], r[3], r[4], tenantId);
             } catch (RuntimeException e) {
                 LOG.warn("gap recommendation kaydetme hatası", e);
             }
