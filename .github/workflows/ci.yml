@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 env:
-  GO_VERSION: '1.26'
+  JAVA_VERSION: '25'
   NODE_VERSION: '22'
   DOCKER_REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
@@ -22,61 +22,49 @@ concurrency:
 
 jobs:
   # ===========================================================================
-  # 1. Go Lint (golangci-lint)
+  # 1. Java Compile (Go golangci-lint karşılığı — derleme + paket sınırları)
   # ===========================================================================
-  lint:
-    name: Go Lint
+  compile:
+    name: Java Compile
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./platform
+        working-directory: ./platform/java
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-java@v4
         with:
-          go-version: ${{ env.GO_VERSION }}
-          cache: true
-          cache-dependency-path: platform/go.sum
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
 
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v7
-        with:
-          version: v2.12.2
-          working-directory: ./platform
-          args: --timeout=5m
+      - name: Compile (jOOQ codegen + derleme)
+        run: sh mvnw -B -q compile
 
   # ===========================================================================
-  # 2. Go Build + Test (short → full for unit, -tags=integration for docker)
+  # 2. Java Build + Test (Go build/test karşılığı — tek jar, 955+ test)
   # ===========================================================================
   build-test:
-    name: Go Build & Test
+    name: Java Build & Test
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./platform
+        working-directory: ./platform/java
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-java@v4
         with:
-          go-version: ${{ env.GO_VERSION }}
-          cache: true
-          cache-dependency-path: platform/go.sum
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
 
-      - name: Download dependencies
-        run: go mod download
+      - name: Run tests
+        run: sh mvnw -B test
 
-      - name: Build all binaries
-        run: go build ./...
-
-      - name: Vet
-        run: go vet ./...
-
-      - name: Unit tests + coverage
-        run: |
-          go test ./... -count=1 -coverprofile=coverage.out -timeout 120s
-          go tool cover -func=coverage.out | tail -n 20
+      - name: Package jar (api/worker/scheduler profilleri)
+        run: sh mvnw -B -q package -DskipTests
 
   # ===========================================================================
   # 3. Frontend Build + Test
@@ -129,12 +117,12 @@ jobs:
         continue-on-error: true
 
   # ===========================================================================
-  # 5. Docker Build (on merge to main)
+  # 5. Docker Build (on merge to main) — java/Dockerfile (api/scheduler/worker)
   # ===========================================================================
   docker:
     name: Docker Build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [lint, build-test, web-build, spec-check]
+    needs: [compile, build-test, web-build, spec-check]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -153,6 +141,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./platform
+          file: ./platform/java/Dockerfile
           target: api
           push: true
           tags: |
@@ -165,6 +154,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./platform
+          file: ./platform/java/Dockerfile
           target: scheduler
           push: true
           tags: |
@@ -177,6 +167,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./platform
+          file: ./platform/java/Dockerfile
           target: worker
           push: true
           tags: |
