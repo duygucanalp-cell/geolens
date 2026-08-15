@@ -3,6 +3,8 @@ package dev.geolens.measure.service;
 import dev.geolens.common.ServiceException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.geolens.benchmark.AggregatedSectorStats;
+import dev.geolens.benchmark.BenchmarkAggregator;
 import dev.geolens.engine.Registry;
 import dev.geolens.measure.ComponentWeights;
 import dev.geolens.measure.MeasurementRequest;
@@ -37,14 +39,17 @@ public class MeasureService {
     private final DSLContext dsl;
     private final Registry engines;
     private final dev.geolens.measure.MeasureService measureEngine;
+    private final BenchmarkAggregator benchmarkAggregator;
     private final ExecutorService executor;
     private final ObjectMapper mapper = new ObjectMapper();
 
     public MeasureService(DSLContext dsl, Registry engines,
-                          dev.geolens.measure.MeasureService measureEngine) {
+                          dev.geolens.measure.MeasureService measureEngine,
+                          BenchmarkAggregator benchmarkAggregator) {
         this.dsl = dsl;
         this.engines = engines;
         this.measureEngine = measureEngine;
+        this.benchmarkAggregator = benchmarkAggregator;
         this.executor = Executors.newVirtualThreadPerTaskExecutor();
     }
 
@@ -340,6 +345,50 @@ public class MeasureService {
         }
         List<String> engineList = new ArrayList<>(allEngines);
         return Map.of("radar", radarData, "engines", engineList, "count", radarData.size());
+    }
+
+    /**
+     * Go {@code GetBenchmarkContext} karşılığı — anonim sektör kıyası (T2).
+     * Kullanıcının son skorunu tüm kiracıların sektör istatistikleriyle karşılaştırır;
+     * NFR-13 (≥5 kiracı) eşiği altında istatistik yayınlanmaz, DP (Laplace) uygulanır.
+     */
+    public Map<String, Object> listBenchmarkContext(String workspaceId, String tenantId, String sector) {
+        double myScore = 0;
+        try {
+            Record r = dsl.fetchOne("""
+                    SELECT COALESCE(value, 0) FROM measure.scores
+                    WHERE workspace_id = ? AND tenant_id = ?
+                    ORDER BY freshness_at DESC LIMIT 1
+                    """, workspaceId, tenantId);
+            if (r != null) {
+                myScore = ((Number) r.get(0)).doubleValue();
+            }
+        } catch (RuntimeException ignored) {
+            // sorgu hatası → skor 0 (Go ile aynı)
+        }
+
+        AggregatedSectorStats stats = benchmarkAggregator.sectorContext(myScore, sector);
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("my_score", stats.myScore);
+        body.put("tenant_count", stats.tenantCount);
+        body.put("sufficient_data", stats.sufficientData);
+        if (stats.sufficientData) {
+            body.put("sector_avg", stats.sectorAvg);
+            body.put("sector_average", stats.sectorAvg); // canonical key (Go ile aynı)
+            body.put("sector_median", stats.sectorMedian);
+            body.put("sector_min", stats.sectorMin);
+            body.put("sector_max", stats.sectorMax);
+            body.put("sector_stddev", stats.sectorStdDev);
+            body.put("percentile_25", stats.percentile25);
+            body.put("percentile_75", stats.percentile75);
+            body.put("percentile_90", stats.percentile90);
+            body.put("difference", stats.difference);
+            body.put("trend", stats.trend);
+        } else {
+            body.put("message", "yetersiz veri — anonim kıyas için en az 5 kiracı gerekli");
+        }
+        return body;
     }
 
     // ---------- yardımcılar ----------

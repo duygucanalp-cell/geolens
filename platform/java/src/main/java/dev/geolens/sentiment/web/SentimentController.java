@@ -24,14 +24,15 @@ import java.util.Map;
 
 /**
  * Sentiment REST controller'ı (FR-D7) ve hallüsinasyon (FR-D8) — Go {@code sentiment.handler} portu.
- * <p>Route'lar (go cmd/api): POST /sentiment/analyze, GET /sentiment, GET /sentiment/summary,
- * POST /hallucination/detect, GET /hallucination, POST /hallucination/{flagId}/verify.
+ * <p>Route'lar (go cmd/api, /v1/workspaces/{ws} altında): POST /sentiment/analyze,
+ * GET /sentiment, GET /sentiment/summary, POST /hallucination/detect, GET /hallucination,
+ * POST /hallucination/{flagId}/verify (hallüsinasyon, sentiment'in kardeşi olarak ayrı köktedir).
  * <p>Tenant, gerçek geçit/middleware tarafından atılan {@code X-Tenant-ID} başlığından gelir
  * (Go {@code httpmw.GetTenantID} karşılığı); workspace URL path'ten.
  * <p>İş mantığı {@link SentimentService} içindedir; bu sınıf yalnızca HTTP katmanıdır.
  */
 @RestController
-@RequestMapping("/v1/workspaces/{workspaceId}/sentiment")
+@RequestMapping("/v1/workspaces/{workspaceId}")
 public class
 SentimentController {
 
@@ -41,7 +42,7 @@ SentimentController {
         this.service = service;
     }
 
-    @PostMapping("/analyze")
+    @PostMapping("/sentiment/analyze")
     public ResponseEntity<?> analyze(@PathVariable String workspaceId,
                                      @RequestHeader("X-Tenant-ID") String tenantId,
                                      @RequestBody AnalyzeRequest req) {
@@ -52,14 +53,14 @@ SentimentController {
         return ResponseEntity.ok(results);
     }
 
-    @GetMapping("/")
+    @GetMapping("/sentiment/")
     public ResponseEntity<List<Map<String, Object>>> list(@PathVariable String workspaceId,
                                                           @RequestHeader("X-Tenant-ID") String tenantId,
                                                           @RequestParam(value = "brand_id", required = false) String brandId) {
         return ResponseEntity.ok(service.list(workspaceId, tenantId, brandId));
     }
 
-    @GetMapping("/summary")
+    @GetMapping("/sentiment/summary")
     public ResponseEntity<?> summary(@PathVariable String workspaceId,
                                      @RequestHeader("X-Tenant-ID") String tenantId,
                                      @RequestParam(value = "brand_id", required = false) String brandId) {

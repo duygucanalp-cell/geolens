@@ -36,6 +36,7 @@ class RetentionControllerTest {
     private DSLContext dsl;
 
     private static final String TENANT = "T01";
+    private static final String WS = "WS01";
 
     // ---------- ListPolicies ----------
 
@@ -44,7 +45,7 @@ class RetentionControllerTest {
         when(dsl.fetch(anyString(), any(Object[].class)))
                 .thenReturn(JooqTestData.records(List.of(policyRow("p-1", "measurement", 365))));
 
-        mockMvc.perform(get("/v1/retention/policies")
+        mockMvc.perform(get("/v1/workspaces/{ws}/retention/policies", WS)
                         .header("X-Tenant-ID", TENANT))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.policies.length()").value(1))
@@ -58,7 +59,7 @@ class RetentionControllerTest {
         when(dsl.fetch(anyString(), any(Object[].class)))
                 .thenThrow(new RuntimeException("db error"));
 
-        mockMvc.perform(get("/v1/retention/policies")
+        mockMvc.perform(get("/v1/workspaces/{ws}/retention/policies", WS)
                         .header("X-Tenant-ID", TENANT))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.policies").isArray());
@@ -68,7 +69,7 @@ class RetentionControllerTest {
 
     @Test
     void upsertInvalidJsonReturns400() throws Exception {
-        mockMvc.perform(put("/v1/retention/policies")
+        mockMvc.perform(put("/v1/workspaces/{ws}/retention/policies", WS)
                         .header("X-Tenant-ID", TENANT)
                         .contentType("application/json")
                         .content("not json"))
@@ -78,7 +79,7 @@ class RetentionControllerTest {
 
     @Test
     void upsertShortRetentionReturns400() throws Exception {
-        mockMvc.perform(put("/v1/retention/policies")
+        mockMvc.perform(put("/v1/workspaces/{ws}/retention/policies", WS)
                         .header("X-Tenant-ID", TENANT)
                         .contentType("application/json")
                         .content("{\"entity_type\": \"measurement\", \"retention_days\": 29, \"archival_strategy\": \"delete\"}"))
@@ -88,7 +89,7 @@ class RetentionControllerTest {
 
     @Test
     void upsertInvalidStrategyReturns400() throws Exception {
-        mockMvc.perform(put("/v1/retention/policies")
+        mockMvc.perform(put("/v1/workspaces/{ws}/retention/policies", WS)
                         .header("X-Tenant-ID", TENANT)
                         .contentType("application/json")
                         .content("{\"entity_type\": \"measurement\", \"retention_days\": 90, \"archival_strategy\": \"backup\"}"))
@@ -103,7 +104,7 @@ class RetentionControllerTest {
         when(dsl.fetchOne(anyString(), any(Object[].class)))
                 .thenReturn(JooqTestData.record(row));
 
-        mockMvc.perform(put("/v1/retention/policies")
+        mockMvc.perform(put("/v1/workspaces/{ws}/retention/policies", WS)
                         .header("X-Tenant-ID", TENANT)
                         .contentType("application/json")
                         .content("{\"entity_type\": \"measurement\", \"retention_days\": 90, \"archival_strategy\": \"anonymize\", \"enabled\": true}"))
@@ -118,7 +119,7 @@ class RetentionControllerTest {
         when(dsl.fetchOne(anyString(), any(Object[].class)))
                 .thenThrow(new RuntimeException("db error"));
 
-        mockMvc.perform(put("/v1/retention/policies")
+        mockMvc.perform(put("/v1/workspaces/{ws}/retention/policies", WS)
                         .header("X-Tenant-ID", TENANT)
                         .contentType("application/json")
                         .content("{\"entity_type\": \"measurement\", \"retention_days\": 90, \"archival_strategy\": \"delete\"}"))
@@ -132,7 +133,7 @@ class RetentionControllerTest {
     void deletePolicySuccess() throws Exception {
         when(dsl.execute(anyString(), any(Object[].class))).thenReturn(1);
 
-        mockMvc.perform(delete("/v1/retention/policies/p-1")
+        mockMvc.perform(delete("/v1/workspaces/{ws}/retention/policies/p-1", WS)
                         .header("X-Tenant-ID", TENANT))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("silindi"));
@@ -142,7 +143,7 @@ class RetentionControllerTest {
     void deletePolicyNotFound() throws Exception {
         when(dsl.execute(anyString(), any(Object[].class))).thenReturn(0);
 
-        mockMvc.perform(delete("/v1/retention/policies/p-1")
+        mockMvc.perform(delete("/v1/workspaces/{ws}/retention/policies/p-1", WS)
                         .header("X-Tenant-ID", TENANT))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("politika bulunamadı"));
@@ -156,7 +157,7 @@ class RetentionControllerTest {
                 .thenReturn(JooqTestData.record(Map.of("count", 42)))
                 .thenReturn(JooqTestData.record(Map.of("size", "42 kayıt")));
 
-        mockMvc.perform(get("/v1/retention/archive-summary")
+        mockMvc.perform(get("/v1/workspaces/{ws}/retention/archive-summary", WS)
                         .header("X-Tenant-ID", TENANT))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.total_archived").value(42))
@@ -170,7 +171,7 @@ class RetentionControllerTest {
         when(dsl.fetchOne(anyString(), any(Object[].class)))
                 .thenThrow(new RuntimeException("db error"));
 
-        mockMvc.perform(get("/v1/retention/archive-summary")
+        mockMvc.perform(get("/v1/workspaces/{ws}/retention/archive-summary", WS)
                         .header("X-Tenant-ID", TENANT))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.total_archived").value(0))

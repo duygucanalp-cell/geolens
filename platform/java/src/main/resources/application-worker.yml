@@ -1,0 +1,10 @@
+# Worker profili — Go cmd/worker karşılığı.
+# Redis Stream tüketicileri (q:measure + q:governance) çalışır; HTTP sunucusu açılmaz.
+# Çalıştırma: SPRING_PROFILES_ACTIVE=worker ./mvnw spring-boot:run
+spring:
+  main:
+    web-application-type: none
+
+logging:
+  level:
+    dev.geolens.worker: info

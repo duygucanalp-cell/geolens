@@ -127,6 +127,45 @@ class MeasureControllerTest {
     }
 
     @Test
+    void benchmarkContextReturnsStats() throws Exception {
+        when(measureService.listBenchmarkContext(anyString(), anyString(), any()))
+                .thenReturn(Map.of(
+                        "my_score", 72.5,
+                        "tenant_count", 6,
+                        "sufficient_data", true,
+                        "sector_avg", 65.0,
+                        "sector_average", 65.0,
+                        "sector_median", 64.0,
+                        "trend", "up"));
+
+        mockMvc.perform(get("/v1/workspaces/{ws}/benchmark/context", WS)
+                        .header("X-Tenant-ID", TENANT)
+                        .param("sector", "retail"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.my_score").value(72.5))
+                .andExpect(jsonPath("$.tenant_count").value(6))
+                .andExpect(jsonPath("$.sufficient_data").value(true))
+                .andExpect(jsonPath("$.sector_average").value(65.0))
+                .andExpect(jsonPath("$.sector_median").value(64.0));
+    }
+
+    @Test
+    void benchmarkContextInsufficientDataReturnsMessage() throws Exception {
+        when(measureService.listBenchmarkContext(anyString(), anyString(), any()))
+                .thenReturn(Map.of(
+                        "my_score", 50.0,
+                        "tenant_count", 2,
+                        "sufficient_data", false,
+                        "message", "yetersiz veri — anonim kıyas için en az 5 kiracı gerekli"));
+
+        mockMvc.perform(get("/v1/workspaces/{ws}/benchmark/context", WS)
+                        .header("X-Tenant-ID", TENANT))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sufficient_data").value(false))
+                .andExpect(jsonPath("$.message").exists());
+    }
+
+    @Test
     void extractURLsFindsHttpLinks() {
         List<String> urls = MeasureService.extractURLs(
                 "kaynak: https://ornek.com/sayfa ve https://ikinci.org/alt?q=1 ardından.");

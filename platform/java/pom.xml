@@ -88,6 +88,23 @@
       <scope>runtime</scope>
     </dependency>
 
+    <!-- Veritabanı şeması: Go docker-entrypoint-initdb.d (52 migration) karşılığı.
+         Migration'lar platform/migrations/*.sql'in V-prefix kopyasıdır (src/main/resources/db/migration). -->
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-database-postgresql</artifactId>
+    </dependency>
+
+    <!-- Redis Streams kuyruğu (q:measure, q:governance vb.) — Go go-redis v9 karşılığı -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-redis</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>

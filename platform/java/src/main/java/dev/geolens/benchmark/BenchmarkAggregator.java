@@ -164,6 +164,95 @@ public class BenchmarkAggregator {
         return stats;
     }
 
+    /**
+     * Canlı sektör bağlamı istatistikleri — Go {@code GetBenchmarkContext} portu.
+     * <p>Kullanıcının skorunu tüm kiracıların ortalamasıyla karşılaştırır (T2 anonim kıyas).
+     * İsteğe bağlı sektör filtresi (FR-D5): skorlar {@code config.brands.sector} ile kısıtlanır.
+     * NFR-13 eşiği (minTenants) altında istatistik yayınlanmaz; DP (Laplace, ε) uygulanır.
+     */
+    public AggregatedSectorStats sectorContext(double myScore, String sector) {
+        int tenantCount;
+        if (sector != null && !sector.isBlank()) {
+            Record r = fetchOne("""
+                    SELECT COUNT(DISTINCT s.tenant_id)
+                    FROM measure.scores s
+                    JOIN config.brands b ON b.id = s.brand_id
+                    WHERE b.sector = ?
+                    """, sector);
+            tenantCount = r == null ? 0 : num(r.get(0));
+        } else {
+            Record r = fetchOne("SELECT COUNT(DISTINCT tenant_id) FROM measure.scores");
+            tenantCount = r == null ? 0 : num(r.get(0));
+        }
+
+        double avg = 0, min = 0, max = 0, median = 0, stddev = 0, p25 = 0, p75 = 0, p90 = 0;
+        if (tenantCount >= dpCfg.minTenants) {
+            String join = "";
+            if (sector != null && !sector.isBlank()) {
+                join = "JOIN config.brands b ON b.id = sub.brand_id WHERE b.sector = ?";
+            }
+            Record stats = fetchOne("""
+                    SELECT AVG(sub.latest)::numeric(10,2)::double precision,
+                           MIN(sub.latest)::numeric(10,2)::double precision,
+                           MAX(sub.latest)::numeric(10,2)::double precision
+                    FROM (
+                        SELECT DISTINCT ON (brand_id) brand_id, value AS latest
+                        FROM measure.scores
+                        ORDER BY brand_id, freshness_at DESC
+                    ) sub
+                    """ + join, sector);
+            if (stats != null) {
+                avg = dbl(stats.get(0));
+                min = dbl(stats.get(1));
+                max = dbl(stats.get(2));
+            }
+            median = valueOf("""
+                    WITH ranked AS (
+                        SELECT value, ROW_NUMBER() OVER (ORDER BY value) AS rn,
+                               COUNT(*) OVER () AS cnt
+                        FROM (
+                            SELECT DISTINCT ON (brand_id) brand_id, value
+                            FROM measure.scores
+                            ORDER BY brand_id, freshness_at DESC
+                        ) sub
+                        """ + join + """
+                    )
+                    SELECT AVG(value)::numeric(10,2)::double precision
+                    FROM ranked
+                    WHERE rn IN ((cnt + 1) / 2, (cnt + 2) / 2)
+                    """, sector);
+            stddev = valueOf("""
+                    SELECT COALESCE(STDDEV(sub.latest)::numeric(10,2)::double precision, 0)
+                    FROM (
+                        SELECT DISTINCT ON (brand_id) brand_id, value AS latest
+                        FROM measure.scores
+                        ORDER BY brand_id, freshness_at DESC
+                    ) sub
+                    """ + join, sector);
+            Record pct = fetchOne("""
+                    WITH distinct_scores AS (
+                        SELECT DISTINCT ON (brand_id) brand_id, value AS latest
+                        FROM measure.scores
+                        ORDER BY brand_id, freshness_at DESC
+                    )
+                    SELECT
+                        PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY latest)::numeric(10,2)::double precision,
+                        PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY latest)::numeric(10,2)::double precision,
+                        PERCENTILE_CONT(0.90) WITHIN GROUP (ORDER BY latest)::numeric(10,2)::double precision
+                    FROM distinct_scores
+                    """ + join, sector);
+            if (pct != null) {
+                p25 = dbl(pct.get(0));
+                p75 = dbl(pct.get(1));
+                p90 = dbl(pct.get(2));
+            }
+        }
+
+        RawSectorStats raw = new RawSectorStats(
+                myScore, avg, median, min, max, stddev, p25, p75, p90, tenantCount);
+        return AggregatedSectorStats.of(raw, dpCfg);
+    }
+
     public int minTenants() {
         return dpCfg.minTenants;
     }
@@ -176,8 +265,8 @@ public class BenchmarkAggregator {
         }
     }
 
-    private double valueOf(String sql) {
-        Record r = fetchOne(sql);
+    private double valueOf(String sql, Object... args) {
+        Record r = fetchOne(sql, args);
         return r == null ? 0 : dbl(r.get(0));
     }
 

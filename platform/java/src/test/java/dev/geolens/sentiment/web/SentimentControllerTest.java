@@ -143,7 +143,7 @@ class SentimentControllerTest {
                 .thenReturn(List.of(new HallucinationResult(null, "B01", "chatgpt", "T3", "critical",
                         "AI yanıtı kaynaksız istatistik/rakam içeriyor", 0.5, null, Instant.parse("2026-08-13T10:00:00Z"))));
 
-        mockMvc.perform(post("/v1/workspaces/{ws}/sentiment/hallucination/detect", WS)
+        mockMvc.perform(post("/v1/workspaces/{ws}/hallucination/detect", WS)
                         .header("X-Tenant-ID", TENANT)
                         .contentType("application/json")
                         .content("{\"brand_id\":\"B01\"}"))
@@ -155,7 +155,7 @@ class SentimentControllerTest {
 
     @Test
     void detectHallucinationsMissingBrandIdReturns400() throws Exception {
-        mockMvc.perform(post("/v1/workspaces/{ws}/sentiment/hallucination/detect", WS)
+        mockMvc.perform(post("/v1/workspaces/{ws}/hallucination/detect", WS)
                         .header("X-Tenant-ID", TENANT)
                         .contentType("application/json")
                         .content("{}"))
@@ -180,7 +180,7 @@ class SentimentControllerTest {
         row.put("created_at", "2026-08-13T10:00:00Z");
         when(sentimentService.listHallucinations(WS, TENANT, "B01")).thenReturn(List.of(row));
 
-        mockMvc.perform(get("/v1/workspaces/{ws}/sentiment/hallucination", WS)
+        mockMvc.perform(get("/v1/workspaces/{ws}/hallucination", WS)
                         .header("X-Tenant-ID", TENANT)
                         .queryParam("brand_id", "B01"))
                 .andExpect(status().isOk())
@@ -193,7 +193,7 @@ class SentimentControllerTest {
         when(sentimentService.verify(any(), any(), anyBoolean()))
                 .thenReturn(Map.of("status", "verified"));
 
-        mockMvc.perform(post("/v1/workspaces/{ws}/sentiment/hallucination/H1/verify", WS)
+        mockMvc.perform(post("/v1/workspaces/{ws}/hallucination/H1/verify", WS)
                         .header("X-Tenant-ID", TENANT)
                         .contentType("application/json")
                         .content("{\"verified\":true}"))
@@ -206,7 +206,7 @@ class SentimentControllerTest {
         when(sentimentService.verify(any(), any(), anyBoolean()))
                 .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "hallüsinasyon kaydı bulunamadı"));
 
-        mockMvc.perform(post("/v1/workspaces/{ws}/sentiment/hallucination/YOK/verify", WS)
+        mockMvc.perform(post("/v1/workspaces/{ws}/hallucination/YOK/verify", WS)
                         .header("X-Tenant-ID", TENANT)
                         .contentType("application/json")
                         .content("{\"verified\":true}"))

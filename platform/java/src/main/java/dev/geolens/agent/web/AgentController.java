@@ -19,15 +19,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Agent tracing REST controller'ı — Go {@code agent.handler} portu (R8).
- * <p>Route'lar (go cmd/api, /v1/workspaces/{ws} altında): POST /agents/traces,
+ * <p>Route'lar (go cmd/api, /v1 altında): POST /agents/traces,
  * GET /agents/traces/{traceId}, GET /agents/traces, POST /agents/traces/{traceId}/steps,
  * POST /agents/traces/{traceId}/complete.
- * <p>Tenant {@code X-Tenant-ID} başlığından gelir; workspace yalnızca URL'de bulunur
- * (Go handler'ı workspace'i kullanmaz — birebir korundu).
+ * <p>Tenant {@code X-Tenant-ID} başlığından gelir (Go httpmw.GetTenantID karşılığı);
+ * Go handler'ı workspace kullanmaz — birebir korundu.
  * <p>İş mantığı {@link AgentService} içindedir; bu sınıf yalnızca HTTP katmanıdır.
  */
 @RestController
-@RequestMapping("/v1/workspaces/{workspaceId}/agents")
+@RequestMapping("/v1/agents")
 public class AgentController {
 
     private final AgentService service;

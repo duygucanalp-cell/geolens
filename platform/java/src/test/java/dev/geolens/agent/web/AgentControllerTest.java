@@ -33,7 +33,7 @@ class AgentControllerTest {
     private AgentService agentService;
 
     private static final String TENANT = "T01";
-    private static final String BASE = "/v1/workspaces/ws-1/agents";
+    private static final String BASE = "/v1/agents";
 
     // ---------- StartTrace ----------
 

@@ -19,14 +19,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Veri Saklama REST controller'ı — Go {@code retention.handler} portu (K3).
- * <p>Route'lar (go cmd/api): GET /v1/retention/policies, PUT /v1/retention/policies,
- * DELETE /v1/retention/policies/{policyId}, GET /v1/retention/archive-summary.
- * <p>Tenant {@code X-Tenant-ID} başlığından gelir; saklama süresi ≥30 gün,
+ * <p>Route'lar (go cmd/api, /v1/workspaces/{ws} altında): GET /retention/policies,
+ * PUT /retention/policies, DELETE /retention/policies/{policyId}, GET /retention/archive-summary.
+ * <p>Tenant {@code X-Tenant-ID} başlığından gelir; workspace yalnızca URL'de bulunur
+ * (Go handler'ı workspace'i sorgulamaz — birebir korundu). Saklama süresi ≥30 gün,
  * arşiv stratejisi delete/anonymize/archive_s3 olmalıdır.
  * <p>İş mantığı {@link RetentionService} içindedir; bu sınıf yalnızca HTTP katmanıdır.
  */
 @RestController
-@RequestMapping("/v1/retention")
+@RequestMapping("/v1/workspaces/{workspaceId}/retention")
 public class RetentionController {
 
     private final RetentionService service;
@@ -38,14 +39,16 @@ public class RetentionController {
     // ---------- ListPolicies ----------
 
     @GetMapping("/policies")
-    public ResponseEntity<?> listPolicies(@RequestHeader("X-Tenant-ID") String tenantId) {
+    public ResponseEntity<?> listPolicies(@PathVariable String workspaceId,
+                                          @RequestHeader("X-Tenant-ID") String tenantId) {
         return ResponseEntity.ok(service.listPolicies(tenantId));
     }
 
     // ---------- UpsertPolicy ----------
 
     @PutMapping("/policies")
-    public ResponseEntity<?> upsertPolicy(@RequestHeader("X-Tenant-ID") String tenantId,
+    public ResponseEntity<?> upsertPolicy(@PathVariable String workspaceId,
+                                          @RequestHeader("X-Tenant-ID") String tenantId,
                                           @RequestBody UpsertPolicyRequest req) {
         return ResponseEntity.ok(service.upsertPolicy(tenantId, req));
     }
@@ -53,7 +56,8 @@ public class RetentionController {
     // ---------- DeletePolicy ----------
 
     @DeleteMapping("/policies/{policyId}")
-    public ResponseEntity<?> deletePolicy(@RequestHeader("X-Tenant-ID") String tenantId,
+    public ResponseEntity<?> deletePolicy(@PathVariable String workspaceId,
+                                          @RequestHeader("X-Tenant-ID") String tenantId,
                                           @PathVariable String policyId) {
         return ResponseEntity.ok(service.deletePolicy(tenantId, policyId));
     }
@@ -61,7 +65,8 @@ public class RetentionController {
     // ---------- GetArchiveSummary ----------
 
     @GetMapping("/archive-summary")
-    public ResponseEntity<?> getArchiveSummary(@RequestHeader("X-Tenant-ID") String tenantId) {
+    public ResponseEntity<?> getArchiveSummary(@PathVariable String workspaceId,
+                                               @RequestHeader("X-Tenant-ID") String tenantId) {
         return ResponseEntity.ok(service.getArchiveSummary(tenantId));
     }
 

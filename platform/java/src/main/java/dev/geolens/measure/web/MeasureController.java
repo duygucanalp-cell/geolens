@@ -101,6 +101,13 @@ public class MeasureController {
         return ResponseEntity.ok(service.listBenchmark(workspaceId, tenantId, brandId));
     }
 
+    @GetMapping("/benchmark/context")
+    public ResponseEntity<?> getBenchmarkContext(@PathVariable String workspaceId,
+                                                 @RequestHeader("X-Tenant-ID") String tenantId,
+                                                 @RequestParam(value = "sector", required = false) String sector) {
+        return ResponseEntity.ok(service.listBenchmarkContext(workspaceId, tenantId, sector));
+    }
+
     @GetMapping("/radar")
     public ResponseEntity<?> listRadarComparison(@PathVariable String workspaceId,
                                                  @RequestHeader("X-Tenant-ID") String tenantId,

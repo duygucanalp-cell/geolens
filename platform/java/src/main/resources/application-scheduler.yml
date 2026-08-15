@@ -1,0 +1,11 @@
+# Scheduler profili — Go cmd/scheduler karşılığı.
+# Outbox dispatcher (event_outbox → Redis Stream), panel cron taraması ve haftalık digest
+# gönderimi çalışır; HTTP sunucusu açılmaz.
+# Çalıştırma: SPRING_PROFILES_ACTIVE=scheduler ./mvnw spring-boot:run
+spring:
+  main:
+    web-application-type: none
+
+logging:
+  level:
+    dev.geolens.scheduler: info
