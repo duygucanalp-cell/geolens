@@ -1,7 +1,9 @@
 package dev.geolens.alert.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.alert.service.AlertService;
-import dev.geolens.alert.service.AlertServiceException;
+import dev.geolens.common.ServiceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -72,8 +74,8 @@ public class AlertController {
         return ResponseEntity.ok(service.delete(tenantId, ruleId));
     }
 
-    @ExceptionHandler(AlertServiceException.class)
-    public ResponseEntity<ApiError> handleService(AlertServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleService(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

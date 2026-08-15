@@ -1,7 +1,9 @@
 package dev.geolens.pilot.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.pilot.service.PilotService;
-import dev.geolens.pilot.service.PilotServiceException;
+import dev.geolens.common.ServiceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -79,8 +81,8 @@ public class PilotController {
         return error(HttpStatus.BAD_REQUEST, "geçersiz istek");
     }
 
-    @ExceptionHandler(PilotServiceException.class)
-    public ResponseEntity<ApiError> handleService(PilotServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleService(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

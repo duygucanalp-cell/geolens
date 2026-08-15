@@ -1,5 +1,7 @@
 package dev.geolens.technicalgeo.service;
 
+import dev.geolens.common.ServiceException;
+
 import dev.geolens.technicalgeo.BotAnalysisResult;
 import dev.geolens.technicalgeo.SchemaAnalysisResult;
 import dev.geolens.technicalgeo.TechnicalGeoEngine;
@@ -38,7 +40,7 @@ public class TechnicalgeoService {
         try {
             return engine.analyzeBotAccess(brandId, url, workspaceId, tenantId);
         } catch (RuntimeException e) {
-            throw new TechnicalgeoServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "bot analizi başarısız");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "bot analizi başarısız");
         }
     }
 
@@ -79,7 +81,7 @@ public class TechnicalgeoService {
         try {
             return engine.analyzeSchema(brandId, workspaceId, tenantId);
         } catch (RuntimeException e) {
-            throw new TechnicalgeoServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "schema analizi başarısız");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "schema analizi başarısız");
         }
     }
 
@@ -119,7 +121,7 @@ public class TechnicalgeoService {
         try {
             return engine.getScore(brandId, workspaceId, tenantId);
         } catch (RuntimeException e) {
-            throw new TechnicalgeoServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "skor alınamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "skor alınamadı");
         }
     }
 

@@ -1,7 +1,9 @@
 package dev.geolens.cost.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.cost.service.CostService;
-import dev.geolens.cost.service.CostServiceException;
+import dev.geolens.common.ServiceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -63,8 +65,8 @@ public class CostController {
 
     // ---------- hata yönetimi ----------
 
-    @ExceptionHandler(CostServiceException.class)
-    public ResponseEntity<ApiError> handleCostError(CostServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleCostError(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

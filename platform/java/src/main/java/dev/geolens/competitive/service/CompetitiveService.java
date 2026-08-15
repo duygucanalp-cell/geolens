@@ -1,5 +1,7 @@
 package dev.geolens.competitive.service;
 
+import dev.geolens.common.ServiceException;
+
 import dev.geolens.competitive.CompetitiveEngine;
 import dev.geolens.competitive.GapDetail;
 import dev.geolens.competitive.GapSnapshot;
@@ -39,7 +41,7 @@ public class CompetitiveService {
         try {
             return engine.analyzeAllGaps(brandId, workspaceId, tenantId);
         } catch (RuntimeException e) {
-            throw new CompetitiveServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "gap analizi başarısız");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "gap analizi başarısız");
         }
     }
 
@@ -85,7 +87,7 @@ public class CompetitiveService {
         try {
             return engine.getGapDetail(brandId, competitorId, "visibility", tenantId);
         } catch (RuntimeException e) {
-            throw new CompetitiveServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "gap bilgisi alınamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "gap bilgisi alınamadı");
         }
     }
 

@@ -3,7 +3,7 @@ package dev.geolens.sso.web;
 import dev.geolens.sso.KeyPairGeneratorUtil;
 import dev.geolens.sso.SsoConfig;
 import dev.geolens.sso.service.SsoService;
-import dev.geolens.sso.service.SsoServiceException;
+import dev.geolens.common.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -40,7 +40,7 @@ class SsoControllerTest {
     @Test
     void getConfigNotFound() throws Exception {
         when(ssoService.getConfig(anyString()))
-                .thenThrow(new SsoServiceException(HttpStatus.NOT_FOUND, "SSO yapılandırması bulunamadı"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "SSO yapılandırması bulunamadı"));
 
         mockMvc.perform(get("/v1/sso/config")
                         .header("X-Tenant-ID", TENANT))
@@ -90,7 +90,7 @@ class SsoControllerTest {
     @Test
     void getSpMetadataNotFound() throws Exception {
         when(ssoService.getSpMetadata(anyString()))
-                .thenThrow(new SsoServiceException(HttpStatus.NOT_FOUND, "SSO yapılandırması bulunamadı"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "SSO yapılandırması bulunamadı"));
 
         mockMvc.perform(get("/v1/sso/metadata")
                         .header("X-Tenant-ID", TENANT))
@@ -115,7 +115,7 @@ class SsoControllerTest {
     @Test
     void handleAcsMissingSamlResponseReturns400() throws Exception {
         when(ssoService.handleAcs(anyString(), any()))
-                .thenThrow(new SsoServiceException(HttpStatus.BAD_REQUEST, "SAMLResponse gerekli"));
+                .thenThrow(new ServiceException(HttpStatus.BAD_REQUEST, "SAMLResponse gerekli"));
 
         mockMvc.perform(post("/v1/sso/acs/" + TENANT))
                 .andExpect(status().isBadRequest())
@@ -125,7 +125,7 @@ class SsoControllerTest {
     @Test
     void handleAcsConfigNotEnabledReturns401() throws Exception {
         when(ssoService.handleAcs(anyString(), any()))
-                .thenThrow(new SsoServiceException(HttpStatus.UNAUTHORIZED, "SSO etkin değil"));
+                .thenThrow(new ServiceException(HttpStatus.UNAUTHORIZED, "SSO etkin değil"));
 
         mockMvc.perform(post("/v1/sso/acs/" + TENANT)
                         .param("SAMLResponse", "dummy"))
@@ -136,7 +136,7 @@ class SsoControllerTest {
     @Test
     void handleAcsInvalidIdpCertReturns401() throws Exception {
         when(ssoService.handleAcs(anyString(), any()))
-                .thenThrow(new SsoServiceException(HttpStatus.UNAUTHORIZED,
+                .thenThrow(new ServiceException(HttpStatus.UNAUTHORIZED,
                         "SAML ServiceProvider oluşturma: IdP sertifikası PEM formatında değil"));
 
         mockMvc.perform(post("/v1/sso/acs/" + TENANT)
@@ -148,7 +148,7 @@ class SsoControllerTest {
     @Test
     void handleAcsInvalidSamlResponseReturns401() throws Exception {
         when(ssoService.handleAcs(anyString(), any()))
-                .thenThrow(new SsoServiceException(HttpStatus.UNAUTHORIZED,
+                .thenThrow(new ServiceException(HttpStatus.UNAUTHORIZED,
                         "SAML yanıtı ayrıştırma: hata"));
 
         mockMvc.perform(post("/v1/sso/acs/" + TENANT)
@@ -179,7 +179,7 @@ class SsoControllerTest {
     @Test
     void handleAcsUserNotFoundReturns401() throws Exception {
         when(ssoService.handleAcs(anyString(), any()))
-                .thenThrow(new SsoServiceException(HttpStatus.UNAUTHORIZED, "kullanıcı bulunamadı"));
+                .thenThrow(new ServiceException(HttpStatus.UNAUTHORIZED, "kullanıcı bulunamadı"));
 
         mockMvc.perform(post("/v1/sso/acs/" + TENANT)
                         .param("SAMLResponse", "dummy"))

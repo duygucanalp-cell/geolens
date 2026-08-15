@@ -1,7 +1,9 @@
 package dev.geolens.billing.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.billing.service.BillingService;
-import dev.geolens.billing.service.BillingServiceException;
+import dev.geolens.common.ServiceException;
 import dev.geolens.billing.service.BillingService.InvoicePdfDocument;
 import dev.geolens.billing.service.BillingService.UblDocument;
 import org.springframework.http.HttpHeaders;
@@ -152,8 +154,8 @@ public class BillingController {
         return error(HttpStatus.BAD_REQUEST, "geçersiz istek");
     }
 
-    @ExceptionHandler(BillingServiceException.class)
-    public ResponseEntity<ApiError> handleService(BillingServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleService(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

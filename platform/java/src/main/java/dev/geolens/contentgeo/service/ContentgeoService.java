@@ -1,5 +1,7 @@
 package dev.geolens.contentgeo.service;
 
+import dev.geolens.common.ServiceException;
+
 import dev.geolens.contentgeo.ContentGeoEngine;
 import dev.geolens.contentgeo.ContentGapResult;
 import dev.geolens.contentgeo.ContentHubScore;
@@ -35,7 +37,7 @@ public class ContentgeoService {
         try {
             return engine.analyzeContentGap(brandId, workspaceId, tenantId);
         } catch (RuntimeException e) {
-            throw new ContentgeoServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "content gap analizi başarısız");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "content gap analizi başarısız");
         }
     }
 
@@ -76,7 +78,7 @@ public class ContentgeoService {
         try {
             return engine.getContentHubScore(brandId, workspaceId, tenantId);
         } catch (RuntimeException e) {
-            throw new ContentgeoServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "skor alınamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "skor alınamadı");
         }
     }
 

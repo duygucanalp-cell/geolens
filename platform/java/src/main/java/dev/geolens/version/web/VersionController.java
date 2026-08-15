@@ -1,7 +1,7 @@
 package dev.geolens.version.web;
 
 import dev.geolens.version.service.VersionService;
-import dev.geolens.version.service.VersionServiceException;
+import dev.geolens.common.ServiceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -54,8 +54,8 @@ public class VersionController {
         return ResponseEntity.ok(service.getVersionDiff(tenantId, entryId));
     }
 
-    @ExceptionHandler(VersionServiceException.class)
-    public ResponseEntity<ApiError> handleService(VersionServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleService(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

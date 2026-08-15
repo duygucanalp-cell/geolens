@@ -1,7 +1,9 @@
 package dev.geolens.privacy.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.privacy.service.PrivacyService;
-import dev.geolens.privacy.service.PrivacyServiceException;
+import dev.geolens.common.ServiceException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -79,8 +81,8 @@ public class PrivacyController {
 
     // ---------- hata yönetimi ----------
 
-    @ExceptionHandler(PrivacyServiceException.class)
-    public ResponseEntity<ApiError> handlePrivacyError(PrivacyServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handlePrivacyError(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

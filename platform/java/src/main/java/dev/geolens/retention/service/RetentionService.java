@@ -1,5 +1,7 @@
 package dev.geolens.retention.service;
 
+import dev.geolens.common.ServiceException;
+
 import dev.geolens.retention.Policy;
 import dev.geolens.retention.web.UpsertPolicyRequest;
 import org.jooq.DSLContext;
@@ -55,10 +57,10 @@ public class RetentionService {
 
     public Policy upsertPolicy(String tenantId, UpsertPolicyRequest req) {
         if (req.retentionDays() < 30) {
-            throw new RetentionServiceException(HttpStatus.BAD_REQUEST, "saklama süresi en az 30 gün olmalıdır");
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "saklama süresi en az 30 gün olmalıdır");
         }
         if (req.archivalStrategy() == null || !VALID_STRATEGIES.contains(req.archivalStrategy())) {
-            throw new RetentionServiceException(HttpStatus.BAD_REQUEST, "geçersiz arşiv stratejisi: delete, anonymize, archive_s3");
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "geçersiz arşiv stratejisi: delete, anonymize, archive_s3");
         }
 
         Record rec;
@@ -74,10 +76,10 @@ public class RetentionService {
                     RETURNING id, tenant_id, entity_type, retention_days, archival_strategy, enabled, created_at, updated_at
                     """, tenantId, nz(req.entityType()), req.retentionDays(), req.archivalStrategy(), req.enabled());
         } catch (RuntimeException e) {
-            throw new RetentionServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "politika kaydedilemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "politika kaydedilemedi");
         }
         if (rec == null) {
-            throw new RetentionServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "politika kaydedilemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "politika kaydedilemedi");
         }
         Map<String, Object> r = rec.intoMap();
         return new Policy(
@@ -92,10 +94,10 @@ public class RetentionService {
         try {
             rows = dsl.execute("DELETE FROM retention.policies WHERE id = ? AND tenant_id = ?", policyId, tenantId);
         } catch (RuntimeException e) {
-            throw new RetentionServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "politika silinemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "politika silinemedi");
         }
         if (rows == 0) {
-            throw new RetentionServiceException(HttpStatus.NOT_FOUND, "politika bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "politika bulunamadı");
         }
         return Map.of("status", "silindi");
     }

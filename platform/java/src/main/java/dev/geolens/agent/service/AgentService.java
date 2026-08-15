@@ -1,5 +1,7 @@
 package dev.geolens.agent.service;
 
+import dev.geolens.common.ServiceException;
+
 import dev.geolens.agent.web.CompleteTraceRequest;
 import dev.geolens.agent.web.RecordStepRequest;
 import dev.geolens.agent.web.StartTraceRequest;
@@ -44,7 +46,7 @@ public class AgentService {
                     """, traceId, tenantId, req.agentName(),
                     req.workflowName() == null ? "" : req.workflowName(), now);
         } catch (RuntimeException e) {
-            throw new AgentServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "trace başlatılamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "trace başlatılamadı");
         }
 
         Map<String, Object> body = new LinkedHashMap<>();
@@ -66,10 +68,10 @@ public class AgentService {
                     FROM agent.traces WHERE id = ? AND tenant_id = ?
                     """, traceId, tenantId);
         } catch (RuntimeException e) {
-            throw new AgentServiceException(HttpStatus.NOT_FOUND, "trace bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "trace bulunamadı");
         }
         if (t == null) {
-            throw new AgentServiceException(HttpStatus.NOT_FOUND, "trace bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "trace bulunamadı");
         }
 
         List<Map<String, Object>> steps;
@@ -80,7 +82,7 @@ public class AgentService {
                     FROM agent.steps WHERE trace_id = ? ORDER BY started_at NULLS LAST
                     """, traceId).intoMaps();
         } catch (RuntimeException e) {
-            throw new AgentServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "adımlar alınamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "adımlar alınamadı");
         }
 
         List<Map<String, Object>> stepResults = new ArrayList<>();
@@ -121,17 +123,17 @@ public class AgentService {
                     SELECT status FROM agent.traces WHERE id = ? AND tenant_id = ?
                     """, traceId, tenantId);
             if (r == null) {
-                throw new AgentServiceException(HttpStatus.NOT_FOUND, "trace bulunamadı");
+                throw new ServiceException(HttpStatus.NOT_FOUND, "trace bulunamadı");
             }
             traceStatus = str(r.get(0));
-        } catch (AgentServiceException e) {
+        } catch (ServiceException e) {
             throw e;
         } catch (RuntimeException e) {
-            throw new AgentServiceException(HttpStatus.NOT_FOUND, "trace bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "trace bulunamadı");
         }
 
         if ("completed".equals(traceStatus) || "cancelled".equals(traceStatus)) {
-            throw new AgentServiceException(HttpStatus.CONFLICT, "tamamlanmış trace'e adım eklenemez");
+            throw new ServiceException(HttpStatus.CONFLICT, "tamamlanmış trace'e adım eklenemez");
         }
 
         // Geçerli step_status
@@ -155,7 +157,7 @@ public class AgentService {
                     nz(req.input()), nz(req.output()), stepStatus, durationMs,
                     nz(req.errorMessage()), now, stepStatus, now);
         } catch (RuntimeException e) {
-            throw new AgentServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "adım kaydedilemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "adım kaydedilemedi");
         }
 
         // Trace istatistiklerini güncelle (hata non-fatal — Go birebir)
@@ -197,11 +199,11 @@ public class AgentService {
                     WHERE id = ? AND tenant_id = ? AND status = 'running'
                     """, finalStatus, traceId, tenantId);
         } catch (RuntimeException e) {
-            throw new AgentServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "trace güncellenemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "trace güncellenemedi");
         }
 
         if (rows == 0) {
-            throw new AgentServiceException(HttpStatus.NOT_FOUND, "trace bulunamadı veya zaten tamamlanmış");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "trace bulunamadı veya zaten tamamlanmış");
         }
 
         Map<String, Object> body = new LinkedHashMap<>();
@@ -234,7 +236,7 @@ public class AgentService {
         try {
             rows = dsl.fetch(query.toString(), args.toArray()).intoMaps();
         } catch (RuntimeException e) {
-            throw new AgentServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "trace listesi alınamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "trace listesi alınamadı");
         }
 
         List<Map<String, Object>> traces = new ArrayList<>();

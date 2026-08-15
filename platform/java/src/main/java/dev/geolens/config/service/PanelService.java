@@ -1,5 +1,7 @@
 package dev.geolens.config.service;
 
+import dev.geolens.common.ServiceException;
+
 import dev.geolens.config.web.PanelRequest;
 import dev.geolens.config.web.PromptSetRequest;
 import org.jooq.DSLContext;
@@ -41,7 +43,7 @@ public class PanelService {
                     ORDER BY p.name
                     """, workspaceId, tenantId);
         } catch (RuntimeException e) {
-            throw new ConfigServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "sorgu hatası");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "sorgu hatası");
         }
         List<Map<String, Object>> panels = new ArrayList<>();
         for (Map<String, Object> r : rows) {
@@ -63,7 +65,7 @@ public class PanelService {
                     RETURNING id
                     """, String.class, workspaceId, tenantId, req.name(), desc, promptSetId, scheduleCron);
         } catch (RuntimeException e) {
-            throw new ConfigServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "panel oluşturulamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "panel oluşturulamadı");
         }
 
         if (req.brandIds() != null) {
@@ -103,7 +105,7 @@ public class PanelService {
                     WHERE id = ? AND workspace_id = ? AND tenant_id = ?
                     """, panelId, workspaceId, tenantId);
         } catch (RuntimeException e) {
-            throw new ConfigServiceException(HttpStatus.NOT_FOUND, "panel bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "panel bulunamadı");
         }
         return panelMap(row);
     }
@@ -118,7 +120,7 @@ public class PanelService {
                     ORDER BY name
                     """, workspaceId, tenantId);
         } catch (RuntimeException e) {
-            throw new ConfigServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "sorgu hatası");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "sorgu hatası");
         }
         List<Map<String, Object>> sets = new ArrayList<>();
         for (Map<String, Object> r : rows) {
@@ -144,7 +146,7 @@ public class PanelService {
                     RETURNING id
                     """, String.class, workspaceId, tenantId, req.name(), desc, req.promptText());
         } catch (RuntimeException e) {
-            throw new ConfigServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "prompt set oluşturulamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "prompt set oluşturulamadı");
         }
 
         Map<String, Object> body = new LinkedHashMap<>();

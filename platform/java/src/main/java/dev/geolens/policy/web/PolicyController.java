@@ -1,7 +1,9 @@
 package dev.geolens.policy.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.policy.service.PolicyService;
-import dev.geolens.policy.service.PolicyServiceException;
+import dev.geolens.common.ServiceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -83,8 +85,8 @@ public class PolicyController {
 
     // ---------- hata yönetimi ----------
 
-    @ExceptionHandler(PolicyServiceException.class)
-    public ResponseEntity<ApiError> handlePolicyError(PolicyServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handlePolicyError(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

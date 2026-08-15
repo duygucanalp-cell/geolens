@@ -1,7 +1,9 @@
 package dev.geolens.retention.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.retention.service.RetentionService;
-import dev.geolens.retention.service.RetentionServiceException;
+import dev.geolens.common.ServiceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -63,8 +65,8 @@ public class RetentionController {
         return ResponseEntity.ok(service.getArchiveSummary(tenantId));
     }
 
-    @ExceptionHandler(RetentionServiceException.class)
-    public ResponseEntity<ApiError> handleService(RetentionServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleService(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

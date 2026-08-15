@@ -1,6 +1,8 @@
 package dev.geolens.config.web;
 
-import dev.geolens.config.service.ConfigServiceException;
+import dev.geolens.common.ApiError;
+
+import dev.geolens.common.ServiceException;
 import dev.geolens.config.service.WorkspaceService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -55,8 +57,8 @@ public class WorkspaceController {
         return ResponseEntity.ok(service.transferWorkspace(workspaceId, tenantId, req));
     }
 
-    @ExceptionHandler(ConfigServiceException.class)
-    public ResponseEntity<ApiError> handleService(ConfigServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleService(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

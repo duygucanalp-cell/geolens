@@ -1,5 +1,7 @@
 package dev.geolens.redteam.service;
 
+import dev.geolens.common.ServiceException;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.geolens.redteam.RedTeamMatcher;
 import dev.geolens.redteam.Result;
@@ -72,7 +74,7 @@ public class RedteamService {
                     """, tenantId, nz(req.name()), req.category(), nz(req.payload()),
                     nz(req.attackVector()), severity);
         } catch (RuntimeException e) {
-            throw new RedteamServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "senaryo oluşturulamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "senaryo oluşturulamadı");
         }
 
         return toCase(row);
@@ -85,7 +87,7 @@ public class RedteamService {
                     DELETE FROM redteam.test_cases WHERE id = ? AND tenant_id = ?
                     """, caseId, tenantId);
         } catch (RuntimeException e) {
-            throw new RedteamServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "silme hatası");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "silme hatası");
         }
         return Map.of("status", "silindi");
     }
@@ -147,7 +149,7 @@ public class RedteamService {
                     FROM redteam.test_cases WHERE tenant_id = ? AND enabled = true ORDER BY category, name
                     """, tenantId);
         } catch (RuntimeException e) {
-            throw new RedteamServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "senaryo sorgu hatası");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "senaryo sorgu hatası");
         }
 
         // Tenant hiç senaryo tanımlamadıysa varsayılanları kullan
@@ -210,7 +212,7 @@ public class RedteamService {
                     RETURNING id, target_name, total_cases, passed, failed, defense_score, status, created_at
                     """, tenantId, targetName, total, passed, failed, defenseScore);
         } catch (RuntimeException e) {
-            throw new RedteamServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "test çalıştırılamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "test çalıştırılamadı");
         }
         Run run = toRun(runRow);
 
@@ -273,10 +275,10 @@ public class RedteamService {
                     FROM redteam.runs WHERE id = ? AND tenant_id = ?
                     """, runId, tenantId);
         } catch (RuntimeException e) {
-            throw new RedteamServiceException(HttpStatus.NOT_FOUND, "test bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "test bulunamadı");
         }
         if (runRow == null) {
-            throw new RedteamServiceException(HttpStatus.NOT_FOUND, "test bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "test bulunamadı");
         }
         Run run = toRun(runRow);
 

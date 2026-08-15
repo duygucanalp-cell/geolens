@@ -1,5 +1,7 @@
 package dev.geolens.prompt.service;
 
+import dev.geolens.common.ServiceException;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.geolens.prompt.PromptAuditResult;
 import dev.geolens.prompt.PromptAuditor;
@@ -66,7 +68,7 @@ public class PromptService {
                     result.status(), result.score(), tokenCount, latencyMs,
                     toJson(result.issues()), toJson(metadata));
         } catch (RuntimeException e) {
-            throw new PromptServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "denetim kaydedilemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "denetim kaydedilemedi");
         }
 
         Map<String, Object> resp = new LinkedHashMap<>();
@@ -113,7 +115,7 @@ public class PromptService {
         try {
             rows = list(query.toString(), args.toArray());
         } catch (RuntimeException e) {
-            throw new PromptServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "denetim geçmişi alınamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "denetim geçmişi alınamadı");
         }
 
         List<Map<String, Object>> audits = new ArrayList<>();
@@ -143,10 +145,10 @@ public class PromptService {
                     FROM prompt.audits WHERE id = ? AND tenant_id = ?
                     """, auditId, tenantId);
         } catch (RuntimeException e) {
-            throw new PromptServiceException(HttpStatus.NOT_FOUND, "denetim bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "denetim bulunamadı");
         }
         if (r == null) {
-            throw new PromptServiceException(HttpStatus.NOT_FOUND, "denetim bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "denetim bulunamadı");
         }
 
         Map<String, Object> resp = new LinkedHashMap<>();

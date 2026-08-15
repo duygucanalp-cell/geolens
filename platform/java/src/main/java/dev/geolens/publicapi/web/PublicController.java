@@ -1,7 +1,9 @@
 package dev.geolens.publicapi.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.publicapi.service.PublicService;
-import dev.geolens.publicapi.service.PublicServiceException;
+import dev.geolens.common.ServiceException;
 import dev.geolens.publicapi.service.ReportDownload;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -102,8 +104,8 @@ public class PublicController {
 
     // ---------- hata yönetimi ----------
 
-    @ExceptionHandler(PublicServiceException.class)
-    public ResponseEntity<ApiError> handleService(PublicServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleService(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

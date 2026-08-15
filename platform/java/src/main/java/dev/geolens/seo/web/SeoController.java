@@ -1,7 +1,9 @@
 package dev.geolens.seo.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.seo.service.SeoService;
-import dev.geolens.seo.service.SeoServiceException;
+import dev.geolens.common.ServiceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -90,8 +92,8 @@ public class SeoController {
 
     // ---------- hata yönetimi ----------
 
-    @ExceptionHandler(SeoServiceException.class)
-    public ResponseEntity<ApiError> handleSeoError(SeoServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleSeoError(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

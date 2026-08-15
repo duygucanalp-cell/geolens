@@ -1,5 +1,7 @@
 package dev.geolens.benchmark.service;
 
+import dev.geolens.common.ServiceException;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.geolens.benchmark.web.RunBenchmarkRequest;
 import dev.geolens.util.Ulid;
@@ -63,7 +65,7 @@ public class BenchmarkService {
                     req.accuracyScore(), req.latencyMs(), req.costPerRequest(), req.tokensPerSecond(),
                     req.responseQuality(), req.citationRate(), detailsJson, java.sql.Timestamp.from(now));
         } catch (RuntimeException e) {
-            throw new BenchmarkServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "benchmark kaydedilemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "benchmark kaydedilemedi");
         }
 
         Map<String, Object> body = new LinkedHashMap<>();
@@ -116,7 +118,7 @@ public class BenchmarkService {
         try {
             rows = list(query.toString(), args.toArray());
         } catch (RuntimeException e) {
-            throw new BenchmarkServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "benchmark geçmişi alınamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "benchmark geçmişi alınamadı");
         }
 
         List<Map<String, Object>> benchmarks = new ArrayList<>();
@@ -149,7 +151,7 @@ public class BenchmarkService {
             }
         }
         if (engines.isEmpty()) {
-            throw new BenchmarkServiceException(HttpStatus.BAD_REQUEST, "geçerli engine adı gerekli");
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "geçerli engine adı gerekli");
         }
 
         List<Map<String, Object>> rows;
@@ -161,7 +163,7 @@ public class BenchmarkService {
                     ORDER BY engine_name, tested_at DESC
                     """, tenantId, engines.toArray(new String[0]));
         } catch (RuntimeException e) {
-            throw new BenchmarkServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "karşılaştırma alınamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "karşılaştırma alınamadı");
         }
 
         List<Map<String, Object>> models = new ArrayList<>();

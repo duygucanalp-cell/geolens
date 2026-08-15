@@ -1,5 +1,7 @@
 package dev.geolens.apikey.service;
 
+import dev.geolens.common.ServiceException;
+
 import dev.geolens.apikey.web.CreateApiKeyRequest;
 import org.jooq.DSLContext;
 import org.jooq.Record;
@@ -68,7 +70,7 @@ public class ApiKeyService {
     public Map<String, Object> create(String tenantId, CreateApiKeyRequest req) {
         String role = req.role() == null || req.role().isBlank() ? "viewer" : req.role();
         if (!"viewer".equals(role)) {
-            throw new ApiKeyServiceException(HttpStatus.BAD_REQUEST, "rol yalnızca viewer olabilir");
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "rol yalnızca viewer olabilir");
         }
 
         byte[] rawBytes = new byte[24];
@@ -86,7 +88,7 @@ public class ApiKeyService {
                     """, String.class, tenantId, req.name(), hash, keyPrefix, role,
                     req.expiresAt() == null || req.expiresAt().isBlank() ? null : req.expiresAt());
         } catch (RuntimeException e) {
-            throw new ApiKeyServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "anahtar oluşturulamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "anahtar oluşturulamadı");
         }
 
         Map<String, Object> body = new LinkedHashMap<>();
@@ -104,10 +106,10 @@ public class ApiKeyService {
                     DELETE FROM identity.api_keys WHERE id = ? AND tenant_id = ?
                     """, keyId, tenantId);
         } catch (RuntimeException e) {
-            throw new ApiKeyServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "anahtar silinemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "anahtar silinemedi");
         }
         if (affected == 0) {
-            throw new ApiKeyServiceException(HttpStatus.NOT_FOUND, "anahtar bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "anahtar bulunamadı");
         }
         return Map.of("status", "deleted");
     }

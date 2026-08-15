@@ -2,7 +2,7 @@ package dev.geolens.billing.web;
 
 import dev.geolens.billing.Invoice;
 import dev.geolens.billing.service.BillingService;
-import dev.geolens.billing.service.BillingServiceException;
+import dev.geolens.common.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -72,7 +72,7 @@ class BillingControllerTest {
     @Test
     void checkoutServiceErrorReturns500() throws Exception {
         when(billingService.createCheckoutSession(anyString(), any(), anyString()))
-                .thenThrow(new BillingServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "ödeme oturumu oluşturulamadı"));
+                .thenThrow(new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "ödeme oturumu oluşturulamadı"));
 
         mockMvc.perform(post("/v1/billing/checkout")
                         .header("X-Tenant-ID", TENANT)
@@ -87,7 +87,7 @@ class BillingControllerTest {
     @Test
     void webhookNotConfiguredReturns501() throws Exception {
         when(billingService.handleWebhook(any(), anyString()))
-                .thenThrow(new BillingServiceException(HttpStatus.NOT_IMPLEMENTED, "webhook yapılandırılmamış"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_IMPLEMENTED, "webhook yapılandırılmamış"));
 
         mockMvc.perform(post("/v1/billing/webhook")
                         .header("X-Tenant-ID", TENANT)
@@ -100,7 +100,7 @@ class BillingControllerTest {
     @Test
     void webhookInvalidSignatureReturns400() throws Exception {
         when(billingService.handleWebhook(any(), anyString()))
-                .thenThrow(new BillingServiceException(HttpStatus.BAD_REQUEST, "geçersiz webhook"));
+                .thenThrow(new ServiceException(HttpStatus.BAD_REQUEST, "geçersiz webhook"));
 
         mockMvc.perform(post("/v1/billing/webhook")
                         .header("X-Tenant-ID", TENANT)
@@ -142,7 +142,7 @@ class BillingControllerTest {
     @Test
     void subscriptionNotFoundReturns404() throws Exception {
         when(billingService.getSubscription(anyString()))
-                .thenThrow(new BillingServiceException(HttpStatus.NOT_FOUND, "kiracı bulunamadı"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "kiracı bulunamadı"));
         mockMvc.perform(get("/v1/billing/subscription")
                         .header("X-Tenant-ID", TENANT))
                 .andExpect(status().isNotFound())
@@ -167,7 +167,7 @@ class BillingControllerTest {
     @Test
     void getInvoiceNotFoundReturns404() throws Exception {
         when(billingService.getInvoice(anyString(), anyString()))
-                .thenThrow(new BillingServiceException(HttpStatus.NOT_FOUND, "fatura bulunamadı"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "fatura bulunamadı"));
         mockMvc.perform(get("/v1/billing/invoices/nope")
                         .header("X-Tenant-ID", TENANT))
                 .andExpect(status().isNotFound())
@@ -210,7 +210,7 @@ class BillingControllerTest {
     @Test
     void submitEFaturaAlreadySentReturns409() throws Exception {
         when(billingService.submitEFatura(anyString(), anyString(), any()))
-                .thenThrow(new BillingServiceException(HttpStatus.CONFLICT, "fatura zaten e-Fatura/e-Arşiv olarak gönderilmiş"));
+                .thenThrow(new ServiceException(HttpStatus.CONFLICT, "fatura zaten e-Fatura/e-Arşiv olarak gönderilmiş"));
 
         mockMvc.perform(post("/v1/billing/invoices/inv1/efatura")
                         .header("X-Tenant-ID", TENANT)
@@ -254,7 +254,7 @@ class BillingControllerTest {
     @Test
     void portalServiceErrorReturns500() throws Exception {
         when(billingService.createPortalSession(anyString(), any(), anyString()))
-                .thenThrow(new BillingServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "portal oturumu oluşturulamadı"));
+                .thenThrow(new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "portal oturumu oluşturulamadı"));
 
         mockMvc.perform(post("/v1/billing/portal")
                         .header("X-Tenant-ID", TENANT)

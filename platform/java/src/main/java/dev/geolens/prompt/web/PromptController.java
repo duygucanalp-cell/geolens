@@ -1,7 +1,9 @@
 package dev.geolens.prompt.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.prompt.service.PromptService;
-import dev.geolens.prompt.service.PromptServiceException;
+import dev.geolens.common.ServiceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -83,8 +85,8 @@ public class PromptController {
 
     // ---------- hata yönetimi ----------
 
-    @ExceptionHandler(PromptServiceException.class)
-    public ResponseEntity<ApiError> handleService(PromptServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleService(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

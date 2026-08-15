@@ -1,7 +1,7 @@
 package dev.geolens.benchmark.web;
 
 import dev.geolens.benchmark.service.BenchmarkService;
-import dev.geolens.benchmark.service.BenchmarkServiceException;
+import dev.geolens.common.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -91,7 +91,7 @@ class BenchmarkControllerTest {
     @Test
     void listBenchmarksQueryErrorReturns500() throws Exception {
         when(benchmarkService.listBenchmarks(anyString(), anyInt(), anyInt(), any(), any()))
-                .thenThrow(new BenchmarkServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "benchmark geçmişi alınamadı"));
+                .thenThrow(new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "benchmark geçmişi alınamadı"));
 
         mockMvc.perform(get("/v1/benchmarks/models")
                         .header("X-Tenant-ID", TENANT))
@@ -128,7 +128,7 @@ class BenchmarkControllerTest {
     @Test
     void compareModelsBlankEnginesReturns400() throws Exception {
         when(benchmarkService.compareModels(anyString(), anyString()))
-                .thenThrow(new BenchmarkServiceException(HttpStatus.BAD_REQUEST, "geçerli engine adı gerekli"));
+                .thenThrow(new ServiceException(HttpStatus.BAD_REQUEST, "geçerli engine adı gerekli"));
 
         mockMvc.perform(get("/v1/benchmarks/compare")
                         .header("X-Tenant-ID", TENANT)

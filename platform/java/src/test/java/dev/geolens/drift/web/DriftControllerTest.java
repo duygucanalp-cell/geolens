@@ -2,7 +2,7 @@ package dev.geolens.drift.web;
 
 import dev.geolens.drift.Observation;
 import dev.geolens.drift.service.DriftService;
-import dev.geolens.drift.service.DriftServiceException;
+import dev.geolens.common.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -120,7 +120,7 @@ class DriftControllerTest {
     @Test
     void analyzeQueryErrorReturns500() throws Exception {
         when(driftService.analyze(any(), any(), any(), any()))
-                .thenThrow(new DriftServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "gözlem sorgu hatası"));
+                .thenThrow(new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "gözlem sorgu hatası"));
 
         mockMvc.perform(get("/v1/drift/analysis")
                         .header("X-Tenant-ID", TENANT)

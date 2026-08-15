@@ -1,5 +1,7 @@
 package dev.geolens.drift.service;
 
+import dev.geolens.common.ServiceException;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.geolens.drift.Alert;
 import dev.geolens.drift.DriftAnalyzer;
@@ -42,7 +44,7 @@ public class DriftService {
                     RETURNING id, tenant_id, entity_id, entity_name, metric, value, window_start, created_at
                     """, tenantId, entityId, nz(entityName), metric, value, nz(windowStart));
         } catch (RuntimeException e) {
-            throw new DriftServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "gözlem kaydedilemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "gözlem kaydedilemedi");
         }
         return toObservation(row);
     }
@@ -121,7 +123,7 @@ public class DriftService {
                     ORDER BY window_start ASC
                     """, tenantId, entityId, metric);
         } catch (RuntimeException e) {
-            throw new DriftServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "gözlem sorgu hatası");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "gözlem sorgu hatası");
         }
 
         List<Double> values = new ArrayList<>();

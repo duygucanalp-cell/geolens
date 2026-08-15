@@ -1,8 +1,10 @@
 package dev.geolens.sso.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.sso.KeyPairGeneratorUtil;
 import dev.geolens.sso.service.SsoService;
-import dev.geolens.sso.service.SsoServiceException;
+import dev.geolens.common.ServiceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -95,8 +97,8 @@ public class SsoController {
 
     // ---------- hata yönetimi ----------
 
-    @ExceptionHandler(SsoServiceException.class)
-    public ResponseEntity<ApiError> handleService(SsoServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleService(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

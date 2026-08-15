@@ -3,7 +3,7 @@ package dev.geolens.pdf.web;
 import dev.geolens.pdf.ReportResult;
 import dev.geolens.pdf.ReportType;
 import dev.geolens.pdf.service.PdfService;
-import dev.geolens.pdf.service.PdfServiceException;
+import dev.geolens.common.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -59,7 +59,7 @@ class PdfControllerTest {
     @Test
     void weeklyDigestErrorReturns500() throws Exception {
         when(svc.generateWeeklyDigest("WS01", TENANT))
-                .thenThrow(new PdfServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "rapor oluşturulamadı"));
+                .thenThrow(new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "rapor oluşturulamadı"));
 
         mockMvc.perform(post("/v1/workspaces/WS01/reports/digest")
                         .header("X-Tenant-ID", TENANT))
@@ -187,7 +187,7 @@ class PdfControllerTest {
     @Test
     void getReportStatusNotFoundReturns404() throws Exception {
         when(svc.getReportStatus(anyString(), anyString(), anyString()))
-                .thenThrow(new PdfServiceException(HttpStatus.NOT_FOUND, "rapor bulunamadı"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "rapor bulunamadı"));
 
         mockMvc.perform(get("/v1/workspaces/WS01/reports/none/status")
                         .header("X-Tenant-ID", TENANT))
@@ -200,7 +200,7 @@ class PdfControllerTest {
     @Test
     void downloadReportNotReadyReturns409() throws Exception {
         when(svc.prepareDownload(anyString(), anyString(), anyString()))
-                .thenThrow(new PdfServiceException(HttpStatus.CONFLICT, "rapor henüz hazır değil"));
+                .thenThrow(new ServiceException(HttpStatus.CONFLICT, "rapor henüz hazır değil"));
 
         mockMvc.perform(get("/v1/workspaces/WS01/reports/R01/download")
                         .header("X-Tenant-ID", TENANT))
@@ -211,7 +211,7 @@ class PdfControllerTest {
     @Test
     void downloadReportNotFoundReturns404() throws Exception {
         when(svc.prepareDownload(anyString(), anyString(), anyString()))
-                .thenThrow(new PdfServiceException(HttpStatus.NOT_FOUND, "rapor bulunamadı"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "rapor bulunamadı"));
 
         mockMvc.perform(get("/v1/workspaces/WS01/reports/none/download")
                         .header("X-Tenant-ID", TENANT))
@@ -221,7 +221,7 @@ class PdfControllerTest {
     @Test
     void downloadReportS3Redirect() throws Exception {
         when(svc.prepareDownload(anyString(), anyString(), anyString())).thenReturn("weekly.pdf");
-        when(svc.getReportData("R01")).thenThrow(new PdfServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "rapor verisi alınamadı"));
+        when(svc.getReportData("R01")).thenThrow(new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "rapor verisi alınamadı"));
 
         mockMvc.perform(get("/v1/workspaces/WS01/reports/R01/download")
                         .header("X-Tenant-ID", TENANT)

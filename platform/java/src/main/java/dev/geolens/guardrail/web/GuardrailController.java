@@ -1,5 +1,7 @@
 package dev.geolens.guardrail.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.guardrail.Rule;
 import dev.geolens.guardrail.service.GuardrailEvaluateResult;
 import dev.geolens.guardrail.service.GuardrailService;

@@ -1,5 +1,7 @@
 package dev.geolens.usage.service;
 
+import dev.geolens.common.ServiceException;
+
 import dev.geolens.usage.web.UsageMetricRequest;
 import org.jooq.DSLContext;
 import org.jooq.Field;
@@ -55,7 +57,7 @@ public class UsageService {
                             now.atOffset(ZoneOffset.UTC))
                     .execute();
         } catch (RuntimeException e) {
-            throw new UsageServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "kullanım kaydedilemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "kullanım kaydedilemedi");
         }
 
         Map<String, Object> body = new LinkedHashMap<>();

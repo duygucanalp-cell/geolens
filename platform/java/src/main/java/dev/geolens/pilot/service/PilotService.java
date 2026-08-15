@@ -1,5 +1,7 @@
 package dev.geolens.pilot.service;
 
+import dev.geolens.common.ServiceException;
+
 import dev.geolens.pilot.PilotTenant;
 import dev.geolens.pilot.web.EnrollRequest;
 import dev.geolens.pilot.web.ExtendTrialRequest;
@@ -113,7 +115,7 @@ public class PilotService {
                     true, // auto_convert — pilot bitince otomatik ücretliye geç
                     "active");
         } catch (RuntimeException e) {
-            throw new PilotServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "pilot programa kayıt başarısız");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "pilot programa kayıt başarısız");
         }
 
         Map<String, Object> resp = new LinkedHashMap<>();
@@ -135,7 +137,7 @@ public class PilotService {
                     WHERE tenant_id = ?
                     """, req.extraDays(), tenantId);
         } catch (RuntimeException e) {
-            throw new PilotServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "süre uzatılamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "süre uzatılamadı");
         }
 
         return Map.of("status", "pilot süresi uzatıldı");
@@ -149,7 +151,7 @@ public class PilotService {
                     WHERE tenant_id = ?
                     """, tenantId);
         } catch (RuntimeException e) {
-            throw new PilotServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "pilot iptal edilemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "pilot iptal edilemedi");
         }
 
         return Map.of("status", "pilot iptal edildi");

@@ -1,7 +1,9 @@
 package dev.geolens.apikey.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.apikey.service.ApiKeyService;
-import dev.geolens.apikey.service.ApiKeyServiceException;
+import dev.geolens.common.ServiceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -52,8 +54,8 @@ public class ApiKeyController {
         return ResponseEntity.ok(service.delete(tenantId, keyId));
     }
 
-    @ExceptionHandler(ApiKeyServiceException.class)
-    public ResponseEntity<ApiError> handleService(ApiKeyServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleService(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

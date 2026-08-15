@@ -1,7 +1,9 @@
 package dev.geolens.redteam.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.redteam.service.RedteamService;
-import dev.geolens.redteam.service.RedteamServiceException;
+import dev.geolens.common.ServiceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -104,8 +106,8 @@ public class RedteamController {
 
     // ---------- hata yönetimi ----------
 
-    @ExceptionHandler(RedteamServiceException.class)
-    public ResponseEntity<ApiError> handleRedteamError(RedteamServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleRedteamError(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

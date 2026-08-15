@@ -1,7 +1,7 @@
 package dev.geolens.seo.web;
 
 import dev.geolens.seo.service.SeoService;
-import dev.geolens.seo.service.SeoServiceException;
+import dev.geolens.common.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -69,7 +69,7 @@ class SeoControllerTest {
     @Test
     void getAuthUrlInvalidPlatformReturns400() throws Exception {
         when(seoService.getAuthUrl(anyString(), anyString(), anyString()))
-                .thenThrow(new SeoServiceException(HttpStatus.BAD_REQUEST, "platform search_console veya ga4 olmalıdır"));
+                .thenThrow(new ServiceException(HttpStatus.BAD_REQUEST, "platform search_console veya ga4 olmalıdır"));
 
         mockMvc.perform(get("/v1/workspaces/" + WS + "/seo/auth-url")
                         .header("X-Tenant-ID", TENANT)
@@ -81,7 +81,7 @@ class SeoControllerTest {
     @Test
     void getAuthUrlNotConfiguredReturns400() throws Exception {
         when(seoService.getAuthUrl(anyString(), anyString(), anyString()))
-                .thenThrow(new SeoServiceException(HttpStatus.BAD_REQUEST, "Google OAuth yapılandırılmamış"));
+                .thenThrow(new ServiceException(HttpStatus.BAD_REQUEST, "Google OAuth yapılandırılmamış"));
 
         mockMvc.perform(get("/v1/workspaces/" + WS + "/seo/auth-url")
                         .header("X-Tenant-ID", TENANT)
@@ -116,7 +116,7 @@ class SeoControllerTest {
     @Test
     void callbackMissingParamsReturns400() throws Exception {
         when(seoService.handleCallback(any(), any(), any()))
-                .thenThrow(new SeoServiceException(HttpStatus.BAD_REQUEST, "code ve state parametreleri gerekli"));
+                .thenThrow(new ServiceException(HttpStatus.BAD_REQUEST, "code ve state parametreleri gerekli"));
 
         mockMvc.perform(get("/v1/workspaces/" + WS + "/seo/callback"))
                 .andExpect(status().isBadRequest())
@@ -126,7 +126,7 @@ class SeoControllerTest {
     @Test
     void callbackInvalidStateReturns400() throws Exception {
         when(seoService.handleCallback(any(), any(), any()))
-                .thenThrow(new SeoServiceException(HttpStatus.BAD_REQUEST, "geçersiz state token"));
+                .thenThrow(new ServiceException(HttpStatus.BAD_REQUEST, "geçersiz state token"));
 
         mockMvc.perform(get("/v1/workspaces/" + WS + "/seo/callback")
                         .param("code", "auth-code")
@@ -138,7 +138,7 @@ class SeoControllerTest {
     @Test
     void callbackWorkspaceMismatchReturns400() throws Exception {
         when(seoService.handleCallback(any(), any(), any()))
-                .thenThrow(new SeoServiceException(HttpStatus.BAD_REQUEST, "workspace eşleşmez"));
+                .thenThrow(new ServiceException(HttpStatus.BAD_REQUEST, "workspace eşleşmez"));
 
         mockMvc.perform(get("/v1/workspaces/" + WS + "/seo/callback")
                         .param("code", "auth-code")
@@ -162,7 +162,7 @@ class SeoControllerTest {
     @Test
     void callbackExchangeErrorReturns500() throws Exception {
         when(seoService.handleCallback(any(), any(), any()))
-                .thenThrow(new SeoServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "token alınamadı"));
+                .thenThrow(new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "token alınamadı"));
 
         mockMvc.perform(get("/v1/workspaces/" + WS + "/seo/callback")
                         .param("code", "bad-code")

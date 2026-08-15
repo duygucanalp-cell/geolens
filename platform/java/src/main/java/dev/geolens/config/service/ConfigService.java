@@ -1,5 +1,7 @@
 package dev.geolens.config.service;
 
+import dev.geolens.common.ServiceException;
+
 import dev.geolens.config.web.BrandRequest;
 import dev.geolens.config.web.BrandResponse;
 import dev.geolens.config.web.UpdateBrandRequest;
@@ -44,7 +46,7 @@ public class ConfigService {
                     """, Integer.class, workspaceId, tenantId, q, q, exclude, exclude);
             total = t == null ? 0 : t;
         } catch (RuntimeException e) {
-            throw new ConfigServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "sorgu hatası");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "sorgu hatası");
         }
 
         List<Map<String, Object>> rows;
@@ -59,7 +61,7 @@ public class ConfigService {
                     LIMIT ? OFFSET ?
                     """, workspaceId, tenantId, q, q, exclude, exclude, limit, offset);
         } catch (RuntimeException e) {
-            throw new ConfigServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "sorgu hatası");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "sorgu hatası");
         }
 
         List<Map<String, Object>> brands = new ArrayList<>();
@@ -85,7 +87,7 @@ public class ConfigService {
                     ORDER BY name
                     """, workspaceId, tenantId);
         } catch (RuntimeException e) {
-            throw new ConfigServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "sorgu hatası");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "sorgu hatası");
         }
         List<Map<String, Object>> brands = new ArrayList<>();
         for (Map<String, Object> r : rows) {
@@ -106,7 +108,7 @@ public class ConfigService {
                                 WHERE id = ? AND tenant_id = ? AND is_active = true)
                             """, Boolean.class, compId, tenantId);
                     if (Boolean.FALSE.equals(exists)) {
-                        throw new ConfigServiceException(HttpStatus.BAD_REQUEST, "rakip bulunamadı: " + compId);
+                        throw new ServiceException(HttpStatus.BAD_REQUEST, "rakip bulunamadı: " + compId);
                     }
                 }
             }
@@ -149,10 +151,10 @@ public class ConfigService {
                     WHERE id = ? AND workspace_id = ? AND tenant_id = ? AND is_active = true
                     """, name, websiteUrl, brandId, workspaceId, tenantId);
         } catch (RuntimeException e) {
-            throw new ConfigServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "marka güncellenemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "marka güncellenemedi");
         }
         if (affected == 0) {
-            throw new ConfigServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı");
         }
 
         Map<String, Object> resp;
@@ -162,12 +164,12 @@ public class ConfigService {
                     WHERE id = ? AND workspace_id = ? AND tenant_id = ?
                     """, brandId, workspaceId, tenantId);
             if (resp == null) {
-                throw new ConfigServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "marka bilgisi okunamadı");
+                throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "marka bilgisi okunamadı");
             }
-        } catch (ConfigServiceException e) {
+        } catch (ServiceException e) {
             throw e;
         } catch (RuntimeException e) {
-            throw new ConfigServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "marka bilgisi okunamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "marka bilgisi okunamadı");
         }
         return brandMap(resp);
     }
@@ -180,10 +182,10 @@ public class ConfigService {
                     WHERE id = ? AND workspace_id = ? AND tenant_id = ? AND is_active = true
                     """, brandId, workspaceId, tenantId);
         } catch (RuntimeException e) {
-            throw new ConfigServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "marka silinemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "marka silinemedi");
         }
         if (affected == 0) {
-            throw new ConfigServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı");
         }
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("status", "deleted");
@@ -199,10 +201,10 @@ public class ConfigService {
                     WHERE brand_id = ? AND competitor_id = ? AND tenant_id = ?
                     """, brandId, competitorId, tenantId);
         } catch (RuntimeException e) {
-            throw new ConfigServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "rakip silinemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "rakip silinemedi");
         }
         if (affected == 0) {
-            throw new ConfigServiceException(HttpStatus.NOT_FOUND, "rakip ilişkisi bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "rakip ilişkisi bulunamadı");
         }
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("status", "deleted");
@@ -219,10 +221,10 @@ public class ConfigService {
                         WHERE id = ? AND workspace_id = ? AND tenant_id = ?)
                     """, Boolean.class, brandId, workspaceId, tenantId);
         } catch (RuntimeException e) {
-            throw new ConfigServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı");
         }
         if (Boolean.FALSE.equals(brandExists)) {
-            throw new ConfigServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı");
         }
 
         List<Map<String, Object>> rows;
@@ -235,7 +237,7 @@ public class ConfigService {
                     ORDER BY b.name
                     """, brandId, tenantId);
         } catch (RuntimeException e) {
-            throw new ConfigServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "sorgu hatası");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "sorgu hatası");
         }
 
         List<Map<String, Object>> competitors = new ArrayList<>();
@@ -258,10 +260,10 @@ public class ConfigService {
                         WHERE id = ? AND workspace_id = ? AND tenant_id = ?)
                     """, Boolean.class, brandId, workspaceId, tenantId);
         } catch (RuntimeException e) {
-            throw new ConfigServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı");
         }
         if (Boolean.FALSE.equals(brandExists)) {
-            throw new ConfigServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı");
         }
 
         txExecute(() -> {
@@ -279,7 +281,7 @@ public class ConfigService {
                             WHERE id = ? AND tenant_id = ? AND is_active = true)
                         """, Boolean.class, compId, tenantId);
                 if (Boolean.FALSE.equals(exists)) {
-                    throw new ConfigServiceException(HttpStatus.BAD_REQUEST, "rakip bulunamadı: " + compId);
+                    throw new ServiceException(HttpStatus.BAD_REQUEST, "rakip bulunamadı: " + compId);
                 }
                 dsl.execute("""
                         INSERT INTO config.brand_competitors (id, brand_id, competitor_id, tenant_id)
@@ -401,7 +403,7 @@ public class ConfigService {
     private String[] txExecute(java.util.function.Supplier<String[]> action) {
         try {
             return tx.execute(status -> action.get());
-        } catch (ConfigServiceException e) {
+        } catch (ServiceException e) {
             throw e;
         } catch (RuntimeException e) {
             throw e;

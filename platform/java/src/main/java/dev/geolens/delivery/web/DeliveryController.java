@@ -1,5 +1,7 @@
 package dev.geolens.delivery.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.delivery.DeliveryService;
 import dev.geolens.delivery.Notification;
 import dev.geolens.delivery.NotificationSettings;

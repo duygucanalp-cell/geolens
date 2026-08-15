@@ -1,5 +1,7 @@
 package dev.geolens.cost.service;
 
+import dev.geolens.common.ServiceException;
+
 import dev.geolens.cost.web.RecordCostRequest;
 import dev.geolens.util.Ulid;
 import org.jooq.DSLContext;
@@ -44,7 +46,7 @@ public class CostService {
                     req.tokenCount(), req.inputTokens(), req.outputTokens(), req.costUsd(),
                     java.sql.Timestamp.from(now));
         } catch (RuntimeException e) {
-            throw new CostServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "maliyet kaydedilemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "maliyet kaydedilemedi");
         }
 
         Map<String, Object> body = new LinkedHashMap<>();

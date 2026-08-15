@@ -1,7 +1,7 @@
 package dev.geolens.publicapi.web;
 
 import dev.geolens.publicapi.service.PublicService;
-import dev.geolens.publicapi.service.PublicServiceException;
+import dev.geolens.common.ServiceException;
 import dev.geolens.publicapi.service.ReportDownload;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,7 +42,7 @@ class PublicControllerTest {
     @Test
     void getScoreNotFoundReturns404() throws Exception {
         when(publicService.getScore(anyString(), anyString()))
-                .thenThrow(new PublicServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı"));
 
         mockMvc.perform(get("/public/v1/scores/none").header("X-Tenant-ID", TENANT))
                 .andExpect(status().isNotFound())
@@ -110,7 +110,7 @@ class PublicControllerTest {
     @Test
     void getBrandNotFoundReturns404() throws Exception {
         when(publicService.getBrand(anyString(), anyString()))
-                .thenThrow(new PublicServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı"));
 
         mockMvc.perform(get("/public/v1/brands/none").header("X-Tenant-ID", TENANT))
                 .andExpect(status().isNotFound())
@@ -166,7 +166,7 @@ class PublicControllerTest {
     @Test
     void downloadReportNotFoundReturns404() throws Exception {
         when(publicService.downloadReport(anyString(), anyString()))
-                .thenThrow(new PublicServiceException(HttpStatus.NOT_FOUND, "rapor bulunamadı"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "rapor bulunamadı"));
 
         mockMvc.perform(get("/public/v1/reports/NOPE/download").header("X-Tenant-ID", TENANT))
                 .andExpect(status().isNotFound())
@@ -199,7 +199,7 @@ class PublicControllerTest {
     @Test
     void downloadReportPdfDataEmptyReturns404() throws Exception {
         when(publicService.downloadReport(anyString(), anyString()))
-                .thenThrow(new PublicServiceException(HttpStatus.NOT_FOUND, "rapor verisi bulunamadı"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "rapor verisi bulunamadı"));
 
         mockMvc.perform(get("/public/v1/reports/R1/download").header("X-Tenant-ID", TENANT))
                 .andExpect(status().isNotFound())

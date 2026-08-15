@@ -2,7 +2,7 @@ package dev.geolens.discovery.web;
 
 import dev.geolens.discovery.ShadowFinding;
 import dev.geolens.discovery.service.DiscoveryService;
-import dev.geolens.discovery.service.DiscoveryServiceException;
+import dev.geolens.common.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -49,7 +49,7 @@ class DiscoveryControllerTest {
     @Test
     void startScanDbErrorReturns500() throws Exception {
         when(discoveryService.startScan(any(), any()))
-                .thenThrow(new DiscoveryServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "tarama başlatılamadı"));
+                .thenThrow(new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "tarama başlatılamadı"));
 
         mockMvc.perform(post("/v1/discovery/scan")
                         .header("X-Tenant-ID", TENANT)
@@ -91,7 +91,7 @@ class DiscoveryControllerTest {
     @Test
     void getScanResultsNotFoundReturns404() throws Exception {
         when(discoveryService.getScanResults(any(), any()))
-                .thenThrow(new DiscoveryServiceException(HttpStatus.NOT_FOUND, "tarama bulunamadı"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "tarama bulunamadı"));
 
         mockMvc.perform(get("/v1/discovery/scans/nonexistent")
                         .header("X-Tenant-ID", TENANT))

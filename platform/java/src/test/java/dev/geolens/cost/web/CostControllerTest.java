@@ -1,7 +1,7 @@
 package dev.geolens.cost.web;
 
 import dev.geolens.cost.service.CostService;
-import dev.geolens.cost.service.CostServiceException;
+import dev.geolens.common.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -89,7 +89,7 @@ class CostControllerTest {
     @Test
     void recordCostDBErrorReturns500() throws Exception {
         when(costService.recordCost(anyString(), any()))
-                .thenThrow(new CostServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "maliyet kaydedilemedi"));
+                .thenThrow(new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "maliyet kaydedilemedi"));
 
         mockMvc.perform(post("/v1/costs/entries")
                         .header("X-Tenant-ID", TENANT)

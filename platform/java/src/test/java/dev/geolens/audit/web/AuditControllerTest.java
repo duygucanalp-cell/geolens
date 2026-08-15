@@ -1,6 +1,6 @@
 package dev.geolens.audit.web;
 
-import dev.geolens.audit.service.AuditServiceException;
+import dev.geolens.common.ServiceException;
 import dev.geolens.audit.service.AuditWebService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,7 +78,7 @@ class AuditControllerTest {
     @Test
     void runAuditBrandNotFoundReturns404() throws Exception {
         when(auditWebService.runAudit(anyString(), anyString(), any()))
-                .thenThrow(new AuditServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı"));
 
         mockMvc.perform(post("/v1/workspaces/{ws}/audit", WS)
                         .header("X-Tenant-ID", TENANT)
@@ -91,7 +91,7 @@ class AuditControllerTest {
     @Test
     void runAuditEngineFailureReturns500() throws Exception {
         when(auditWebService.runAudit(anyString(), anyString(), any()))
-                .thenThrow(new AuditServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "denetim başarısız"));
+                .thenThrow(new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "denetim başarısız"));
 
         mockMvc.perform(post("/v1/workspaces/{ws}/audit", WS)
                         .header("X-Tenant-ID", TENANT)
@@ -130,7 +130,7 @@ class AuditControllerTest {
     @Test
     void findingsServiceErrorReturns500() throws Exception {
         when(auditWebService.getFindingsCatalog(anyString(), anyString(), anyString()))
-                .thenThrow(new AuditServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "sorgu hatası"));
+                .thenThrow(new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "sorgu hatası"));
 
         mockMvc.perform(get("/v1/workspaces/{ws}/audit/findings", WS)
                         .header("X-Tenant-ID", TENANT)

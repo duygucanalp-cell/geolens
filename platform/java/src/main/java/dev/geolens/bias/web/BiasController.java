@@ -1,7 +1,9 @@
 package dev.geolens.bias.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.bias.service.BiasService;
-import dev.geolens.bias.service.BiasServiceException;
+import dev.geolens.common.ServiceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -50,8 +52,8 @@ public class BiasController {
         return ResponseEntity.ok(service.listTests(tenantId, modelId, limit));
     }
 
-    @ExceptionHandler(BiasServiceException.class)
-    public ResponseEntity<ApiError> handleService(BiasServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleService(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

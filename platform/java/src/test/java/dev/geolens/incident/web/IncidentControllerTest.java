@@ -1,7 +1,7 @@
 package dev.geolens.incident.web;
 
 import dev.geolens.incident.service.IncidentService;
-import dev.geolens.incident.service.IncidentServiceException;
+import dev.geolens.common.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -99,7 +99,7 @@ class IncidentControllerTest {
     @Test
     void createIncidentMissingTitleReturns400() throws Exception {
         when(incidentService.createIncident(any(), any()))
-                .thenThrow(new IncidentServiceException(HttpStatus.BAD_REQUEST, "title gerekli"));
+                .thenThrow(new ServiceException(HttpStatus.BAD_REQUEST, "title gerekli"));
 
         mockMvc.perform(post("/v1/incidents/events")
                         .header("X-Tenant-ID", TENANT)
@@ -166,7 +166,7 @@ class IncidentControllerTest {
     @Test
     void updateIncidentInvalidStatusReturns400() throws Exception {
         when(incidentService.updateIncident(any(), any(), any()))
-                .thenThrow(new IncidentServiceException(HttpStatus.BAD_REQUEST, "geçersiz durum"));
+                .thenThrow(new ServiceException(HttpStatus.BAD_REQUEST, "geçersiz durum"));
 
         mockMvc.perform(put("/v1/incidents/events/i-1")
                         .header("X-Tenant-ID", TENANT)
@@ -179,7 +179,7 @@ class IncidentControllerTest {
     @Test
     void updateIncidentNotFoundReturns404() throws Exception {
         when(incidentService.updateIncident(any(), any(), any()))
-                .thenThrow(new IncidentServiceException(HttpStatus.NOT_FOUND, "incident bulunamadı"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "incident bulunamadı"));
 
         mockMvc.perform(put("/v1/incidents/events/i-1")
                         .header("X-Tenant-ID", TENANT)

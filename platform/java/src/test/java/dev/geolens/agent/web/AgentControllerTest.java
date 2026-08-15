@@ -1,7 +1,7 @@
 package dev.geolens.agent.web;
 
 import dev.geolens.agent.service.AgentService;
-import dev.geolens.agent.service.AgentServiceException;
+import dev.geolens.common.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -81,7 +81,7 @@ class AgentControllerTest {
     @Test
     void startTraceDbErrorReturns500() throws Exception {
         when(agentService.startTrace(anyString(), any()))
-                .thenThrow(new AgentServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "trace başlatılamadı"));
+                .thenThrow(new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "trace başlatılamadı"));
 
         mockMvc.perform(post(BASE + "/traces")
                         .header("X-Tenant-ID", TENANT)
@@ -96,7 +96,7 @@ class AgentControllerTest {
     @Test
     void getTraceNotFound() throws Exception {
         when(agentService.getTrace(anyString(), anyString()))
-                .thenThrow(new AgentServiceException(HttpStatus.NOT_FOUND, "trace bulunamadı"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "trace bulunamadı"));
 
         mockMvc.perform(get(BASE + "/traces/t-1")
                         .header("X-Tenant-ID", TENANT))
@@ -147,7 +147,7 @@ class AgentControllerTest {
     @Test
     void getTraceStepsErrorReturns500() throws Exception {
         when(agentService.getTrace(anyString(), anyString()))
-                .thenThrow(new AgentServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "adımlar alınamadı"));
+                .thenThrow(new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "adımlar alınamadı"));
 
         mockMvc.perform(get(BASE + "/traces/t-1")
                         .header("X-Tenant-ID", TENANT))
@@ -170,7 +170,7 @@ class AgentControllerTest {
     @Test
     void recordStepTraceNotFoundReturns404() throws Exception {
         when(agentService.recordStep(anyString(), anyString(), any()))
-                .thenThrow(new AgentServiceException(HttpStatus.NOT_FOUND, "trace bulunamadı"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "trace bulunamadı"));
 
         mockMvc.perform(post(BASE + "/traces/t-1/steps")
                         .header("X-Tenant-ID", TENANT)
@@ -183,7 +183,7 @@ class AgentControllerTest {
     @Test
     void recordStepCompletedTraceReturns409() throws Exception {
         when(agentService.recordStep(anyString(), anyString(), any()))
-                .thenThrow(new AgentServiceException(HttpStatus.CONFLICT, "tamamlanmış trace'e adım eklenemez"));
+                .thenThrow(new ServiceException(HttpStatus.CONFLICT, "tamamlanmış trace'e adım eklenemez"));
 
         mockMvc.perform(post(BASE + "/traces/t-1/steps")
                         .header("X-Tenant-ID", TENANT)
@@ -247,7 +247,7 @@ class AgentControllerTest {
     @Test
     void completeTraceNotFoundWhenZeroRows() throws Exception {
         when(agentService.completeTrace(anyString(), anyString(), any()))
-                .thenThrow(new AgentServiceException(HttpStatus.NOT_FOUND, "trace bulunamadı veya zaten tamamlanmış"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "trace bulunamadı veya zaten tamamlanmış"));
 
         mockMvc.perform(post(BASE + "/traces/t-1/complete")
                         .header("X-Tenant-ID", TENANT)
@@ -331,7 +331,7 @@ class AgentControllerTest {
     @Test
     void listTracesQueryErrorReturns500() throws Exception {
         when(agentService.listTraces(anyString(), anyInt(), any(), anyInt()))
-                .thenThrow(new AgentServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "trace listesi alınamadı"));
+                .thenThrow(new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "trace listesi alınamadı"));
 
         mockMvc.perform(get(BASE + "/traces")
                         .header("X-Tenant-ID", TENANT))

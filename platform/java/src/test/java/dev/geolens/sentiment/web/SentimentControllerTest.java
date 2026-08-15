@@ -3,7 +3,7 @@ package dev.geolens.sentiment.web;
 import dev.geolens.sentiment.domain.HallucinationResult;
 import dev.geolens.sentiment.domain.SentimentResult;
 import dev.geolens.sentiment.service.SentimentService;
-import dev.geolens.sentiment.service.SentimentServiceException;
+import dev.geolens.common.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -77,7 +77,7 @@ class SentimentControllerTest {
     @Test
     void analyzeEngineErrorReturns500() throws Exception {
         when(sentimentService.analyze(any(), any(), any(), any()))
-                .thenThrow(new SentimentServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "sentiment analizi başarısız"));
+                .thenThrow(new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "sentiment analizi başarısız"));
 
         mockMvc.perform(post("/v1/workspaces/{ws}/sentiment/analyze", WS)
                         .header("X-Tenant-ID", TENANT)
@@ -204,7 +204,7 @@ class SentimentControllerTest {
     @Test
     void verifyHallucinationNotFoundReturns404() throws Exception {
         when(sentimentService.verify(any(), any(), anyBoolean()))
-                .thenThrow(new SentimentServiceException(HttpStatus.NOT_FOUND, "hallüsinasyon kaydı bulunamadı"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "hallüsinasyon kaydı bulunamadı"));
 
         mockMvc.perform(post("/v1/workspaces/{ws}/sentiment/hallucination/YOK/verify", WS)
                         .header("X-Tenant-ID", TENANT)

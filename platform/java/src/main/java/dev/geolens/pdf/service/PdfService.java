@@ -1,5 +1,7 @@
 package dev.geolens.pdf.service;
 
+import dev.geolens.common.ServiceException;
+
 import dev.geolens.pdf.ReportRequest;
 import dev.geolens.pdf.ReportResult;
 import dev.geolens.pdf.ReportType;
@@ -35,7 +37,7 @@ public class PdfService {
         try {
             return engine.generateWeeklyDigest(workspaceId, tenantId);
         } catch (RuntimeException e) {
-            throw new PdfServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "rapor oluşturulamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "rapor oluşturulamadı");
         }
     }
 
@@ -44,7 +46,7 @@ public class PdfService {
             return engine.generate(new ReportRequest(ReportType.SCORE_CARD, workspaceId, tenantId,
                     req.brandId(), req.brandName()));
         } catch (RuntimeException e) {
-            throw new PdfServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "skor kartı oluşturulamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "skor kartı oluşturulamadı");
         }
     }
 
@@ -53,7 +55,7 @@ public class PdfService {
             return engine.generate(new ReportRequest(ReportType.AUDIT, workspaceId, tenantId,
                     req.brandId(), req.brandName()));
         } catch (RuntimeException e) {
-            throw new PdfServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "denetim raporu oluşturulamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "denetim raporu oluşturulamadı");
         }
     }
 
@@ -69,7 +71,7 @@ public class PdfService {
                     req.brandId() == null || req.brandId().isBlank() ? null : req.brandId(),
                     "{\"brand_name\":\"" + safe(req.brandName()) + "\"}");
         } catch (RuntimeException e) {
-            throw new PdfServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "rapor talebi oluşturulamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "rapor talebi oluşturulamadı");
         }
         return reportId;
     }
@@ -83,10 +85,10 @@ public class PdfService {
                     WHERE id = ? AND workspace_id = ? AND tenant_id = ?
                     """, reportId, workspaceId, tenantId);
         } catch (RuntimeException e) {
-            throw new PdfServiceException(HttpStatus.NOT_FOUND, "rapor bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "rapor bulunamadı");
         }
         if (row == null) {
-            throw new PdfServiceException(HttpStatus.NOT_FOUND, "rapor bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "rapor bulunamadı");
         }
 
         Map<String, Object> body = new LinkedHashMap<>();
@@ -116,15 +118,15 @@ public class PdfService {
                     WHERE id = ? AND workspace_id = ? AND tenant_id = ?
                     """, reportId, workspaceId, tenantId);
         } catch (RuntimeException e) {
-            throw new PdfServiceException(HttpStatus.NOT_FOUND, "rapor bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "rapor bulunamadı");
         }
         if (row == null) {
-            throw new PdfServiceException(HttpStatus.NOT_FOUND, "rapor bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "rapor bulunamadı");
         }
 
         String status = String.valueOf(row.get("status"));
         if (!"ready".equals(status)) {
-            throw new PdfServiceException(HttpStatus.CONFLICT, "rapor henüz hazır değil");
+            throw new ServiceException(HttpStatus.CONFLICT, "rapor henüz hazır değil");
         }
         return row.get("file_name") == null ? "report.pdf" : String.valueOf(row.get("file_name"));
     }
@@ -133,7 +135,7 @@ public class PdfService {
         try {
             return engine.getReportData(reportId);
         } catch (RuntimeException e) {
-            throw new PdfServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "rapor verisi alınamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "rapor verisi alınamadı");
         }
     }
 

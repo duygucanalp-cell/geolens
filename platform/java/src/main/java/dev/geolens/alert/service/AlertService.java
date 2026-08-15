@@ -1,5 +1,7 @@
 package dev.geolens.alert.service;
 
+import dev.geolens.common.ServiceException;
+
 import dev.geolens.alert.web.AlertRuleRequest;
 import dev.geolens.alert.web.UpdateAlertRuleRequest;
 import org.jooq.DSLContext;
@@ -76,10 +78,10 @@ public class AlertService {
                     SELECT EXISTS(SELECT 1 FROM config.brands WHERE id = ? AND workspace_id = ? AND tenant_id = ?)
                     """, Boolean.class, req.brandId(), workspaceId, tenantId);
         } catch (RuntimeException e) {
-            throw new AlertServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı");
         }
         if (Boolean.FALSE.equals(brandExists)) {
-            throw new AlertServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı");
         }
 
         String ruleId;
@@ -92,7 +94,7 @@ public class AlertService {
                     """, String.class, tenantId, req.brandId(), req.name(), req.metric(), req.condition(),
                     req.threshold(), channel, req.channelConfig(), cooldownMin);
         } catch (RuntimeException e) {
-            throw new AlertServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "kural oluşturulamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "kural oluşturulamadı");
         }
 
         Map<String, Object> body = new LinkedHashMap<>();
@@ -120,10 +122,10 @@ public class AlertService {
                     req.channel(), req.channelConfig(), req.enabled(), req.cooldownMin(),
                     ruleId, tenantId);
         } catch (RuntimeException e) {
-            throw new AlertServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "kural güncellenemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "kural güncellenemedi");
         }
         if (affected == 0) {
-            throw new AlertServiceException(HttpStatus.NOT_FOUND, "kural bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "kural bulunamadı");
         }
         return Map.of("status", "updated");
     }
@@ -135,10 +137,10 @@ public class AlertService {
                     DELETE FROM governance.alert_rules WHERE id = ? AND tenant_id = ?
                     """, ruleId, tenantId);
         } catch (RuntimeException e) {
-            throw new AlertServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "kural silinemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "kural silinemedi");
         }
         if (affected == 0) {
-            throw new AlertServiceException(HttpStatus.NOT_FOUND, "kural bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "kural bulunamadı");
         }
         return Map.of("status", "deleted");
     }

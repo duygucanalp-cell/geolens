@@ -1,5 +1,7 @@
 package dev.geolens.version.service;
 
+import dev.geolens.common.ServiceException;
+
 import dev.geolens.version.web.VersionEntryRequest;
 import org.jooq.DSLContext;
 import org.jooq.Record;
@@ -53,7 +55,7 @@ public class VersionService {
                             now.atOffset(ZoneOffset.UTC))
                     .execute();
         } catch (RuntimeException e) {
-            throw new VersionServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "versiyon kaydedilemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "versiyon kaydedilemedi");
         }
 
         Map<String, Object> body = new LinkedHashMap<>();
@@ -134,10 +136,10 @@ public class VersionService {
                     .fetchOne();
             row = r == null ? null : r.intoMap();
         } catch (RuntimeException e) {
-            throw new VersionServiceException(HttpStatus.NOT_FOUND, "versiyon kaydı bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "versiyon kaydı bulunamadı");
         }
         if (row == null) {
-            throw new VersionServiceException(HttpStatus.NOT_FOUND, "versiyon kaydı bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "versiyon kaydı bulunamadı");
         }
 
         Map<String, Object> entry = new LinkedHashMap<>();

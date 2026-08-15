@@ -1,5 +1,7 @@
 package dev.geolens.measure.service;
 
+import dev.geolens.common.ServiceException;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.geolens.engine.Registry;
 import dev.geolens.measure.ComponentWeights;
@@ -50,7 +52,7 @@ public class MeasureService {
     public Map<String, Object> triggerMeasurement(String workspaceId, String tenantId, MeasureRequest req) {
         List<String> engineNames = engines.list();
         if (engineNames.isEmpty()) {
-            throw new MeasureServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "kayıtlı motor bulunamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "kayıtlı motor bulunamadı");
         }
 
         Map<String, Object> brand;
@@ -60,7 +62,7 @@ public class MeasureService {
                     WHERE id = ? AND workspace_id = ? AND tenant_id = ? AND is_active = true
                     """, req.brandId(), workspaceId, tenantId);
         } catch (RuntimeException e) {
-            throw new MeasureServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı");
         }
         String brandName = String.valueOf(brand.get("name"));
         String websiteUrl = String.valueOf(brand.get("website_url"));
@@ -121,7 +123,7 @@ public class MeasureService {
                     WHERE workspace_id = ? AND tenant_id = ? AND created_at > now() - interval '1 hour'
                     """, workspaceId, tenantId);
         } catch (RuntimeException e) {
-            throw new MeasureServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "durum sorgulanamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "durum sorgulanamadı");
         }
         int totalJobs = ((Number) row.get("total")).intValue();
         int completedJobs = ((Number) row.get("completed")).intValue();
@@ -175,7 +177,7 @@ public class MeasureService {
                     """, brandId, workspaceId, tenantId);
             brandName = String.valueOf(row.get("name"));
         } catch (RuntimeException e) {
-            throw new MeasureServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı");
         }
         List<Map<String, Object>> rows = queryScores("""
                 SELECT s.id, s.value, s.ci_low, s.ci_high, s.fidelity_label,

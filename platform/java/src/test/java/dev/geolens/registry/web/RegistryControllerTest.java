@@ -2,7 +2,7 @@ package dev.geolens.registry.web;
 
 import dev.geolens.registry.Entity;
 import dev.geolens.registry.service.RegistryService;
-import dev.geolens.registry.service.RegistryServiceException;
+import dev.geolens.common.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -51,7 +51,7 @@ class RegistryControllerTest {
     void createInvalidEntityTypeReturns400() throws Exception {
         // Go: unsupported type, empty type, random string → 400
         when(registryService.createEntity(anyString(), any()))
-                .thenThrow(new RegistryServiceException(HttpStatus.BAD_REQUEST,
+                .thenThrow(new ServiceException(HttpStatus.BAD_REQUEST,
                         "geçersiz entity_type: model, agent, application, dataset"));
         for (String et : new String[]{"llm", "", "foobar"}) {
             mockMvc.perform(post("/v1/registry/entities")
@@ -81,7 +81,7 @@ class RegistryControllerTest {
     @Test
     void createDbErrorReturns500() throws Exception {
         when(registryService.createEntity(anyString(), any()))
-                .thenThrow(new RegistryServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "varlık kaydedilemedi"));
+                .thenThrow(new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "varlık kaydedilemedi"));
 
         mockMvc.perform(post("/v1/registry/entities")
                         .header("X-Tenant-ID", TENANT)
@@ -173,7 +173,7 @@ class RegistryControllerTest {
     @Test
     void getNotFound() throws Exception {
         when(registryService.getEntity(anyString(), anyString()))
-                .thenThrow(new RegistryServiceException(HttpStatus.NOT_FOUND, "varlık bulunamadı"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "varlık bulunamadı"));
 
         mockMvc.perform(get("/v1/registry/entities/nonexistent")
                         .header("X-Tenant-ID", TENANT))
@@ -213,7 +213,7 @@ class RegistryControllerTest {
     @Test
     void updateNotFound() throws Exception {
         when(registryService.updateEntity(anyString(), anyString(), any()))
-                .thenThrow(new RegistryServiceException(HttpStatus.NOT_FOUND, "varlık bulunamadı"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "varlık bulunamadı"));
 
         mockMvc.perform(put("/v1/registry/entities/nonexistent")
                         .header("X-Tenant-ID", TENANT)
@@ -239,7 +239,7 @@ class RegistryControllerTest {
     @Test
     void deleteNotFound() throws Exception {
         when(registryService.deleteEntity(anyString(), anyString()))
-                .thenThrow(new RegistryServiceException(HttpStatus.NOT_FOUND, "varlık bulunamadı"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "varlık bulunamadı"));
 
         mockMvc.perform(delete("/v1/registry/entities/nonexistent")
                         .header("X-Tenant-ID", TENANT))
@@ -250,7 +250,7 @@ class RegistryControllerTest {
     @Test
     void deleteDbErrorReturns500() throws Exception {
         when(registryService.deleteEntity(anyString(), anyString()))
-                .thenThrow(new RegistryServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "silme hatası"));
+                .thenThrow(new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "silme hatası"));
 
         mockMvc.perform(delete("/v1/registry/entities/ent-001")
                         .header("X-Tenant-ID", TENANT))
@@ -287,7 +287,7 @@ class RegistryControllerTest {
     @Test
     void assessRiskDbErrorReturns500() throws Exception {
         when(registryService.assessRisk(anyString(), anyString(), any()))
-                .thenThrow(new RegistryServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "değerlendirme kaydedilemedi"));
+                .thenThrow(new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "değerlendirme kaydedilemedi"));
 
         mockMvc.perform(post("/v1/registry/entities/ent-001/assess")
                         .header("X-Tenant-ID", TENANT)

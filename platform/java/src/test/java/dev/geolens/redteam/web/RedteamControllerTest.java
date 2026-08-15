@@ -4,7 +4,7 @@ import dev.geolens.redteam.Result;
 import dev.geolens.redteam.Run;
 import dev.geolens.redteam.TestCase;
 import dev.geolens.redteam.service.RedteamService;
-import dev.geolens.redteam.service.RedteamServiceException;
+import dev.geolens.common.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -164,7 +164,7 @@ class RedteamControllerTest {
     @Test
     void getRunNotFoundReturns404() throws Exception {
         when(redteamService.getRun(anyString(), anyString()))
-                .thenThrow(new RedteamServiceException(HttpStatus.NOT_FOUND, "test bulunamadı"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "test bulunamadı"));
 
         mockMvc.perform(get("/v1/redteam/runs/run-1")
                         .header("X-Tenant-ID", TENANT))

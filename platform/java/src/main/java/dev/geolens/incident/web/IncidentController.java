@@ -1,7 +1,9 @@
 package dev.geolens.incident.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.incident.service.IncidentService;
-import dev.geolens.incident.service.IncidentServiceException;
+import dev.geolens.common.ServiceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -62,8 +64,8 @@ public class IncidentController {
 
     // ---------- hata yönetimi ----------
 
-    @ExceptionHandler(IncidentServiceException.class)
-    public ResponseEntity<ApiError> handleService(IncidentServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleService(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

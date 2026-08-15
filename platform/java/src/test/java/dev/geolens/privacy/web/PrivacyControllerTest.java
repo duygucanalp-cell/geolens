@@ -1,7 +1,7 @@
 package dev.geolens.privacy.web;
 
 import dev.geolens.privacy.service.PrivacyService;
-import dev.geolens.privacy.service.PrivacyServiceException;
+import dev.geolens.common.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -137,7 +137,7 @@ class PrivacyControllerTest {
     @Test
     void listDeletionRequestsNoAdminReturns403() throws Exception {
         when(privacyService.listDeletionRequests(any(), any()))
-                .thenThrow(new PrivacyServiceException(HttpStatus.FORBIDDEN, "bu işlem için admin yetkisi gerekli"));
+                .thenThrow(new ServiceException(HttpStatus.FORBIDDEN, "bu işlem için admin yetkisi gerekli"));
 
         mockMvc.perform(get("/v1/deletion-requests")
                         .header("X-Tenant-ID", TENANT)
@@ -149,7 +149,7 @@ class PrivacyControllerTest {
     @Test
     void listDeletionRequestsNoRoleReturns403() throws Exception {
         when(privacyService.listDeletionRequests(any(), any()))
-                .thenThrow(new PrivacyServiceException(HttpStatus.FORBIDDEN, "bu işlem için admin yetkisi gerekli"));
+                .thenThrow(new ServiceException(HttpStatus.FORBIDDEN, "bu işlem için admin yetkisi gerekli"));
 
         mockMvc.perform(get("/v1/deletion-requests")
                         .header("X-Tenant-ID", TENANT)
@@ -178,7 +178,7 @@ class PrivacyControllerTest {
     @Test
     void processDeletionRequestNoAdminReturns403() throws Exception {
         when(privacyService.processDeletionRequest(any(), any(), any(), any(), any()))
-                .thenThrow(new PrivacyServiceException(HttpStatus.FORBIDDEN, "bu işlem için admin yetkisi gerekli"));
+                .thenThrow(new ServiceException(HttpStatus.FORBIDDEN, "bu işlem için admin yetkisi gerekli"));
 
         mockMvc.perform(post("/v1/deletion-requests/R01/process")
                         .header("X-Tenant-ID", TENANT)
@@ -191,7 +191,7 @@ class PrivacyControllerTest {
     @Test
     void processDeletionRequestInvalidActionReturns400() throws Exception {
         when(privacyService.processDeletionRequest(any(), any(), any(), any(), any()))
-                .thenThrow(new PrivacyServiceException(HttpStatus.BAD_REQUEST, "action 'approve' veya 'reject' olmalıdır"));
+                .thenThrow(new ServiceException(HttpStatus.BAD_REQUEST, "action 'approve' veya 'reject' olmalıdır"));
 
         mockMvc.perform(post("/v1/deletion-requests/R01/process")
                         .header("X-Tenant-ID", TENANT)
@@ -220,7 +220,7 @@ class PrivacyControllerTest {
     @Test
     void processDeletionRequestApproveNotFoundReturns404() throws Exception {
         when(privacyService.processDeletionRequest(any(), any(), any(), any(), any()))
-                .thenThrow(new PrivacyServiceException(HttpStatus.NOT_FOUND, "talep bulunamadı veya zaten işlenmiş"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "talep bulunamadı veya zaten işlenmiş"));
 
         mockMvc.perform(post("/v1/deletion-requests/R01/process")
                         .header("X-Tenant-ID", TENANT)

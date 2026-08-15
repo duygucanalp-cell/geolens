@@ -1,7 +1,9 @@
 package dev.geolens.optimize.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.optimize.service.OptimizeService;
-import dev.geolens.optimize.service.OptimizeServiceException;
+import dev.geolens.common.ServiceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -62,8 +64,8 @@ public class OptimizeController {
         return ResponseEntity.ok(service.updateStatus(tenantId, recId, req));
     }
 
-    @ExceptionHandler(OptimizeServiceException.class)
-    public ResponseEntity<ApiError> handleService(OptimizeServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleService(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

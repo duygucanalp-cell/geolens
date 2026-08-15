@@ -1,5 +1,7 @@
 package dev.geolens.auth.service;
 
+import dev.geolens.common.ServiceException;
+
 import dev.geolens.auth.AuthException;
 import dev.geolens.auth.Claims;
 import dev.geolens.auth.JWTService;
@@ -102,12 +104,12 @@ public class AuthService {
                     WHERE u.email = ? AND u.is_active = true
                     """, req.email());
             if (user == null) {
-                throw new AuthServiceException(HttpStatus.UNAUTHORIZED, "geçersiz e-posta veya şifre");
+                throw new ServiceException(HttpStatus.UNAUTHORIZED, "geçersiz e-posta veya şifre");
             }
-        } catch (AuthServiceException e) {
+        } catch (ServiceException e) {
             throw e;
         } catch (RuntimeException e) {
-            throw new AuthServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "giriş başarısız");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "giriş başarısız");
         }
 
         String userId = String.valueOf(user.get("id"));
@@ -116,7 +118,7 @@ public class AuthService {
         String role = String.valueOf(user.get("role"));
 
         if (!ENCODER.matches(req.password(), passwordHash)) {
-            throw new AuthServiceException(HttpStatus.UNAUTHORIZED, "geçersiz e-posta veya şifre");
+            throw new ServiceException(HttpStatus.UNAUTHORIZED, "geçersiz e-posta veya şifre");
         }
 
         String workspaceId = firstWorkspace(userId, tenantId);
@@ -131,17 +133,17 @@ public class AuthService {
         try {
             claims = jwt.validateToken(tokenStr);
         } catch (AuthException e) {
-            throw new AuthServiceException(HttpStatus.UNAUTHORIZED, "oturum süresi dolmuş veya geçersiz token");
+            throw new ServiceException(HttpStatus.UNAUTHORIZED, "oturum süresi dolmuş veya geçersiz token");
         }
 
         if (blacklist != null && claims.id() != null && !claims.id().isBlank()
                 && blacklist.exists("token:blacklist:" + claims.id())) {
-            throw new AuthServiceException(HttpStatus.UNAUTHORIZED, "token iptal edilmiş");
+            throw new ServiceException(HttpStatus.UNAUTHORIZED, "token iptal edilmiş");
         }
 
         // Maksimum oturum ömrü: 7 günden eski token'lar yenilenemez (kayan oturum).
         if (claims.issuedAt() != null && Instant.now().isAfter(claims.issuedAt().plusSeconds(7 * 24 * 3600))) {
-            throw new AuthServiceException(HttpStatus.UNAUTHORIZED, "oturum süresi sona erdi, tekrar giriş yapın");
+            throw new ServiceException(HttpStatus.UNAUTHORIZED, "oturum süresi sona erdi, tekrar giriş yapın");
         }
 
         // Rolü DB'den taze oku; kullanıcı deaktif/silinmişse yenileme reddedilir.
@@ -151,12 +153,12 @@ public class AuthService {
                     SELECT role FROM identity.users WHERE id = ? AND tenant_id = ? AND is_active = true
                     """, String.class, claims.userId(), claims.tenantId());
             if (role == null) {
-                throw new AuthServiceException(HttpStatus.UNAUTHORIZED, "oturum sonlandırıldı, tekrar giriş yapın");
+                throw new ServiceException(HttpStatus.UNAUTHORIZED, "oturum sonlandırıldı, tekrar giriş yapın");
             }
-        } catch (AuthServiceException e) {
+        } catch (ServiceException e) {
             throw e;
         } catch (RuntimeException e) {
-            throw new AuthServiceException(HttpStatus.UNAUTHORIZED, "oturum sonlandırıldı, tekrar giriş yapın");
+            throw new ServiceException(HttpStatus.UNAUTHORIZED, "oturum sonlandırıldı, tekrar giriş yapın");
         }
 
         String rbacRole = resolveRBACRole(claims.userId(), claims.tenantId(), role);
@@ -182,7 +184,7 @@ public class AuthService {
                     SELECT name, slug, tier, created_at FROM identity.tenants WHERE id = ?
                     """, tenantId);
         } catch (RuntimeException e) {
-            throw new AuthServiceException(HttpStatus.NOT_FOUND, "kiracı bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "kiracı bulunamadı");
         }
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("id", tenantId);
@@ -204,7 +206,7 @@ public class AuthService {
                     ORDER BY u.created_at DESC
                     """, tenantId);
         } catch (RuntimeException e) {
-            throw new AuthServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "üyeler listelenemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "üyeler listelenemedi");
         }
         List<Map<String, Object>> members = new ArrayList<>();
         for (Map<String, Object> r : rows) {
@@ -229,10 +231,10 @@ public class AuthService {
                     WHERE user_id = ? AND tenant_id = ?
                     """, req.role(), userId, tenantId);
         } catch (RuntimeException e) {
-            throw new AuthServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "rol güncellenemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "rol güncellenemedi");
         }
         if (updated == 0) {
-            throw new AuthServiceException(HttpStatus.NOT_FOUND, "kullanıcı bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "kullanıcı bulunamadı");
         }
         return Map.of("status", "updated", "role", req.role());
     }
@@ -249,7 +251,7 @@ public class AuthService {
                     """, tenantId, req.workspaceId(), userId == null ? "" : userId,
                     req.email(), req.role(), token);
         } catch (RuntimeException e) {
-            throw new AuthServiceException(HttpStatus.CONFLICT, "bu e-posta zaten davet edilmiş");
+            throw new ServiceException(HttpStatus.CONFLICT, "bu e-posta zaten davet edilmiş");
         }
 
         boolean emailSent = false;
@@ -289,12 +291,12 @@ public class AuthService {
                     WHERE token = ? AND accepted_at IS NULL
                     """, req.token());
             if (invitation == null) {
-                throw new AuthServiceException(HttpStatus.NOT_FOUND, "geçersiz veya süresi dolmuş davet");
+                throw new ServiceException(HttpStatus.NOT_FOUND, "geçersiz veya süresi dolmuş davet");
             }
-        } catch (AuthServiceException e) {
+        } catch (ServiceException e) {
             throw e;
         } catch (RuntimeException e) {
-            throw new AuthServiceException(HttpStatus.NOT_FOUND, "geçersiz veya süresi dolmuş davet");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "geçersiz veya süresi dolmuş davet");
         }
 
         String invitationId = String.valueOf(invitation.get("id"));
@@ -305,12 +307,12 @@ public class AuthService {
         Instant expiresAt = invitation.get("expires_at") instanceof java.sql.Timestamp ts
                 ? ts.toInstant() : null;
         if (expiresAt != null && Instant.now().isAfter(expiresAt)) {
-            throw new AuthServiceException(HttpStatus.GONE, "davetin süresi dolmuş");
+            throw new ServiceException(HttpStatus.GONE, "davetin süresi dolmuş");
         }
 
         String userId = findOrCreateUser(req.email(), req.password(), req.name(), tenantId);
         if (userId == null) {
-            throw new AuthServiceException(HttpStatus.CONFLICT, "bu e-posta zaten kayıtlı");
+            throw new ServiceException(HttpStatus.CONFLICT, "bu e-posta zaten kayıtlı");
         }
 
         try {
@@ -321,7 +323,7 @@ public class AuthService {
                     """, workspaceId, userId, tenantId, role, role);
             dsl.execute("UPDATE identity.invitations SET accepted_at = now() WHERE id = ?", invitationId);
         } catch (RuntimeException e) {
-            throw new AuthServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "davet kabul edilemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "davet kabul edilemedi");
         }
 
         String rbacRole = resolveRBACRole(userId, tenantId, role);
@@ -341,7 +343,7 @@ public class AuthService {
                     LIMIT 50
                     """, tenantId);
         } catch (RuntimeException e) {
-            throw new AuthServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "davetler listelenemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "davetler listelenemedi");
         }
         List<Map<String, Object>> invitations = new ArrayList<>();
         for (Map<String, Object> r : rows) {

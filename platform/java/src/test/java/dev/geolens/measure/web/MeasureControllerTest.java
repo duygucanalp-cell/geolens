@@ -1,7 +1,7 @@
 package dev.geolens.measure.web;
 
 import dev.geolens.measure.service.MeasureService;
-import dev.geolens.measure.service.MeasureServiceException;
+import dev.geolens.common.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -84,7 +84,7 @@ class MeasureControllerTest {
     @Test
     void triggerUnknownBrandReturns404() throws Exception {
         when(measureService.triggerMeasurement(anyString(), anyString(), any()))
-                .thenThrow(new MeasureServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı"));
 
         mockMvc.perform(post("/v1/workspaces/{ws}/measurements", WS)
                         .header("X-Tenant-ID", TENANT)
@@ -97,7 +97,7 @@ class MeasureControllerTest {
     @Test
     void triggerNoEnginesReturns500() throws Exception {
         when(measureService.triggerMeasurement(anyString(), anyString(), any()))
-                .thenThrow(new MeasureServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "kayıtlı motor bulunamadı"));
+                .thenThrow(new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "kayıtlı motor bulunamadı"));
 
         mockMvc.perform(post("/v1/workspaces/{ws}/measurements", WS)
                         .header("X-Tenant-ID", TENANT)

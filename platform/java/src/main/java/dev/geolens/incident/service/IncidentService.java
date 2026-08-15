@@ -1,5 +1,7 @@
 package dev.geolens.incident.service;
 
+import dev.geolens.common.ServiceException;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.geolens.incident.web.CreateIncidentRequest;
 import dev.geolens.incident.web.UpdateIncidentRequest;
@@ -99,10 +101,10 @@ public class IncidentService {
     /** Go {@code createIncident} karşılığı — incident oluşturur, oluşturulan kaydı döner. */
     public Map<String, Object> createIncident(String tenantId, CreateIncidentRequest req) {
         if (req == null) {
-            throw new IncidentServiceException(HttpStatus.BAD_REQUEST, "geçersiz istek");
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "geçersiz istek");
         }
         if (req.title() == null || req.title().isBlank()) {
-            throw new IncidentServiceException(HttpStatus.BAD_REQUEST, "title gerekli");
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "title gerekli");
         }
 
         String severity = req.severity();
@@ -126,7 +128,7 @@ public class IncidentService {
                     nz(req.source()), nz(req.entityId()), nz(req.assignedTo()), req.severityScore(),
                     java.sql.Timestamp.from(now));
         } catch (RuntimeException e) {
-            throw new IncidentServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "incident kaydedilemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "incident kaydedilemedi");
         }
 
         // O-6: IncidentOpened olayını outbox üzerinden taşı (doğrudan DB yazımı yerine)
@@ -149,11 +151,11 @@ public class IncidentService {
     /** Go {@code updateIncident} karşılığı — incident durumunu günceller, sonucu döner. */
     public Map<String, Object> updateIncident(String tenantId, String incidentId, UpdateIncidentRequest req) {
         if (req == null) {
-            throw new IncidentServiceException(HttpStatus.BAD_REQUEST, "geçersiz istek");
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "geçersiz istek");
         }
         String status = nz(req.status());
         if (!status.isEmpty() && !VALID_UPDATE_STATUS.contains(status)) {
-            throw new IncidentServiceException(HttpStatus.BAD_REQUEST, "geçersiz durum");
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "geçersiz durum");
         }
 
         boolean resolvedSet = "resolved".equals(status) || "closed".equals(status);
@@ -171,10 +173,10 @@ public class IncidentService {
                     """, status, status, nz(req.resolution()), nz(req.resolution()),
                     nz(req.assignedTo()), nz(req.assignedTo()), resolvedSet, incidentId, tenantId);
         } catch (RuntimeException e) {
-            throw new IncidentServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "incident güncellenemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "incident güncellenemedi");
         }
         if (updated == 0) {
-            throw new IncidentServiceException(HttpStatus.NOT_FOUND, "incident bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "incident bulunamadı");
         }
 
         return Map.of(

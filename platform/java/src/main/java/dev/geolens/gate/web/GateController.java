@@ -1,5 +1,7 @@
 package dev.geolens.gate.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.gate.service.GateCheckResult;
 import dev.geolens.gate.service.GateHistoryResult;
 import dev.geolens.gate.service.GateService;

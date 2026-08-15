@@ -1,8 +1,10 @@
 package dev.geolens.drift.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.drift.Observation;
 import dev.geolens.drift.service.DriftService;
-import dev.geolens.drift.service.DriftServiceException;
+import dev.geolens.common.ServiceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -104,8 +106,8 @@ public class DriftController {
         return error(HttpStatus.BAD_REQUEST, "geçersiz istek");
     }
 
-    @ExceptionHandler(DriftServiceException.class)
-    public ResponseEntity<ApiError> handleService(DriftServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleService(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

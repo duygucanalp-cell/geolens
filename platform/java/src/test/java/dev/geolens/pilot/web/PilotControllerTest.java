@@ -2,7 +2,7 @@ package dev.geolens.pilot.web;
 
 import dev.geolens.pilot.PilotTenant;
 import dev.geolens.pilot.service.PilotService;
-import dev.geolens.pilot.service.PilotServiceException;
+import dev.geolens.common.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -143,7 +143,7 @@ class PilotControllerTest {
     @Test
     void enrollDbErrorReturns500() throws Exception {
         when(pilotService.enroll(any(), any()))
-                .thenThrow(new PilotServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "pilot programa kayıt başarısız"));
+                .thenThrow(new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "pilot programa kayıt başarısız"));
 
         mockMvc.perform(post("/v1/pilot/enroll")
                         .header("X-Tenant-ID", TENANT)

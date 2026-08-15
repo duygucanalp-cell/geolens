@@ -1,5 +1,7 @@
 package dev.geolens.discovery.service;
 
+import dev.geolens.common.ServiceException;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.geolens.discovery.ShadowFinding;
 import dev.geolens.discovery.web.StartScanRequest;
@@ -49,7 +51,7 @@ public class DiscoveryService {
                     VALUES (?, ?, ?, ?, 'running', now())
                     """, scanId, tenantId, scanType, provider);
         } catch (RuntimeException e) {
-            throw new DiscoveryServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "tarama başlatılamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "tarama başlatılamadı");
         }
 
         // Arka planda tarama başlat (30sn timeout) — Go'daki goroutine karşılığı
@@ -166,10 +168,10 @@ public class DiscoveryService {
                     FROM discovery.scans WHERE id = ? AND tenant_id = ?
                     """, scanId, tenantId);
         } catch (RuntimeException e) {
-            throw new DiscoveryServiceException(HttpStatus.NOT_FOUND, "tarama bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "tarama bulunamadı");
         }
         if (scanRow == null) {
-            throw new DiscoveryServiceException(HttpStatus.NOT_FOUND, "tarama bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "tarama bulunamadı");
         }
 
         Map<String, Object> scan = new LinkedHashMap<>();

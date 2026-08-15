@@ -1,7 +1,7 @@
 package dev.geolens.auth.web;
 
 import dev.geolens.auth.service.AuthService;
-import dev.geolens.auth.service.AuthServiceException;
+import dev.geolens.common.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -107,7 +107,7 @@ class AuthControllerTest {
     @Test
     void refreshInvalidTokenReturns401() throws Exception {
         when(authService.refresh(anyString()))
-                .thenThrow(new AuthServiceException(HttpStatus.UNAUTHORIZED, "oturum süresi dolmuş veya geçersiz token"));
+                .thenThrow(new ServiceException(HttpStatus.UNAUTHORIZED, "oturum süresi dolmuş veya geçersiz token"));
 
         mockMvc.perform(post("/v1/auth/refresh")
                         .header("Authorization", "Bearer not-a-jwt"))
@@ -169,7 +169,7 @@ class AuthControllerTest {
     @Test
     void getTenantNotFoundReturns404() throws Exception {
         when(authService.getTenant("BOGUS"))
-                .thenThrow(new AuthServiceException(HttpStatus.NOT_FOUND, "kiracı bulunamadı"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "kiracı bulunamadı"));
 
         mockMvc.perform(get("/v1/tenant")
                         .header("X-Tenant-ID", "BOGUS"))

@@ -1,7 +1,7 @@
 package dev.geolens.usage.web;
 
 import dev.geolens.usage.service.UsageService;
-import dev.geolens.usage.service.UsageServiceException;
+import dev.geolens.common.ServiceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -50,8 +50,8 @@ public class UsageController {
         return ResponseEntity.ok(service.getUsageSummary(tenantId, periodParam));
     }
 
-    @ExceptionHandler(UsageServiceException.class)
-    public ResponseEntity<ApiError> handleService(UsageServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleService(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

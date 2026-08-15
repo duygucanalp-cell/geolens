@@ -1,7 +1,9 @@
 package dev.geolens.replay.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.replay.service.ReplayService;
-import dev.geolens.replay.service.ReplayServiceException;
+import dev.geolens.common.ServiceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -87,8 +89,8 @@ public class ReplayController {
         return ResponseEntity.ok(service.compareSnapshots(snapshotA, snapshotB, workspaceId, tenantId));
     }
 
-    @ExceptionHandler(ReplayServiceException.class)
-    public ResponseEntity<ApiError> handleService(ReplayServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleService(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

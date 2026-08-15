@@ -1,7 +1,9 @@
 package dev.geolens.technicalgeo.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.technicalgeo.service.TechnicalgeoService;
-import dev.geolens.technicalgeo.service.TechnicalgeoServiceException;
+import dev.geolens.common.ServiceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -88,8 +90,8 @@ public class TechnicalgeoController {
         return ResponseEntity.ok(service.getTechnicalGeoScore(brandId, workspaceId, tenantId));
     }
 
-    @ExceptionHandler(TechnicalgeoServiceException.class)
-    public ResponseEntity<ApiError> handleService(TechnicalgeoServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleService(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

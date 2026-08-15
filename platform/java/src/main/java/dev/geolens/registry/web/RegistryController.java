@@ -1,7 +1,9 @@
 package dev.geolens.registry.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.registry.service.RegistryService;
-import dev.geolens.registry.service.RegistryServiceException;
+import dev.geolens.common.ServiceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -89,8 +91,8 @@ public class RegistryController {
 
     // ---------- hata yönetimi ----------
 
-    @ExceptionHandler(RegistryServiceException.class)
-    public ResponseEntity<ApiError> handleServiceError(RegistryServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleServiceError(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

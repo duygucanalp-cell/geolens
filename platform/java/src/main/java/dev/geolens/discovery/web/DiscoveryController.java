@@ -1,7 +1,9 @@
 package dev.geolens.discovery.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.discovery.service.DiscoveryService;
-import dev.geolens.discovery.service.DiscoveryServiceException;
+import dev.geolens.common.ServiceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -52,8 +54,8 @@ public class DiscoveryController {
 
     // ---------- hata yönetimi ----------
 
-    @ExceptionHandler(DiscoveryServiceException.class)
-    public ResponseEntity<ApiError> handleService(DiscoveryServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleService(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

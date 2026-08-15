@@ -1,9 +1,11 @@
 package dev.geolens.sentiment.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.sentiment.domain.HallucinationResult;
 import dev.geolens.sentiment.domain.SentimentResult;
 import dev.geolens.sentiment.service.SentimentService;
-import dev.geolens.sentiment.service.SentimentServiceException;
+import dev.geolens.common.ServiceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -98,8 +100,8 @@ SentimentController {
 
     // ---------- hata yönetimi ----------
 
-    @ExceptionHandler(SentimentServiceException.class)
-    public ResponseEntity<ApiError> handleSentimentError(SentimentServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleSentimentError(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

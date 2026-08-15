@@ -1,5 +1,7 @@
 package dev.geolens.replay.service;
 
+import dev.geolens.common.ServiceException;
+
 import dev.geolens.replay.DiffResult;
 import dev.geolens.replay.ReplayEngine;
 import dev.geolens.replay.Snapshot;
@@ -36,7 +38,7 @@ public class ReplayService {
         try {
             return engine.captureSnapshot(brandId, prompt, workspaceId, tenantId);
         } catch (RuntimeException e) {
-            throw new ReplayServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "snapshot alınamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "snapshot alınamadı");
         }
     }
 
@@ -87,10 +89,10 @@ public class ReplayService {
                     """, snapshotId, tenantId, workspaceId);
             s = rec == null ? null : rec.intoMap();
         } catch (RuntimeException e) {
-            throw new ReplayServiceException(HttpStatus.NOT_FOUND, "snapshot bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "snapshot bulunamadı");
         }
         if (s == null) {
-            throw new ReplayServiceException(HttpStatus.NOT_FOUND, "snapshot bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "snapshot bulunamadı");
         }
 
         Map<String, Object> item = new LinkedHashMap<>();
@@ -111,10 +113,10 @@ public class ReplayService {
             rows = dsl.execute("DELETE FROM replay.conversation_snapshots WHERE id = ? AND tenant_id = ?",
                     snapshotId, tenantId);
         } catch (RuntimeException e) {
-            throw new ReplayServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "silme başarısız");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "silme başarısız");
         }
         if (rows == 0) {
-            throw new ReplayServiceException(HttpStatus.NOT_FOUND, "snapshot bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "snapshot bulunamadı");
         }
         return Map.of("status", "deleted");
     }
@@ -123,7 +125,7 @@ public class ReplayService {
         try {
             return engine.compare(snapshotA, snapshotB, workspaceId, tenantId);
         } catch (RuntimeException e) {
-            throw new ReplayServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "karşılaştırma başarısız");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "karşılaştırma başarısız");
         }
     }
 

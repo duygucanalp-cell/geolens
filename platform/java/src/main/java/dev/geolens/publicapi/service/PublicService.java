@@ -1,5 +1,7 @@
 package dev.geolens.publicapi.service;
 
+import dev.geolens.common.ServiceException;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jooq.DSLContext;
@@ -43,10 +45,10 @@ public class PublicService {
                     ORDER BY s.freshness_at DESC LIMIT 1
                     """, brandID, tenantId);
         } catch (RuntimeException e) {
-            throw new PublicServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı");
         }
         if (row == null) {
-            throw new PublicServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı");
         }
 
         Map<String, Object> body = new LinkedHashMap<>();
@@ -130,10 +132,10 @@ public class PublicService {
                     WHERE id = ? AND tenant_id = ? AND is_active = true
                     """, brandID, tenantId);
         } catch (RuntimeException e) {
-            throw new PublicServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı");
         }
         if (row == null) {
-            throw new PublicServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı");
         }
 
         Map<String, Object> body = new LinkedHashMap<>();
@@ -222,10 +224,10 @@ public class PublicService {
                     WHERE id = ? AND tenant_id = ? AND status = 'ready'
                     """, reportID, tenantId);
         } catch (RuntimeException e) {
-            throw new PublicServiceException(HttpStatus.NOT_FOUND, "rapor bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "rapor bulunamadı");
         }
         if (row == null) {
-            throw new PublicServiceException(HttpStatus.NOT_FOUND, "rapor bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "rapor bulunamadı");
         }
 
         String paramsJson = row.get("params") == null ? "" : String.valueOf(row.get("params"));
@@ -236,7 +238,7 @@ public class PublicService {
             params = MAPPER.readValue(paramsJson, new TypeReference<Map<String, Object>>() {
             });
         } catch (Exception e) {
-            throw new PublicServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "rapor verisi çözümlenemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "rapor verisi çözümlenemedi");
         }
 
         String s3Url = params.get("s3_url") == null ? "" : String.valueOf(params.get("s3_url"));
@@ -254,11 +256,11 @@ public class PublicService {
             try {
                 data = Base64.getDecoder().decode(pdfB64);
             } catch (IllegalArgumentException e) {
-                throw new PublicServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "rapor verisi çözümlenemedi");
+                throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "rapor verisi çözümlenemedi");
             }
         }
         if (data == null || data.length == 0) {
-            throw new PublicServiceException(HttpStatus.NOT_FOUND, "rapor verisi bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "rapor verisi bulunamadı");
         }
 
         return ReportDownload.pdf(data, fileName);

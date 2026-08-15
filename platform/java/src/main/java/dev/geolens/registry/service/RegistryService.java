@@ -1,5 +1,7 @@
 package dev.geolens.registry.service;
 
+import dev.geolens.common.ServiceException;
+
 import dev.geolens.registry.Entity;
 import dev.geolens.registry.EntityIndexer;
 import dev.geolens.registry.web.AssessRiskRequest;
@@ -85,10 +87,10 @@ public class RegistryService {
                     FROM registry.entities WHERE id = ? AND tenant_id = ?
                     """, entityId, tenantId);
         } catch (RuntimeException e) {
-            throw new RegistryServiceException(HttpStatus.NOT_FOUND, "varlık bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "varlık bulunamadı");
         }
         if (row == null) {
-            throw new RegistryServiceException(HttpStatus.NOT_FOUND, "varlık bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "varlık bulunamadı");
         }
         return toEntity(row);
     }
@@ -96,7 +98,7 @@ public class RegistryService {
     /** Go {@code Create} karşılığı — varlığı kaydeder ve indeksler. */
     public Entity createEntity(String tenantId, CreateEntityRequest req) {
         if (req.entityType() == null || !VALID_TYPES.contains(req.entityType())) {
-            throw new RegistryServiceException(HttpStatus.BAD_REQUEST, "geçersiz entity_type: model, agent, application, dataset");
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "geçersiz entity_type: model, agent, application, dataset");
         }
 
         String lifecycle = req.lifecycleState() == null || req.lifecycleState().isBlank() ? "development" : req.lifecycleState();
@@ -114,10 +116,10 @@ public class RegistryService {
                     """, tenantId, req.entityType(), nz(req.name()), nz(req.description()), version,
                     nz(req.provider()), lifecycle, riskClass, nz(req.owner()), nz(req.documentationUrl()));
         } catch (RuntimeException e) {
-            throw new RegistryServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "varlık kaydedilemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "varlık kaydedilemedi");
         }
         if (row == null) {
-            throw new RegistryServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "varlık kaydedilemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "varlık kaydedilemedi");
         }
         Entity entity = toEntity(row);
 
@@ -149,10 +151,10 @@ public class RegistryService {
                     nz(req.lifecycleState()), nz(req.riskClass()), nz(req.owner()), nz(req.documentationUrl()),
                     entityId, tenantId);
         } catch (RuntimeException e) {
-            throw new RegistryServiceException(HttpStatus.NOT_FOUND, "varlık bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "varlık bulunamadı");
         }
         if (row == null) {
-            throw new RegistryServiceException(HttpStatus.NOT_FOUND, "varlık bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "varlık bulunamadı");
         }
         Entity entity = toEntity(row);
 
@@ -168,10 +170,10 @@ public class RegistryService {
         try {
             rows = dsl.execute("DELETE FROM registry.entities WHERE id = ? AND tenant_id = ?", entityId, tenantId);
         } catch (RuntimeException e) {
-            throw new RegistryServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "silme hatası");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "silme hatası");
         }
         if (rows == 0) {
-            throw new RegistryServiceException(HttpStatus.NOT_FOUND, "varlık bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "varlık bulunamadı");
         }
 
         // R1: Elasticsearch'ten sil (non-fatal)
@@ -191,7 +193,7 @@ public class RegistryService {
                     """, entityId, tenantId, nz(req.riskClass()), req.score() == null ? 0 : req.score(),
                     nz(req.summary()), "");
         } catch (RuntimeException e) {
-            throw new RegistryServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "değerlendirme kaydedilemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "değerlendirme kaydedilemedi");
         }
         String assessmentId = row == null ? "" : str(row.get("id"));
 

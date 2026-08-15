@@ -1,7 +1,7 @@
 package dev.geolens.prompt.web;
 
 import dev.geolens.prompt.service.PromptService;
-import dev.geolens.prompt.service.PromptServiceException;
+import dev.geolens.common.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -91,7 +91,7 @@ class PromptControllerTest {
     @Test
     void runAuditDbErrorReturns500() throws Exception {
         when(promptService.runAudit(any(), any()))
-                .thenThrow(new PromptServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "denetim kaydedilemedi"));
+                .thenThrow(new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "denetim kaydedilemedi"));
 
         mockMvc.perform(post("/v1/prompts/audit")
                         .header("X-Tenant-ID", TENANT)
@@ -120,7 +120,7 @@ class PromptControllerTest {
     @Test
     void listAuditsQueryErrorReturns500() throws Exception {
         when(promptService.listAudits(anyString(), anyInt(), anyInt(), any(), any()))
-                .thenThrow(new PromptServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "denetim geçmişi alınamadı"));
+                .thenThrow(new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "denetim geçmişi alınamadı"));
 
         mockMvc.perform(get("/v1/prompts/audits")
                         .header("X-Tenant-ID", TENANT))
@@ -161,7 +161,7 @@ class PromptControllerTest {
     @Test
     void getAuditNotFound() throws Exception {
         when(promptService.getAudit(any(), any()))
-                .thenThrow(new PromptServiceException(HttpStatus.NOT_FOUND, "denetim bulunamadı"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "denetim bulunamadı"));
 
         mockMvc.perform(get("/v1/prompts/audits/a-1")
                         .header("X-Tenant-ID", TENANT))

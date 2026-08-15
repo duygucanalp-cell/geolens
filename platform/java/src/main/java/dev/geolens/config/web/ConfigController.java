@@ -1,7 +1,9 @@
 package dev.geolens.config.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.config.service.ConfigService;
-import dev.geolens.config.service.ConfigServiceException;
+import dev.geolens.common.ServiceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -167,8 +169,8 @@ public class ConfigController {
 
     // ---------- hata yönetimi ----------
 
-    @ExceptionHandler(ConfigServiceException.class)
-    public ResponseEntity<ApiError> handleConfigError(ConfigServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleConfigError(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

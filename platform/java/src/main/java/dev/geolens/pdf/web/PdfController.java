@@ -1,8 +1,10 @@
 package dev.geolens.pdf.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.pdf.ReportResult;
 import dev.geolens.pdf.service.PdfService;
-import dev.geolens.pdf.service.PdfServiceException;
+import dev.geolens.common.ServiceException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -123,8 +125,8 @@ public class PdfController {
 
     // ---------- hata yönetimi ----------
 
-    @ExceptionHandler(PdfServiceException.class)
-    public ResponseEntity<ApiError> handleService(PdfServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleService(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

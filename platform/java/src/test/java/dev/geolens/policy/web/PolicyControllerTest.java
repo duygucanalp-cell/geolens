@@ -2,7 +2,7 @@ package dev.geolens.policy.web;
 
 import dev.geolens.policy.Pack;
 import dev.geolens.policy.service.PolicyService;
-import dev.geolens.policy.service.PolicyServiceException;
+import dev.geolens.common.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -94,7 +94,7 @@ class PolicyControllerTest {
     @Test
     void applyPackNotFound() throws Exception {
         when(policyService.applyPack(any(), any()))
-                .thenThrow(new PolicyServiceException(HttpStatus.NOT_FOUND, "pack bulunamadı"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "pack bulunamadı"));
 
         mockMvc.perform(post("/v1/policies/packs/nonexistent/apply")
                         .header("X-Tenant-ID", TENANT))
@@ -186,7 +186,7 @@ class PolicyControllerTest {
     @Test
     void updateControlDbErrorReturns500() throws Exception {
         when(policyService.updateControl(any(), any(), any()))
-                .thenThrow(new PolicyServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "control güncellenemedi"));
+                .thenThrow(new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "control güncellenemedi"));
 
         mockMvc.perform(put("/v1/policies/controls/ctrl-1")
                         .header("X-Tenant-ID", TENANT)

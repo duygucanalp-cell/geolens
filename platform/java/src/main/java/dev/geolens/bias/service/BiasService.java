@@ -1,5 +1,7 @@
 package dev.geolens.bias.service;
 
+import dev.geolens.common.ServiceException;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.geolens.bias.BiasAnalyzer;
 import dev.geolens.bias.web.EvaluateRequest;
@@ -95,7 +97,7 @@ public class BiasService {
         try {
             rows = dsl.fetch(query.toString(), args.toArray()).intoMaps();
         } catch (RuntimeException e) {
-            throw new BiasServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "test geçmişi alınamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "test geçmişi alınamadı");
         }
 
         boolean hasMore = rows.size() > limitInt;

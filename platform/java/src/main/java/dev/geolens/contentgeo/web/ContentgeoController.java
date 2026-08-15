@@ -1,7 +1,9 @@
 package dev.geolens.contentgeo.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.contentgeo.service.ContentgeoService;
-import dev.geolens.contentgeo.service.ContentgeoServiceException;
+import dev.geolens.common.ServiceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -74,8 +76,8 @@ public class ContentgeoController {
         return ResponseEntity.ok(service.listTopicClusters(workspaceId, tenantId, brandId));
     }
 
-    @ExceptionHandler(ContentgeoServiceException.class)
-    public ResponseEntity<ApiError> handleService(ContentgeoServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleService(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

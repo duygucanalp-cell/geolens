@@ -1,5 +1,7 @@
 package dev.geolens.policy.service;
 
+import dev.geolens.common.ServiceException;
+
 import dev.geolens.policy.Control;
 import dev.geolens.policy.ControlDef;
 import dev.geolens.policy.Pack;
@@ -79,10 +81,10 @@ public class PolicyService {
                     RETURNING id, tenant_id, name, framework, description, version, enabled, applied_at, created_at, updated_at
                     """, packId, tenantId);
         } catch (RuntimeException e) {
-            throw new PolicyServiceException(HttpStatus.NOT_FOUND, "pack bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "pack bulunamadı");
         }
         if (rec == null) {
-            throw new PolicyServiceException(HttpStatus.NOT_FOUND, "pack bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "pack bulunamadı");
         }
         Pack p = toPack(rec.intoMap());
 
@@ -165,7 +167,7 @@ public class PolicyService {
                     WHERE id = ? AND tenant_id = ?
                     """, nz(req.status()), nz(req.evidence()), controlId, tenantId);
         } catch (RuntimeException e) {
-            throw new PolicyServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "control güncellenemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "control güncellenemedi");
         }
         return Map.of("status", "güncellendi");
     }

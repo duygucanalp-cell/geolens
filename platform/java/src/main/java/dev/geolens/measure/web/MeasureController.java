@@ -1,7 +1,9 @@
 package dev.geolens.measure.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.measure.service.MeasureService;
-import dev.geolens.measure.service.MeasureServiceException;
+import dev.geolens.common.ServiceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -108,8 +110,8 @@ public class MeasureController {
 
     // ---------- hata yönetimi ----------
 
-    @ExceptionHandler(MeasureServiceException.class)
-    public ResponseEntity<ApiError> handleMeasureError(MeasureServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleMeasureError(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

@@ -1,5 +1,7 @@
 package dev.geolens.config.service;
 
+import dev.geolens.common.ServiceException;
+
 import dev.geolens.config.web.TransferRequest;
 import org.jooq.DSLContext;
 import org.jooq.Record;
@@ -37,7 +39,7 @@ public class WorkspaceService {
                     WHERE id = ? AND tenant_id = ?
                     """, now, now, workspaceId, tenantId);
         } catch (RuntimeException e) {
-            throw new ConfigServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "arşivleme başarısız");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "arşivleme başarısız");
         }
         try {
             dsl.execute("""
@@ -60,7 +62,7 @@ public class WorkspaceService {
                     WHERE id = ? AND tenant_id = ?
                     """, workspaceId, tenantId);
         } catch (RuntimeException e) {
-            throw new ConfigServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "geri alma başarısız");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "geri alma başarısız");
         }
         return Map.of("status", "unarchived");
     }
@@ -72,10 +74,10 @@ public class WorkspaceService {
                     SELECT EXISTS(SELECT 1 FROM identity.tenants WHERE id = ?)
                     """, Boolean.class, req.targetTenantId());
         } catch (RuntimeException e) {
-            throw new ConfigServiceException(HttpStatus.NOT_FOUND, "hedef kiracı bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "hedef kiracı bulunamadı");
         }
         if (Boolean.FALSE.equals(exists)) {
-            throw new ConfigServiceException(HttpStatus.NOT_FOUND, "hedef kiracı bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "hedef kiracı bulunamadı");
         }
 
         try {
@@ -91,7 +93,7 @@ public class WorkspaceService {
                 return null;
             });
         } catch (RuntimeException e) {
-            throw new ConfigServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "devir başarısız");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "devir başarısız");
         }
 
         Map<String, Object> body = new LinkedHashMap<>();

@@ -1,7 +1,9 @@
 package dev.geolens.competitive.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.competitive.service.CompetitiveService;
-import dev.geolens.competitive.service.CompetitiveServiceException;
+import dev.geolens.common.ServiceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -79,8 +81,8 @@ public class CompetitiveController {
         return ResponseEntity.ok(service.getRecommendations(workspaceId, tenantId, brandId));
     }
 
-    @ExceptionHandler(CompetitiveServiceException.class)
-    public ResponseEntity<ApiError> handleService(CompetitiveServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleService(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

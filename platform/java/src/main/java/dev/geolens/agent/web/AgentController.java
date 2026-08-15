@@ -1,7 +1,9 @@
 package dev.geolens.agent.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.agent.service.AgentService;
-import dev.geolens.agent.service.AgentServiceException;
+import dev.geolens.common.ServiceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -111,8 +113,8 @@ public class AgentController {
 
     // ---------- hata yönetimi ----------
 
-    @ExceptionHandler(AgentServiceException.class)
-    public ResponseEntity<ApiError> handleServiceError(AgentServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleServiceError(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

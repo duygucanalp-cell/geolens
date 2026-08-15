@@ -1,5 +1,7 @@
 package dev.geolens.audit.service;
 
+import dev.geolens.common.ServiceException;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.geolens.audit.AuditResult;
@@ -44,13 +46,13 @@ public class AuditWebService {
                         WHERE id = ? AND workspace_id = ? AND tenant_id = ? AND is_active = true
                         """, req.brandId(), workspaceId, tenantId);
                 if (row == null) {
-                    throw new AuditServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı");
+                    throw new ServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı");
                 }
                 brandName = String.valueOf(row.get("name"));
-            } catch (AuditServiceException e) {
+            } catch (ServiceException e) {
                 throw e;
             } catch (RuntimeException e) {
-                throw new AuditServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı");
+                throw new ServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı");
             }
         }
 
@@ -58,7 +60,7 @@ public class AuditWebService {
         try {
             result = service.audit(req.brandId(), brandName, req.websiteUrl());
         } catch (RuntimeException e) {
-            throw new AuditServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "denetim başarısız");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "denetim başarısız");
         }
         result = result.withContext(workspaceId, tenantId);
 
@@ -205,7 +207,7 @@ public class AuditWebService {
                     LIMIT 1000
                     """, tenantId);
         } catch (RuntimeException e) {
-            throw new AuditServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "dışa aktarılamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "dışa aktarılamadı");
         }
         StringBuilder csv = new StringBuilder("user_id,event_type,resource_type,resource_id,action,ip_address,created_at\n");
         for (Map<String, Object> r : rows) {

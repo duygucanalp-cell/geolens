@@ -3,7 +3,7 @@ package dev.geolens.explain.web;
 import dev.geolens.explain.service.ExplainHistoryResult;
 import dev.geolens.explain.service.ExplainResult;
 import dev.geolens.explain.service.ExplainService;
-import dev.geolens.explain.service.ExplainServiceException;
+import dev.geolens.common.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -39,7 +39,7 @@ class ExplainControllerTest {
     @Test
     void explainNotFound() throws Exception {
         when(explainService.explain(anyString(), anyString()))
-                .thenThrow(new ExplainServiceException(HttpStatus.NOT_FOUND, "varlık bulunamadı"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "varlık bulunamadı"));
 
         mockMvc.perform(post("/v1/explain/ent-001")
                         .header("X-Tenant-ID", TENANT))
@@ -50,7 +50,7 @@ class ExplainControllerTest {
     @Test
     void explainNullEntityReturns404() throws Exception {
         when(explainService.explain(anyString(), anyString()))
-                .thenThrow(new ExplainServiceException(HttpStatus.NOT_FOUND, "varlık bulunamadı"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "varlık bulunamadı"));
 
         mockMvc.perform(post("/v1/explain/ent-001")
                         .header("X-Tenant-ID", TENANT))
@@ -129,7 +129,7 @@ class ExplainControllerTest {
     @Test
     void listAnalysesQueryErrorReturns500() throws Exception {
         when(explainService.listAnalyses(any(), any(), any()))
-                .thenThrow(new ExplainServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "analiz geçmişi alınamadı"));
+                .thenThrow(new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "analiz geçmişi alınamadı"));
 
         mockMvc.perform(get("/v1/explain/results")
                         .header("X-Tenant-ID", TENANT))

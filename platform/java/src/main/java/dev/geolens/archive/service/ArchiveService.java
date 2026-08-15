@@ -1,5 +1,7 @@
 package dev.geolens.archive.service;
 
+import dev.geolens.common.ServiceException;
+
 import dev.geolens.archive.ArchiveEngine;
 import dev.geolens.archive.Entry;
 import dev.geolens.archive.web.ArchiveRequest;
@@ -82,10 +84,10 @@ public class ArchiveService {
                     """, entryId, tenantId, workspaceId);
             e = rec == null ? null : rec.intoMap();
         } catch (RuntimeException ex) {
-            throw new ArchiveServiceException(HttpStatus.NOT_FOUND, "arşiv girişi bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "arşiv girişi bulunamadı");
         }
         if (e == null) {
-            throw new ArchiveServiceException(HttpStatus.NOT_FOUND, "arşiv girişi bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "arşiv girişi bulunamadı");
         }
 
         Map<String, Object> item = new LinkedHashMap<>();
@@ -105,7 +107,7 @@ public class ArchiveService {
             return engine.archive(req.brandId(), nz(req.engineName()), nz(req.promptText()),
                     req.response(), workspaceId, tenantId);
         } catch (RuntimeException e) {
-            throw new ArchiveServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "arşivleme başarısız");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "arşivleme başarısız");
         }
     }
 

@@ -1,6 +1,8 @@
 package dev.geolens.config.web;
 
-import dev.geolens.config.service.ConfigServiceException;
+import dev.geolens.common.ApiError;
+
+import dev.geolens.common.ServiceException;
 import dev.geolens.config.service.PanelService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -71,8 +73,8 @@ public class PanelController {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.createPromptSet(workspaceId, tenantId, req));
     }
 
-    @ExceptionHandler(ConfigServiceException.class)
-    public ResponseEntity<ApiError> handleService(ConfigServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleService(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

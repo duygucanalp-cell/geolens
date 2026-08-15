@@ -1,7 +1,9 @@
 package dev.geolens.archive.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.archive.service.ArchiveService;
-import dev.geolens.archive.service.ArchiveServiceException;
+import dev.geolens.common.ServiceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -79,8 +81,8 @@ public class ArchiveController {
         return ResponseEntity.ok(service.getVersionHistory(workspaceId, tenantId, brandId, engineName));
     }
 
-    @ExceptionHandler(ArchiveServiceException.class)
-    public ResponseEntity<ApiError> handleService(ArchiveServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleService(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

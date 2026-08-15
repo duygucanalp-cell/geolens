@@ -1,5 +1,7 @@
 package dev.geolens.sso.service;
 
+import dev.geolens.common.ServiceException;
+
 import dev.geolens.sso.KeyPairGeneratorUtil;
 import dev.geolens.sso.SamlSupport;
 import dev.geolens.sso.SsoConfig;
@@ -32,7 +34,7 @@ public class SsoService {
     public SsoConfig getConfig(String tenantId) {
         SsoConfig cfg = loadConfig(tenantId, false);
         if (cfg == null) {
-            throw new SsoServiceException(HttpStatus.NOT_FOUND, "SSO yapılandırması bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "SSO yapılandırması bulunamadı");
         }
         return cfg;
     }
@@ -57,10 +59,10 @@ public class SsoService {
                     """, tenantId, nz(req.idpEntityId()), nz(req.idpSsoUrl()), nz(req.idpCert()),
                     nz(req.spEntityId()), nz(req.spAcsUrl()), req.enabled());
         } catch (RuntimeException e) {
-            throw new SsoServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "SSO yapılandırılamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "SSO yapılandırılamadı");
         }
         if (rec == null) {
-            throw new SsoServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "SSO yapılandırılamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "SSO yapılandırılamadı");
         }
         return toConfig(rec.intoMap());
     }
@@ -69,14 +71,14 @@ public class SsoService {
     public String getSpMetadata(String tenantId) {
         SsoConfig cfg = loadConfig(tenantId, false);
         if (cfg == null) {
-            throw new SsoServiceException(HttpStatus.NOT_FOUND, "SSO yapılandırması bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "SSO yapılandırması bulunamadı");
         }
 
         KeyPairGeneratorUtil.GeneratedKeys keys;
         try {
             keys = KeyPairGeneratorUtil.generate();
         } catch (RuntimeException e) {
-            throw new SsoServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "metadata oluşturulamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "metadata oluşturulamadı");
         }
 
         String spEntityId = cfg.spEntityId().isBlank() ? "https://geolens.app/saml/" + tenantId : cfg.spEntityId();
@@ -104,19 +106,19 @@ public class SsoService {
     /** Go {@code HandleACS} karşılığı — SAML yanıtını doğrular, kullanıcıyı eşler. */
     public Map<String, Object> handleAcs(String tenantId, String samlResponse) {
         if (samlResponse == null || samlResponse.isBlank()) {
-            throw new SsoServiceException(HttpStatus.BAD_REQUEST, "SAMLResponse gerekli");
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "SAMLResponse gerekli");
         }
 
         SsoConfig cfg = loadConfig(tenantId, true);
         if (cfg == null) {
-            throw new SsoServiceException(HttpStatus.UNAUTHORIZED, "SSO etkin değil");
+            throw new ServiceException(HttpStatus.UNAUTHORIZED, "SSO etkin değil");
         }
 
         // IdP sertifikası PEM doğrulaması (Go buildSPFromConfig karşılığı)
         try {
             SamlSupport.parseIdpCert(cfg.idpCert());
         } catch (IllegalArgumentException e) {
-            throw new SsoServiceException(HttpStatus.UNAUTHORIZED, "SAML ServiceProvider oluşturma: " + e.getMessage());
+            throw new ServiceException(HttpStatus.UNAUTHORIZED, "SAML ServiceProvider oluşturma: " + e.getMessage());
         }
 
         // SAML yanıtını ayrıştır ve doğrula
@@ -124,13 +126,13 @@ public class SsoService {
         try {
             assertion = SamlSupport.parseResponse(samlResponse);
         } catch (IllegalArgumentException e) {
-            throw new SsoServiceException(HttpStatus.UNAUTHORIZED, "SAML yanıtı ayrıştırma: " + e.getMessage());
+            throw new ServiceException(HttpStatus.UNAUTHORIZED, "SAML yanıtı ayrıştırma: " + e.getMessage());
         }
 
         String email = SamlSupport.extractEmail(assertion);
         String name = SamlSupport.extractName(assertion);
         if (email.isEmpty()) {
-            throw new SsoServiceException(HttpStatus.UNAUTHORIZED, "SAML yanıtında email bulunamadı");
+            throw new ServiceException(HttpStatus.UNAUTHORIZED, "SAML yanıtında email bulunamadı");
         }
 
         Record userRec;
@@ -139,10 +141,10 @@ public class SsoService {
                     SELECT id, COALESCE(display_name, email) FROM identity.users WHERE email = ?
                     """, email);
         } catch (RuntimeException e) {
-            throw new SsoServiceException(HttpStatus.UNAUTHORIZED, "kullanıcı bulunamadı");
+            throw new ServiceException(HttpStatus.UNAUTHORIZED, "kullanıcı bulunamadı");
         }
         if (userRec == null) {
-            throw new SsoServiceException(HttpStatus.UNAUTHORIZED, "kullanıcı bulunamadı");
+            throw new ServiceException(HttpStatus.UNAUTHORIZED, "kullanıcı bulunamadı");
         }
         String userId = str(userRec.get(0));
         String displayName = str(userRec.get(1));
@@ -164,7 +166,7 @@ public class SsoService {
         try {
             dsl.execute("UPDATE sso.configs SET enabled = true, updated_at = now() WHERE tenant_id = ?", tenantId);
         } catch (RuntimeException e) {
-            throw new SsoServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "SSO etkinleştirilemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "SSO etkinleştirilemedi");
         }
         return Map.of("status", "SSO etkinleştirildi");
     }
@@ -174,7 +176,7 @@ public class SsoService {
         try {
             dsl.execute("UPDATE sso.configs SET enabled = false, updated_at = now() WHERE tenant_id = ?", tenantId);
         } catch (RuntimeException e) {
-            throw new SsoServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "SSO devre dışı bırakılamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "SSO devre dışı bırakılamadı");
         }
         return Map.of("status", "SSO devre dışı bırakıldı");
     }
@@ -184,7 +186,7 @@ public class SsoService {
         try {
             return KeyPairGeneratorUtil.generate();
         } catch (RuntimeException e) {
-            throw new SsoServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "anahtar oluşturulamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "anahtar oluşturulamadı");
         }
     }
 

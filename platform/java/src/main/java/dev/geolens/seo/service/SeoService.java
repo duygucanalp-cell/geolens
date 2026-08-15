@@ -1,5 +1,7 @@
 package dev.geolens.seo.service;
 
+import dev.geolens.common.ServiceException;
+
 import dev.geolens.seo.GoogleOAuthClient;
 import dev.geolens.seo.SeoStateStore;
 import org.jooq.DSLContext;
@@ -74,14 +76,14 @@ public class SeoService {
         return conns;
     }
 
-    /** Go {@code GetAuthURL} karşılığı — doğrulama hatasında {@link SeoServiceException} atar. */
+    /** Go {@code GetAuthURL} karşılığı — doğrulama hatasında {@link ServiceException} atar. */
     public Map<String, Object> getAuthUrl(String workspaceId, String tenantId, String platform) {
         String plat = platform == null ? "" : platform;
         if (!"search_console".equals(plat) && !"ga4".equals(plat)) {
-            throw new SeoServiceException(HttpStatus.BAD_REQUEST, "platform search_console veya ga4 olmalıdır");
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "platform search_console veya ga4 olmalıdır");
         }
         if (!oauth.configured()) {
-            throw new SeoServiceException(HttpStatus.BAD_REQUEST, "Google OAuth yapılandırılmamış");
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "Google OAuth yapılandırılmamış");
         }
 
         byte[] stateBytes = new byte[16];
@@ -109,27 +111,27 @@ public class SeoService {
         String c = code == null ? "" : code;
         String s = state == null ? "" : state;
         if (c.isEmpty() || s.isEmpty()) {
-            throw new SeoServiceException(HttpStatus.BAD_REQUEST, "code ve state parametreleri gerekli");
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "code ve state parametreleri gerekli");
         }
         if (workspaceId == null || workspaceId.isBlank()) {
-            throw new SeoServiceException(HttpStatus.BAD_REQUEST, "workspace ID gerekli");
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "workspace ID gerekli");
         }
 
         // State token'ı doğrula — içinden tenantID, workspaceID ve platform'u çöz
         String stateValue = stateStore.get("seo:state:" + s);
         if (stateValue == null) {
-            throw new SeoServiceException(HttpStatus.BAD_REQUEST, "geçersiz state token");
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "geçersiz state token");
         }
         String[] parts = stateValue.split("\\|", 3);
         if (parts.length != 3) {
-            throw new SeoServiceException(HttpStatus.BAD_REQUEST, "geçersiz state");
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "geçersiz state");
         }
         String tenantId = parts[0];
         String wsId = parts[1];
         String platform = parts[2];
 
         if (!wsId.equals(workspaceId)) {
-            throw new SeoServiceException(HttpStatus.BAD_REQUEST, "workspace eşleşmez");
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "workspace eşleşmez");
         }
 
         // state token'ını temizle
@@ -141,7 +143,7 @@ public class SeoService {
         try {
             token = oauth.exchangeCode(c, redirectUri);
         } catch (RuntimeException e) {
-            throw new SeoServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "token alınamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "token alınamadı");
         }
 
         // Token'ı veritabanına kaydet
@@ -161,7 +163,7 @@ public class SeoService {
                     token.accessToken(), token.refreshToken() == null ? "" : token.refreshToken(),
                     java.sql.Timestamp.from(token.expiresAt()));
         } catch (RuntimeException e) {
-            throw new SeoServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "bağlantı kaydedilemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "bağlantı kaydedilemedi");
         }
 
         // Başarılı bağlantı — frontend'i yönlendir (307 Temporary Redirect)
@@ -176,7 +178,7 @@ public class SeoService {
                     WHERE tenant_id = ? AND workspace_id = ? AND platform = ?
                     """, tenantId, workspaceId, platform);
         } catch (RuntimeException e) {
-            throw new SeoServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "bağlantı kaldırılamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "bağlantı kaldırılamadı");
         }
         return Map.of(
                 "status", "disconnected",

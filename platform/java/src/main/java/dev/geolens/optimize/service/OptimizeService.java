@@ -1,5 +1,7 @@
 package dev.geolens.optimize.service;
 
+import dev.geolens.common.ServiceException;
+
 import dev.geolens.optimize.OpportunityAnalyzer;
 import dev.geolens.optimize.web.GenerateRequest;
 import dev.geolens.optimize.web.UpdateStatusRequest;
@@ -137,7 +139,7 @@ public class OptimizeService {
 
     public Map<String, Object> updateStatus(String tenantId, String recId, UpdateStatusRequest req) {
         if (!"implemented".equals(req.status()) && !"dismissed".equals(req.status())) {
-            throw new OptimizeServiceException(HttpStatus.BAD_REQUEST, "geçersiz durum: implemented veya dismissed olmalı");
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "geçersiz durum: implemented veya dismissed olmalı");
         }
 
         int rows;
@@ -147,10 +149,10 @@ public class OptimizeService {
                     WHERE id = ? AND tenant_id = ?
                     """, req.status(), recId, tenantId);
         } catch (RuntimeException e) {
-            throw new OptimizeServiceException(HttpStatus.NOT_FOUND, "öneri bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "öneri bulunamadı");
         }
         if (rows == 0) {
-            throw new OptimizeServiceException(HttpStatus.NOT_FOUND, "öneri bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "öneri bulunamadı");
         }
 
         return Map.of("id", recId, "status", req.status());

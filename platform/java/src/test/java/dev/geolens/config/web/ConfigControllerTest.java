@@ -1,7 +1,7 @@
 package dev.geolens.config.web;
 
 import dev.geolens.config.service.ConfigService;
-import dev.geolens.config.service.ConfigServiceException;
+import dev.geolens.common.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -145,7 +145,7 @@ class ConfigControllerTest {
     @Test
     void searchBrandsCountErrorReturns500() throws Exception {
         when(configService.searchBrands(anyString(), anyString(), anyString(), anyString(), anyInt(), anyInt()))
-                .thenThrow(new ConfigServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "sorgu hatası"));
+                .thenThrow(new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "sorgu hatası"));
 
         mockMvc.perform(get("/v1/workspaces/WS01/brands/search")
                         .param("q", "Acme")
@@ -157,7 +157,7 @@ class ConfigControllerTest {
     @Test
     void searchBrandsDBErrorReturns500() throws Exception {
         when(configService.searchBrands(anyString(), anyString(), anyString(), anyString(), anyInt(), anyInt()))
-                .thenThrow(new ConfigServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "sorgu hatası"));
+                .thenThrow(new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "sorgu hatası"));
 
         mockMvc.perform(get("/v1/workspaces/WS01/brands/search")
                         .param("q", "Acme")
@@ -217,7 +217,7 @@ class ConfigControllerTest {
     @Test
     void createBrandCompetitorNotFoundReturns400() throws Exception {
         when(configService.createBrand(anyString(), anyString(), any()))
-                .thenThrow(new ConfigServiceException(HttpStatus.BAD_REQUEST, "rakip bulunamadı: nope"));
+                .thenThrow(new ServiceException(HttpStatus.BAD_REQUEST, "rakip bulunamadı: nope"));
 
         mockMvc.perform(post("/v1/workspaces/WS01/brands")
                         .header("X-Tenant-ID", TENANT)
@@ -266,7 +266,7 @@ class ConfigControllerTest {
     @Test
     void updateBrandNotFoundReturns404() throws Exception {
         when(configService.updateBrand(anyString(), anyString(), anyString(), any()))
-                .thenThrow(new ConfigServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı"));
 
         mockMvc.perform(put("/v1/workspaces/WS01/brands/nonexistent")
                         .header("X-Tenant-ID", TENANT)
@@ -279,7 +279,7 @@ class ConfigControllerTest {
     @Test
     void updateBrandDBErrorReturns500() throws Exception {
         when(configService.updateBrand(anyString(), anyString(), anyString(), any()))
-                .thenThrow(new ConfigServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "marka güncellenemedi"));
+                .thenThrow(new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "marka güncellenemedi"));
 
         mockMvc.perform(put("/v1/workspaces/WS01/brands/B01")
                         .header("X-Tenant-ID", TENANT)
@@ -305,7 +305,7 @@ class ConfigControllerTest {
     @Test
     void deleteBrandNotFoundReturns404() throws Exception {
         when(configService.deleteBrand(anyString(), anyString(), anyString()))
-                .thenThrow(new ConfigServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı"));
 
         mockMvc.perform(delete("/v1/workspaces/WS01/brands/B01")
                         .header("X-Tenant-ID", TENANT))
@@ -315,7 +315,7 @@ class ConfigControllerTest {
     @Test
     void deleteBrandDBErrorReturns500() throws Exception {
         when(configService.deleteBrand(anyString(), anyString(), anyString()))
-                .thenThrow(new ConfigServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "marka silinemedi"));
+                .thenThrow(new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "marka silinemedi"));
 
         mockMvc.perform(delete("/v1/workspaces/WS01/brands/B01")
                         .header("X-Tenant-ID", TENANT))
@@ -339,7 +339,7 @@ class ConfigControllerTest {
     @Test
     void deleteBrandCompetitorNotFoundReturns404() throws Exception {
         when(configService.deleteBrandCompetitor(anyString(), anyString(), anyString()))
-                .thenThrow(new ConfigServiceException(HttpStatus.NOT_FOUND, "rakip ilişkisi bulunamadı"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "rakip ilişkisi bulunamadı"));
 
         mockMvc.perform(delete("/v1/workspaces/WS01/brands/B01/competitors/nonexistent")
                         .header("X-Tenant-ID", TENANT))
@@ -357,7 +357,7 @@ class ConfigControllerTest {
     @Test
     void deleteBrandCompetitorDBErrorReturns500() throws Exception {
         when(configService.deleteBrandCompetitor(anyString(), anyString(), anyString()))
-                .thenThrow(new ConfigServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "rakip silinemedi"));
+                .thenThrow(new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "rakip silinemedi"));
 
         mockMvc.perform(delete("/v1/workspaces/WS01/brands/B01/competitors/C01")
                         .header("X-Tenant-ID", TENANT))
@@ -393,7 +393,7 @@ class ConfigControllerTest {
     @Test
     void listBrandCompetitorsBrandNotFoundReturns404() throws Exception {
         when(configService.listBrandCompetitors(anyString(), anyString(), anyString()))
-                .thenThrow(new ConfigServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı"));
 
         mockMvc.perform(get("/v1/workspaces/WS01/brands/unknown/competitors")
                         .header("X-Tenant-ID", TENANT))
@@ -404,7 +404,7 @@ class ConfigControllerTest {
     @Test
     void listBrandCompetitorsQueryErrorReturns500() throws Exception {
         when(configService.listBrandCompetitors(anyString(), anyString(), anyString()))
-                .thenThrow(new ConfigServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "sorgu hatası"));
+                .thenThrow(new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "sorgu hatası"));
 
         mockMvc.perform(get("/v1/workspaces/WS01/brands/B01/competitors")
                         .header("X-Tenant-ID", TENANT))
@@ -439,7 +439,7 @@ class ConfigControllerTest {
     @Test
     void updateBrandCompetitorsBrandNotFoundReturns404() throws Exception {
         when(configService.updateBrandCompetitors(anyString(), anyString(), anyString(), any()))
-                .thenThrow(new ConfigServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı"));
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı"));
 
         mockMvc.perform(put("/v1/workspaces/WS01/brands/unknown/competitors")
                         .header("X-Tenant-ID", TENANT)
@@ -451,7 +451,7 @@ class ConfigControllerTest {
     @Test
     void updateBrandCompetitorsCompetitorNotFoundReturns400() throws Exception {
         when(configService.updateBrandCompetitors(anyString(), anyString(), anyString(), any()))
-                .thenThrow(new ConfigServiceException(HttpStatus.BAD_REQUEST, "rakip bulunamadı: nonexistent"));
+                .thenThrow(new ServiceException(HttpStatus.BAD_REQUEST, "rakip bulunamadı: nonexistent"));
 
         mockMvc.perform(put("/v1/workspaces/WS01/brands/B01/competitors")
                         .header("X-Tenant-ID", TENANT)

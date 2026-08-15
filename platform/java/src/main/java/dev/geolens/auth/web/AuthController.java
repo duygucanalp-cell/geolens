@@ -1,7 +1,9 @@
 package dev.geolens.auth.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.auth.service.AuthService;
-import dev.geolens.auth.service.AuthServiceException;
+import dev.geolens.common.ServiceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -78,7 +80,7 @@ public class AuthController {
     @GetMapping("/v1/tenant")
     public ResponseEntity<Map<String, Object>> getTenant(@RequestHeader(value = "X-Tenant-ID", required = false) String tenantId) {
         if (tenantId == null || tenantId.isBlank()) {
-            throw new AuthServiceException(HttpStatus.UNAUTHORIZED, "kimlik doğrulama gerekli");
+            throw new ServiceException(HttpStatus.UNAUTHORIZED, "kimlik doğrulama gerekli");
         }
         return ResponseEntity.ok(service.getTenant(tenantId));
     }
@@ -144,8 +146,8 @@ public class AuthController {
         return error(HttpStatus.BAD_REQUEST, "geçersiz istek");
     }
 
-    @ExceptionHandler(AuthServiceException.class)
-    public ResponseEntity<ApiError> handleService(AuthServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleService(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

@@ -1,9 +1,11 @@
 package dev.geolens.explain.web;
 
+import dev.geolens.common.ApiError;
+
 import dev.geolens.explain.service.ExplainHistoryResult;
 import dev.geolens.explain.service.ExplainResult;
 import dev.geolens.explain.service.ExplainService;
-import dev.geolens.explain.service.ExplainServiceException;
+import dev.geolens.common.ServiceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -67,8 +69,8 @@ public class ExplainController {
 
     // ---------- hata yönetimi ----------
 
-    @ExceptionHandler(ExplainServiceException.class)
-    public ResponseEntity<ApiError> handleService(ExplainServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleService(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 

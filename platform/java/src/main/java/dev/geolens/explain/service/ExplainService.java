@@ -1,5 +1,7 @@
 package dev.geolens.explain.service;
 
+import dev.geolens.common.ServiceException;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.geolens.explain.ExplainAnalyzer;
 import dev.geolens.util.Ulid;
@@ -41,10 +43,10 @@ public class ExplainService {
                     FROM registry.entities WHERE id = ? AND tenant_id = ?
                     """, entityId, tenantId);
         } catch (RuntimeException e) {
-            throw new ExplainServiceException(HttpStatus.NOT_FOUND, "varlık bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "varlık bulunamadı");
         }
         if (rec == null) {
-            throw new ExplainServiceException(HttpStatus.NOT_FOUND, "varlık bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "varlık bulunamadı");
         }
         Map<String, Object> row = rec.intoMap();
         String name = str(row.get("name"));
@@ -119,7 +121,7 @@ public class ExplainService {
                 rows = dsl.fetch(sql + " ORDER BY created_at DESC LIMIT ?", tenantId, limitInt + 1).intoMaps();
             }
         } catch (RuntimeException e) {
-            throw new ExplainServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "analiz geçmişi alınamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "analiz geçmişi alınamadı");
         }
 
         List<Map<String, Object>> results = new ArrayList<>();

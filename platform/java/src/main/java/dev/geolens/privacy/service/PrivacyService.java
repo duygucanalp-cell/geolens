@@ -1,5 +1,7 @@
 package dev.geolens.privacy.service;
 
+import dev.geolens.common.ServiceException;
+
 import dev.geolens.privacy.web.DeletionResponse;
 import org.jooq.DSLContext;
 import org.jooq.Record;
@@ -92,7 +94,7 @@ public class PrivacyService {
                     return id;
                 });
             } catch (RuntimeException e) {
-                throw new PrivacyServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "silme işlemi başarısız");
+                throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "silme işlemi başarısız");
             }
             return new DeletionResponse(requestId, "completed",
                     "Hesabınız ve tüm kişisel verileriniz başarıyla anonimleştirildi.");
@@ -107,7 +109,7 @@ public class PrivacyService {
                     RETURNING id
                     """, String.class, tenantId, uid, reason);
         } catch (RuntimeException e) {
-            throw new PrivacyServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "talep oluşturulamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "talep oluşturulamadı");
         }
 
         // Audit log (non-fatal)
@@ -129,7 +131,7 @@ public class PrivacyService {
     public Map<String, Object> listDeletionRequests(String tenantId, String userId) {
         String role = userRoleFromDB(userId == null ? "" : userId, tenantId);
         if (!"admin".equals(role)) {
-            throw new PrivacyServiceException(HttpStatus.FORBIDDEN, "bu işlem için admin yetkisi gerekli");
+            throw new ServiceException(HttpStatus.FORBIDDEN, "bu işlem için admin yetkisi gerekli");
         }
 
         List<Map<String, Object>> rows;
@@ -143,7 +145,7 @@ public class PrivacyService {
                     LIMIT 50
                     """, tenantId);
         } catch (RuntimeException e) {
-            throw new PrivacyServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "talepler listelenemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "talepler listelenemedi");
         }
 
         List<Map<String, Object>> requests = new ArrayList<>();
@@ -165,11 +167,11 @@ public class PrivacyService {
     public DeletionResponse processDeletionRequest(String tenantId, String userId, String id, String action, String notes) {
         String role = userRoleFromDB(userId == null ? "" : userId, tenantId);
         if (!"admin".equals(role)) {
-            throw new PrivacyServiceException(HttpStatus.FORBIDDEN, "bu işlem için admin yetkisi gerekli");
+            throw new ServiceException(HttpStatus.FORBIDDEN, "bu işlem için admin yetkisi gerekli");
         }
 
         if (!"approve".equals(action) && !"reject".equals(action)) {
-            throw new PrivacyServiceException(HttpStatus.BAD_REQUEST, "action 'approve' veya 'reject' olmalıdır");
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "action 'approve' veya 'reject' olmalıdır");
         }
 
         if ("approve".equals(action)) {
@@ -183,7 +185,7 @@ public class PrivacyService {
                             RETURNING id
                             """, String.class, notes, id, tenantId);
                     if (rid == null) {
-                        throw new PrivacyServiceException(HttpStatus.NOT_FOUND, "talep bulunamadı veya zaten işlenmiş");
+                        throw new ServiceException(HttpStatus.NOT_FOUND, "talep bulunamadı veya zaten işlenmiş");
                     }
                     dsl.fetch("SELECT privacy.anonymize_tenant(?)", tenantId);
                     try {
@@ -196,10 +198,10 @@ public class PrivacyService {
                     }
                     return rid;
                 });
-            } catch (PrivacyServiceException e) {
+            } catch (ServiceException e) {
                 throw e;
             } catch (RuntimeException e) {
-                throw new PrivacyServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "işlem başarısız");
+                throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "işlem başarısız");
             }
             return new DeletionResponse(requestId, "completed",
                     "Talep onaylandı ve veriler anonimleştirildi.");
@@ -213,7 +215,7 @@ public class PrivacyService {
                     WHERE id = ? AND tenant_id = ?
                     """, notes, id, tenantId);
         } catch (RuntimeException e) {
-            throw new PrivacyServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "işlem başarısız");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "işlem başarısız");
         }
         return new DeletionResponse(id, "rejected", "Talep reddedildi.");
     }

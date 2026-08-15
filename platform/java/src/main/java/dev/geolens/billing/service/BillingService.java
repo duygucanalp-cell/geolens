@@ -1,5 +1,7 @@
 package dev.geolens.billing.service;
 
+import dev.geolens.common.ServiceException;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import dev.geolens.billing.BillingException;
 import dev.geolens.billing.EFaturaProvider;
@@ -58,7 +60,7 @@ public class BillingService {
                     req.successUrl() == null ? "/" : req.successUrl(),
                     req.cancelUrl() == null ? "/" : req.cancelUrl());
         } catch (RuntimeException e) {
-            throw new BillingServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "ödeme oturumu oluşturulamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "ödeme oturumu oluşturulamadı");
         }
         return Map.of(
                 "session_id", session.id(),
@@ -69,20 +71,20 @@ public class BillingService {
 
     public Map<String, Object> handleWebhook(String signature, String body) {
         if (stripe.webhookSecret() == null || stripe.webhookSecret().isBlank()) {
-            throw new BillingServiceException(HttpStatus.NOT_IMPLEMENTED, "webhook yapılandırılmamış");
+            throw new ServiceException(HttpStatus.NOT_IMPLEMENTED, "webhook yapılandırılmamış");
         }
 
         StripeEvent event;
         try {
             event = stripe.parseWebhook(body, signature);
         } catch (RuntimeException e) {
-            throw new BillingServiceException(HttpStatus.BAD_REQUEST, "geçersiz webhook");
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "geçersiz webhook");
         }
 
         try {
             handleEvent(event);
         } catch (RuntimeException e) {
-            throw new BillingServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "webhook işlenemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "webhook işlenemedi");
         }
 
         return Map.of("status", "ok");
@@ -223,10 +225,10 @@ public class BillingService {
                     SELECT tier, updated_at FROM identity.tenants WHERE id = ?
                     """, tenantId);
         } catch (RuntimeException e) {
-            throw new BillingServiceException(HttpStatus.NOT_FOUND, "kiracı bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "kiracı bulunamadı");
         }
         if (row == null) {
-            throw new BillingServiceException(HttpStatus.NOT_FOUND, "kiracı bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "kiracı bulunamadı");
         }
 
         Map<String, Object> body = new LinkedHashMap<>();
@@ -243,7 +245,7 @@ public class BillingService {
         try {
             rows = list(INVOICE_SELECT + " WHERE tenant_id = ? ORDER BY created_at DESC", tenantId);
         } catch (RuntimeException e) {
-            throw new BillingServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "fatura listesi alınamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "fatura listesi alınamadı");
         }
 
         List<Invoice> invoices = new ArrayList<>();
@@ -260,10 +262,10 @@ public class BillingService {
         try {
             inv = loadInvoice(tenantId, invoiceId);
         } catch (RuntimeException e) {
-            throw new BillingServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "fatura detayı alınamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "fatura detayı alınamadı");
         }
         if (inv == null) {
-            throw new BillingServiceException(HttpStatus.NOT_FOUND, "fatura bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "fatura bulunamadı");
         }
         return inv;
     }
@@ -275,20 +277,20 @@ public class BillingService {
         try {
             inv = loadInvoice(tenantId, invoiceId);
         } catch (RuntimeException e) {
-            throw new BillingServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "fatura yüklenemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "fatura yüklenemedi");
         }
         if (inv == null) {
-            throw new BillingServiceException(HttpStatus.NOT_FOUND, "fatura bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "fatura bulunamadı");
         }
         if (!"standard".equals(inv.invoiceType()) && !"none".equals(inv.gibStatus())) {
-            throw new BillingServiceException(HttpStatus.CONFLICT, "fatura zaten e-Fatura/e-Arşiv olarak gönderilmiş");
+            throw new ServiceException(HttpStatus.CONFLICT, "fatura zaten e-Fatura/e-Arşiv olarak gönderilmiş");
         }
 
         TaxBreakdown tax;
         try {
             tax = TaxCalculator.calculateVat(inv.amountTotal(), req.vatRate());
         } catch (IllegalArgumentException e) {
-            throw new BillingServiceException(HttpStatus.BAD_REQUEST, e.getMessage());
+            throw new ServiceException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
 
         InvoiceDocument doc = new InvoiceDocument(
@@ -304,7 +306,7 @@ public class BillingService {
         try {
             resp = efatura.send(doc);
         } catch (RuntimeException e) {
-            throw new BillingServiceException(HttpStatus.BAD_GATEWAY, "e-Fatura gönderilemedi");
+            throw new ServiceException(HttpStatus.BAD_GATEWAY, "e-Fatura gönderilemedi");
         }
 
         try {
@@ -322,7 +324,7 @@ public class BillingService {
                     resp.status().value(), doc.documentId(), resp.responseId(),
                     invoiceId, tenantId);
         } catch (RuntimeException e) {
-            throw new BillingServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "e-Fatura durumu kaydedilemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "e-Fatura durumu kaydedilemedi");
         }
 
         Invoice updated = new Invoice(
@@ -349,13 +351,13 @@ public class BillingService {
         try {
             inv = loadInvoice(tenantId, invoiceId);
         } catch (RuntimeException e) {
-            throw new BillingServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "fatura yüklenemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "fatura yüklenemedi");
         }
         if (inv == null) {
-            throw new BillingServiceException(HttpStatus.NOT_FOUND, "fatura bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "fatura bulunamadı");
         }
         if ("standard".equals(inv.invoiceType()) || inv.documentId() == null || inv.documentId().isBlank()) {
-            throw new BillingServiceException(HttpStatus.NOT_FOUND, "faturanın e-Fatura/e-Arşiv belgesi yok");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "faturanın e-Fatura/e-Arşiv belgesi yok");
         }
 
         InvoiceDocument doc = new InvoiceDocument(
@@ -368,7 +370,7 @@ public class BillingService {
         try {
             xml = UblTrInvoice.build(doc);
         } catch (RuntimeException e) {
-            throw new BillingServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "UBL XML üretilemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "UBL XML üretilemedi");
         }
 
         return new UblDocument(xml.getBytes(java.nio.charset.StandardCharsets.UTF_8),
@@ -384,10 +386,10 @@ public class BillingService {
         try {
             inv = loadInvoice(tenantId, invoiceId);
         } catch (RuntimeException e) {
-            throw new BillingServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "fatura yüklenemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "fatura yüklenemedi");
         }
         if (inv == null) {
-            throw new BillingServiceException(HttpStatus.NOT_FOUND, "fatura bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "fatura bulunamadı");
         }
 
         InvoiceData data = new InvoiceData(
@@ -401,7 +403,7 @@ public class BillingService {
         try {
             raw = InvoicePdf.render(data);
         } catch (RuntimeException e) {
-            throw new BillingServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "fatura PDF üretilemedi");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "fatura PDF üretilemedi");
         }
 
         String fileName = inv.number() == null || inv.number().isBlank() ? inv.id() : inv.number();
@@ -415,7 +417,7 @@ public class BillingService {
         try {
             url = stripe.createPortalSession(tenantId, returnUrl);
         } catch (RuntimeException e) {
-            throw new BillingServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "portal oturumu oluşturulamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "portal oturumu oluşturulamadı");
         }
         return Map.of("url", url);
     }

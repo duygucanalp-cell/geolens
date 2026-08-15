@@ -1,5 +1,7 @@
 package dev.geolens.sentiment.service;
 
+import dev.geolens.common.ServiceException;
+
 import dev.geolens.sentiment.domain.HallucinationResult;
 import dev.geolens.sentiment.domain.SentimentResult;
 import dev.geolens.sentiment.engine.SentimentEngine;
@@ -38,7 +40,7 @@ public class SentimentService {
             List<SentimentResult> results = engine.analyzeSentiment(tenantId, workspaceId, brandId, prompt);
             return results == null ? List.of() : results;
         } catch (RuntimeException e) {
-            throw new SentimentServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "sentiment analizi başarısız");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "sentiment analizi başarısız");
         }
     }
 
@@ -98,7 +100,7 @@ public class SentimentService {
                         """, tenantId, workspaceId, brandId).intoMap();
             });
         } catch (RuntimeException e) {
-            throw new SentimentServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "sentiment özeti alınamadı");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "sentiment özeti alınamadı");
         }
         double overall = ((Number) agg.get("overall")).doubleValue();
         double positive = ((Number) agg.get("positive")).doubleValue();
@@ -122,7 +124,7 @@ public class SentimentService {
             List<HallucinationResult> results = engine.detectHallucinations(tenantId, workspaceId, brandId);
             return results == null ? List.of() : results;
         } catch (RuntimeException e) {
-            throw new SentimentServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "hallüsinasyon tespiti başarısız");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "hallüsinasyon tespiti başarısız");
         }
     }
 
@@ -174,10 +176,10 @@ public class SentimentService {
                         """, verified, flagId, tenantId);
             });
         } catch (RuntimeException e) {
-            throw new SentimentServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "doğrulama başarısız");
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "doğrulama başarısız");
         }
         if (updated == 0) {
-            throw new SentimentServiceException(HttpStatus.NOT_FOUND, "hallüsinasyon kaydı bulunamadı");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "hallüsinasyon kaydı bulunamadı");
         }
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("status", "verified");

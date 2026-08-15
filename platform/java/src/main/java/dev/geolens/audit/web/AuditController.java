@@ -1,6 +1,8 @@
 package dev.geolens.audit.web;
 
-import dev.geolens.audit.service.AuditServiceException;
+import dev.geolens.common.ApiError;
+
+import dev.geolens.common.ServiceException;
 import dev.geolens.audit.service.AuditWebService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -69,8 +71,8 @@ public class AuditController {
 
     // ---------- hata yönetimi ----------
 
-    @ExceptionHandler(AuditServiceException.class)
-    public ResponseEntity<ApiError> handleAuditError(AuditServiceException ex) {
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiError> handleAuditError(ServiceException ex) {
         return error(ex.status(), ex.getMessage());
     }
 
