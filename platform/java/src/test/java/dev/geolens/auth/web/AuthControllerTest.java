@@ -1,16 +1,15 @@
 package dev.geolens.auth.web;
 
-import dev.geolens.auth.JWTService;
-import dev.geolens.auth.TokenBlacklist;
-import dev.geolens.testutil.JooqTestData;
-import org.jooq.DSLContext;
+import dev.geolens.auth.service.AuthService;
+import dev.geolens.auth.service.AuthServiceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.support.TransactionTemplate;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -30,19 +29,7 @@ class AuthControllerTest {
     private MockMvc mockMvc;
 
     @MockBean
-    private JWTService jwt;
-
-    @MockBean
-    private DSLContext dsl;
-
-    @MockBean
-    private TransactionTemplate tx;
-
-    @MockBean
-    private TokenBlacklist blacklist;
-
-    @MockBean
-    private TransactionalMailer mail;
+    private AuthService authService;
 
     private static final String TENANT = "T01";
 
@@ -119,7 +106,8 @@ class AuthControllerTest {
 
     @Test
     void refreshInvalidTokenReturns401() throws Exception {
-        when(jwt.validateToken("not-a-jwt")).thenThrow(new dev.geolens.auth.AuthException("jwt doğrulama"));
+        when(authService.refresh(anyString()))
+                .thenThrow(new AuthServiceException(HttpStatus.UNAUTHORIZED, "oturum süresi dolmuş veya geçersiz token"));
 
         mockMvc.perform(post("/v1/auth/refresh")
                         .header("Authorization", "Bearer not-a-jwt"))
@@ -129,7 +117,7 @@ class AuthControllerTest {
 
     @Test
     void inviteMemberSendsEmail() throws Exception {
-        when(dsl.execute(anyString(), any(Object[].class))).thenReturn(1);
+        when(authService.inviteMember(anyString(), any(), any())).thenReturn(inviteResult(true));
 
         mockMvc.perform(post("/v1/tenant/invitations")
                         .header("X-Tenant-ID", TENANT)
@@ -180,13 +168,21 @@ class AuthControllerTest {
 
     @Test
     void getTenantNotFoundReturns404() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenThrow(new org.springframework.dao.DataAccessException("yok") {
-                });
+        when(authService.getTenant("BOGUS"))
+                .thenThrow(new AuthServiceException(HttpStatus.NOT_FOUND, "kiracı bulunamadı"));
 
         mockMvc.perform(get("/v1/tenant")
                         .header("X-Tenant-ID", "BOGUS"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("kiracı bulunamadı"));
+    }
+
+    private static Map<String, Object> inviteResult(boolean emailSent) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("status", "invited");
+        body.put("email", "x@example.com");
+        body.put("token", "abc123");
+        body.put("email_sent", emailSent);
+        return body;
     }
 }

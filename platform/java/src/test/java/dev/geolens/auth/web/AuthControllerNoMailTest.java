@@ -1,15 +1,14 @@
 package dev.geolens.auth.web;
 
-import dev.geolens.auth.JWTService;
-import dev.geolens.auth.TokenBlacklist;
-import dev.geolens.testutil.JooqTestData;
-import org.jooq.DSLContext;
+import dev.geolens.auth.service.AuthService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.support.TransactionTemplate;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -26,22 +25,13 @@ class AuthControllerNoMailTest {
     private MockMvc mockMvc;
 
     @MockBean
-    private JWTService jwt;
-
-    @MockBean
-    private DSLContext dsl;
-
-    @MockBean
-    private TransactionTemplate tx;
-
-    @MockBean
-    private TokenBlacklist blacklist;
+    private AuthService authService;
 
     private static final String TENANT = "T01";
 
     @Test
     void inviteMemberSkipsEmailWhenNoMailer() throws Exception {
-        when(dsl.execute(anyString(), any(Object[].class))).thenReturn(1);
+        when(authService.inviteMember(anyString(), any(), any())).thenReturn(inviteResult(false));
 
         mockMvc.perform(post("/v1/tenant/invitations")
                         .header("X-Tenant-ID", TENANT)
@@ -50,5 +40,14 @@ class AuthControllerNoMailTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.email_sent").value(false))
                 .andExpect(jsonPath("$.token").isNotEmpty());
+    }
+
+    private static Map<String, Object> inviteResult(boolean emailSent) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("status", "invited");
+        body.put("email", "x@example.com");
+        body.put("token", "abc123");
+        body.put("email_sent", emailSent);
+        return body;
     }
 }

@@ -67,6 +67,13 @@
       <artifactId>bcpkix-jdk18on</artifactId>
       <version>1.85</version>
     </dependency>
+    <!-- bcprov 1.85'e sabitlenir: MinIO SDK transif bağımlılığı (1.78.1) bcpkix/bcutil
+         1.85 ile uyumsuzdur ve JcaContentSignerBuilder NoClassDefFoundError üretir. -->
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcprov-jdk18on</artifactId>
+      <version>1.85</version>
+    </dependency>
 
     <!-- storage: MinIO/S3 istemcisi (Go github.com/minio/minio-go/v7 karşılığı) -->
     <dependency>

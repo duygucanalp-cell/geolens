@@ -16,7 +16,6 @@ import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyDouble;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -59,7 +58,7 @@ class DriftControllerTest {
 
     @Test
     void recordSuccess() throws Exception {
-        when(driftService.record(anyString(), anyString(), anyString(), anyString(), anyDouble(), anyString()))
+        when(driftService.record(any(), any(), any(), any(), anyDouble(), any()))
                 .thenReturn(new Observation("obs-1", "t-1", "ent-1", "Marka A", "visibility_score",
                         72.5, "2026-08-01T00:00:00Z", "2026-08-01T00:00:00Z"));
 
@@ -87,7 +86,7 @@ class DriftControllerTest {
 
     @Test
     void listObservationsSuccess() throws Exception {
-        when(driftService.listObservations(anyString(), anyString(), anyString(), anyString()))
+        when(driftService.listObservations(any(), any(), any(), any()))
                 .thenReturn(Map.of(
                         "observations", List.of(obs("obs-1"), obs("obs-2")),
                         "total", 2));
@@ -105,7 +104,7 @@ class DriftControllerTest {
 
     @Test
     void listEntitiesSuccess() throws Exception {
-        when(driftService.listEntities(anyString()))
+        when(driftService.listEntities(any()))
                 .thenReturn(Map.of("entities", List.of(entityRow())));
 
         mockMvc.perform(get("/v1/drift/entities")
@@ -120,7 +119,7 @@ class DriftControllerTest {
 
     @Test
     void analyzeQueryErrorReturns500() throws Exception {
-        when(driftService.analyze(anyString(), anyString(), anyString(), anyString()))
+        when(driftService.analyze(any(), any(), any(), any()))
                 .thenThrow(new DriftServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "gözlem sorgu hatası"));
 
         mockMvc.perform(get("/v1/drift/analysis")
@@ -133,7 +132,7 @@ class DriftControllerTest {
 
     @Test
     void analyzeInsufficientData() throws Exception {
-        when(driftService.analyze(anyString(), anyString(), anyString(), anyString()))
+        when(driftService.analyze(any(), any(), any(), any()))
                 .thenReturn(insufficientResult());
 
         mockMvc.perform(get("/v1/drift/analysis")
@@ -147,7 +146,7 @@ class DriftControllerTest {
 
     @Test
     void analyzeWithDriftCreatesAlert() throws Exception {
-        when(driftService.analyze(anyString(), anyString(), anyString(), anyString()))
+        when(driftService.analyze(any(), any(), any(), any()))
                 .thenReturn(criticalResult());
 
         mockMvc.perform(get("/v1/drift/analysis")
@@ -171,7 +170,7 @@ class DriftControllerTest {
 
     @Test
     void listAlertsSuccess() throws Exception {
-        when(driftService.listAlerts(anyString()))
+        when(driftService.listAlerts(any()))
                 .thenReturn(Map.of(
                         "alerts", List.of(alertRow()),
                         "total", 1));
