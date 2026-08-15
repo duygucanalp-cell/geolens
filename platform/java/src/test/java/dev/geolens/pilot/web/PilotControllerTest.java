@@ -1,22 +1,20 @@
 package dev.geolens.pilot.web;
 
-import dev.geolens.testutil.JooqTestData;
-import org.jooq.DSLContext;
+import dev.geolens.pilot.PilotTenant;
+import dev.geolens.pilot.service.PilotService;
+import dev.geolens.pilot.service.PilotServiceException;
 import org.junit.jupiter.api.Test;
-import org.mockito.Answers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.Instant;
-import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -30,8 +28,8 @@ class PilotControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean(answer = Answers.RETURNS_DEEP_STUBS)
-    private DSLContext dsl;
+    @MockBean
+    private PilotService pilotService;
 
     private static final String TENANT = "T01";
 
@@ -39,7 +37,8 @@ class PilotControllerTest {
 
     @Test
     void getStatusNotEnrolled() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class))).thenReturn(null);
+        when(pilotService.getStatus(any()))
+                .thenReturn(Map.of("enrolled", false, "message", "Bu tenant pilot programına kayıtlı değil"));
 
         mockMvc.perform(get("/v1/pilot/status")
                         .header("X-Tenant-ID", TENANT))
@@ -50,8 +49,8 @@ class PilotControllerTest {
 
     @Test
     void getStatusQueryErrorGraceful() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenThrow(new RuntimeException("db error"));
+        when(pilotService.getStatus(any()))
+                .thenReturn(Map.of("enrolled", false, "message", "Bu tenant pilot programına kayıtlı değil"));
 
         mockMvc.perform(get("/v1/pilot/status")
                         .header("X-Tenant-ID", TENANT))
@@ -61,8 +60,7 @@ class PilotControllerTest {
 
     @Test
     void getStatusEnrolledStandard() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(pilotRow("standard")));
+        when(pilotService.getStatus(any())).thenReturn(statusBody("standard", false));
 
         mockMvc.perform(get("/v1/pilot/status")
                         .header("X-Tenant-ID", TENANT))
@@ -81,8 +79,7 @@ class PilotControllerTest {
 
     @Test
     void getStatusEnrolledPremium() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(pilotRow("premium")));
+        when(pilotService.getStatus(any())).thenReturn(statusBody("premium", true));
 
         mockMvc.perform(get("/v1/pilot/status")
                         .header("X-Tenant-ID", TENANT))
@@ -106,6 +103,13 @@ class PilotControllerTest {
 
     @Test
     void enrollSuccess() throws Exception {
+        when(pilotService.enroll(any(), any())).thenReturn(Map.of(
+                "status", "kayıtlı",
+                "program", "Özel Pilot",
+                "trial_ends_at", "2026-11-13T00:00:00Z",
+                "support_level", "premium",
+                "auto_convert", true));
+
         mockMvc.perform(post("/v1/pilot/enroll")
                         .header("X-Tenant-ID", TENANT)
                         .contentType("application/json")
@@ -120,6 +124,13 @@ class PilotControllerTest {
 
     @Test
     void enrollDefaults() throws Exception {
+        when(pilotService.enroll(any(), any())).thenReturn(Map.of(
+                "status", "kayıtlı",
+                "program", "Kurumsal Pilot Programı",
+                "trial_ends_at", "2026-11-13T00:00:00Z",
+                "support_level", "standard",
+                "auto_convert", true));
+
         mockMvc.perform(post("/v1/pilot/enroll")
                         .header("X-Tenant-ID", TENANT)
                         .contentType("application/json")
@@ -131,8 +142,8 @@ class PilotControllerTest {
 
     @Test
     void enrollDbErrorReturns500() throws Exception {
-        when(dsl.execute(anyString(), any(Object[].class)))
-                .thenThrow(new RuntimeException("db error"));
+        when(pilotService.enroll(any(), any()))
+                .thenThrow(new PilotServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "pilot programa kayıt başarısız"));
 
         mockMvc.perform(post("/v1/pilot/enroll")
                         .header("X-Tenant-ID", TENANT)
@@ -172,6 +183,9 @@ class PilotControllerTest {
 
     @Test
     void extendSuccess() throws Exception {
+        when(pilotService.extendTrial(any(), any()))
+                .thenReturn(Map.of("status", "pilot süresi uzatıldı"));
+
         mockMvc.perform(post("/v1/pilot/extend")
                         .header("X-Tenant-ID", TENANT)
                         .contentType("application/json")
@@ -184,6 +198,8 @@ class PilotControllerTest {
 
     @Test
     void cancelSuccess() throws Exception {
+        when(pilotService.cancel(any())).thenReturn(Map.of("status", "pilot iptal edildi"));
+
         mockMvc.perform(post("/v1/pilot/cancel")
                         .header("X-Tenant-ID", TENANT))
                 .andExpect(status().isOk())
@@ -194,8 +210,7 @@ class PilotControllerTest {
 
     @Test
     void listAllSuccess() throws Exception {
-        when(dsl.fetch(anyString())).thenReturn(JooqTestData.records(List.of(pilotListRow())));
-        // dsl.fetch() tek argümanlı çağrı — bazı DSLContext overload'ları için fallback
+        when(pilotService.listAll()).thenReturn(Map.of("pilots", List.of(pilotListRow())));
 
         mockMvc.perform(get("/v1/pilot/tenants"))
                 .andExpect(status().isOk())
@@ -205,8 +220,7 @@ class PilotControllerTest {
 
     @Test
     void listAllQueryErrorGraceful() throws Exception {
-        when(dsl.fetch(anyString()))
-                .thenThrow(new RuntimeException("db error"));
+        when(pilotService.listAll()).thenReturn(Map.of("pilots", List.of()));
 
         mockMvc.perform(get("/v1/pilot/tenants"))
                 .andExpect(status().isOk())
@@ -215,28 +229,35 @@ class PilotControllerTest {
 
     // ---------- yardımcılar ----------
 
-    private static Map<String, Object> pilotRow(String supportLevel) {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("id", "pt-1");
-        m.put("tenant_id", TENANT);
-        m.put("program_name", "Kurumsal Pilot Programı");
-        m.put("trial_ends_at", Instant.now().plusSeconds(90L * 24 * 3600).toString());
-        m.put("max_workspaces", 10);
-        m.put("max_engines", 5);
-        m.put("support_level", supportLevel);
-        m.put("contact_email", "pilot@example.com");
-        m.put("notes", "");
-        m.put("auto_convert", true);
-        m.put("status", "active");
-        m.put("created_at", "2026-07-01T00:00:00Z");
-        return m;
+    private static Map<String, Object> statusBody(String supportLevel, boolean premium) {
+        Map<String, Object> features = new LinkedHashMap<>();
+        features.put("max_workspaces", 10);
+        features.put("max_engines", 5);
+        features.put("support_level", supportLevel);
+        features.put("premium_support", premium);
+        features.put("extended_trial", true);
+        features.put("priority_onboarding", true);
+        features.put("dedicated_slack_channel", premium);
+        features.put("monthly_business_review", true);
+        features.put("early_access_features", true);
+        features.put("custom_integration_support", premium);
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("enrolled", true);
+        body.put("program", new PilotTenant(
+                "pt-1", TENANT, "Kurumsal Pilot Programı",
+                "2026-11-13T00:00:00Z", 10, 5, supportLevel,
+                "pilot@example.com", "", true, "active", "2026-07-01T00:00:00Z"));
+        body.put("days_remaining", 20);
+        body.put("features", features);
+        return body;
     }
 
     private static Map<String, Object> pilotListRow() {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", "pt-1");
         m.put("tenant_id", TENANT);
-        m.put("name", "Acme");
+        m.put("tenant_name", "Acme");
         m.put("program_name", "Kurumsal Pilot Programı");
         m.put("trial_ends_at", "2026-10-30T00:00:00Z");
         m.put("support_level", "standard");

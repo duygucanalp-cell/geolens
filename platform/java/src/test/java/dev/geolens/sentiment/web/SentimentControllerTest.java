@@ -2,28 +2,22 @@ package dev.geolens.sentiment.web;
 
 import dev.geolens.sentiment.domain.HallucinationResult;
 import dev.geolens.sentiment.domain.SentimentResult;
-import dev.geolens.sentiment.engine.SentimentEngine;
-import dev.geolens.sentiment.persistence.SentimentDao;
-import dev.geolens.testutil.JooqTestData;
-import org.jooq.DSLContext;
+import dev.geolens.sentiment.service.SentimentService;
+import dev.geolens.sentiment.service.SentimentServiceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.support.TransactionCallback;
-import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -38,23 +32,14 @@ class SentimentControllerTest {
     private MockMvc mockMvc;
 
     @MockBean
-    private SentimentEngine engine;
-
-    @MockBean
-    private SentimentDao dao;
-
-    @MockBean
-    private DSLContext dsl;
-
-    @MockBean
-    private TransactionTemplate tx;
+    private SentimentService sentimentService;
 
     private static final String TENANT = "T01";
     private static final String WS = "WS01";
 
     @Test
     void analyzeReturnsResults() throws Exception {
-        when(engine.analyzeSentiment(TENANT, WS, "B01", null))
+        when(sentimentService.analyze(any(), any(), any(), any()))
                 .thenReturn(List.of(new SentimentResult(null, "B01", "chatgpt", 1.0, 1.0, 0.0, 0.0,
                         1, null, Instant.parse("2026-08-13T10:00:00Z"))));
 
@@ -91,8 +76,8 @@ class SentimentControllerTest {
 
     @Test
     void analyzeEngineErrorReturns500() throws Exception {
-        when(engine.analyzeSentiment(eq(TENANT), eq(WS), eq("B01"), any()))
-                .thenThrow(new RuntimeException("db down"));
+        when(sentimentService.analyze(any(), any(), any(), any()))
+                .thenThrow(new SentimentServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "sentiment analizi başarısız"));
 
         mockMvc.perform(post("/v1/workspaces/{ws}/sentiment/analyze", WS)
                         .header("X-Tenant-ID", TENANT)
@@ -104,7 +89,7 @@ class SentimentControllerTest {
 
     @Test
     void listReturnsHistory() throws Exception {
-        when(tx.execute(any(TransactionCallback.class)))
+        when(sentimentService.list(WS, TENANT, "B01"))
                 .thenReturn(List.of(Map.of(
                         "id", "S1", "brand_id", "B01", "engine_name", "chatgpt",
                         "overall_sentiment", 0.8, "positive_score", 0.7, "neutral_score", 0.2,
@@ -120,8 +105,8 @@ class SentimentControllerTest {
 
     @Test
     void listReturnsEmptyOnQueryError() throws Exception {
-        when(tx.execute(any(TransactionCallback.class)))
-                .thenThrow(new RuntimeException("db down"));
+        when(sentimentService.list(any(), any(), any()))
+                .thenReturn(List.of());
 
         mockMvc.perform(get("/v1/workspaces/{ws}/sentiment/", WS).header("X-Tenant-ID", TENANT))
                 .andExpect(status().isOk())
@@ -137,9 +122,10 @@ class SentimentControllerTest {
 
     @Test
     void summaryReturnsClassification() throws Exception {
-        when(tx.execute(any(TransactionCallback.class)))
+        when(sentimentService.summary(WS, TENANT, "B01"))
                 .thenReturn(Map.of(
-                        "overall", 0.8, "positive", 0.7, "neutral", 0.2, "negative", 0.1, "mentions", 3));
+                        "brand_id", "B01", "overall", 0.8, "positive", 0.7, "neutral", 0.2,
+                        "negative", 0.1, "mention_count", 3, "classification", "olumlu"));
 
         mockMvc.perform(get("/v1/workspaces/{ws}/sentiment/summary", WS)
                         .header("X-Tenant-ID", TENANT)
@@ -153,7 +139,7 @@ class SentimentControllerTest {
 
     @Test
     void detectHallucinationsReturnsResults() throws Exception {
-        when(engine.detectHallucinations(TENANT, WS, "B01"))
+        when(sentimentService.detectHallucinations(TENANT, WS, "B01"))
                 .thenReturn(List.of(new HallucinationResult(null, "B01", "chatgpt", "T3", "critical",
                         "AI yanıtı kaynaksız istatistik/rakam içeriyor", 0.5, null, Instant.parse("2026-08-13T10:00:00Z"))));
 
@@ -192,7 +178,7 @@ class SentimentControllerTest {
         row.put("description", "kaynak");
         row.put("confidence", 0.4);
         row.put("created_at", "2026-08-13T10:00:00Z");
-        when(tx.execute(any(TransactionCallback.class))).thenReturn(List.of(row));
+        when(sentimentService.listHallucinations(WS, TENANT, "B01")).thenReturn(List.of(row));
 
         mockMvc.perform(get("/v1/workspaces/{ws}/sentiment/hallucination", WS)
                         .header("X-Tenant-ID", TENANT)
@@ -204,13 +190,8 @@ class SentimentControllerTest {
 
     @Test
     void verifyHallucinationReturnsVerified() throws Exception {
-        when(dsl.execute(any(String.class), any(), eq("H1"), eq(TENANT))).thenReturn(1);
-        doAnswer(inv -> {
-            @SuppressWarnings("unchecked")
-            Consumer<TransactionStatus> cb = inv.getArgument(0);
-            cb.accept(null);
-            return null;
-        }).when(tx).executeWithoutResult(anyConsumer());
+        when(sentimentService.verify(any(), any(), anyBoolean()))
+                .thenReturn(Map.of("status", "verified"));
 
         mockMvc.perform(post("/v1/workspaces/{ws}/sentiment/hallucination/H1/verify", WS)
                         .header("X-Tenant-ID", TENANT)
@@ -222,13 +203,8 @@ class SentimentControllerTest {
 
     @Test
     void verifyHallucinationNotFoundReturns404() throws Exception {
-        doAnswer(inv -> {
-            @SuppressWarnings("unchecked")
-            Consumer<TransactionStatus> cb = inv.getArgument(0);
-            cb.accept(null);
-            return null;
-        }).when(tx).executeWithoutResult(anyConsumer());
-        when(dsl.execute(any(String.class), any(), eq("YOK"), eq(TENANT))).thenReturn(0);
+        when(sentimentService.verify(any(), any(), anyBoolean()))
+                .thenThrow(new SentimentServiceException(HttpStatus.NOT_FOUND, "hallüsinasyon kaydı bulunamadı"));
 
         mockMvc.perform(post("/v1/workspaces/{ws}/sentiment/hallucination/YOK/verify", WS)
                         .header("X-Tenant-ID", TENANT)
@@ -236,10 +212,5 @@ class SentimentControllerTest {
                         .content("{\"verified\":true}"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("hallüsinasyon kaydı bulunamadı"));
-    }
-
-    @SuppressWarnings("unchecked")
-    private static Consumer<TransactionStatus> anyConsumer() {
-        return org.mockito.ArgumentMatchers.any(Consumer.class);
     }
 }

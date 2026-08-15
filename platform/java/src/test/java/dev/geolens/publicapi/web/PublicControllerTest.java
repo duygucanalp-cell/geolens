@@ -1,11 +1,13 @@
 package dev.geolens.publicapi.web;
 
-import dev.geolens.testutil.JooqTestData;
-import org.jooq.DSLContext;
+import dev.geolens.publicapi.service.PublicService;
+import dev.geolens.publicapi.service.PublicServiceException;
+import dev.geolens.publicapi.service.ReportDownload;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.nio.charset.StandardCharsets;
@@ -16,7 +18,6 @@ import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -32,7 +33,7 @@ class PublicControllerTest {
     private MockMvc mockMvc;
 
     @MockBean
-    private DSLContext dsl;
+    private PublicService publicService;
 
     private static final String TENANT = "T01";
 
@@ -40,8 +41,8 @@ class PublicControllerTest {
 
     @Test
     void getScoreNotFoundReturns404() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenThrow(new org.springframework.dao.EmptyResultDataAccessException(1));
+        when(publicService.getScore(anyString(), anyString()))
+                .thenThrow(new PublicServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı"));
 
         mockMvc.perform(get("/public/v1/scores/none").header("X-Tenant-ID", TENANT))
                 .andExpect(status().isNotFound())
@@ -50,8 +51,8 @@ class PublicControllerTest {
 
     @Test
     void getScoreSuccess() throws Exception {
-        when(dsl.fetchOne(contains("LEFT JOIN measure.scores"), any(Object[].class)))
-                .thenReturn(JooqTestData.record(row("Acme", 82.5, "yüksek", "2026-08-14T00:00:00Z")));
+        when(publicService.getScore(anyString(), anyString()))
+                .thenReturn(scoreBody("B01", "Acme", 82.5, "yüksek", "2026-08-14T00:00:00Z"));
 
         mockMvc.perform(get("/public/v1/scores/B01").header("X-Tenant-ID", TENANT))
                 .andExpect(status().isOk())
@@ -66,8 +67,8 @@ class PublicControllerTest {
 
     @Test
     void listScoresSuccess() throws Exception {
-        when(dsl.fetch(contains("LEFT JOIN LATERAL"), any(Object[].class)))
-                .thenReturn(JooqTestData.records(
+        when(publicService.listScores(anyString()))
+                .thenReturn(List.of(
                         scoreRow("B01", "Acme", 82.5, "yüksek", "2026-08-14T00:00:00Z"),
                         scoreRow("B02", "Beta", 55.0, "orta", "2026-08-13T00:00:00Z")));
 
@@ -82,7 +83,7 @@ class PublicControllerTest {
 
     @Test
     void listScoresQueryErrorReturnsEmpty() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db"));
+        when(publicService.listScores(anyString())).thenReturn(List.of());
 
         mockMvc.perform(get("/public/v1/scores").header("X-Tenant-ID", TENANT))
                 .andExpect(status().isOk())
@@ -93,8 +94,8 @@ class PublicControllerTest {
 
     @Test
     void listBrandsSuccess() throws Exception {
-        when(dsl.fetch(contains("FROM config.brands"), any(Object[].class)))
-                .thenReturn(JooqTestData.records(
+        when(publicService.listBrands(anyString()))
+                .thenReturn(List.of(
                         brandRow("B01", "Acme", "https://acme.com"),
                         brandRow("B02", "Beta", "")));
 
@@ -108,8 +109,8 @@ class PublicControllerTest {
 
     @Test
     void getBrandNotFoundReturns404() throws Exception {
-        when(dsl.fetchOne(contains("COALESCE(website_url, '')"), any(Object[].class)))
-                .thenThrow(new org.springframework.dao.EmptyResultDataAccessException(1));
+        when(publicService.getBrand(anyString(), anyString()))
+                .thenThrow(new PublicServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı"));
 
         mockMvc.perform(get("/public/v1/brands/none").header("X-Tenant-ID", TENANT))
                 .andExpect(status().isNotFound())
@@ -120,8 +121,8 @@ class PublicControllerTest {
 
     @Test
     void listCitationsSuccess() throws Exception {
-        when(dsl.fetch(contains("measure.citations"), any(Object[].class)))
-                .thenReturn(JooqTestData.records(
+        when(publicService.listCitations(anyString(), any()))
+                .thenReturn(List.of(
                         citationRow("C1", "B01", "https://x.com/a", "Başlık", "özet", 1, "google", "2026-08-14T00:00:00Z")));
 
         mockMvc.perform(get("/public/v1/citations").header("X-Tenant-ID", TENANT)
@@ -138,8 +139,8 @@ class PublicControllerTest {
 
     @Test
     void listReportsSuccess() throws Exception {
-        when(dsl.fetch(contains("FROM measure.reports"), any(Object[].class)))
-                .thenReturn(JooqTestData.records(
+        when(publicService.listReports(anyString(), any()))
+                .thenReturn(List.of(
                         reportRow("R1", "score_card", "score-card-Acme.pdf", 1, "2026-08-14T00:00:00Z"),
                         reportRow("R2", "digest", "weekly-digest.pdf", 2, "2026-08-14T00:00:00Z")));
 
@@ -153,7 +154,7 @@ class PublicControllerTest {
 
     @Test
     void listReportsQueryErrorReturnsEmpty() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db"));
+        when(publicService.listReports(anyString(), any())).thenReturn(List.of());
 
         mockMvc.perform(get("/public/v1/reports").header("X-Tenant-ID", TENANT))
                 .andExpect(status().isOk())
@@ -164,8 +165,8 @@ class PublicControllerTest {
 
     @Test
     void downloadReportNotFoundReturns404() throws Exception {
-        when(dsl.fetchOne(contains("status = 'ready'"), any(Object[].class)))
-                .thenThrow(new org.springframework.dao.EmptyResultDataAccessException(1));
+        when(publicService.downloadReport(anyString(), anyString()))
+                .thenThrow(new PublicServiceException(HttpStatus.NOT_FOUND, "rapor bulunamadı"));
 
         mockMvc.perform(get("/public/v1/reports/NOPE/download").header("X-Tenant-ID", TENANT))
                 .andExpect(status().isNotFound())
@@ -175,13 +176,8 @@ class PublicControllerTest {
     @Test
     void downloadReportDecodesPdfB64() throws Exception {
         byte[] pdfBytes = "%PDF-1.4 test içerik".getBytes(StandardCharsets.UTF_8);
-        String paramsJson = "{\"brand_name\":\"Acme\",\"pdf_b64\":\""
-                + Base64.getEncoder().encodeToString(pdfBytes) + "\",\"page_count\":1}";
-
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("file_name", "score-card-Acme.pdf");
-        m.put("params", paramsJson);
-        when(dsl.fetchOne(contains("status = 'ready'"), any(Object[].class))).thenReturn(JooqTestData.record(m));
+        when(publicService.downloadReport(anyString(), anyString()))
+                .thenReturn(ReportDownload.pdf(pdfBytes, "score-card-Acme.pdf"));
 
         mockMvc.perform(get("/public/v1/reports/R1/download").header("X-Tenant-ID", TENANT))
                 .andExpect(status().isOk())
@@ -192,10 +188,8 @@ class PublicControllerTest {
 
     @Test
     void downloadReportRedirectsToS3() throws Exception {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("file_name", "r.pdf");
-        m.put("params", "{\"s3_url\":\"https://s3.example.com/report.pdf\"}");
-        when(dsl.fetchOne(contains("status = 'ready'"), any(Object[].class))).thenReturn(JooqTestData.record(m));
+        when(publicService.downloadReport(anyString(), anyString()))
+                .thenReturn(ReportDownload.redirect("https://s3.example.com/report.pdf"));
 
         mockMvc.perform(get("/public/v1/reports/R1/download").header("X-Tenant-ID", TENANT))
                 .andExpect(status().isFound())
@@ -204,10 +198,8 @@ class PublicControllerTest {
 
     @Test
     void downloadReportPdfDataEmptyReturns404() throws Exception {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("file_name", "r.pdf");
-        m.put("params", "{\"file_data\":\"\"}");
-        when(dsl.fetchOne(contains("status = 'ready'"), any(Object[].class))).thenReturn(JooqTestData.record(m));
+        when(publicService.downloadReport(anyString(), anyString()))
+                .thenThrow(new PublicServiceException(HttpStatus.NOT_FOUND, "rapor verisi bulunamadı"));
 
         mockMvc.perform(get("/public/v1/reports/R1/download").header("X-Tenant-ID", TENANT))
                 .andExpect(status().isNotFound())
@@ -225,10 +217,10 @@ class PublicControllerTest {
 
     @Test
     void listTrendsSuccess() throws Exception {
-        when(dsl.fetch(contains("FROM measure.scores s"), any(Object[].class)))
-                .thenReturn(JooqTestData.records(
+        when(publicService.listTrends(anyString(), anyString()))
+                .thenReturn(Map.of("trends", List.of(
                         trendRow(70.0, "orta", "2026-08-10T00:00:00Z"),
-                        trendRow(82.5, "yüksek", "2026-08-14T00:00:00Z")));
+                        trendRow(82.5, "yüksek", "2026-08-14T00:00:00Z"))));
 
         mockMvc.perform(get("/public/v1/trends").header("X-Tenant-ID", TENANT)
                         .param("brand_id", "B01"))
@@ -239,12 +231,13 @@ class PublicControllerTest {
 
     // ---------- helpers ----------
 
-    private static Map<String, Object> row(String name, double score, String fidelity, String measuredAt) {
+    private static Map<String, Object> scoreBody(String id, String name, double score, String fidelity, String measuredAt) {
         Map<String, Object> m = new LinkedHashMap<>();
+        m.put("brand_id", id);
         m.put("brand_name", name);
         m.put("score", score);
         m.put("fidelity", fidelity);
-        m.put("freshness_at", measuredAt);
+        m.put("measured_at", measuredAt);
         return m;
     }
 
@@ -254,7 +247,7 @@ class PublicControllerTest {
         m.put("brand_name", name);
         m.put("score", score);
         m.put("fidelity", fidelity);
-        m.put("freshness_at", at);
+        m.put("measured_at", at);
         return m;
     }
 
@@ -283,10 +276,10 @@ class PublicControllerTest {
     private static Map<String, Object> reportRow(String id, String type, String fileName, int pageCount, String at) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", id);
-        m.put("report_type", type);
+        m.put("type", type);
         m.put("file_name", fileName);
         m.put("page_count", pageCount);
-        m.put("created_at", at);
+        m.put("generated_at", at);
         return m;
     }
 
@@ -294,7 +287,7 @@ class PublicControllerTest {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("value", value);
         m.put("fidelity_label", label);
-        m.put("freshness_at", at);
+        m.put("measured_at", at);
         return m;
     }
 }

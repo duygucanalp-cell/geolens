@@ -1,13 +1,13 @@
 package dev.geolens.discovery.web;
 
 import dev.geolens.discovery.ShadowFinding;
-import dev.geolens.testutil.JooqTestData;
-import org.jooq.DSLContext;
+import dev.geolens.discovery.service.DiscoveryService;
+import dev.geolens.discovery.service.DiscoveryServiceException;
 import org.junit.jupiter.api.Test;
-import org.mockito.Answers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.LinkedHashMap;
@@ -16,7 +16,6 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -30,8 +29,8 @@ class DiscoveryControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean(answer = Answers.RETURNS_DEEP_STUBS)
-    private DSLContext dsl;
+    @MockBean
+    private DiscoveryService discoveryService;
 
     private static final String TENANT = "T01";
 
@@ -49,8 +48,8 @@ class DiscoveryControllerTest {
 
     @Test
     void startScanDbErrorReturns500() throws Exception {
-        when(dsl.execute(anyString(), any(Object[].class)))
-                .thenThrow(new RuntimeException("db error"));
+        when(discoveryService.startScan(any(), any()))
+                .thenThrow(new DiscoveryServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "tarama başlatılamadı"));
 
         mockMvc.perform(post("/v1/discovery/scan")
                         .header("X-Tenant-ID", TENANT)
@@ -62,6 +61,9 @@ class DiscoveryControllerTest {
 
     @Test
     void startScanSuccess() throws Exception {
+        when(discoveryService.startScan(any(), any()))
+                .thenReturn(Map.of("scan_id", "scan-abc", "status", "running"));
+
         mockMvc.perform(post("/v1/discovery/scan")
                         .header("X-Tenant-ID", TENANT)
                         .contentType("application/json")
@@ -73,6 +75,9 @@ class DiscoveryControllerTest {
 
     @Test
     void startScanDefaultsScanType() throws Exception {
+        when(discoveryService.startScan(any(), any()))
+                .thenReturn(Map.of("scan_id", "scan-abc", "status", "running"));
+
         mockMvc.perform(post("/v1/discovery/scan")
                         .header("X-Tenant-ID", TENANT)
                         .contentType("application/json")
@@ -85,7 +90,8 @@ class DiscoveryControllerTest {
 
     @Test
     void getScanResultsNotFoundReturns404() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class))).thenReturn(null);
+        when(discoveryService.getScanResults(any(), any()))
+                .thenThrow(new DiscoveryServiceException(HttpStatus.NOT_FOUND, "tarama bulunamadı"));
 
         mockMvc.perform(get("/v1/discovery/scans/nonexistent")
                         .header("X-Tenant-ID", TENANT))
@@ -95,12 +101,12 @@ class DiscoveryControllerTest {
 
     @Test
     void getScanResultsSuccess() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(scanRow("scan-001", "completed", "aws", 2)));
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(List.of(
-                        findingRow("lambda", "ai-fn", "arn:aws:lambda:fn:1", "high"),
-                        findingRow("sagemaker", "llm-endpoint", "arn:aws:sagemaker:ep:1", "critical"))));
+        when(discoveryService.getScanResults(any(), any()))
+                .thenReturn(Map.of(
+                        "scan", scanRow("scan-001", "completed", "aws", 2),
+                        "findings", List.of(
+                                findingRow("lambda", "ai-fn", "arn:aws:lambda:fn:1", "high"),
+                                findingRow("sagemaker", "llm-endpoint", "arn:aws:sagemaker:ep:1", "critical"))));
 
         mockMvc.perform(get("/v1/discovery/scans/scan-001")
                         .header("X-Tenant-ID", TENANT))
@@ -115,10 +121,8 @@ class DiscoveryControllerTest {
 
     @Test
     void getScanResultsQueryErrorReturnsScanOnly() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(scanRow("scan-001", "completed", "all", 1)));
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenThrow(new RuntimeException("query error"));
+        when(discoveryService.getScanResults(any(), any()))
+                .thenReturn(Map.of("scan", scanRow("scan-001", "completed", "all", 1)));
 
         mockMvc.perform(get("/v1/discovery/scans/scan-001")
                         .header("X-Tenant-ID", TENANT))
@@ -129,10 +133,10 @@ class DiscoveryControllerTest {
 
     @Test
     void getScanResultsEmptyFindings() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(scanRow("scan-002", "completed", "gcp", 0)));
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(List.of()));
+        when(discoveryService.getScanResults(any(), any()))
+                .thenReturn(Map.of(
+                        "scan", scanRow("scan-002", "completed", "gcp", 0),
+                        "findings", List.of()));
 
         mockMvc.perform(get("/v1/discovery/scans/scan-002")
                         .header("X-Tenant-ID", TENANT))
@@ -145,7 +149,7 @@ class DiscoveryControllerTest {
 
     @Test
     void simulateScanReturnsThreeFindings() {
-        List<ShadowFinding> findings = DiscoveryController.simulateScan();
+        List<ShadowFinding> findings = DiscoveryService.simulateScan();
         assertEquals(3, findings.size());
         assertEquals("high", findings.get(0).riskLevel());
         assertEquals("critical", findings.get(1).riskLevel());

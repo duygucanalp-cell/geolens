@@ -1,14 +1,12 @@
 package dev.geolens.measure.web;
 
-import dev.geolens.engine.Registry;
-import dev.geolens.measure.MeasureService;
-import dev.geolens.testutil.JooqTestData;
-import org.jooq.DSLContext;
+import dev.geolens.measure.service.MeasureService;
+import dev.geolens.measure.service.MeasureServiceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.dao.DataAccessException;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
@@ -30,13 +28,7 @@ class MeasureControllerTest {
     private MockMvc mockMvc;
 
     @MockBean
-    private MeasureService service;
-
-    @MockBean
-    private Registry registry;
-
-    @MockBean
-    private DSLContext dsl;
+    private MeasureService measureService;
 
     private static final String TENANT = "T01";
     private static final String WS = "WS01";
@@ -72,10 +64,12 @@ class MeasureControllerTest {
 
     @Test
     void triggerQueuedReturns202() throws Exception {
-        when(registry.list()).thenReturn(List.of("chatgpt", "gemini"));
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(Map.of("name", "Acme", "website_url", "https://acme.com")));
-        when(dsl.execute(anyString(), any(Object[].class))).thenReturn(1);
+        when(measureService.triggerMeasurement(anyString(), anyString(), any()))
+                .thenReturn(Map.of(
+                        "status", "queued",
+                        "run_id", "R01",
+                        "brand", "Acme",
+                        "engines", List.of("chatgpt", "gemini")));
 
         mockMvc.perform(post("/v1/workspaces/{ws}/measurements", WS)
                         .header("X-Tenant-ID", TENANT)
@@ -89,10 +83,8 @@ class MeasureControllerTest {
 
     @Test
     void triggerUnknownBrandReturns404() throws Exception {
-        when(registry.list()).thenReturn(List.of("chatgpt"));
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenThrow(new DataAccessException("yok") {
-                });
+        when(measureService.triggerMeasurement(anyString(), anyString(), any()))
+                .thenThrow(new MeasureServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı"));
 
         mockMvc.perform(post("/v1/workspaces/{ws}/measurements", WS)
                         .header("X-Tenant-ID", TENANT)
@@ -104,7 +96,8 @@ class MeasureControllerTest {
 
     @Test
     void triggerNoEnginesReturns500() throws Exception {
-        when(registry.list()).thenReturn(List.of());
+        when(measureService.triggerMeasurement(anyString(), anyString(), any()))
+                .thenThrow(new MeasureServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "kayıtlı motor bulunamadı"));
 
         mockMvc.perform(post("/v1/workspaces/{ws}/measurements", WS)
                         .header("X-Tenant-ID", TENANT)
@@ -116,9 +109,8 @@ class MeasureControllerTest {
 
     @Test
     void listScoresReturnsEmptyWhenNoDb() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenThrow(new DataAccessException("schema yok") {
-                });
+        when(measureService.listScores(anyString(), anyString()))
+                .thenReturn(List.of());
 
         mockMvc.perform(get("/v1/workspaces/{ws}/scores", WS)
                         .header("X-Tenant-ID", TENANT))
@@ -136,7 +128,7 @@ class MeasureControllerTest {
 
     @Test
     void extractURLsFindsHttpLinks() {
-        List<String> urls = MeasureController.extractURLs(
+        List<String> urls = MeasureService.extractURLs(
                 "kaynak: https://ornek.com/sayfa ve https://ikinci.org/alt?q=1 ardından.");
         assertTrue(urls.contains("https://ornek.com/sayfa"));
         assertTrue(urls.contains("https://ikinci.org/alt?q=1"));

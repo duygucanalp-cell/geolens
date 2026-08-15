@@ -1,12 +1,12 @@
 package dev.geolens.incident.web;
 
-import dev.geolens.testutil.JooqTestData;
-import org.jooq.DSLContext;
+import dev.geolens.incident.service.IncidentService;
+import dev.geolens.incident.service.IncidentServiceException;
 import org.junit.jupiter.api.Test;
-import org.mockito.Answers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.LinkedHashMap;
@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -29,8 +29,8 @@ class IncidentControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean(answer = Answers.RETURNS_DEEP_STUBS)
-    private DSLContext dsl;
+    @MockBean
+    private IncidentService incidentService;
 
     private static final String TENANT = "T01";
 
@@ -38,10 +38,10 @@ class IncidentControllerTest {
 
     @Test
     void listIncidentsSuccess() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(List.of(incidentRow("i-1"))));
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(1));
+        when(incidentService.listIncidents(any(), anyInt(), any(), any()))
+                .thenReturn(Map.of(
+                        "incidents", List.of(incidentRow("i-1")),
+                        "count", 1, "has_more", false, "open_count", 1, "critical_count", 1));
 
         mockMvc.perform(get("/v1/incidents/events")
                         .header("X-Tenant-ID", TENANT))
@@ -58,7 +58,8 @@ class IncidentControllerTest {
 
     @Test
     void listIncidentsQueryErrorReturnsGracefulEmpty() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db error"));
+        when(incidentService.listIncidents(any(), anyInt(), any(), any()))
+                .thenReturn(Map.of("incidents", List.of(), "has_more", false, "count", 0));
 
         mockMvc.perform(get("/v1/incidents/events")
                         .header("X-Tenant-ID", TENANT))
@@ -70,11 +71,10 @@ class IncidentControllerTest {
 
     @Test
     void listIncidentsHasMoreTrue() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(List.of(
-                        incidentRow("i-1"), incidentRow("i-2"), incidentRow("i-3"))));
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(3));
+        when(incidentService.listIncidents(any(), anyInt(), any(), any()))
+                .thenReturn(Map.of(
+                        "incidents", List.of(incidentRow("i-1"), incidentRow("i-2")),
+                        "count", 2, "has_more", true, "open_count", 2, "critical_count", 2));
 
         mockMvc.perform(get("/v1/incidents/events")
                         .header("X-Tenant-ID", TENANT)
@@ -98,6 +98,9 @@ class IncidentControllerTest {
 
     @Test
     void createIncidentMissingTitleReturns400() throws Exception {
+        when(incidentService.createIncident(any(), any()))
+                .thenThrow(new IncidentServiceException(HttpStatus.BAD_REQUEST, "title gerekli"));
+
         mockMvc.perform(post("/v1/incidents/events")
                         .header("X-Tenant-ID", TENANT)
                         .contentType("application/json")
@@ -108,6 +111,15 @@ class IncidentControllerTest {
 
     @Test
     void createIncidentSuccess() throws Exception {
+        when(incidentService.createIncident(any(), any()))
+                .thenReturn(Map.of(
+                        "incident_id", "inc-1",
+                        "severity", "critical",
+                        "title", "API Outage",
+                        "status", "open",
+                        "severity_score", 0.0,
+                        "created_at", "2026-08-15T00:00:00Z"));
+
         mockMvc.perform(post("/v1/incidents/events")
                         .header("X-Tenant-ID", TENANT)
                         .contentType("application/json")
@@ -122,6 +134,15 @@ class IncidentControllerTest {
 
     @Test
     void createIncidentDefaultsInvalidSeverityAndCategory() throws Exception {
+        when(incidentService.createIncident(any(), any()))
+                .thenReturn(Map.of(
+                        "incident_id", "inc-2",
+                        "severity", "medium",
+                        "title", "T",
+                        "status", "open",
+                        "severity_score", 0.0,
+                        "created_at", "2026-08-15T00:00:00Z"));
+
         mockMvc.perform(post("/v1/incidents/events")
                         .header("X-Tenant-ID", TENANT)
                         .contentType("application/json")
@@ -144,6 +165,9 @@ class IncidentControllerTest {
 
     @Test
     void updateIncidentInvalidStatusReturns400() throws Exception {
+        when(incidentService.updateIncident(any(), any(), any()))
+                .thenThrow(new IncidentServiceException(HttpStatus.BAD_REQUEST, "geçersiz durum"));
+
         mockMvc.perform(put("/v1/incidents/events/i-1")
                         .header("X-Tenant-ID", TENANT)
                         .contentType("application/json")
@@ -154,7 +178,8 @@ class IncidentControllerTest {
 
     @Test
     void updateIncidentNotFoundReturns404() throws Exception {
-        when(dsl.execute(anyString(), any(Object[].class))).thenReturn(0);
+        when(incidentService.updateIncident(any(), any(), any()))
+                .thenThrow(new IncidentServiceException(HttpStatus.NOT_FOUND, "incident bulunamadı"));
 
         mockMvc.perform(put("/v1/incidents/events/i-1")
                         .header("X-Tenant-ID", TENANT)
@@ -166,7 +191,8 @@ class IncidentControllerTest {
 
     @Test
     void updateIncidentSuccess() throws Exception {
-        when(dsl.execute(anyString(), any(Object[].class))).thenReturn(1);
+        when(incidentService.updateIncident(any(), any(), any()))
+                .thenReturn(Map.of("incident_id", "i-1", "status", "resolved"));
 
         mockMvc.perform(put("/v1/incidents/events/i-1")
                         .header("X-Tenant-ID", TENANT)

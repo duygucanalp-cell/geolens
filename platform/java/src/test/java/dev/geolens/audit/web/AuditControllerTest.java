@@ -1,13 +1,16 @@
 package dev.geolens.audit.web;
 
-import dev.geolens.audit.AuditService;
-import org.jooq.DSLContext;
+import dev.geolens.audit.service.AuditServiceException;
+import dev.geolens.audit.service.AuditWebService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.dao.DataAccessException;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.List;
+import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -25,13 +28,12 @@ class AuditControllerTest {
     private MockMvc mockMvc;
 
     @MockBean
-    private AuditService service;
-
-    @MockBean
-    private DSLContext dsl;
+    private AuditWebService auditWebService;
 
     private static final String TENANT = "T01";
     private static final String WS = "WS01";
+
+    // ---------- RunAudit ----------
 
     @Test
     void runAuditInvalidJSONReturns400() throws Exception {
@@ -74,6 +76,34 @@ class AuditControllerTest {
     }
 
     @Test
+    void runAuditBrandNotFoundReturns404() throws Exception {
+        when(auditWebService.runAudit(anyString(), anyString(), any()))
+                .thenThrow(new AuditServiceException(HttpStatus.NOT_FOUND, "marka bulunamadı"));
+
+        mockMvc.perform(post("/v1/workspaces/{ws}/audit", WS)
+                        .header("X-Tenant-ID", TENANT)
+                        .contentType("application/json")
+                        .content("{\"brand_id\":\"nonexistent\",\"website_url\":\"https://example.com\"}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("marka bulunamadı"));
+    }
+
+    @Test
+    void runAuditEngineFailureReturns500() throws Exception {
+        when(auditWebService.runAudit(anyString(), anyString(), any()))
+                .thenThrow(new AuditServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "denetim başarısız"));
+
+        mockMvc.perform(post("/v1/workspaces/{ws}/audit", WS)
+                        .header("X-Tenant-ID", TENANT)
+                        .contentType("application/json")
+                        .content("{\"brand_id\":\"b1\",\"brand_name\":\"Marka\",\"website_url\":\"https://example.com\"}"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.error").value("denetim başarısız"));
+    }
+
+    // ---------- Findings ----------
+
+    @Test
     void findingsMissingBrandIdReturns400() throws Exception {
         mockMvc.perform(get("/v1/workspaces/{ws}/audit/findings", WS)
                         .header("X-Tenant-ID", TENANT))
@@ -83,9 +113,11 @@ class AuditControllerTest {
 
     @Test
     void findingsReturnEmptyCatalogWhenNoDb() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenThrow(new DataAccessException("yok") {
-                });
+        when(auditWebService.getFindingsCatalog(anyString(), anyString(), anyString()))
+                .thenReturn(Map.of(
+                        "brand_id", "B01",
+                        "catalog", List.of(),
+                        "summary", Map.of("total", 0, "critical", 0, "high", 0, "medium", 0, "low", 0)));
 
         mockMvc.perform(get("/v1/workspaces/{ws}/audit/findings", WS)
                         .header("X-Tenant-ID", TENANT)
@@ -93,5 +125,17 @@ class AuditControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.brand_id").value("B01"))
                 .andExpect(jsonPath("$.summary.total").value(0));
+    }
+
+    @Test
+    void findingsServiceErrorReturns500() throws Exception {
+        when(auditWebService.getFindingsCatalog(anyString(), anyString(), anyString()))
+                .thenThrow(new AuditServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "sorgu hatası"));
+
+        mockMvc.perform(get("/v1/workspaces/{ws}/audit/findings", WS)
+                        .header("X-Tenant-ID", TENANT)
+                        .param("brand_id", "B01"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.error").value("sorgu hatası"));
     }
 }

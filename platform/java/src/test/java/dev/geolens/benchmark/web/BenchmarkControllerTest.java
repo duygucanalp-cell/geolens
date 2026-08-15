@@ -1,12 +1,12 @@
 package dev.geolens.benchmark.web;
 
-import dev.geolens.testutil.JooqTestData;
-import org.jooq.DSLContext;
+import dev.geolens.benchmark.service.BenchmarkService;
+import dev.geolens.benchmark.service.BenchmarkServiceException;
 import org.junit.jupiter.api.Test;
-import org.mockito.Answers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.LinkedHashMap;
@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -28,8 +29,8 @@ class BenchmarkControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean(answer = Answers.RETURNS_DEEP_STUBS)
-    private DSLContext dsl;
+    @MockBean
+    private BenchmarkService benchmarkService;
 
     private static final String TENANT = "T01";
 
@@ -57,6 +58,9 @@ class BenchmarkControllerTest {
 
     @Test
     void runBenchmarkSuccess() throws Exception {
+        when(benchmarkService.runBenchmark(anyString(), any()))
+                .thenReturn(runBenchmarkResult());
+
         mockMvc.perform(post("/v1/benchmarks/models")
                         .header("X-Tenant-ID", TENANT)
                         .contentType("application/json")
@@ -73,8 +77,8 @@ class BenchmarkControllerTest {
 
     @Test
     void listBenchmarksSuccess() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(List.of(benchRow("b-1", "gpt-4o", "chatgpt"))));
+        when(benchmarkService.listBenchmarks(anyString(), anyInt(), anyInt(), any(), any()))
+                .thenReturn(List.of(benchRow("b-1", "gpt-4o", "chatgpt")));
 
         mockMvc.perform(get("/v1/benchmarks/models")
                         .header("X-Tenant-ID", TENANT))
@@ -86,8 +90,8 @@ class BenchmarkControllerTest {
 
     @Test
     void listBenchmarksQueryErrorReturns500() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenThrow(new RuntimeException("db error"));
+        when(benchmarkService.listBenchmarks(anyString(), anyInt(), anyInt(), any(), any()))
+                .thenThrow(new BenchmarkServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "benchmark geçmişi alınamadı"));
 
         mockMvc.perform(get("/v1/benchmarks/models")
                         .header("X-Tenant-ID", TENANT))
@@ -107,10 +111,8 @@ class BenchmarkControllerTest {
 
     @Test
     void compareModelsSuccess() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(List.of(
-                        compareRow("chatgpt", "gpt-4o", 0.95, 200, 0.001, 50.0, 4.5, 0.8),
-                        compareRow("perplexity", "sonar-pro", 0.88, 350, 0.005, 30.0, 4.2, 0.9))));
+        when(benchmarkService.compareModels(anyString(), anyString()))
+                .thenReturn(compareResult());
 
         mockMvc.perform(get("/v1/benchmarks/compare")
                         .header("X-Tenant-ID", TENANT)
@@ -125,6 +127,9 @@ class BenchmarkControllerTest {
 
     @Test
     void compareModelsBlankEnginesReturns400() throws Exception {
+        when(benchmarkService.compareModels(anyString(), anyString()))
+                .thenThrow(new BenchmarkServiceException(HttpStatus.BAD_REQUEST, "geçerli engine adı gerekli"));
+
         mockMvc.perform(get("/v1/benchmarks/compare")
                         .header("X-Tenant-ID", TENANT)
                         .param("engines", "  , "))
@@ -133,6 +138,39 @@ class BenchmarkControllerTest {
     }
 
     // ---------- yardımcılar ----------
+
+    private static Map<String, Object> runBenchmarkResult() {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("bench_id", "bench-1");
+        m.put("model_name", "gpt-4o");
+        m.put("engine_name", "chatgpt");
+        m.put("category", "llm");
+        m.put("accuracy_score", 0.95);
+        m.put("latency_ms", 200);
+        m.put("cost_per_request", 0.001);
+        m.put("tokens_per_second", 50.0);
+        m.put("response_quality", 4.5);
+        m.put("citation_rate", 0.8);
+        m.put("tested_at", "2026-08-14T00:00:00Z");
+        return m;
+    }
+
+    private static Map<String, Object> compareResult() {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("models", List.of(
+                compareRow("chatgpt", "gpt-4o", 0.95, 200, 0.001, 50.0, 4.5, 0.8),
+                compareRow("perplexity", "sonar-pro", 0.88, 350, 0.005, 30.0, 4.2, 0.9)));
+        Map<String, Object> summary = new LinkedHashMap<>();
+        summary.put("best_accuracy", "0.95");
+        summary.put("best_latency_ms", "200");
+        summary.put("best_cost_per_req", "0.0010");
+        summary.put("best_tokens_per_sec", "50.0");
+        summary.put("best_quality", "4.50");
+        summary.put("best_citation_rate", "0.90");
+        m.put("summary", summary);
+        m.put("count", 2);
+        return m;
+    }
 
     private static Map<String, Object> benchRow(String id, String model, String engine) {
         Map<String, Object> m = new LinkedHashMap<>();

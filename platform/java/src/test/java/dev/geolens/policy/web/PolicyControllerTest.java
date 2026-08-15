@@ -1,14 +1,13 @@
 package dev.geolens.policy.web;
 
-import dev.geolens.testutil.JooqTestData;
-import org.jooq.DSLContext;
-import org.jooq.Record;
+import dev.geolens.policy.Pack;
+import dev.geolens.policy.service.PolicyService;
+import dev.geolens.policy.service.PolicyServiceException;
 import org.junit.jupiter.api.Test;
-import org.mockito.Answers;
-import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.LinkedHashMap;
@@ -16,9 +15,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -33,8 +29,8 @@ class PolicyControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean(answer = Answers.RETURNS_DEEP_STUBS)
-    private DSLContext dsl;
+    @MockBean
+    private PolicyService policyService;
 
     private static final String TENANT = "T01";
 
@@ -42,8 +38,7 @@ class PolicyControllerTest {
 
     @Test
     void listPacksQueryErrorGraceful() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenThrow(new RuntimeException("db error"));
+        when(policyService.listPacks(any())).thenReturn(Map.of("packs", List.of()));
 
         mockMvc.perform(get("/v1/policies/packs")
                         .header("X-Tenant-ID", TENANT))
@@ -53,10 +48,9 @@ class PolicyControllerTest {
 
     @Test
     void listPacksSuccess() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(List.of(
-                        packRow("pack-1", "EU AI Act Compliance", "eu_ai_act", "2026-07-25T00:00:00Z"),
-                        packRow("pack-2", "NIST AI RMF", "nist_ai_rmf", null))));
+        when(policyService.listPacks(any())).thenReturn(Map.of("packs", List.of(
+                pack("pack-1", "EU AI Act Compliance", "eu_ai_act", "2026-07-25T00:00:00Z"),
+                pack("pack-2", "NIST AI RMF", "nist_ai_rmf", null))));
 
         mockMvc.perform(get("/v1/policies/packs")
                         .header("X-Tenant-ID", TENANT))
@@ -72,8 +66,7 @@ class PolicyControllerTest {
 
     @Test
     void listControlsQueryErrorGraceful() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenThrow(new RuntimeException("db error"));
+        when(policyService.listControls(any(), any())).thenReturn(Map.of("controls", List.of()));
 
         mockMvc.perform(get("/v1/policies/packs/pack-1/controls")
                         .header("X-Tenant-ID", TENANT))
@@ -83,10 +76,9 @@ class PolicyControllerTest {
 
     @Test
     void listControlsSuccess() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(List.of(
-                        controlRow("ctrl-1", "Art.9", "passed"),
-                        controlRow("ctrl-2", "Art.10", "pending"))));
+        when(policyService.listControls(any(), any())).thenReturn(Map.of("controls", List.of(
+                control("ctrl-1", "Art.9", "passed"),
+                control("ctrl-2", "Art.10", "pending"))));
 
         mockMvc.perform(get("/v1/policies/packs/pack-1/controls")
                         .header("X-Tenant-ID", TENANT))
@@ -101,8 +93,8 @@ class PolicyControllerTest {
 
     @Test
     void applyPackNotFound() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenThrow(new RuntimeException("not found"));
+        when(policyService.applyPack(any(), any()))
+                .thenThrow(new PolicyServiceException(HttpStatus.NOT_FOUND, "pack bulunamadı"));
 
         mockMvc.perform(post("/v1/policies/packs/nonexistent/apply")
                         .header("X-Tenant-ID", TENANT))
@@ -112,8 +104,8 @@ class PolicyControllerTest {
 
     @Test
     void applyPackSuccess() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(packRow("pack-1", "EU AI Act Compliance", "eu_ai_act", "2026-07-25T00:00:00Z")));
+        when(policyService.applyPack(any(), any()))
+                .thenReturn(pack("pack-1", "EU AI Act Compliance", "eu_ai_act", "2026-07-25T00:00:00Z"));
 
         mockMvc.perform(post("/v1/policies/packs/pack-1/apply")
                         .header("X-Tenant-ID", TENANT))
@@ -127,13 +119,14 @@ class PolicyControllerTest {
 
     @Test
     void getComplianceSuccess() throws Exception {
-        // Go MockPool: 2 args → risk_class, diğer (1 arg) → aggregation
-        when(dsl.fetchOne(anyString(), any(Object[].class))).thenAnswer((Answer<Record>) inv -> {
-            if (inv.getArguments().length == 3) {
-                return JooqTestData.record(Map.of("risk_class", "high"));
-            }
-            return JooqTestData.record(aggRow(10, 7, 2, 1));
-        });
+        when(policyService.getCompliance(any(), any())).thenReturn(Map.of(
+                "entity_id", "ent-001",
+                "compliance_pct", 70.0,
+                "total_controls", 10,
+                "passed", 7,
+                "failed", 2,
+                "not_applicable", 1,
+                "entity_risk_class", "high"));
 
         mockMvc.perform(get("/v1/policies/compliance/ent-001")
                         .header("X-Tenant-ID", TENANT))
@@ -150,8 +143,13 @@ class PolicyControllerTest {
 
     @Test
     void getComplianceWithoutEntityRisk() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(aggRow(5, 3, 1, 1)));
+        when(policyService.getCompliance(any(), any())).thenReturn(Map.of(
+                "entity_id", "undefined",
+                "compliance_pct", 60.0,
+                "total_controls", 5,
+                "passed", 3,
+                "failed", 1,
+                "not_applicable", 1));
 
         mockMvc.perform(get("/v1/policies/compliance/undefined")
                         .header("X-Tenant-ID", TENANT))
@@ -175,6 +173,8 @@ class PolicyControllerTest {
 
     @Test
     void updateControlSuccess() throws Exception {
+        when(policyService.updateControl(any(), any(), any())).thenReturn(Map.of("status", "güncellendi"));
+
         mockMvc.perform(put("/v1/policies/controls/ctrl-1")
                         .header("X-Tenant-ID", TENANT)
                         .contentType("application/json")
@@ -185,8 +185,8 @@ class PolicyControllerTest {
 
     @Test
     void updateControlDbErrorReturns500() throws Exception {
-        when(dsl.execute(anyString(), any(Object[].class)))
-                .thenThrow(new RuntimeException("db error"));
+        when(policyService.updateControl(any(), any(), any()))
+                .thenThrow(new PolicyServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "control güncellenemedi"));
 
         mockMvc.perform(put("/v1/policies/controls/ctrl-1")
                         .header("X-Tenant-ID", TENANT)
@@ -200,37 +200,22 @@ class PolicyControllerTest {
 
     @Test
     void seedPacksSuccess() throws Exception {
-        // 4 framework pack insert (fetchOne RETURNING) + control insert'leri
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(Map.of("id", "pack-seeded")));
+        when(policyService.seedPacks(any())).thenReturn(Map.of("status", "policy packs seeded"));
 
         mockMvc.perform(post("/v1/policies/packs/seed")
                         .header("X-Tenant-ID", TENANT))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("policy packs seeded"));
-
-        // Go TestSeedDefaultPacks_AllFrameworks: 4 pack seed çağrısı
-        verify(dsl, times(4)).fetchOne(anyString(), any(Object[].class));
     }
 
     // ---------- yardımcılar ----------
 
-    private static Map<String, Object> packRow(String id, String name, String framework, String appliedAt) {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("id", id);
-        m.put("tenant_id", TENANT);
-        m.put("name", name);
-        m.put("framework", framework);
-        m.put("description", framework + " description");
-        m.put("version", "1.0.0");
-        m.put("enabled", true);
-        m.put("applied_at", appliedAt);
-        m.put("created_at", "2026-07-01T00:00:00Z");
-        m.put("updated_at", "2026-07-25T00:00:00Z");
-        return m;
+    private static Pack pack(String id, String name, String framework, String appliedAt) {
+        return new Pack(id, TENANT, name, framework, framework + " description", "1.0.0", true,
+                appliedAt, "2026-07-01T00:00:00Z", "2026-07-25T00:00:00Z");
     }
 
-    private static Map<String, Object> controlRow(String id, String controlId, String status) {
+    private static Map<String, Object> control(String id, String controlId, String status) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", id);
         m.put("pack_id", "pack-1");
@@ -244,15 +229,6 @@ class PolicyControllerTest {
         m.put("due_date", null);
         m.put("created_at", "2026-07-01T00:00:00Z");
         m.put("updated_at", "2026-07-25T00:00:00Z");
-        return m;
-    }
-
-    private static Map<String, Object> aggRow(int total, int passed, int failed, int na) {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("0", total);
-        m.put("1", passed);
-        m.put("2", failed);
-        m.put("3", na);
         return m;
     }
 }

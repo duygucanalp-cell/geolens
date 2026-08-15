@@ -1,18 +1,16 @@
 package dev.geolens.sso.web;
 
 import dev.geolens.sso.KeyPairGeneratorUtil;
-import dev.geolens.testutil.JooqTestData;
-import org.jooq.DSLContext;
-import org.jooq.Record;
+import dev.geolens.sso.SsoConfig;
+import dev.geolens.sso.service.SsoService;
+import dev.geolens.sso.service.SsoServiceException;
 import org.junit.jupiter.api.Test;
-import org.mockito.Answers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Base64;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -32,8 +30,8 @@ class SsoControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean(answer = Answers.RETURNS_DEEP_STUBS)
-    private DSLContext dsl;
+    @MockBean
+    private SsoService ssoService;
 
     private static final String TENANT = "T01";
 
@@ -41,7 +39,8 @@ class SsoControllerTest {
 
     @Test
     void getConfigNotFound() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class))).thenReturn(null);
+        when(ssoService.getConfig(anyString()))
+                .thenThrow(new SsoServiceException(HttpStatus.NOT_FOUND, "SSO yapılandırması bulunamadı"));
 
         mockMvc.perform(get("/v1/sso/config")
                         .header("X-Tenant-ID", TENANT))
@@ -51,8 +50,7 @@ class SsoControllerTest {
 
     @Test
     void getConfigSuccess() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(configRow()));
+        when(ssoService.getConfig(anyString())).thenReturn(config());
 
         mockMvc.perform(get("/v1/sso/config")
                         .header("X-Tenant-ID", TENANT))
@@ -76,8 +74,7 @@ class SsoControllerTest {
 
     @Test
     void updateConfigSuccess() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(configRow()));
+        when(ssoService.updateConfig(anyString(), any())).thenReturn(config());
 
         mockMvc.perform(put("/v1/sso/config")
                         .header("X-Tenant-ID", TENANT)
@@ -92,7 +89,8 @@ class SsoControllerTest {
 
     @Test
     void getSpMetadataNotFound() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class))).thenReturn(null);
+        when(ssoService.getSpMetadata(anyString()))
+                .thenThrow(new SsoServiceException(HttpStatus.NOT_FOUND, "SSO yapılandırması bulunamadı"));
 
         mockMvc.perform(get("/v1/sso/metadata")
                         .header("X-Tenant-ID", TENANT))
@@ -102,8 +100,7 @@ class SsoControllerTest {
 
     @Test
     void getSpMetadataSuccess() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(configRow()));
+        when(ssoService.getSpMetadata(anyString())).thenReturn(metadataXml());
 
         mockMvc.perform(get("/v1/sso/metadata")
                         .header("X-Tenant-ID", TENANT))
@@ -117,6 +114,9 @@ class SsoControllerTest {
 
     @Test
     void handleAcsMissingSamlResponseReturns400() throws Exception {
+        when(ssoService.handleAcs(anyString(), any()))
+                .thenThrow(new SsoServiceException(HttpStatus.BAD_REQUEST, "SAMLResponse gerekli"));
+
         mockMvc.perform(post("/v1/sso/acs/" + TENANT))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("SAMLResponse gerekli"));
@@ -124,7 +124,8 @@ class SsoControllerTest {
 
     @Test
     void handleAcsConfigNotEnabledReturns401() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class))).thenReturn(null);
+        when(ssoService.handleAcs(anyString(), any()))
+                .thenThrow(new SsoServiceException(HttpStatus.UNAUTHORIZED, "SSO etkin değil"));
 
         mockMvc.perform(post("/v1/sso/acs/" + TENANT)
                         .param("SAMLResponse", "dummy"))
@@ -134,11 +135,9 @@ class SsoControllerTest {
 
     @Test
     void handleAcsInvalidIdpCertReturns401() throws Exception {
-        // config bulunur ama idp_cert geçersiz
-        Map<String, Object> row = configRow();
-        row.put("idp_cert", "not-a-pem");
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(row));
+        when(ssoService.handleAcs(anyString(), any()))
+                .thenThrow(new SsoServiceException(HttpStatus.UNAUTHORIZED,
+                        "SAML ServiceProvider oluşturma: IdP sertifikası PEM formatında değil"));
 
         mockMvc.perform(post("/v1/sso/acs/" + TENANT)
                         .param("SAMLResponse", "dummy"))
@@ -148,10 +147,9 @@ class SsoControllerTest {
 
     @Test
     void handleAcsInvalidSamlResponseReturns401() throws Exception {
-        Map<String, Object> row = configRow();
-        row.put("idp_cert", KeyPairGeneratorUtil.generate().certificatePem());
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(row));
+        when(ssoService.handleAcs(anyString(), any()))
+                .thenThrow(new SsoServiceException(HttpStatus.UNAUTHORIZED,
+                        "SAML yanıtı ayrıştırma: hata"));
 
         mockMvc.perform(post("/v1/sso/acs/" + TENANT)
                         .param("SAMLResponse", "not-valid-base64!!"))
@@ -161,24 +159,15 @@ class SsoControllerTest {
 
     @Test
     void handleAcsSuccess() throws Exception {
-        Map<String, Object> row = configRow();
-        row.put("idp_cert", KeyPairGeneratorUtil.generate().certificatePem());
-        // config sorgusu → row; kullanıcı sorgusu → user row (2 farklı fetchOne)
-        when(dsl.fetchOne(anyString(), any(Object[].class))).thenAnswer(inv -> {
-            // user sorgusu 1 arg (email), config sorgusu 1 arg (tenantId) — SQL içeriğiyle ayırt et
-            String sql = inv.getArgument(0);
-            if (sql.contains("identity.users")) {
-                Map<String, Object> u = new LinkedHashMap<>();
-                u.put("id", "user-1");
-                u.put("display_name", "Jane Doe");
-                return JooqTestData.record(u);
-            }
-            return JooqTestData.record(row);
-        });
+        when(ssoService.handleAcs(anyString(), any())).thenReturn(Map.of(
+                "user_id", "user-1",
+                "email", "jane@corp.com",
+                "display_name", "Jane Doe",
+                "tenant_id", TENANT,
+                "message", "SSO giriş başarılı"));
 
-        String saml = samlResponseWithEmail("jane@corp.com", "Jane Doe");
         mockMvc.perform(post("/v1/sso/acs/" + TENANT)
-                        .param("SAMLResponse", saml))
+                        .param("SAMLResponse", "dummy"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.user_id").value("user-1"))
                 .andExpect(jsonPath("$.email").value("jane@corp.com"))
@@ -189,19 +178,11 @@ class SsoControllerTest {
 
     @Test
     void handleAcsUserNotFoundReturns401() throws Exception {
-        Map<String, Object> row = configRow();
-        row.put("idp_cert", KeyPairGeneratorUtil.generate().certificatePem());
-        when(dsl.fetchOne(anyString(), any(Object[].class))).thenAnswer(inv -> {
-            String sql = inv.getArgument(0);
-            if (sql.contains("identity.users")) {
-                return null;
-            }
-            return JooqTestData.record(row);
-        });
+        when(ssoService.handleAcs(anyString(), any()))
+                .thenThrow(new SsoServiceException(HttpStatus.UNAUTHORIZED, "kullanıcı bulunamadı"));
 
-        String saml = samlResponseWithEmail("nobody@corp.com", "");
         mockMvc.perform(post("/v1/sso/acs/" + TENANT)
-                        .param("SAMLResponse", saml))
+                        .param("SAMLResponse", "dummy"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error").value("kullanıcı bulunamadı"));
     }
@@ -210,6 +191,8 @@ class SsoControllerTest {
 
     @Test
     void enableSuccess() throws Exception {
+        when(ssoService.enable(anyString())).thenReturn(Map.of("status", "SSO etkinleştirildi"));
+
         mockMvc.perform(post("/v1/sso/enable")
                         .header("X-Tenant-ID", TENANT))
                 .andExpect(status().isOk())
@@ -218,6 +201,8 @@ class SsoControllerTest {
 
     @Test
     void disableSuccess() throws Exception {
+        when(ssoService.disable(anyString())).thenReturn(Map.of("status", "SSO devre dışı bırakıldı"));
+
         mockMvc.perform(post("/v1/sso/disable")
                         .header("X-Tenant-ID", TENANT))
                 .andExpect(status().isOk())
@@ -228,6 +213,8 @@ class SsoControllerTest {
 
     @Test
     void generateKeyPairSuccess() throws Exception {
+        when(ssoService.generateKeyPair()).thenReturn(KeyPairGeneratorUtil.generate());
+
         mockMvc.perform(post("/v1/sso/generate-keys"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.certificate").value(org.hamcrest.Matchers.containsString("BEGIN CERTIFICATE")))
@@ -236,38 +223,18 @@ class SsoControllerTest {
 
     // ---------- yardımcılar ----------
 
-    private static Map<String, Object> configRow() {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("id", "cfg-1");
-        m.put("tenant_id", TENANT);
-        m.put("idp_entity_id", "https://idp.example.com");
-        m.put("idp_sso_url", "https://idp.example.com/sso");
-        m.put("idp_cert", "");
-        m.put("sp_entity_id", "https://geolens.app/saml/" + TENANT);
-        m.put("sp_acs_url", "https://geolens.app/v1/sso/acs/" + TENANT);
-        m.put("enabled", true);
-        m.put("created_at", "2026-08-15T10:00:00Z");
-        m.put("updated_at", "2026-08-15T10:00:00Z");
-        return m;
+    private static SsoConfig config() {
+        return new SsoConfig(
+                "cfg-1", TENANT, "https://idp.example.com", "https://idp.example.com/sso",
+                "", "https://geolens.app/saml/" + TENANT, "https://geolens.app/v1/sso/acs/" + TENANT,
+                true, "2026-08-15T10:00:00Z", "2026-08-15T10:00:00Z");
     }
 
-    private static String samlResponseWithEmail(String email, String name) {
-        String attrs = name == null || name.isEmpty() ? "" :
-                "<saml:Attribute FriendlyName=\"displayName\" Name=\"displayName\"><saml:AttributeValue>"
-                        + name + "</saml:AttributeValue></saml:Attribute>";
-        String xml = """
-                <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"
-                                xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-                  <saml:Assertion>
-                    <saml:AttributeStatement>
-                      <saml:Attribute FriendlyName="email" Name="email">
-                        <saml:AttributeValue>%s</saml:AttributeValue>
-                      </saml:Attribute>
-                      %s
-                    </saml:AttributeStatement>
-                  </saml:Assertion>
-                </samlp:Response>
-                """.formatted(email, attrs);
-        return Base64.getEncoder().encodeToString(xml.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    private static String metadataXml() {
+        return "<md:EntityDescriptor xmlns:md=\"urn:oasis:names:tc:SAML:2.0:metadata\" entityID=\"https://geolens.app/saml/T01\">"
+                + "<md:SPSSODescriptor>"
+                + "<md:KeyDescriptor use=\"signing\"><ds:KeyInfo xmlns:ds=\"http://www.w3.org/2000/09/xmldsig#\">"
+                + "<ds:X509Data><ds:X509Certificate>abc</ds:X509Certificate></ds:X509Data></ds:KeyInfo></md:KeyDescriptor>"
+                + "</md:SPSSODescriptor></md:EntityDescriptor>";
     }
 }

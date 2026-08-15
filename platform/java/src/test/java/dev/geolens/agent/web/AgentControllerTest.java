@@ -1,12 +1,12 @@
 package dev.geolens.agent.web;
 
-import dev.geolens.testutil.JooqTestData;
-import org.jooq.DSLContext;
+import dev.geolens.agent.service.AgentService;
+import dev.geolens.agent.service.AgentServiceException;
 import org.junit.jupiter.api.Test;
-import org.mockito.Answers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.LinkedHashMap;
@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -28,8 +29,8 @@ class AgentControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean(answer = Answers.RETURNS_DEEP_STUBS)
-    private DSLContext dsl;
+    @MockBean
+    private AgentService agentService;
 
     private static final String TENANT = "T01";
     private static final String BASE = "/v1/workspaces/ws-1/agents";
@@ -58,6 +59,14 @@ class AgentControllerTest {
 
     @Test
     void startTraceSuccess() throws Exception {
+        when(agentService.startTrace(anyString(), any()))
+                .thenReturn(Map.of(
+                        "trace_id", "t-new",
+                        "agent_name", "test-agent",
+                        "workflow_name", "test-workflow",
+                        "status", "running",
+                        "started_at", "2026-08-15T10:00:00Z"));
+
         mockMvc.perform(post(BASE + "/traces")
                         .header("X-Tenant-ID", TENANT)
                         .contentType("application/json")
@@ -71,8 +80,8 @@ class AgentControllerTest {
 
     @Test
     void startTraceDbErrorReturns500() throws Exception {
-        when(dsl.execute(anyString(), any(Object[].class)))
-                .thenThrow(new RuntimeException("db down"));
+        when(agentService.startTrace(anyString(), any()))
+                .thenThrow(new AgentServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "trace başlatılamadı"));
 
         mockMvc.perform(post(BASE + "/traces")
                         .header("X-Tenant-ID", TENANT)
@@ -86,7 +95,8 @@ class AgentControllerTest {
 
     @Test
     void getTraceNotFound() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class))).thenReturn(null);
+        when(agentService.getTrace(anyString(), anyString()))
+                .thenThrow(new AgentServiceException(HttpStatus.NOT_FOUND, "trace bulunamadı"));
 
         mockMvc.perform(get(BASE + "/traces/t-1")
                         .header("X-Tenant-ID", TENANT))
@@ -96,10 +106,27 @@ class AgentControllerTest {
 
     @Test
     void getTraceSuccess() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(traceRow()));
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(List.of(stepRow())));
+        Map<String, Object> step = new LinkedHashMap<>();
+        step.put("step_id", "s-1");
+        step.put("step_name", "step-1");
+        step.put("agent", "agent-a");
+        step.put("input", "input1");
+        step.put("output", "output1");
+        step.put("status", "completed");
+        step.put("duration_ms", 200);
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("trace_id", "t-1");
+        body.put("agent_name", "agent-a");
+        body.put("workflow_name", "wf-1");
+        body.put("status", "running");
+        body.put("total_steps", 2);
+        body.put("completed_steps", 1);
+        body.put("total_duration_ms", 500);
+        body.put("started_at", "2026-08-15T10:00:00Z");
+        body.put("steps", List.of(step));
+
+        when(agentService.getTrace(anyString(), anyString())).thenReturn(body);
 
         mockMvc.perform(get(BASE + "/traces/t-1")
                         .header("X-Tenant-ID", TENANT))
@@ -119,10 +146,8 @@ class AgentControllerTest {
 
     @Test
     void getTraceStepsErrorReturns500() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(traceRow()));
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenThrow(new RuntimeException("db error"));
+        when(agentService.getTrace(anyString(), anyString()))
+                .thenThrow(new AgentServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "adımlar alınamadı"));
 
         mockMvc.perform(get(BASE + "/traces/t-1")
                         .header("X-Tenant-ID", TENANT))
@@ -144,7 +169,8 @@ class AgentControllerTest {
 
     @Test
     void recordStepTraceNotFoundReturns404() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class))).thenReturn(null);
+        when(agentService.recordStep(anyString(), anyString(), any()))
+                .thenThrow(new AgentServiceException(HttpStatus.NOT_FOUND, "trace bulunamadı"));
 
         mockMvc.perform(post(BASE + "/traces/t-1/steps")
                         .header("X-Tenant-ID", TENANT)
@@ -156,8 +182,8 @@ class AgentControllerTest {
 
     @Test
     void recordStepCompletedTraceReturns409() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(Map.of("status", "completed")));
+        when(agentService.recordStep(anyString(), anyString(), any()))
+                .thenThrow(new AgentServiceException(HttpStatus.CONFLICT, "tamamlanmış trace'e adım eklenemez"));
 
         mockMvc.perform(post(BASE + "/traces/t-1/steps")
                         .header("X-Tenant-ID", TENANT)
@@ -169,8 +195,13 @@ class AgentControllerTest {
 
     @Test
     void recordStepSuccess() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(Map.of("status", "running")));
+        when(agentService.recordStep(anyString(), anyString(), any()))
+                .thenReturn(Map.of(
+                        "step_id", "s-new",
+                        "trace_id", "t-1",
+                        "step_name", "step-1",
+                        "status", "running",
+                        "duration_ms", 200));
 
         mockMvc.perform(post(BASE + "/traces/t-1/steps")
                         .header("X-Tenant-ID", TENANT)
@@ -185,8 +216,13 @@ class AgentControllerTest {
 
     @Test
     void recordStepInvalidStatusDefaultsToRunning() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(Map.of("status", "running")));
+        when(agentService.recordStep(anyString(), anyString(), any()))
+                .thenReturn(Map.of(
+                        "step_id", "s-new",
+                        "trace_id", "t-1",
+                        "step_name", "step-1",
+                        "status", "running",
+                        "duration_ms", 0));
 
         mockMvc.perform(post(BASE + "/traces/t-1/steps")
                         .header("X-Tenant-ID", TENANT)
@@ -210,7 +246,8 @@ class AgentControllerTest {
 
     @Test
     void completeTraceNotFoundWhenZeroRows() throws Exception {
-        when(dsl.execute(anyString(), any(Object[].class))).thenReturn(0);
+        when(agentService.completeTrace(anyString(), anyString(), any()))
+                .thenThrow(new AgentServiceException(HttpStatus.NOT_FOUND, "trace bulunamadı veya zaten tamamlanmış"));
 
         mockMvc.perform(post(BASE + "/traces/t-1/complete")
                         .header("X-Tenant-ID", TENANT)
@@ -222,7 +259,8 @@ class AgentControllerTest {
 
     @Test
     void completeTraceSuccess() throws Exception {
-        when(dsl.execute(anyString(), any(Object[].class))).thenReturn(1);
+        when(agentService.completeTrace(anyString(), anyString(), any()))
+                .thenReturn(Map.of("trace_id", "t-1", "status", "completed"));
 
         mockMvc.perform(post(BASE + "/traces/t-1/complete")
                         .header("X-Tenant-ID", TENANT)
@@ -235,7 +273,8 @@ class AgentControllerTest {
 
     @Test
     void completeTraceInvalidStatusDefaultsToCompleted() throws Exception {
-        when(dsl.execute(anyString(), any(Object[].class))).thenReturn(1);
+        when(agentService.completeTrace(anyString(), anyString(), any()))
+                .thenReturn(Map.of("trace_id", "t-1", "status", "completed"));
 
         mockMvc.perform(post(BASE + "/traces/t-1/complete")
                         .header("X-Tenant-ID", TENANT)
@@ -249,10 +288,18 @@ class AgentControllerTest {
 
     @Test
     void listTracesSuccess() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(List.of(listRow())));
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(Map.of("count", 1)));
+        Map<String, Object> trace = new LinkedHashMap<>();
+        trace.put("trace_id", "t-1");
+        trace.put("agent_name", "agent-a");
+        trace.put("workflow_name", "wf-1");
+        trace.put("status", "running");
+        trace.put("total_steps", 3);
+        trace.put("completed_steps", 1);
+        trace.put("total_duration_ms", 500);
+        trace.put("started_at", "2026-08-15T10:00:00Z");
+
+        when(agentService.listTraces(anyString(), anyInt(), any(), anyInt()))
+                .thenReturn(Map.of("traces", List.of(trace), "total", 1, "limit", 20, "offset", 0));
 
         mockMvc.perform(get(BASE + "/traces")
                         .header("X-Tenant-ID", TENANT))
@@ -268,10 +315,11 @@ class AgentControllerTest {
 
     @Test
     void listTracesInvalidLimitDefaultsTo20() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(List.of(listRow())));
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(Map.of("count", 1)));
+        Map<String, Object> trace = new LinkedHashMap<>();
+        trace.put("trace_id", "t-1");
+
+        when(agentService.listTraces(anyString(), anyInt(), any(), anyInt()))
+                .thenReturn(Map.of("traces", List.of(trace), "total", 1, "limit", 20, "offset", 0));
 
         mockMvc.perform(get(BASE + "/traces")
                         .header("X-Tenant-ID", TENANT)
@@ -282,56 +330,12 @@ class AgentControllerTest {
 
     @Test
     void listTracesQueryErrorReturns500() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenThrow(new RuntimeException("db error"));
+        when(agentService.listTraces(anyString(), anyInt(), any(), anyInt()))
+                .thenThrow(new AgentServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "trace listesi alınamadı"));
 
         mockMvc.perform(get(BASE + "/traces")
                         .header("X-Tenant-ID", TENANT))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.error").value("trace listesi alınamadı"));
-    }
-
-    // ---------- yardımcılar ----------
-
-    private static Map<String, Object> traceRow() {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("agent_name", "agent-a");
-        m.put("workflow_name", "wf-1");
-        m.put("status", "running");
-        m.put("total_steps", 2);
-        m.put("completed_steps", 1);
-        m.put("total_duration_ms", 500);
-        m.put("started_at", "2026-08-15T10:00:00Z");
-        m.put("completed_at", null);
-        return m;
-    }
-
-    private static Map<String, Object> stepRow() {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("id", "s-1");
-        m.put("step_name", "step-1");
-        m.put("agent_name", "agent-a");
-        m.put("input", "input1");
-        m.put("output", "output1");
-        m.put("status", "completed");
-        m.put("duration_ms", 200);
-        m.put("error_message", "");
-        m.put("started_at", "2026-08-15T10:00:00Z");
-        m.put("completed_at", "2026-08-15T10:00:01Z");
-        return m;
-    }
-
-    private static Map<String, Object> listRow() {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("id", "t-1");
-        m.put("agent_name", "agent-a");
-        m.put("workflow_name", "wf-1");
-        m.put("status", "running");
-        m.put("total_steps", 3);
-        m.put("completed_steps", 1);
-        m.put("total_duration_ms", 500);
-        m.put("started_at", "2026-08-15T10:00:00Z");
-        m.put("completed_at", null);
-        return m;
     }
 }

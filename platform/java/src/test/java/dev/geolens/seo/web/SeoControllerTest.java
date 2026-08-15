@@ -1,19 +1,15 @@
 package dev.geolens.seo.web;
 
-import dev.geolens.seo.GoogleOAuthClient;
-import dev.geolens.seo.SeoStateStore;
-import dev.geolens.testutil.JooqTestData;
-import org.jooq.DSLContext;
-import org.junit.jupiter.api.BeforeEach;
+import dev.geolens.seo.service.SeoService;
+import dev.geolens.seo.service.SeoServiceException;
 import org.junit.jupiter.api.Test;
-import org.mockito.Answers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,29 +31,18 @@ class SeoControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean(answer = Answers.RETURNS_DEEP_STUBS)
-    private DSLContext dsl;
-
     @MockBean
-    private GoogleOAuthClient oauth;
-
-    @MockBean
-    private SeoStateStore stateStore;
+    private SeoService seoService;
 
     private static final String TENANT = "T01";
     private static final String WS = "WS01";
-
-    @BeforeEach
-    void setUp() {
-        when(oauth.configured()).thenReturn(true);
-    }
 
     // ---------- ListConnections ----------
 
     @Test
     void listConnectionsSuccess() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(List.of(connectionRow())));
+        when(seoService.listConnections(anyString(), anyString()))
+                .thenReturn(List.of(connectionRow()));
 
         mockMvc.perform(get("/v1/workspaces/" + WS + "/seo/connections")
                         .header("X-Tenant-ID", TENANT))
@@ -69,8 +54,8 @@ class SeoControllerTest {
 
     @Test
     void listConnectionsQueryErrorReturnsEmpty() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenThrow(new RuntimeException("db error"));
+        when(seoService.listConnections(anyString(), anyString()))
+                .thenReturn(List.of());
 
         mockMvc.perform(get("/v1/workspaces/" + WS + "/seo/connections")
                         .header("X-Tenant-ID", TENANT))
@@ -83,6 +68,9 @@ class SeoControllerTest {
 
     @Test
     void getAuthUrlInvalidPlatformReturns400() throws Exception {
+        when(seoService.getAuthUrl(anyString(), anyString(), anyString()))
+                .thenThrow(new SeoServiceException(HttpStatus.BAD_REQUEST, "platform search_console veya ga4 olmalıdır"));
+
         mockMvc.perform(get("/v1/workspaces/" + WS + "/seo/auth-url")
                         .header("X-Tenant-ID", TENANT)
                         .param("platform", "twitter"))
@@ -92,7 +80,8 @@ class SeoControllerTest {
 
     @Test
     void getAuthUrlNotConfiguredReturns400() throws Exception {
-        when(oauth.configured()).thenReturn(false);
+        when(seoService.getAuthUrl(anyString(), anyString(), anyString()))
+                .thenThrow(new SeoServiceException(HttpStatus.BAD_REQUEST, "Google OAuth yapılandırılmamış"));
 
         mockMvc.perform(get("/v1/workspaces/" + WS + "/seo/auth-url")
                         .header("X-Tenant-ID", TENANT)
@@ -103,6 +92,11 @@ class SeoControllerTest {
 
     @Test
     void getAuthUrlSuccess() throws Exception {
+        when(seoService.getAuthUrl(anyString(), anyString(), anyString()))
+                .thenReturn(Map.of(
+                        "auth_url", "https://accounts.google.com/o/oauth2/v2/auth?client_id=c&access_type=offline&response_type=code&scope=s",
+                        "state_token", "abc123"));
+
         MvcResult res = mockMvc.perform(get("/v1/workspaces/" + WS + "/seo/auth-url")
                         .header("X-Tenant-ID", TENANT)
                         .param("platform", "search_console"))
@@ -121,6 +115,9 @@ class SeoControllerTest {
 
     @Test
     void callbackMissingParamsReturns400() throws Exception {
+        when(seoService.handleCallback(any(), any(), any()))
+                .thenThrow(new SeoServiceException(HttpStatus.BAD_REQUEST, "code ve state parametreleri gerekli"));
+
         mockMvc.perform(get("/v1/workspaces/" + WS + "/seo/callback"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("code ve state parametreleri gerekli"));
@@ -128,7 +125,8 @@ class SeoControllerTest {
 
     @Test
     void callbackInvalidStateReturns400() throws Exception {
-        when(stateStore.get(anyString())).thenReturn(null);
+        when(seoService.handleCallback(any(), any(), any()))
+                .thenThrow(new SeoServiceException(HttpStatus.BAD_REQUEST, "geçersiz state token"));
 
         mockMvc.perform(get("/v1/workspaces/" + WS + "/seo/callback")
                         .param("code", "auth-code")
@@ -139,7 +137,8 @@ class SeoControllerTest {
 
     @Test
     void callbackWorkspaceMismatchReturns400() throws Exception {
-        when(stateStore.get(anyString())).thenReturn(TENANT + "|OTHER-WS|search_console");
+        when(seoService.handleCallback(any(), any(), any()))
+                .thenThrow(new SeoServiceException(HttpStatus.BAD_REQUEST, "workspace eşleşmez"));
 
         mockMvc.perform(get("/v1/workspaces/" + WS + "/seo/callback")
                         .param("code", "auth-code")
@@ -150,11 +149,8 @@ class SeoControllerTest {
 
     @Test
     void callbackSuccessRedirects() throws Exception {
-        when(stateStore.get(anyString())).thenReturn(TENANT + "|" + WS + "|search_console");
-        when(oauth.exchangeCode(anyString(), anyString()))
-                .thenReturn(new GoogleOAuthClient.TokenResponse(
-                        "ya29.token", "refresh-1", 3600, "scope", "Bearer", "owner@example.com",
-                        Instant.now().plusSeconds(3600)));
+        when(seoService.handleCallback(any(), any(), any()))
+                .thenReturn("http://localhost:8080/?seo=connected&platform=search_console");
 
         mockMvc.perform(get("/v1/workspaces/" + WS + "/seo/callback")
                         .param("code", "auth-code")
@@ -165,9 +161,8 @@ class SeoControllerTest {
 
     @Test
     void callbackExchangeErrorReturns500() throws Exception {
-        when(stateStore.get(anyString())).thenReturn(TENANT + "|" + WS + "|ga4");
-        when(oauth.exchangeCode(anyString(), anyString()))
-                .thenThrow(new dev.geolens.seo.SeoException("token yanıtında access_token yok"));
+        when(seoService.handleCallback(any(), any(), any()))
+                .thenThrow(new SeoServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "token alınamadı"));
 
         mockMvc.perform(get("/v1/workspaces/" + WS + "/seo/callback")
                         .param("code", "bad-code")
@@ -180,6 +175,11 @@ class SeoControllerTest {
 
     @Test
     void disconnectSuccess() throws Exception {
+        when(seoService.disconnect(anyString(), anyString(), anyString()))
+                .thenReturn(Map.of(
+                        "status", "disconnected",
+                        "platform", "search_console"));
+
         mockMvc.perform(delete("/v1/workspaces/" + WS + "/seo/connections/search_console")
                         .header("X-Tenant-ID", TENANT))
                 .andExpect(status().isOk())
@@ -191,8 +191,8 @@ class SeoControllerTest {
 
     @Test
     void getSearchConsoleDataSuccess() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(List.of(scRow())));
+        when(seoService.getSearchConsoleData(anyString(), anyString()))
+                .thenReturn(List.of(scRow()));
 
         mockMvc.perform(get("/v1/workspaces/" + WS + "/seo/search-console")
                         .header("X-Tenant-ID", TENANT)
@@ -205,8 +205,8 @@ class SeoControllerTest {
 
     @Test
     void getGa4DataSuccess() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(List.of(ga4Row())));
+        when(seoService.getGa4Data(anyString(), anyString()))
+                .thenReturn(List.of(ga4Row()));
 
         mockMvc.perform(get("/v1/workspaces/" + WS + "/seo/ga4")
                         .header("X-Tenant-ID", TENANT)

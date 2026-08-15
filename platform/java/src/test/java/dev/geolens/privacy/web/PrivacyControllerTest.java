@@ -1,21 +1,18 @@
 package dev.geolens.privacy.web;
 
-import dev.geolens.testutil.JooqTestData;
-import org.jooq.DSLContext;
+import dev.geolens.privacy.service.PrivacyService;
+import dev.geolens.privacy.service.PrivacyServiceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.support.TransactionCallback;
-import org.springframework.transaction.support.TransactionTemplate;
+
+import java.util.List;
+import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.contains;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -30,26 +27,10 @@ class PrivacyControllerTest {
     private MockMvc mockMvc;
 
     @MockBean
-    private DSLContext dsl;
-
-    @MockBean
-    private TransactionTemplate tx;
+    private PrivacyService privacyService;
 
     private static final String TENANT = "T01";
     private static final String USER = "U01";
-
-    private void runInTx() {
-        when(tx.execute(any(TransactionCallback.class))).thenAnswer(inv -> {
-            @SuppressWarnings("unchecked")
-            TransactionCallback<String> cb = inv.getArgument(0);
-            return cb.doInTransaction(mock(TransactionStatus.class));
-        });
-    }
-
-    private void stubRole(String role) {
-        when(dsl.fetchOne(contains("config.memberships"), any(Object[].class)))
-                .thenReturn(JooqTestData.record(role));
-    }
 
     // ---------- ExportData ----------
 
@@ -62,9 +43,17 @@ class PrivacyControllerTest {
 
     @Test
     void exportDataSuccess() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(
-                        java.util.Map.<String, Object>of("id", "U01", "email", "a@b.com", "full_name", "A", "created_at", "2026-08-14T00:00:00Z")));
+        when(privacyService.exportData(any(), any()))
+                .thenReturn(Map.of(
+                        "tenant_id", TENANT,
+                        "exported_at", "2026-08-14T00:00:00Z",
+                        "format_version", 1,
+                        "users", List.of(Map.<String, Object>of(
+                                "id", "U01", "email", "a@b.com", "full_name", "A", "created_at", "2026-08-14T00:00:00Z")),
+                        "memberships", List.of(),
+                        "brands", List.of(),
+                        "prompt_sets", List.of(),
+                        "measurement_scores", List.of()));
 
         mockMvc.perform(get("/v1/account/data").header("X-Tenant-ID", TENANT))
                 .andExpect(status().isOk())
@@ -80,7 +69,8 @@ class PrivacyControllerTest {
 
     @Test
     void exportDataQueryErrorStillReturnsPayload() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class))).thenThrow(new RuntimeException("db error"));
+        when(privacyService.exportData(any(), any()))
+                .thenReturn(Map.of("tenant_id", TENANT, "users", List.of()));
 
         mockMvc.perform(get("/v1/account/data").header("X-Tenant-ID", TENANT))
                 .andExpect(status().isOk())
@@ -112,9 +102,9 @@ class PrivacyControllerTest {
 
     @Test
     void requestDeletionEditorCreatesPending() throws Exception {
-        stubRole("editor");
-        when(dsl.fetchOne(contains("INSERT INTO privacy.deletion_requests"), any(Object[].class)))
-                .thenReturn(JooqTestData.record("R01"));
+        when(privacyService.requestDeletion(any(), any(), any()))
+                .thenReturn(new DeletionResponse("R01", "pending",
+                        "Veri silme talebiniz alındı. Admin kullanıcı talebinizi değerlendirecektir."));
 
         mockMvc.perform(post("/v1/account/deletion")
                         .header("X-Tenant-ID", TENANT)
@@ -128,10 +118,9 @@ class PrivacyControllerTest {
 
     @Test
     void requestDeletionAdminAnonymizesDirectly() throws Exception {
-        runInTx();
-        stubRole("admin");
-        when(dsl.fetchOne(contains("INSERT INTO privacy.deletion_requests"), any(Object[].class)))
-                .thenReturn(JooqTestData.record("R01"));
+        when(privacyService.requestDeletion(any(), any(), any()))
+                .thenReturn(new DeletionResponse("R01", "completed",
+                        "Hesabınız ve tüm kişisel verileriniz başarıyla anonimleştirildi."));
 
         mockMvc.perform(post("/v1/privacy/delete")
                         .header("X-Tenant-ID", TENANT)
@@ -147,7 +136,8 @@ class PrivacyControllerTest {
 
     @Test
     void listDeletionRequestsNoAdminReturns403() throws Exception {
-        stubRole("editor");
+        when(privacyService.listDeletionRequests(any(), any()))
+                .thenThrow(new PrivacyServiceException(HttpStatus.FORBIDDEN, "bu işlem için admin yetkisi gerekli"));
 
         mockMvc.perform(get("/v1/deletion-requests")
                         .header("X-Tenant-ID", TENANT)
@@ -158,7 +148,8 @@ class PrivacyControllerTest {
 
     @Test
     void listDeletionRequestsNoRoleReturns403() throws Exception {
-        stubRole("");
+        when(privacyService.listDeletionRequests(any(), any()))
+                .thenThrow(new PrivacyServiceException(HttpStatus.FORBIDDEN, "bu işlem için admin yetkisi gerekli"));
 
         mockMvc.perform(get("/v1/deletion-requests")
                         .header("X-Tenant-ID", TENANT)
@@ -168,13 +159,11 @@ class PrivacyControllerTest {
 
     @Test
     void listDeletionRequestsAdminSuccess() throws Exception {
-        stubRole("admin");
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(
-                        java.util.Map.<String, Object>of(
-                                "id", "R01", "requested_by", "U01", "status", "pending",
-                                "reason", "test", "requested_at", "2026-08-14T00:00:00Z",
-                                "processed_at", "1970-01-01T00:00:00Z", "notes", "")));
+        when(privacyService.listDeletionRequests(any(), any()))
+                .thenReturn(Map.of("requests", List.of(Map.<String, Object>of(
+                        "id", "R01", "requested_by", "U01", "status", "pending",
+                        "reason", "test", "requested_at", "2026-08-14T00:00:00Z",
+                        "processed_at", "1970-01-01T00:00:00Z", "notes", ""))));
 
         mockMvc.perform(get("/v1/deletion-requests")
                         .header("X-Tenant-ID", TENANT)
@@ -188,7 +177,8 @@ class PrivacyControllerTest {
 
     @Test
     void processDeletionRequestNoAdminReturns403() throws Exception {
-        stubRole("editor");
+        when(privacyService.processDeletionRequest(any(), any(), any(), any(), any()))
+                .thenThrow(new PrivacyServiceException(HttpStatus.FORBIDDEN, "bu işlem için admin yetkisi gerekli"));
 
         mockMvc.perform(post("/v1/deletion-requests/R01/process")
                         .header("X-Tenant-ID", TENANT)
@@ -200,7 +190,8 @@ class PrivacyControllerTest {
 
     @Test
     void processDeletionRequestInvalidActionReturns400() throws Exception {
-        stubRole("admin");
+        when(privacyService.processDeletionRequest(any(), any(), any(), any(), any()))
+                .thenThrow(new PrivacyServiceException(HttpStatus.BAD_REQUEST, "action 'approve' veya 'reject' olmalıdır"));
 
         mockMvc.perform(post("/v1/deletion-requests/R01/process")
                         .header("X-Tenant-ID", TENANT)
@@ -213,10 +204,9 @@ class PrivacyControllerTest {
 
     @Test
     void processDeletionRequestApproveSuccess() throws Exception {
-        runInTx();
-        stubRole("admin");
-        when(dsl.fetchOne(contains("UPDATE privacy.deletion_requests"), any(Object[].class)))
-                .thenReturn(JooqTestData.record("R01"));
+        when(privacyService.processDeletionRequest(any(), any(), any(), any(), any()))
+                .thenReturn(new DeletionResponse("R01", "completed",
+                        "Talep onaylandı ve veriler anonimleştirildi."));
 
         mockMvc.perform(post("/v1/deletion-requests/R01/process")
                         .header("X-Tenant-ID", TENANT)
@@ -229,10 +219,8 @@ class PrivacyControllerTest {
 
     @Test
     void processDeletionRequestApproveNotFoundReturns404() throws Exception {
-        runInTx();
-        stubRole("admin");
-        when(dsl.fetchOne(contains("UPDATE privacy.deletion_requests"), any(Object[].class)))
-                .thenReturn(null);
+        when(privacyService.processDeletionRequest(any(), any(), any(), any(), any()))
+                .thenThrow(new PrivacyServiceException(HttpStatus.NOT_FOUND, "talep bulunamadı veya zaten işlenmiş"));
 
         mockMvc.perform(post("/v1/deletion-requests/R01/process")
                         .header("X-Tenant-ID", TENANT)
@@ -245,7 +233,8 @@ class PrivacyControllerTest {
 
     @Test
     void processDeletionRequestRejectSuccess() throws Exception {
-        stubRole("admin");
+        when(privacyService.processDeletionRequest(any(), any(), any(), any(), any()))
+                .thenReturn(new DeletionResponse("R01", "rejected", "Talep reddedildi."));
 
         mockMvc.perform(post("/v1/deletion-requests/R01/process")
                         .header("X-Tenant-ID", TENANT)

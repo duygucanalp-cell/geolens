@@ -1,23 +1,20 @@
 package dev.geolens.registry.web;
 
 import dev.geolens.registry.Entity;
-import dev.geolens.registry.EntityIndexer;
-import dev.geolens.testutil.JooqTestData;
-import org.jooq.DSLContext;
+import dev.geolens.registry.service.RegistryService;
+import dev.geolens.registry.service.RegistryServiceException;
 import org.junit.jupiter.api.Test;
-import org.mockito.Answers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -33,11 +30,8 @@ class RegistryControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean(answer = Answers.RETURNS_DEEP_STUBS)
-    private DSLContext dsl;
-
     @MockBean
-    private EntityIndexer indexer;
+    private RegistryService registryService;
 
     private static final String TENANT = "T01";
 
@@ -56,6 +50,9 @@ class RegistryControllerTest {
     @Test
     void createInvalidEntityTypeReturns400() throws Exception {
         // Go: unsupported type, empty type, random string → 400
+        when(registryService.createEntity(anyString(), any()))
+                .thenThrow(new RegistryServiceException(HttpStatus.BAD_REQUEST,
+                        "geçersiz entity_type: model, agent, application, dataset"));
         for (String et : new String[]{"llm", "", "foobar"}) {
             mockMvc.perform(post("/v1/registry/entities")
                             .header("X-Tenant-ID", TENANT)
@@ -68,8 +65,8 @@ class RegistryControllerTest {
 
     @Test
     void createSuccess() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(entityRow("ent-001", "model", "MyModel")));
+        when(registryService.createEntity(anyString(), any()))
+                .thenReturn(entity("ent-001", "model", "MyModel"));
 
         mockMvc.perform(post("/v1/registry/entities")
                         .header("X-Tenant-ID", TENANT)
@@ -79,14 +76,12 @@ class RegistryControllerTest {
                 .andExpect(jsonPath("$.id").value("ent-001"))
                 .andExpect(jsonPath("$.name").value("MyModel"))
                 .andExpect(jsonPath("$.entity_type").value("model"));
-
-        verify(indexer).indexEntity(any(Entity.class));
     }
 
     @Test
     void createDbErrorReturns500() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenThrow(new RuntimeException("db error"));
+        when(registryService.createEntity(anyString(), any()))
+                .thenThrow(new RegistryServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "varlık kaydedilemedi"));
 
         mockMvc.perform(post("/v1/registry/entities")
                         .header("X-Tenant-ID", TENANT)
@@ -98,8 +93,8 @@ class RegistryControllerTest {
 
     @Test
     void createDefaultValues() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(entityRow("ent-002", "agent", "MyAgent")));
+        when(registryService.createEntity(anyString(), any()))
+                .thenReturn(entity("ent-002", "agent", "MyAgent"));
 
         mockMvc.perform(post("/v1/registry/entities")
                         .header("X-Tenant-ID", TENANT)
@@ -113,10 +108,9 @@ class RegistryControllerTest {
 
     @Test
     void listSuccess() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(List.of(
-                        entityRow("ent-001", "model", "Model A"),
-                        entityRow("ent-002", "agent", "Agent B"))));
+        when(registryService.listEntities(anyString(), any(), any(), any()))
+                .thenReturn(List.of(entity("ent-001", "model", "Model A"),
+                        entity("ent-002", "agent", "Agent B")));
 
         mockMvc.perform(get("/v1/registry/entities")
                         .header("X-Tenant-ID", TENANT))
@@ -128,8 +122,8 @@ class RegistryControllerTest {
 
     @Test
     void listEmpty() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(List.of()));
+        when(registryService.listEntities(anyString(), any(), any(), any()))
+                .thenReturn(List.of());
 
         mockMvc.perform(get("/v1/registry/entities")
                         .header("X-Tenant-ID", TENANT))
@@ -139,8 +133,8 @@ class RegistryControllerTest {
 
     @Test
     void listQueryErrorGraceful() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenThrow(new RuntimeException("connection error"));
+        when(registryService.listEntities(anyString(), any(), any(), any()))
+                .thenReturn(List.of());
 
         mockMvc.perform(get("/v1/registry/entities")
                         .header("X-Tenant-ID", TENANT))
@@ -150,8 +144,8 @@ class RegistryControllerTest {
 
     @Test
     void listWithFilters() throws Exception {
-        when(dsl.fetch(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.records(List.of(entityRow("ent-001", "model", "Model A"))));
+        when(registryService.listEntities(anyString(), any(), any(), any()))
+                .thenReturn(List.of(entity("ent-001", "model", "Model A")));
 
         mockMvc.perform(get("/v1/registry/entities")
                         .header("X-Tenant-ID", TENANT)
@@ -166,8 +160,8 @@ class RegistryControllerTest {
 
     @Test
     void getSuccess() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(entityRow("ent-001", "model", "Model A")));
+        when(registryService.getEntity(anyString(), anyString()))
+                .thenReturn(entity("ent-001", "model", "Model A"));
 
         mockMvc.perform(get("/v1/registry/entities/ent-001")
                         .header("X-Tenant-ID", TENANT))
@@ -178,8 +172,8 @@ class RegistryControllerTest {
 
     @Test
     void getNotFound() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenThrow(new RuntimeException("not found"));
+        when(registryService.getEntity(anyString(), anyString()))
+                .thenThrow(new RegistryServiceException(HttpStatus.NOT_FOUND, "varlık bulunamadı"));
 
         mockMvc.perform(get("/v1/registry/entities/nonexistent")
                         .header("X-Tenant-ID", TENANT))
@@ -201,10 +195,11 @@ class RegistryControllerTest {
 
     @Test
     void updateSuccess() throws Exception {
-        Map<String, Object> row = entityRow("ent-001", "model", "Updated Name");
-        row.put("version", "2.0.0");
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(row));
+        Entity updated = new Entity("ent-001", TENANT, "model", "Updated Name", "Description", "2.0.0", "openai",
+                "production", "high", "user-1", "https://docs.example.com",
+                null, "2026-07-25T10:00:00Z", "2026-07-25T10:00:00Z");
+        when(registryService.updateEntity(anyString(), anyString(), any()))
+                .thenReturn(updated);
 
         mockMvc.perform(put("/v1/registry/entities/ent-001")
                         .header("X-Tenant-ID", TENANT)
@@ -213,14 +208,12 @@ class RegistryControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Updated Name"))
                 .andExpect(jsonPath("$.version").value("2.0.0"));
-
-        verify(indexer).indexEntity(any(Entity.class));
     }
 
     @Test
     void updateNotFound() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenThrow(new RuntimeException("not found"));
+        when(registryService.updateEntity(anyString(), anyString(), any()))
+                .thenThrow(new RegistryServiceException(HttpStatus.NOT_FOUND, "varlık bulunamadı"));
 
         mockMvc.perform(put("/v1/registry/entities/nonexistent")
                         .header("X-Tenant-ID", TENANT)
@@ -234,19 +227,19 @@ class RegistryControllerTest {
 
     @Test
     void deleteSuccess() throws Exception {
-        when(dsl.execute(anyString(), any(Object[].class))).thenReturn(1);
+        when(registryService.deleteEntity(anyString(), anyString()))
+                .thenReturn(Map.of("status", "silindi"));
 
         mockMvc.perform(delete("/v1/registry/entities/ent-001")
                         .header("X-Tenant-ID", TENANT))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("silindi"));
-
-        verify(indexer).deleteEntity("ent-001");
     }
 
     @Test
     void deleteNotFound() throws Exception {
-        when(dsl.execute(anyString(), any(Object[].class))).thenReturn(0);
+        when(registryService.deleteEntity(anyString(), anyString()))
+                .thenThrow(new RegistryServiceException(HttpStatus.NOT_FOUND, "varlık bulunamadı"));
 
         mockMvc.perform(delete("/v1/registry/entities/nonexistent")
                         .header("X-Tenant-ID", TENANT))
@@ -256,8 +249,8 @@ class RegistryControllerTest {
 
     @Test
     void deleteDbErrorReturns500() throws Exception {
-        when(dsl.execute(anyString(), any(Object[].class)))
-                .thenThrow(new RuntimeException("db error"));
+        when(registryService.deleteEntity(anyString(), anyString()))
+                .thenThrow(new RegistryServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "silme hatası"));
 
         mockMvc.perform(delete("/v1/registry/entities/ent-001")
                         .header("X-Tenant-ID", TENANT))
@@ -279,8 +272,8 @@ class RegistryControllerTest {
 
     @Test
     void assessRiskSuccess() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenReturn(JooqTestData.record(Map.of("id", "assessment-001")));
+        when(registryService.assessRisk(anyString(), anyString(), any()))
+                .thenReturn(Map.of("id", "assessment-001", "status", "değerlendirildi"));
 
         mockMvc.perform(post("/v1/registry/entities/ent-001/assess")
                         .header("X-Tenant-ID", TENANT)
@@ -293,8 +286,8 @@ class RegistryControllerTest {
 
     @Test
     void assessRiskDbErrorReturns500() throws Exception {
-        when(dsl.fetchOne(anyString(), any(Object[].class)))
-                .thenThrow(new RuntimeException("db error"));
+        when(registryService.assessRisk(anyString(), anyString(), any()))
+                .thenThrow(new RegistryServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "değerlendirme kaydedilemedi"));
 
         mockMvc.perform(post("/v1/registry/entities/ent-001/assess")
                         .header("X-Tenant-ID", TENANT)
@@ -306,22 +299,9 @@ class RegistryControllerTest {
 
     // ---------- yardımcılar ----------
 
-    private static Map<String, Object> entityRow(String id, String entityType, String name) {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("id", id);
-        m.put("tenant_id", TENANT);
-        m.put("entity_type", entityType);
-        m.put("name", name);
-        m.put("description", "Description");
-        m.put("version", "1.0.0");
-        m.put("provider", "openai");
-        m.put("lifecycle_state", "development");
-        m.put("risk_class", "medium");
-        m.put("owner", "user-1");
-        m.put("documentation_url", "https://docs.example.com");
-        m.put("deployed_at", null);
-        m.put("created_at", "2026-07-25T10:00:00Z");
-        m.put("updated_at", "2026-07-25T10:00:00Z");
-        return m;
+    private static Entity entity(String id, String entityType, String name) {
+        return new Entity(id, TENANT, entityType, name, "Description", "1.0.0", "openai",
+                "development", "medium", "user-1", "https://docs.example.com",
+                null, "2026-07-25T10:00:00Z", "2026-07-25T10:00:00Z");
     }
 }
