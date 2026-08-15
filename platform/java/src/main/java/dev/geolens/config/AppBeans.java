@@ -2,6 +2,8 @@ package dev.geolens.config;
 
 import dev.geolens.audit.AuditService;
 import dev.geolens.benchmark.BenchmarkAggregator;
+import dev.geolens.competitive.CompetitiveEngine;
+import dev.geolens.contentgeo.ContentGeoEngine;
 import dev.geolens.archive.ArchiveEngine;
 import dev.geolens.replay.ReplayEngine;
 import dev.geolens.registry.EntityIndexer;
@@ -261,5 +263,17 @@ public class AppBeans {
     @Bean
     public TechnicalGeoEngine technicalGeoEngine(DSLContext dsl) {
         return new TechnicalGeoEngine(dsl);
+    }
+
+    /** Competitive gap (FR-D11): marka-rakip karşılaştırma motoru — DSLContext üzerinden çalışır. */
+    @Bean
+    public CompetitiveEngine competitiveEngine(DSLContext dsl) {
+        return new CompetitiveEngine(dsl);
+    }
+
+    /** Content GEO (FR-E5/E6): content gap + hub skoru motoru — DSLContext üzerinden çalışır. */
+    @Bean
+    public ContentGeoEngine contentGeoEngine(DSLContext dsl) {
+        return new ContentGeoEngine(dsl);
     }
 }
